@@ -1211,37 +1211,5 @@ export const IdentityMonitoringView = ({
         />
       )}
     </div>
-
-    {/* Row 2: List membership + Confidence histogram */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <ListMembershipPanel terminology={terminology} />
-      <ConfidenceHistPanel terminology={terminology} />
-    </div>
-
-    {/* Zone activity — full width (click camera cell → camera feed panel) */}
-    <ZoneActivityPanel terminology={terminology} onCameraClick={onCameraClick} />
-
-    {/* Row 3: Access denied + Live event feed */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <AccessDeniedPanel terminology={terminology} />
-      <LiveEventFeedPanel terminology={terminology} onEntityClick={onEntityClick} />
-    </div>
-
-    {/* Row 4: VIP ticker + Unknown tracker */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      {!terminology.isLPR && <VIPTickerPanel terminology={terminology} />}
-      <UnknownTrackerPanel terminology={terminology} onTrackerClick={() => onEntityClick?.("unknown")} />
-    </div>
-
-    {/* Cross-camera tracking — full width */}
-    <CrossCameraPanel terminology={terminology} onJourneyClick={onJourneyClick} />
-
-    {/* LPR-only panels */}
-    {terminology.isLPR && (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <PlateAccuracyPanel terminology={terminology} />
-        <VehicleAuthPanel terminology={terminology} />
-      </div>
-    )}
-  </div>
-);
+  );
+};
