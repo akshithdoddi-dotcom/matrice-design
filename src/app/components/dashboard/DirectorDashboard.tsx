@@ -45,8 +45,8 @@ export const DirectorDashboard = () => {
                         dataKey="value"
                         stroke="none"
                     >
-                        {REVENUE_DATA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {REVENUE_DATA.map((entry) => (
+                        <Cell key={`revenue-${entry.name}`} fill={COLORS[REVENUE_DATA.indexOf(entry) % COLORS.length]} />
                         ))}
                     </Pie>
                 </PieChart>
@@ -81,8 +81,8 @@ export const DirectorDashboard = () => {
                         dataKey="value"
                         stroke="none"
                     >
-                        {EFFICIENCY_DATA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {EFFICIENCY_DATA.map((entry) => (
+                        <Cell key={`efficiency-${entry.name}`} fill={COLORS[EFFICIENCY_DATA.indexOf(entry) % COLORS.length]} />
                         ))}
                     </Pie>
                 </PieChart>

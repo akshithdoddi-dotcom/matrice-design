@@ -1,3 +1,4 @@
+import { Panel } from "../shared/Panel";
 import { ClipboardList } from "lucide-react";
 import { SCORECARD_DATA } from "../../data/mockData";
 import type { QualityTerminology } from "../../data/types";
@@ -7,22 +8,10 @@ interface Props {
   terminology: QualityTerminology;
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  ON_TRACK:   "border-emerald-200 bg-emerald-50 text-emerald-700",
-  WATCH:      "border-amber-200 bg-amber-50 text-amber-700",
-  OFF_TARGET: "border-red-200 bg-red-50 text-red-700",
-};
-
-const STATUS_LEFT: Record<string, string> = {
-  ON_TRACK:   "border-l-transparent",
-  WATCH:      "border-l-amber-400",
-  OFF_TARGET: "border-l-red-500",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  ON_TRACK:   "On Track",
-  WATCH:      "Monitor",
-  OFF_TARGET: "Off Target",
+const STATUS_STYLES = {
+  ON_TRACK:   { cell: "text-emerald-700 bg-emerald-50", pill: "bg-emerald-100 text-emerald-700" },
+  WATCH:      { cell: "text-amber-700 bg-amber-50",     pill: "bg-amber-100 text-amber-700"     },
+  OFF_TARGET: { cell: "text-red-700 bg-red-50",         pill: "bg-red-100 text-red-700"         },
 };
 
 export const QualityScorecard = ({ terminology: _terminology }: Props) => {
@@ -33,61 +22,70 @@ export const QualityScorecard = ({ terminology: _terminology }: Props) => {
   const formatValue = (value: number, unit: string) => {
     if (unit === "%") return `${value.toFixed(1)}%`;
     if (unit === "USD") return `$${value.toLocaleString()}`;
-    return `${value.toLocaleString()} ${unit}`;
+    return `${value.toLocaleString()} ${unit !== "violations" && unit !== "zones" && unit !== "workers" && unit !== "alerts" && unit !== "sec" ? unit : unit}`;
   };
 
   return (
-    <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-50">
-        <div className="flex items-center gap-2">
-          <ClipboardList className="w-3.5 h-3.5 text-[#00775B]" />
-          <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Quality Scorecard</span>
-        </div>
-        <div className="flex items-center gap-3 text-[10px] font-bold">
-          <span className="text-emerald-600">{onTrack} On Track</span>
-          <span className="text-neutral-200">·</span>
-          <span className="text-amber-600">{watch} Monitor</span>
-          <span className="text-neutral-200">·</span>
-          <span className="text-red-500">{offTarget} Off Target</span>
-        </div>
-      </div>
+    <Panel
+      title="Quality Scorecard"
+      icon={ClipboardList}
+      info="Month-over-month scorecard for key quality metrics. Status is determined by comparison to target."
+    >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[540px] text-xs">
+        <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-neutral-100 bg-neutral-50/80">
-              <th className="pl-4 pr-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Metric</th>
-              <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">This Month</th>
-              <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Last Month</th>
-              <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Target</th>
-              <th className="pl-2 pr-4 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Status</th>
+            <tr className="border-b border-neutral-100">
+              {["Metric", "This Month", "Last Month", "Target", "Status"].map((h) => (
+                <th
+                  key={h}
+                  className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-4 whitespace-nowrap"
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-50">
-            {SCORECARD_DATA.map((row) => (
-              <tr
-                key={row.metric}
-                className={cn("transition-colors group border-l-2 hover:bg-neutral-50/60", STATUS_LEFT[row.status])}
-              >
-                <td className="pl-4 pr-2 py-3 text-[12px] font-semibold text-neutral-700">{row.metric}</td>
-                <td className="px-2 py-3 text-right font-data tabular-nums text-[13px] font-black text-neutral-900">
-                  {formatValue(row.this_period, row.unit)}
-                </td>
-                <td className="px-2 py-3 text-right font-data tabular-nums text-[12px] text-neutral-500">
-                  {formatValue(row.last_period, row.unit)}
-                </td>
-                <td className="px-2 py-3 text-right font-data tabular-nums text-[12px] text-neutral-400">
-                  {formatValue(row.target, row.unit)}
-                </td>
-                <td className="pl-2 pr-4 py-3 text-center">
-                  <span className={cn("inline-flex h-5 items-center rounded-[2px] border px-1.5 text-[9px] font-black uppercase tracking-wide", STATUS_BADGE[row.status])}>
-                    {STATUS_LABEL[row.status]}
-                  </span>
-                </td>
-              </tr>
-            ))}
+          <tbody>
+            {SCORECARD_DATA.map((row) => {
+              const styles = STATUS_STYLES[row.status];
+              return (
+                <tr
+                  key={row.metric}
+                  className={cn("border-b border-neutral-50 hover:bg-neutral-50 transition-colors")}
+                >
+                  <td className="py-3 pr-4 font-semibold text-neutral-700 whitespace-nowrap">
+                    {row.metric}
+                  </td>
+                  <td className={cn("py-3 pr-4 font-black tabular-nums font-data rounded px-2", styles.cell)}>
+                    {formatValue(row.this_period, row.unit)}
+                  </td>
+                  <td className="py-3 pr-4 text-neutral-500 tabular-nums font-data">
+                    {formatValue(row.last_period, row.unit)}
+                  </td>
+                  <td className="py-3 pr-4 text-neutral-400 tabular-nums font-data">
+                    {formatValue(row.target, row.unit)}
+                  </td>
+                  <td className="py-3">
+                    <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold", styles.pill)}>
+                      <span>{row.symbol}</span>
+                      {row.status === "ON_TRACK" ? "On Track" : row.status === "WATCH" ? "Watch" : "Off Target"}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
-    </div>
+
+      {/* Summary footer */}
+      <div className="mt-4 pt-3 border-t border-neutral-50 flex items-center gap-3 text-[11px] font-semibold">
+        <span className="text-emerald-600">{onTrack} On Track</span>
+        <span className="text-neutral-300">·</span>
+        <span className="text-amber-600">{watch} Watch</span>
+        <span className="text-neutral-300">·</span>
+        <span className="text-red-500">{offTarget} Off Target</span>
+      </div>
+    </Panel>
   );
 };

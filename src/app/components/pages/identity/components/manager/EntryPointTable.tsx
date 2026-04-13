@@ -15,28 +15,6 @@ const STATUS_STYLE: Record<string, string> = {
   CRITICAL: "bg-red-100 text-red-700",
 };
 
-const PEAK_WINDOW: Record<string, string> = {
-  e1: "08:00-09:00",
-  e2: "08:00-09:00",
-  e3: "17:00-18:00",
-  e4: "09:00-10:00",
-  e5: "08:00-09:00",
-  e6: "08:00-09:00",
-  e7: "07:00-08:00",
-  e8: "10:00-11:00",
-};
-
-const LAST_REVIEW: Record<string, string> = {
-  e1: "1m ago",
-  e2: "6m ago",
-  e3: "2m ago",
-  e4: "11m ago",
-  e5: "5m ago",
-  e6: "4m ago",
-  e7: "9m ago",
-  e8: "12m ago",
-};
-
 export const EntryPointTable = ({ terminology }: Props) => {
   const [sortKey, setSortKey] = useState<SortKey>("identifications");
   const [sortAsc, setSortAsc] = useState(false);
@@ -84,9 +62,7 @@ export const EntryPointTable = ({ terminology }: Props) => {
                 { key: "unknown_rate_pct" as SortKey, label: "Unknown %" },
                 { key: "denied_count" as SortKey, label: "Denied" },
                 { key: "blacklist_hits" as SortKey, label: "BL Hits" },
-                { key: "entry_id" as SortKey, label: "Peak Window" },
                 { key: "status" as SortKey, label: "Status" },
-                { key: "flag" as SortKey, label: "Last Review" },
               ].map((col) => (
                 <th
                   key={col.key}
@@ -133,16 +109,10 @@ export const EntryPointTable = ({ terminology }: Props) => {
                 )}>
                   {entry.blacklist_hits}
                 </td>
-                <td className="py-2.5 px-2 font-data tabular-nums text-neutral-500">
-                  {PEAK_WINDOW[entry.entry_id]}
-                </td>
                 <td className="py-2.5 px-2">
                   <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", STATUS_STYLE[entry.status])}>
                     {entry.status}
                   </span>
-                </td>
-                <td className="py-2.5 px-2 text-neutral-500 font-data tabular-nums">
-                  {LAST_REVIEW[entry.entry_id]}
                 </td>
               </tr>
             ))}

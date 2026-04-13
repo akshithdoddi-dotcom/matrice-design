@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { ZONE_CARDS, ZONE_VIOLATIONS_TICKER, ZoneCard as ZoneCardType, ZoneStatus } from "@/app/data/mockData";
 import { Persona } from "../dashboard/PersonaSwitcher";
-import { MapPin, Clock, Users, AlertTriangle, Camera, TrendingUp, Gauge, Shield, ArrowRight, Activity, Maximize2, BarChart3, PieChart, Calendar, Search, Check, ChevronDown, Bell, Eye, Ban, Settings } from "lucide-react";
+import { MapPin, Clock, Users, AlertTriangle, Camera, TrendingUp, Gauge, Shield, ArrowRight, Activity, Maximize2, BarChart3, PieChart, Calendar, Search, Check, ChevronDown, Bell, Eye, Ban, Settings, X } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { LineChart, Line, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Cell, PieChart as RechartsPieChart, Pie } from "recharts";
 import { AnalyticsHeader } from "./AnalyticsHeader";
 import { motion } from "motion/react";
-import * as Dialog from "@radix-ui/react-dialog";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { ZoneConfigurationModal } from "../zone-config/ZoneConfigurationModal";
 
@@ -285,10 +284,6 @@ const ZoneSparkline = ({
           <circle cx={peakX} cy={peakY} r="2.5" fill={color} opacity="0.75" />
         )}
         <circle cx={nowX} cy={nowY} r="2.5" fill={color} />
-        <circle cx={nowX} cy={nowY} r="2.5" fill={color} opacity="0.35">
-          <animate attributeName="r" values="2.5;5.5;2.5" dur="2s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.35;0;0.35" dur="2s" repeatCount="indefinite" />
-        </circle>
       </svg>
       <div className="flex justify-between mt-0.5 mb-1">
         <span className="text-[7px] text-neutral-400 font-mono">{label}</span>
@@ -300,13 +295,7 @@ const ZoneSparkline = ({
 
 // Shared hover action buttons
 const HoverActions = () => (
-  <>
-    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none" />
-    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-20">
-      <button onClick={(e) => e.stopPropagation()} className="w-9 h-9 rounded-full bg-[#00775B] flex items-center justify-center text-white shadow-lg translate-y-3 group-hover:translate-y-0 transition-transform duration-200"><Eye className="w-4 h-4" /></button>
-      <button onClick={(e) => e.stopPropagation()} className="w-9 h-9 rounded-full bg-[#EA580C] flex items-center justify-center text-white shadow-lg translate-y-3 group-hover:translate-y-0 transition-transform duration-200" style={{ transitionDelay: "40ms" }}><AlertTriangle className="w-4 h-4" /></button>
-    </div>
-  </>
+  <></>
 );
 
 // ─── Adaptive Zone Card ───────────────────────────────────────────────────────
@@ -347,7 +336,7 @@ const AdaptiveZoneCard = ({ zone, onClick, scrollRef, isHighlighted }: AdaptiveZ
               <h3 className="text-[11px] font-bold text-neutral-800 truncate leading-tight">{zone.zoneName}</h3>
             </div>
             <div className="flex items-center gap-1 shrink-0 mt-0.5">
-              <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-[#E7000B] animate-pulse" : "bg-[#00A63E]")} />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#E7000B]" />
               <span className="text-[8px] font-mono" style={{ color: t.bar }}>Live</span>
             </div>
           </div>
@@ -486,7 +475,7 @@ const AdaptiveZoneCard = ({ zone, onClick, scrollRef, isHighlighted }: AdaptiveZ
               <div className="text-[9px] text-neutral-400">violations · last hour</div>
             </div>
             <div className="flex flex-col items-center gap-1.5 shrink-0">
-              <ArrowRight className={cn("w-8 h-8", violations > 5 ? "text-[#E7000B] animate-pulse" : "text-[#00A63E]")} strokeWidth={2.5} />
+              <ArrowRight className={cn("w-8 h-8", violations > 5 ? "text-[#E7000B]" : "text-[#00A63E]")} strokeWidth={2.5} />
               <div className="text-center">
                 <div className="text-[18px] font-mono font-bold leading-none" style={{ color: t.hero }}>{compliance}%</div>
                 <div className="text-[8px] text-neutral-500 leading-tight">Compliance</div>
@@ -569,7 +558,7 @@ const ZoneViolationsTicker = () => {
   return (
     <div className="w-full bg-neutral-900 text-white text-[10px] py-1.5 px-4 overflow-hidden flex items-center gap-4 border-b border-[#00775B]/30 sticky top-0 z-30">
       <span className="font-bold uppercase tracking-wider text-[#00775B] shrink-0 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-[#E7000B] animate-pulse shadow-[0_0_8px_rgba(231,0,11,0.6)]" />
+        <div className="w-2 h-2 rounded-full bg-[#E7000B] shadow-[0_0_8px_rgba(231,0,11,0.6)]" />
         Live Zone Violations
       </span>
       <div className="flex-1 overflow-hidden relative">
@@ -649,7 +638,7 @@ const LiveZoneOccupancyMap = ({ onZoneClick, highlightedZone }: { onZoneClick: (
         {/* Live Pulsing Indicator */}
         {hasConfigured && (
           <div className="flex items-center gap-1.5 ml-auto">
-            <div className="w-2 h-2 rounded-full bg-[#00775B] animate-pulse shadow-[0_0_8px_rgba(0,119,91,0.6)]" />
+            <div className="w-2 h-2 rounded-full bg-[#00775B] shadow-[0_0_8px_rgba(0,119,91,0.6)]" />
             <span className="text-[9px] font-bold uppercase tracking-wider text-[#00775B]">Live</span>
           </div>
         )}
@@ -710,7 +699,7 @@ const LiveZoneOccupancyMap = ({ onZoneClick, highlightedZone }: { onZoneClick: (
           {/* Grid lines for spatial context */}
           <defs>
             <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E5E7EB" strokeWidth="0.5" opacity="0.3" />
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#D1D5DB" strokeWidth="0.8" opacity="0.4" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -740,9 +729,10 @@ const LiveZoneOccupancyMap = ({ onZoneClick, highlightedZone }: { onZoneClick: (
                     : "none"
                 }}
               />
+              {/* Zone Name */}
               <text
                 x={x + width / 2}
-                y={y + height / 2}
+                y={y + height / 2 - 10}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="text-[9px] font-bold fill-white pointer-events-none"
@@ -752,6 +742,19 @@ const LiveZoneOccupancyMap = ({ onZoneClick, highlightedZone }: { onZoneClick: (
                   <tspan key={i} x={x + width / 2} dy={i === 0 ? 0 : 11}>{line}</tspan>
                 ))}
               </text>
+              {/* Incident Type - if zone has violations */}
+              {(zone.status === "critical" || zone.status === "violation") && (
+                <text
+                  x={x + width / 2}
+                  y={y + height / 2 + 18}
+                  textAnchor="middle"
+                  className="text-[8px] font-bold fill-white pointer-events-none uppercase tracking-wide"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
+                >
+                  {zone.app.split(' ')[0]}
+                </text>
+              )}
+              {/* Occupancy Percentage at bottom */}
               <text
                 x={x + width / 2}
                 y={y + height - 8}
@@ -767,12 +770,44 @@ const LiveZoneOccupancyMap = ({ onZoneClick, highlightedZone }: { onZoneClick: (
 
         {/* Hover Tooltip */}
         {hoveredData && (
-          <div className="absolute bottom-4 left-4 bg-neutral-900/95 backdrop-blur-sm text-white px-3 py-2 rounded shadow-lg text-[10px] font-mono pointer-events-none z-10">
-            <div className="font-bold mb-1">{hoveredData.zoneName}</div>
-            <div className="space-y-0.5 text-[9px]">
-              <div>Dwell: {hoveredData.dwellTime}</div>
-              <div>Occupancy: {hoveredData.occupancy}%</div>
-              <div>Queue: {hoveredData.queueLength}</div>
+          <div className="absolute bottom-4 left-4 bg-neutral-900/95 backdrop-blur-sm text-white px-3 py-2.5 rounded-lg shadow-xl text-[10px] font-mono pointer-events-none z-10 border border-white/10">
+            <div className="font-bold text-[11px] mb-1.5">{hoveredData.zoneName}</div>
+            <div className="space-y-0.5 text-[9px] mb-2">
+              <div className="flex justify-between gap-3">
+                <span className="text-neutral-300">Application:</span>
+                <span className="font-bold text-white">{hoveredData.app}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-neutral-300">Dwell Time:</span>
+                <span className="font-bold text-white">{hoveredData.dwellTime}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-neutral-300">Occupancy:</span>
+                <span className="font-bold" style={{
+                  color: hoveredData.occupancy >= 90 ? "#E7000B" : hoveredData.occupancy >= 75 ? "#EA580C" : "#00A63E"
+                }}>
+                  {hoveredData.occupancy}%
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-neutral-300">Queue:</span>
+                <span className="font-bold text-white">{hoveredData.queueLength} people</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-neutral-300">Camera:</span>
+                <span className="font-bold text-white">{hoveredData.camera}</span>
+              </div>
+            </div>
+            {(hoveredData.status === "critical" || hoveredData.status === "violation") && (
+              <div className="pt-2 border-t border-white/10">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-[#E7000B]" />
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-[#E7000B]">Active Incident</span>
+                </div>
+              </div>
+            )}
+            <div className="mt-2 pt-2 border-t border-white/10 text-[8px] text-neutral-400 text-center">
+              Click to view details
             </div>
           </div>
         )}
@@ -841,26 +876,6 @@ const AtRiskCard = ({
   const borderColor = isViolation ? "#E7000B" : "#EA580C";
   const bgColor = isViolation ? "#FFF0F0" : "#FEEFE7";
 
-  const ActionRow = () => (
-    <div className="flex gap-1.5 mt-2">
-      <button
-        onClick={(e) => { e.stopPropagation(); onView(); }}
-        className="flex-1 py-1 bg-neutral-900 hover:bg-[#00775B] text-white text-[8px] font-bold rounded flex items-center justify-center gap-1 transition-colors"
-      >
-        <Camera className="w-3 h-3" /> View Live
-      </button>
-      <button
-        onClick={onAcknowledge}
-        className={cn(
-          "flex-1 py-1 text-[8px] font-bold rounded flex items-center justify-center gap-1 transition-colors",
-          isAcknowledged ? "bg-[#00A63E] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
-        )}
-      >
-        <Check className="w-3 h-3" /> {isAcknowledged ? "Claimed" : "Acknowledge"}
-      </button>
-    </div>
-  );
-
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -871,7 +886,6 @@ const AtRiskCard = ({
         borderColor: isAcknowledged ? "#E5E7EB" : borderColor,
         backgroundColor: isAcknowledged ? "#F9FAFB" : bgColor,
         boxShadow: !isAcknowledged && isViolation ? `0 0 10px rgba(231,0,11,0.2)` : undefined,
-        animation: !isAcknowledged && isViolation ? `pulse 0.8s cubic-bezier(0.4,0,0.6,1) infinite` : "none",
       }}
       onClick={() => !isAcknowledged && onView()}
     >
@@ -920,7 +934,6 @@ const AtRiskCard = ({
               <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-0">
                 <div className="h-full rounded-full" style={{ width: `${slaPercent}%`, backgroundColor: alertColor }} />
               </div>
-              <ActionRow />
             </>
           );
         })()}
@@ -945,9 +958,8 @@ const AtRiskCard = ({
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="text-[38px] font-mono font-bold text-[#E7000B] leading-none">{String(count || 1).padStart(2, "0")}</div>
                 <div className="text-[9px] text-neutral-600 leading-snug">Unauthorized<br />{count > 1 ? "targets" : "target"} in zone</div>
-                <div className="ml-auto w-2 h-2 bg-[#E7000B] rounded-full animate-ping" />
+                <div className="ml-auto w-2 h-2 bg-[#E7000B] rounded-full" />
               </div>
-              <ActionRow />
             </>
           );
         })()}
@@ -968,7 +980,6 @@ const AtRiskCard = ({
                 <span className="text-[38px] font-mono font-bold text-[#E7000B] leading-none">{violations}</span>
                 <span className="text-[9px] text-neutral-600 mb-1">wrong-way<br />violations</span>
               </div>
-              <ActionRow />
             </>
           );
         })()}
@@ -996,10 +1007,9 @@ const AtRiskCard = ({
                 {remaining <= 0 && <span className="font-bold" style={{ color: alertColor }}> · At limit</span>}
               </div>
               <div className="h-2 bg-neutral-200 rounded-full overflow-hidden mb-0">
-                <div className={cn("h-full rounded-full", pct > 90 ? "animate-pulse" : "")}
+                <div className={cn("h-full rounded-full")}
                   style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: alertColor }} />
               </div>
-              <ActionRow />
             </>
           );
         })()}
@@ -1038,7 +1048,7 @@ const AtRiskZonesSidebar = ({ onViewCamera }: { onViewCamera: (zone: ZoneCardTyp
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5 text-[#E7000B]" />
-          <h3 className="text-[10px] font-bold uppercase tracking-wider text-neutral-700">At-Risk Zones</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-700">At-Risk Zones</h3>
         </div>
         <span className="text-[8px] font-bold bg-[#E7000B] text-white px-1.5 py-0.5 rounded-full">{atRiskZones.length}</span>
       </div>
@@ -1074,7 +1084,7 @@ const CompactZoneCard = ({ onClick, ...zone }: CompactZoneCardProps) => {
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
         "rounded border p-2 group hover:border-[#00775B]/50 transition-all cursor-pointer relative",
-        isViolation && "border-[#E7000B] bg-[#FFE5E7] shadow-[0_0_15px_rgba(231,0,11,0.5)] animate-pulse",
+        isViolation && "border-[#E7000B] bg-[#FFE5E7] shadow-[0_0_15px_rgba(231,0,11,0.5)]",
         zone.status === "stagnant" && "border-[#E19A04] bg-[#FFF7E6]",
         zone.status === "safe" && "border-neutral-200 bg-white"
       )}
@@ -1121,7 +1131,7 @@ const CompactZoneCard = ({ onClick, ...zone }: CompactZoneCardProps) => {
 
       {/* Violation Pulse Indicator */}
       {isViolation && (
-        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#E7000B] rounded-full animate-ping" />
+        <div className="-top-1 -right-1 w-2.5 h-2.5 bg-[#E7000B] rounded-full" />
       )}
     </motion.div>
   );
@@ -1241,126 +1251,198 @@ const IntrusionAlertGrid = () => {
 };
 
 const ZoneDetailModal = ({ zone, open, onClose }: { zone: ZoneCardType | null; open: boolean; onClose: () => void }) => {
-  if (!zone) return null;
+  if (!zone || !open) return null;
+
+  const category = getZoneCategory(zone.app);
+  const isViolation = zone.status === "critical" || zone.status === "violation";
+  const t = isViolation ? STATUS_THEMES.critical : zone.occupancy >= 75 ? STATUS_THEMES.warning : STATUS_THEMES.normal;
 
   return (
-    <Dialog.Root open={open} onOpenChange={onClose}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-5xl max-h-[90vh] bg-white rounded-lg shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300" aria-describedby="zone-detail-description">
-          <div className="flex h-[80vh]">
-            {/* Left: Image */}
-            <div className="w-1/2 bg-neutral-900 relative">
-              <ImageWithFallback 
-                src={zone.image}
-                alt={zone.zoneName}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-4 left-4 bg-neutral-900/90 backdrop-blur-sm text-white px-3 py-1.5 rounded text-xs font-bold uppercase">
-                {zone.camera}
-              </div>
-            </div>
-
-            {/* Right: Info */}
-            <div className="w-1/2 p-6 overflow-y-auto">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <Dialog.Title className="text-xl font-bold text-neutral-900 mb-1">{zone.zoneName}</Dialog.Title>
-                  <Dialog.Description id="zone-detail-description" className="text-sm text-neutral-500">{zone.app}</Dialog.Description>
-                </div>
-                <Dialog.Close className="text-neutral-400 hover:text-neutral-600 transition-colors">
-                  <span className="text-2xl">&times;</span>
-                </Dialog.Close>
-              </div>
-
-              {/* Status Badge */}
-              <div className="mb-6">
-                <span className={cn(
-                  "inline-block px-3 py-1 rounded text-xs font-bold uppercase",
-                  zone.status === "safe" && "bg-[#E5FFEF] text-[#00A63E]",
-                  zone.status === "stagnant" && "bg-[#FEEFE7] text-[#EA580C]",
-                  zone.status === "violation" && "bg-[#FFE5E7] text-[#E7000B]",
-                  zone.status === "critical" && "bg-[#E7000B] text-white"
-                )}>
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-end bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white h-screen w-full max-w-[550px] flex flex-col shadow-2xl animate-in slide-in-from-right duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex flex-col h-full">
+          {/* Compact Identity Header */}
+          <div className="bg-white border-b border-neutral-200 px-5 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <p className="font-bold text-neutral-900 text-base">{zone.zoneName}</p>
+                <span
+                  className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white"
+                  style={{ backgroundColor: t.bar }}
+                >
                   {zone.status}
                 </span>
+                <span className="text-xs text-neutral-400">|</span>
+                <span className="text-xs text-neutral-600">{zone.app}</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-1 hover:bg-neutral-100 rounded transition-colors"
+              >
+                <X className="w-4 h-4 text-neutral-400" />
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-5 space-y-4">
+              {/* Visual Evidence Container */}
+              <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                <div className="relative aspect-[16/9] bg-neutral-900 rounded overflow-hidden">
+                  <ImageWithFallback
+                    src={zone.image}
+                    alt={zone.zoneName}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-3 left-3 bg-neutral-900/90 backdrop-blur-sm text-white px-2 py-1 rounded text-[10px] font-bold uppercase">
+                    {zone.camera}
+                  </div>
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded px-2 py-1">
+                    <div className="w-2 h-2 rounded-full bg-[#00A63E]" />
+                    <span className="text-[10px] text-white font-bold uppercase tracking-wide">Live</span>
+                  </div>
+                </div>
+                {/* Tight 3-Column Metadata Strip */}
+                <div className="mt-3 grid grid-cols-3 gap-3 text-[10px]">
+                  <div className="flex flex-col">
+                    <span className="text-neutral-400 uppercase tracking-wide mb-0.5">Dwell Time</span>
+                    <span className="font-data font-bold text-neutral-900">{zone.dwellTime}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-neutral-400 uppercase tracking-wide mb-0.5">Camera</span>
+                    <span className="font-data font-bold text-neutral-900 truncate">{zone.camera}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-neutral-400 uppercase tracking-wide mb-0.5">Last Update</span>
+                    <span className="font-data font-bold text-neutral-900">{zone.lastIncident || "Now"}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Key Metrics */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-neutral-50 p-4 rounded">
-                  <div className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Occupancy</div>
-                  <div className="text-3xl font-mono font-bold text-[#00775B]">{zone.occupancy}%</div>
-                  <div className="text-xs text-neutral-400 font-mono">{zone.currentCount} / {zone.maxCapacity}</div>
-                </div>
-                <div className="bg-neutral-50 p-4 rounded">
-                  <div className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Avg Dwell Time</div>
-                  <div className="text-3xl font-mono font-bold text-neutral-900">{zone.dwellTime}</div>
-                </div>
-                <div className="bg-neutral-50 p-4 rounded">
-                  <div className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Queue Length</div>
-                  <div className="text-3xl font-mono font-bold text-neutral-900">{zone.queueLength}</div>
-                </div>
-                <div className="bg-neutral-50 p-4 rounded">
-                  <div className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Turnover Rate</div>
-                  <div className="text-3xl font-mono font-bold text-neutral-900">{zone.turnoverRate}/hr</div>
+              {/* Key Metrics Container */}
+              <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider mb-3">Key Metrics</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded p-3 border border-neutral-200">
+                    <div className="text-[10px] text-neutral-400 uppercase tracking-wide mb-1">Occupancy</div>
+                    <div className="text-2xl font-mono font-bold" style={{ color: t.hero }}>
+                      {zone.occupancy}%
+                    </div>
+                    <div className="text-[10px] text-neutral-500 font-mono mt-1">
+                      {zone.currentCount} / {zone.maxCapacity}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded p-3 border border-neutral-200">
+                    <div className="text-[10px] text-neutral-400 uppercase tracking-wide mb-1">Queue Length</div>
+                    <div className="text-2xl font-mono font-bold text-neutral-900">{zone.queueLength}</div>
+                    <div className="text-[10px] text-neutral-500 mt-1">people waiting</div>
+                  </div>
+                  <div className="bg-white rounded p-3 border border-neutral-200">
+                    <div className="text-[10px] text-neutral-400 uppercase tracking-wide mb-1">Avg Dwell</div>
+                    <div className="text-2xl font-mono font-bold text-neutral-900">{zone.dwellTime}</div>
+                    <div className="text-[10px] text-neutral-500 mt-1">per person</div>
+                  </div>
+                  <div className="bg-white rounded p-3 border border-neutral-200">
+                    <div className="text-[10px] text-neutral-400 uppercase tracking-wide mb-1">Turnover</div>
+                    <div className="text-2xl font-mono font-bold text-neutral-900">{zone.turnoverRate}</div>
+                    <div className="text-[10px] text-neutral-500 mt-1">people/hr</div>
+                  </div>
                 </div>
               </div>
 
-              {/* Directional Flow */}
+              {/* Directional Flow (if applicable) */}
               {zone.directionalFlow && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-bold text-neutral-700 mb-3">Directional Flow</h3>
-                  <div className="flex gap-4">
-                    <div className="flex-1 bg-[#E5FFF9] p-3 rounded">
-                      <div className="text-xs text-neutral-600 mb-1">Inbound</div>
+                <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                  <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider mb-3">Directional Flow</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-[#E5FFF9] rounded p-3">
+                      <div className="text-[10px] text-neutral-600 uppercase tracking-wide mb-1">Inbound</div>
                       <div className="text-2xl font-mono font-bold text-[#00775B]">{zone.directionalFlow.inbound}%</div>
                     </div>
-                    <div className="flex-1 bg-neutral-100 p-3 rounded">
-                      <div className="text-xs text-neutral-600 mb-1">Outbound</div>
+                    <div className="bg-white rounded p-3 border border-neutral-200">
+                      <div className="text-[10px] text-neutral-600 uppercase tracking-wide mb-1">Outbound</div>
                       <div className="text-2xl font-mono font-bold text-neutral-700">{zone.directionalFlow.outbound}%</div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Sparkline Chart */}
-              <div>
-                <h3 className="text-sm font-bold text-neutral-700 mb-3">Live Occupancy (Last 20 mins)</h3>
-                <div className="h-32 bg-neutral-50 rounded p-2 min-w-0">
-                  <ResponsiveContainer width="100%" height={112} minHeight={112}>
+              {/* Occupancy Timeline */}
+              <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider mb-3">
+                  Occupancy Timeline (Last 20 min)
+                </div>
+                <div className="bg-white rounded p-2 border border-neutral-200">
+                  <ResponsiveContainer width="100%" height={120}>
                     <LineChart data={zone.sparklineData.map((value, i) => ({ index: i, value, time: `${i * 2}m` }))} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                      <RechartsTooltip 
+                      <RechartsTooltip
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             return (
                               <div className="bg-neutral-900/95 backdrop-blur-sm text-white px-3 py-2 rounded shadow-lg text-xs font-mono">
-                                <div className="font-bold text-[#00775B] mb-1">{payload[0].payload.time} ago</div>
+                                <div className="font-bold mb-1" style={{ color: t.hero }}>{payload[0].payload.time} ago</div>
                                 <div>Occupancy: <span className="font-bold">{payload[0].value}%</span></div>
                               </div>
                             );
                           }
                           return null;
                         }}
-                        cursor={{ stroke: '#64748B', strokeWidth: 1, strokeDasharray: '3 3' }}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="#00775B"
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke={t.spark}
                         strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
+                        dot={{ fill: t.spark, r: 3 }}
+                        activeDot={{ r: 5 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              {/* SLA Information (for queue zones) */}
+              {zone.slaLimit && (
+                <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                  <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider mb-3">SLA Compliance</div>
+                  <div className="bg-white rounded p-3 border border-neutral-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] text-neutral-600">SLA Limit</span>
+                      <span className="text-[11px] font-mono font-bold text-neutral-900">{zone.slaLimit}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-neutral-600">Current Wait</span>
+                      <span className="text-[11px] font-mono font-bold" style={{ color: t.hero }}>{zone.dwellTime}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+
+          {/* Sticky Footer with Action Buttons */}
+          <div className="bg-white border-t border-neutral-200 px-5 py-4">
+            <div className="flex gap-2">
+              <button className="flex-1 h-10 flex items-center justify-center gap-2 bg-white border border-neutral-300 text-neutral-700 rounded text-xs font-bold uppercase tracking-wider hover:bg-neutral-50 transition-colors">
+                <Camera className="w-3.5 h-3.5" />
+                View Live Feed
+              </button>
+              <button className="flex-1 h-10 flex items-center justify-center gap-2 bg-[#00775B] text-white rounded text-xs font-bold uppercase tracking-wider hover:bg-[#009e78] transition-colors">
+                <Settings className="w-3.5 h-3.5" />
+                Configure Zone
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -1861,8 +1943,8 @@ const SLABreachTrend = () => {
               itemStyle={{ color: "#F9FAFB" }}
             />
             <Bar dataKey="breaches" radius={[4, 4, 0, 0]}>
-              {breachData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+              {breachData.map((entry) => (
+                <Cell key={`breach-${entry.day}`} fill={entry.color} />
               ))}
             </Bar>
           </BarChart>
@@ -1906,8 +1988,8 @@ const DwellTimeDistribution = () => {
                 paddingAngle={2}
                 dataKey="value"
               >
-                {distributionData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {distributionData.map((entry) => (
+                  <Cell key={`dwell-${entry.name}`} fill={entry.color} />
                 ))}
               </Pie>
               <RechartsTooltip 

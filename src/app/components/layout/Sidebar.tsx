@@ -3,13 +3,12 @@ import { cn } from "@/app/lib/utils";
 import {
   LayoutDashboard, ShieldAlert, Map, TrendingUp, ShoppingBag,
   Settings, HelpCircle, ChevronDown, ChevronUp, Check,
-  ScanFace, CarFront, Video, ClipboardCheck, MapPin, Fingerprint,
-  Headphones, BarChart3, Shield, MonitorPlay,
+  ScanFace, CarFront, Video, ClipboardCheck, MapPin, Fingerprint, ShieldCheck,
 } from "lucide-react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export type Page =
-  | "dashboard" | "volume" | "incident" | "zone" | "quality" | "identity"
+  | "dashboard" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
   | "facial-recognition" | "license-plates" | "cameras" | "metrics" | "compliance";
 
 interface SidebarProps {
@@ -21,10 +20,10 @@ interface SidebarProps {
 
 // ─── Platform Switcher data ────────────────────────────────────────────────────
 const PLATFORMS = [
-  { id: "vms",       name: "Matrice VMS",       shortcut: "1", icon: MonitorPlay },
-  { id: "analytics", name: "Matrice Analytics", shortcut: "2", icon: BarChart3, active: true },
-  { id: "support",   name: "Matrice Support",   shortcut: "3", icon: Headphones, checked: true },
-  { id: "internal",  name: "Matrice Internal",  shortcut: "4", icon: Shield },
+  { id: "vms",       name: "Matrice VMS",       shortcut: "1", icon: "🎥" },
+  { id: "analytics", name: "Matrice Analytics",  shortcut: "2", icon: "📊", active: true },
+  { id: "support",   name: "Matrice Support",    shortcut: "3", icon: "🎧", checked: true },
+  { id: "internal",  name: "Matrice Internal",   shortcut: "4", icon: "🛡" },
 ];
 
 // ─── Nav items (flat list) ─────────────────────────────────────────────────────
@@ -34,6 +33,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType; badge?: num
   { id: "incident",           label: "Incident Analytics",  icon: ShieldAlert,    badge: 3 },
   { id: "zone",               label: "Zone Analytics",      icon: MapPin },
   { id: "quality",            label: "Quality Analytics",   icon: ShoppingBag },
+  { id: "safety",             label: "Safety Analytics",    icon: ShieldCheck },
   { id: "identity",           label: "Identity Analytics",  icon: Fingerprint },
   { id: "facial-recognition", label: "Facial Recognition",  icon: ScanFace },
   { id: "license-plates",     label: "License Plates",      icon: CarFront },
@@ -87,7 +87,7 @@ const NavTooltip = ({ label, children }: { label: string; children: React.ReactN
 
 // ─── Platform Switcher Popover ─────────────────────────────────────────────────
 const PlatformSwitcher = ({ onClose }: { onClose: () => void }) => (
-  <div className="absolute left-3 right-3 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-md border border-neutral-200 bg-white shadow-2xl">
+  <div className="absolute left-3 top-[calc(100%+6px)] w-56 z-50 bg-white rounded-xl shadow-2xl border border-neutral-100 overflow-hidden">
     <div className="px-3 pt-3 pb-1">
       <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Platforms</p>
     </div>
@@ -101,7 +101,7 @@ const PlatformSwitcher = ({ onClose }: { onClose: () => void }) => (
             p.active ? "bg-[#00775B] text-white" : "text-neutral-700 hover:bg-neutral-50"
           )}
         >
-          <p.icon className={cn("h-4 w-4 shrink-0", p.active ? "text-white" : "text-neutral-500")} />
+          <span className="text-base leading-none">{p.icon}</span>
           <span className="flex-1 text-left">{p.name}</span>
           {p.checked && !p.active && <Check className="w-3.5 h-3.5 text-[#00775B] shrink-0" />}
           <kbd className={cn(
@@ -141,7 +141,7 @@ export const Sidebar = ({ activePage, onPageChange, collapsed = false, noTransit
     <aside className={cn(
       "hidden lg:flex flex-col bg-[#021d18] h-screen fixed left-0 top-0 z-40 border-r border-[#00775B]/15",
       !noTransition && "transition-all duration-300",
-      "overflow-visible",
+      collapsed ? "overflow-visible" : "overflow-hidden",
       collapsed ? "w-14" : "w-56"
     )}>
 

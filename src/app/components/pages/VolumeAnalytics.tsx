@@ -2300,10 +2300,10 @@ export const VolumeAnalytics = ({ persona }: { persona: Persona }) => {
                       
                       {/* Custom Bar with Cell for Alert Logic - Adjusted threshold multiplier to 50 for demo */}
                       <Bar dataKey="peakCount" radius={[4, 4, 0, 0]} barSize={32} isAnimationActive={false}>
-                         {VOLUME_STAFFING_DATA.map((entry, index) => (
-                            <Cell 
-                               key={`cell-${index}`} 
-                               fill={entry.peakCount > (entry.staffingLevel * 50) ? "#F59E0B" : "#00775B"} 
+                         {VOLUME_STAFFING_DATA.map((entry) => (
+                            <Cell
+                               key={`staffing-${entry.hour}`}
+                               fill={entry.peakCount > (entry.staffingLevel * 50) ? "#F59E0B" : "#00775B"}
                             />
                          ))}
                       </Bar>

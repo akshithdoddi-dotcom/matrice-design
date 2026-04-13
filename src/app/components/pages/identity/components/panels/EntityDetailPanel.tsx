@@ -1,471 +1,506 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  AlertTriangle,
-  Ban,
-  Camera,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Download,
-  Eye,
-  Shield,
-  ShieldAlert,
-  Siren,
-  Star,
-  User,
-  UserPlus,
-  Waypoints,
-} from "lucide-react";
-import { cn } from "@/app/lib/utils";
+import { useState } from "react";
 import { SlidePanel } from "./SlidePanel";
-import { IdentityEvidenceMedia } from "../shared/IdentityEvidenceMedia";
-import type { IdentityTerminology } from "../../data/types";
+import { cn } from "@/app/lib/utils";
+import {
+  Shield, ShieldAlert, Star, User, Camera, Clock, MapPin,
+  AlertTriangle, CheckCircle2, XCircle, ChevronRight, Download,
+  UserPlus, Waypoints, Siren, Eye
+} from "lucide-react";
 
-const REAL_FACE_IMAGES = [
-  "https://images.pexels.com/photos/33738484/pexels-photo-33738484.jpeg?cs=srgb&dl=pexels-vika-glitter-392079-33738484.jpg&fm=jpg",
-  "https://images.pexels.com/photos/14801453/pexels-photo-14801453.jpeg?cs=srgb&dl=pexels-kwizera-gadson-14801453.jpg&fm=jpg",
-];
-
-const REAL_LPR_IMAGES = [
-  "https://images.pexels.com/photos/9331863/pexels-photo-9331863.jpeg?cs=srgb&dl=pexels-hasan-albari-1229861-9331863.jpg&fm=jpg",
-  "https://images.pexels.com/photos/10182843/pexels-photo-10182843.jpeg?cs=srgb&dl=pexels-hson-10182843.jpg&fm=jpg",
-];
-
-const MATCHED_FACE_ENTITY = {
-  displayName: "John Smith",
-  secondaryLine: "Engineering · L3 restricted access",
-  listMembership: "WHITELIST" as const,
-  employeeId: "EMP-4821",
-  eventTime: "2026-04-06 · 09:13:22 IST",
-  eventCamera: "Main Lobby · CAM-LB-01",
-  detectionConfidence: 96,
-  matchConfidence: 94.7,
-  journeyMinutes: 20.8,
-  evidence: [
-    { id: "m1", seed: "jsmith-face", imageSrc: REAL_FACE_IMAGES[0], label: "Main Lobby", sublabel: "CAM-LB-01 · 09:13", confidence: 95, frame: "14,402", duration: "8.3s" },
-    { id: "m2", seed: "jsmith-face", imageSrc: REAL_FACE_IMAGES[0], label: "North Entrance", sublabel: "CAM-NE-01 · 09:11", confidence: 96, frame: "14,281", duration: "2.1s" },
-    { id: "m3", seed: "jsmith-face", imageSrc: REAL_FACE_IMAGES[1], label: "South Entrance", sublabel: "CAM-SE-01 · 08:58", confidence: 93, frame: "13,918", duration: "42.0s" },
-    { id: "m4", seed: "jsmith-face", imageSrc: REAL_FACE_IMAGES[1], label: "Parking Garage", sublabel: "CAM-PG-01 · 08:52", confidence: 92, frame: "13,440", duration: "4.2s" },
-  ],
-  stats: [
-    { label: "Department", value: "Engineering" },
-    { label: "Employee ID", value: "EMP-4821", mono: true },
-    { label: "Access level", value: "L3 - Restricted Zones" },
-    { label: "Monthly appearances", value: "312", mono: true },
-  ],
-  alerts: [
-    { id: "a1", label: "Escorted access required", severity: "MEDIUM" as const, timestamp: "09:13:22", status: "ACTIVE" as const },
-    { id: "a2", label: "Unknown at entry resolved", severity: "LOW" as const, timestamp: "08:58:10", status: "RESOLVED" as const },
+// ─── Mock entity data ─────────────────────────────────────────────────────────
+const MOCK_MATCHED_ENTITY = {
+  tracker_id: 47,
+  match_status: "MATCHED" as const,
+  display_name: "John Smith",
+  initials: "JS",
+  metadata: { employee_id: "EMP-4821", department: "Engineering", access_level: "L3 — Restricted Zones" },
+  list_membership: "WHITELIST" as const,
+  last_detection: {
+    timestamp: "2026-04-06 · 09:13:22 IST",
+    camera_id: "CAM-LB-01",
+    camera_label: "Main Lobby",
+    match_confidence: 94.7,
+    detection_confidence: 96.0,
+    duration_in_frame_sec: 8.3,
+    bounding_box: [412, 88, 192, 248],
+    frame_number: "14,402",
+  },
+  enrollment: {
+    enrolled_date: "2025-08-14",
+    enrolled_by: "hr@hq.com",
+    last_seen_before: "2026-04-05 · 17:41 · North Entrance",
+    total_appearances: 312,
+    monthly_appearances: 312,
+  },
+  sighting_history: {
+    today: [
+      { timestamp: "09:13", camera_label: "Main Lobby", camera_id: "CAM-LB-01", confidence: 94.7, duration_sec: 8.3, alerts: ["BLACKLIST_MATCH"], is_current: true },
+      { timestamp: "09:11", camera_label: "North Entrance", camera_id: "CAM-NE-01", confidence: 96.1, duration_sec: 2.1, alerts: [] },
+      { timestamp: "08:58", camera_label: "South Entrance", camera_id: "CAM-SE-01", confidence: 93.2, duration_sec: 42.0, alerts: ["UNKNOWN_AT_ENTRY"] },
+      { timestamp: "08:52", camera_label: "Parking Garage", camera_id: "CAM-PG-01", confidence: 91.8, duration_sec: 4.2, alerts: [], linked_lpr: "KA05MJ4421" },
+    ],
+    yesterday: [
+      { timestamp: "17:41", camera_label: "North Entrance", camera_id: "CAM-NE-01", confidence: 95.3, duration_sec: 3.4, alerts: [] },
+      { timestamp: "08:44", camera_label: "Main Lobby", camera_id: "CAM-LB-01", confidence: 94.1, duration_sec: 5.1, alerts: [] },
+    ],
+  },
+  cross_camera_path: {
+    cameras: ["Parking Garage", "South Entrance", "North Entrance", "Main Lobby"],
+    times: ["08:52", "08:58", "09:11", "09:13"],
+    total_min: 20.8,
+  },
+  linked_alerts: [
+    { id: "evt_001", name: "BLACKLIST MATCH", severity: "CRITICAL" as const, timestamp: "09:13:22", status: "ACTIVE" as const },
+    { id: "evt_002", name: "UNKNOWN AT ENTRY", severity: "MEDIUM" as const, timestamp: "08:58:10", status: "RESOLVED" as const },
   ],
 };
 
-const UNKNOWN_FACE_ENTITY = {
-  displayName: "Unknown #88",
-  secondaryLine: "Recurring unrecognized individual",
-  listMembership: "UNKNOWN" as const,
-  eventTime: "2026-04-06 · 09:13:55 IST",
-  eventCamera: "South Entrance · CAM-SE-01",
-  detectionConfidence: 64,
-  matchConfidence: 61.2,
-  journeyMinutes: 32,
-  evidence: [
-    { id: "u1", seed: "unknown-88", imageSrc: REAL_FACE_IMAGES[1], label: "South Entrance", sublabel: "CAM-SE-01 · 09:13", confidence: 64, frame: "22,810", duration: "42.0s" },
-    { id: "u2", seed: "unknown-88", imageSrc: REAL_FACE_IMAGES[0], label: "Main Lobby", sublabel: "CAM-LB-01 · 08:58", confidence: 61, frame: "22,441", duration: "18.3s" },
-    { id: "u3", seed: "unknown-88", imageSrc: REAL_FACE_IMAGES[1], label: "Service Ramp", sublabel: "CAM-SR-01 · 08:41", confidence: 59, frame: "21,914", duration: "27.1s" },
-    { id: "u4", seed: "unknown-88", imageSrc: REAL_FACE_IMAGES[0], label: "South Entrance", sublabel: "CAM-SE-01 · Yesterday", confidence: 67, frame: "19,100", duration: "21.4s" },
-  ],
-  stats: [
-    { label: "First seen", value: "2026-04-02 · 08:41" },
-    { label: "Days seen", value: "4", mono: true },
-    { label: "Typical window", value: "08:30–09:20" },
-    { label: "Avg dwell", value: "38.2s", mono: true },
-  ],
-  alerts: [
-    { id: "a3", label: "Unknown at entry", severity: "MEDIUM" as const, timestamp: "09:13:55", status: "ACTIVE" as const },
-  ],
-};
-
-const MATCHED_PLATE_ENTITY = {
-  displayName: "KA05 MJ 4421",
-  secondaryLine: "Authorized supplier vehicle · Permit L3",
-  listMembership: "WHITELIST" as const,
-  eventTime: "2026-04-06 · 09:13:22 IST",
-  eventCamera: "Garage Entry A · CAM-GA-01",
-  detectionConfidence: 98,
-  matchConfidence: 96.8,
-  journeyMinutes: 14.4,
-  plateText: "KA05MJ4421",
-  evidence: [
-    { id: "p1", seed: "ka05mj4421", imageSrc: REAL_LPR_IMAGES[0], label: "Garage Entry A", sublabel: "CAM-GA-01 · 09:13", confidence: 97, frame: "7,912", duration: "3.2s", plate: "KA05MJ4421" },
-    { id: "p2", seed: "ka05mj4421", imageSrc: REAL_LPR_IMAGES[0], label: "Parking Ramp", sublabel: "CAM-PR-02 · 09:10", confidence: 96, frame: "7,401", duration: "4.1s", plate: "KA05MJ4421" },
-    { id: "p3", seed: "ka05mj4421", imageSrc: REAL_LPR_IMAGES[1], label: "Loading Bay", sublabel: "CAM-LB-02 · 09:02", confidence: 95, frame: "6,989", duration: "5.4s", plate: "KA05MJ4421" },
-  ],
-  stats: [
-    { label: "Vehicle type", value: "White delivery van" },
-    { label: "Permit ID", value: "PERM-1841", mono: true },
-    { label: "Owner", value: "BluePeak Logistics" },
-    { label: "Visits this month", value: "24", mono: true },
-  ],
-  alerts: [
-    { id: "a4", label: "Authorized vehicle verified", severity: "LOW" as const, timestamp: "09:13:22", status: "ACTIVE" as const },
+const MOCK_UNKNOWN_ENTITY = {
+  tracker_id: 88,
+  match_status: "UNMATCHED" as const,
+  display_name: "Unknown #88",
+  initials: "?",
+  list_membership: "UNKNOWN" as const,
+  recognition_attempt: {
+    best_match_score: 61.2,
+    threshold: 75.0,
+    possible_reasons: ["Person not enrolled in system", "Sub-optimal angle at South Entrance", "Possible partial face occlusion"],
+  },
+  first_seen: "2026-04-02 · 08:41 · South Entrance",
+  appearance_summary: {
+    total_appearances: 11,
+    days_seen: 4,
+    cameras_seen: ["South Entrance (×9)", "Main Lobby (×2)"],
+    avg_detection_confidence: 63.1,
+    avg_dwell_sec: 38.2,
+    typical_time_window: "08:30–09:20",
+    recurring_badge: true,
+  },
+  last_detection: {
+    timestamp: "2026-04-06 · 09:13:55 IST",
+    camera_id: "CAM-SE-01",
+    camera_label: "South Entrance",
+    match_confidence: 0,
+    detection_confidence: 64.0,
+    duration_in_frame_sec: 42.0,
+    bounding_box: [380, 92, 180, 240],
+    frame_number: "22,810",
+  },
+  linked_alerts: [
+    { id: "evt_unk_002", name: "UNKNOWN AT ENTRY", severity: "MEDIUM" as const, timestamp: "09:13:55", status: "ACTIVE" as const },
   ],
 };
 
-const UNKNOWN_PLATE_ENTITY = {
-  displayName: "Unknown Plate #88",
-  secondaryLine: "Unregistered vehicle observed across 3 zones",
-  listMembership: "UNKNOWN" as const,
-  eventTime: "2026-04-06 · 09:13:55 IST",
-  eventCamera: "Garage Entry B · CAM-GB-01",
-  detectionConfidence: 91,
-  matchConfidence: 63,
-  journeyMinutes: 18.7,
-  plateText: "UP80MN1123",
-  evidence: [
-    { id: "up1", seed: "up80mn1123", imageSrc: REAL_LPR_IMAGES[1], label: "Garage Entry B", sublabel: "CAM-GB-01 · 09:13", confidence: 91, frame: "10,284", duration: "3.0s", plate: "UP80MN1123" },
-    { id: "up2", seed: "up80mn1123", imageSrc: REAL_LPR_IMAGES[0], label: "Service Ramp", sublabel: "CAM-SR-01 · 09:05", confidence: 88, frame: "9,882", duration: "4.7s", plate: "UP80MN1123" },
-    { id: "up3", seed: "up80mn1123", imageSrc: REAL_LPR_IMAGES[1], label: "Basement Store", sublabel: "CAM-BS-01 · 08:57", confidence: 86, frame: "9,410", duration: "6.1s", plate: "UP80MN1123" },
-  ],
-  stats: [
-    { label: "First seen", value: "2026-04-04 · 11:12" },
-    { label: "Days seen", value: "3", mono: true },
-    { label: "Gate attempts", value: "5", mono: true },
-    { label: "Best OCR score", value: "63%", mono: true },
-  ],
-  alerts: [
-    { id: "a5", label: "Unregistered plate attempt", severity: "MEDIUM" as const, timestamp: "09:13:55", status: "ACTIVE" as const },
-  ],
-};
-
-const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <div className="border-b border-t border-neutral-100 bg-neutral-50 px-5 py-2">
-    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400">{children}</p>
+// ─── Helper Components ────────────────────────────────────────────────────────
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <div className="px-6 py-2 bg-neutral-50 border-b border-neutral-100">
+    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400">{children}</p>
   </div>
 );
 
-const StatBox = ({
-  label,
-  value,
-  tone = "text-neutral-900",
-}: {
-  label: string;
-  value: string;
-  tone?: string;
-}) => (
-  <div className="rounded-[4px] border border-neutral-200 bg-white px-4 py-3">
-    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">{label}</p>
-    <p className={cn("mt-1.5 text-[24px] leading-none font-black font-data tabular-nums", tone)}>{value}</p>
-  </div>
+const ConfidenceDot = ({ value }: { value: number }) => (
+  <span className={cn(
+    "inline-block w-2 h-2 rounded-full mr-1.5",
+    value >= 90 ? "bg-emerald-500" : value >= 75 ? "bg-amber-500" : "bg-red-500"
+  )} />
 );
 
-const MembershipBadge = ({ membership }: { membership: "WHITELIST" | "UNKNOWN" | "BLACKLIST" | "VIP" }) => {
-  const config = {
-    WHITELIST: { label: "Verified", icon: Shield, className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-    UNKNOWN: { label: "Unknown", icon: User, className: "border-neutral-300 bg-neutral-100 text-neutral-600" },
-    BLACKLIST: { label: "Watchlist", icon: ShieldAlert, className: "border-red-200 bg-red-50 text-red-700" },
-    VIP: { label: "VIP", icon: Star, className: "border-purple-200 bg-purple-50 text-purple-700" },
-  } as const;
-  const Icon = config[membership].icon;
+const AlertBadge = ({ severity, label }: { severity: string; label: string }) => {
+  const styles: Record<string, string> = {
+    CRITICAL: "bg-[#FFE5E7] text-[#E7000B] border border-[#E7000B]/20",
+    HIGH:     "bg-[#FEEFE7] text-[#EA580C] border border-[#EA580C]/20",
+    MEDIUM:   "bg-[#FFF7E6] text-[#E19A04] border border-[#E19A04]/20",
+    LOW:      "bg-[#E5F0FF] text-[#2B7FFF] border border-[#2B7FFF]/20",
+  };
   return (
-    <span className={cn("inline-flex h-6 items-center gap-1 rounded-[2px] border px-2 text-[10px] font-black uppercase tracking-[0.08em]", config[membership].className)}>
-      <Icon className="h-2.5 w-2.5" />
-      {config[membership].label}
+    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", styles[severity] ?? styles.LOW)}>
+      {label}
     </span>
   );
 };
 
+// ─── ListMembership Badge ─────────────────────────────────────────────────────
+const MembershipBadge = ({ membership }: { membership: string }) => {
+  const map: Record<string, { bg: string; text: string; icon: React.ElementType; label: string }> = {
+    WHITELIST: { bg: "bg-[#E5FFEF] border border-[#00A63E]/20", text: "text-[#00A63E]", icon: CheckCircle2, label: "Whitelist" },
+    BLACKLIST: { bg: "bg-[#FFE5E7] border border-[#E7000B]/20", text: "text-[#E7000B]", icon: ShieldAlert, label: "Blacklist" },
+    VIP:       { bg: "bg-purple-100 border border-purple-200", text: "text-purple-700", icon: Star, label: "VIP" },
+    UNKNOWN:   { bg: "bg-neutral-100 border border-neutral-200", text: "text-neutral-600", icon: User, label: "Unknown" },
+  };
+  const cfg = map[membership] ?? map.UNKNOWN;
+  const Icon = cfg.icon;
+  return (
+    <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold", cfg.bg, cfg.text)}>
+      <Icon className="w-3.5 h-3.5" />
+      {cfg.label}
+    </span>
+  );
+};
+
+// ─── Main Panel ───────────────────────────────────────────────────────────────
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   entityType?: "matched" | "unknown" | "blacklist";
   onViewJourney?: () => void;
-  terminology: IdentityTerminology;
 }
 
-export const EntityDetailPanel = ({
-  isOpen,
-  onClose,
-  entityType = "matched",
-  onViewJourney,
-  terminology,
-}: Props) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const isLPR = terminology.isLPR;
-  const isUnknown = entityType === "unknown";
-  const isBlacklist = entityType === "blacklist";
+export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", onViewJourney }: Props) => {
+  const [showOlderToday, setShowOlderToday] = useState(false);
+  const entity = entityType === "unknown" ? MOCK_UNKNOWN_ENTITY : MOCK_MATCHED_ENTITY;
+  const isMatched = entity.match_status === "MATCHED";
+  const isUnknown = entity.match_status === "UNMATCHED";
 
-  const entity = useMemo(() => {
-    const base = isLPR
-      ? (isUnknown ? UNKNOWN_PLATE_ENTITY : MATCHED_PLATE_ENTITY)
-      : (isUnknown ? UNKNOWN_FACE_ENTITY : MATCHED_FACE_ENTITY);
-
-    if (!isBlacklist) return base;
-
-    return {
-      ...base,
-      displayName: isLPR ? "TN09QX7001" : "Watchlist Subject BL-003",
-      secondaryLine: isLPR ? "BOLO vehicle · gate block required" : "Blacklist hit · security response recommended",
-      listMembership: "BLACKLIST" as const,
-      alerts: [
-        { id: "b1", label: isLPR ? "Stolen plate match" : "Blacklist match", severity: "HIGH" as const, timestamp: "09:13:22", status: "ACTIVE" as const },
-      ],
-    };
-  }, [isBlacklist, isLPR, isUnknown]);
-
-  const evidence = entity.evidence;
-  const currentEvidence = evidence[currentIndex] ?? evidence[0];
-
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [entityType, terminology.identityType, isOpen]);
-
-  const nextEvidence = () => setCurrentIndex((v) => (v + 1) % evidence.length);
-  const prevEvidence = () => setCurrentIndex((v) => (v - 1 + evidence.length) % evidence.length);
-
-  const alertSeverityStyle = (severity: "HIGH" | "MEDIUM" | "LOW") => {
-    if (severity === "HIGH") return "border-red-200 bg-red-50/40";
-    if (severity === "MEDIUM") return "border-amber-200 bg-white";
-    return "border-neutral-200 bg-neutral-50/60";
-  };
-
-  const alertIconStyle = (severity: "HIGH" | "MEDIUM" | "LOW") => {
-    if (severity === "HIGH") return "text-red-600";
-    if (severity === "MEDIUM") return "text-amber-500";
-    return "text-neutral-400";
-  };
+  const todaySightings = isMatched
+    ? (MOCK_MATCHED_ENTITY.sighting_history.today.slice(0, showOlderToday ? undefined : 3))
+    : [];
 
   return (
     <SlidePanel
       isOpen={isOpen}
       onClose={onClose}
-      title={isLPR ? "Vehicle Detail" : "Entity Detail"}
-      subtitle={entity.displayName}
-      headerRight={
-        evidence.length > 1 ? (
-          <div className="flex items-center gap-1 rounded-[4px] border border-neutral-200 bg-neutral-50 px-1 py-1">
-            <button onClick={prevEvidence} className="flex h-7 w-7 items-center justify-center rounded-[4px] text-neutral-400 transition-all hover:bg-white hover:text-neutral-800 active:scale-[0.97]">
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-            <span className="min-w-[60px] text-center text-[11px] font-bold text-neutral-600 font-data tabular-nums">
-              {currentIndex + 1} / {evidence.length}
-            </span>
-            <button onClick={nextEvidence} className="flex h-7 w-7 items-center justify-center rounded-[4px] text-neutral-400 transition-all hover:bg-white hover:text-neutral-800 active:scale-[0.97]">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ) : undefined
-      }
+      title="Entity Detail"
+      subtitle={entity.display_name}
     >
-
-      {/* ── Hero: Entity summary + evidence media ── */}
-      <div className="bg-white border-b border-neutral-100 px-5 py-5">
-        <div className="space-y-5">
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-[18px] font-black text-neutral-900 leading-none">{entity.displayName}</h3>
-              <MembershipBadge membership={entity.listMembership} />
-            </div>
-            <p className="mt-1 text-[12px] text-neutral-500">{entity.secondaryLine}</p>
-
-            <div className="mt-3 flex items-center gap-4 text-[11px] text-neutral-400">
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-3 w-3" />
-                <span className="font-data tabular-nums">{entity.eventTime}</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Camera className="h-3 w-3" />
-                {entity.eventCamera}
-              </span>
-            </div>
-
-            {/* Three key stats */}
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <StatBox
-                label={terminology.matchScoreLabel}
-                value={`${entity.matchConfidence}%`}
-                tone={isUnknown ? "text-amber-600" : isBlacklist ? "text-red-700" : "text-emerald-700"}
-              />
-              <StatBox label="Detection" value={`${entity.detectionConfidence}%`} />
-              <StatBox label="Journey" value={`${entity.journeyMinutes}m`} />
-            </div>
-
-            {/* Action buttons */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                onClick={onViewJourney}
-                className="flex h-9 items-center gap-1.5 rounded-[4px] bg-[#00775B] px-4 text-[12px] font-bold text-white transition-all hover:-translate-y-px hover:bg-[#00956D] hover:shadow-[0_0_20px_rgba(0,119,91,0.35)] active:scale-[0.98]"
-              >
-                <Waypoints className="h-3.5 w-3.5" />
-                View Full Journey
-              </button>
-              {isUnknown && (
-                <button className="flex h-9 items-center gap-1.5 rounded-[4px] border border-neutral-200 bg-white px-4 text-[12px] font-bold text-neutral-700 transition-all hover:-translate-y-px hover:border-[#00775B] hover:text-[#00775B] hover:shadow-[0_0_20px_rgba(0,119,91,0.2)] active:scale-[0.98]">
-                  <UserPlus className="h-3.5 w-3.5" />
-                  {isLPR ? "Register vehicle" : "Enroll person"}
-                </button>
-              )}
-              <button className="flex h-9 items-center gap-1.5 rounded-[4px] border border-neutral-200 bg-white px-4 text-[12px] font-bold text-neutral-700 transition-all hover:-translate-y-px hover:border-[#00775B] hover:text-[#00775B] hover:shadow-[0_0_20px_rgba(0,119,91,0.2)] active:scale-[0.98]">
-                <Shield className="h-3.5 w-3.5" />
-                Add to watchlist
-              </button>
-              <button className="flex h-9 items-center gap-1.5 rounded-[4px] border border-red-200 bg-red-50/40 px-4 text-[12px] font-bold text-red-700 transition-all hover:-translate-y-px hover:shadow-[0_0_20px_rgba(231,0,11,0.15)] active:scale-[0.98]">
-                <Siren className="h-3.5 w-3.5" />
-                Escalate
-              </button>
-            </div>
+      {/* ── Hero / Header ────────────────────────────────────────────────── */}
+      <div className="px-6 py-5 border-b border-neutral-100">
+        <div className="flex items-start gap-4">
+          {/* Avatar */}
+          <div className={cn(
+            "w-16 h-16 rounded-xl flex items-center justify-center text-xl font-black shrink-0 border-2",
+            isUnknown
+              ? "bg-neutral-100 border-dashed border-neutral-300 text-neutral-400"
+              : entity.list_membership === "BLACKLIST"
+              ? "bg-[#FFE5E7] border-[#E7000B]/40 text-[#E7000B]"
+              : "bg-[#E5FFF9] border-[#00775B]/30 text-[#00775B]"
+          )}>
+            {entity.initials}
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[192px,1fr]">
-            <IdentityEvidenceMedia
-              kind={isLPR ? "PLATE" : "FACE"}
-              seed={currentEvidence.seed}
-              imageSrc={currentEvidence.imageSrc}
-              confidence={currentEvidence.confidence}
-              label={currentEvidence.label}
-              sublabel={currentEvidence.sublabel}
-              plateText={currentEvidence.plate ?? entity.plateText}
-              size="lg"
-              live
-              className="h-44 w-full max-w-[192px]"
-            />
-            <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
-              {evidence.map((item, index) => (
-                <button
-                  key={item.id}
-                  onClick={() => setCurrentIndex(index)}
-                  className={cn(
-                    "rounded-[4px] border p-0.5 text-left transition-all overflow-hidden",
-                    index === currentIndex
-                      ? "border-[#00775B] shadow-[0_0_0_1px_#00775B]"
-                      : "border-neutral-200 bg-white hover:border-neutral-300"
-                  )}
-                >
-                  <IdentityEvidenceMedia
-                    kind={isLPR ? "PLATE" : "FACE"}
-                    seed={item.seed}
-                    imageSrc={item.imageSrc}
-                    confidence={item.confidence}
-                    plateText={item.plate ?? entity.plateText}
-                    className="h-16 w-full"
-                  />
-                  <div className="px-1 pb-1 pt-1">
-                    <p className="truncate text-[9px] font-bold text-neutral-700">{item.label}</p>
-                    <p className="truncate text-[8px] text-neutral-400 font-data">{item.sublabel}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Current Evidence detail ── */}
-      <SectionLabel>Current Evidence — {currentEvidence.label}</SectionLabel>
-      <div className="px-5 py-4 bg-white border-b border-neutral-100">
-        <div className="grid gap-3 lg:grid-cols-[1.2fr,0.8fr]">
-
-          {/* Capture info */}
-          <div className="rounded-[4px] border border-neutral-200 bg-neutral-50 p-4">
-            <div className="flex items-start justify-between gap-3">
+          {/* Identity info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Selected capture</p>
-                <p className="mt-1 text-[16px] font-bold text-neutral-800">{currentEvidence.label}</p>
-                <p className="text-[11px] text-neutral-500 font-data tabular-nums">{currentEvidence.sublabel}</p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <button className="flex h-8 items-center gap-1.5 rounded-[4px] border border-neutral-200 bg-white px-3 text-[11px] font-bold text-neutral-600 transition-all hover:border-[#00775B] hover:text-[#00775B] active:scale-[0.98]">
-                  <Download className="h-3 w-3" />
-                  HD Crop
-                </button>
-                <button className="flex h-8 items-center gap-1.5 rounded-[4px] border border-neutral-200 bg-white px-3 text-[11px] font-bold text-neutral-600 transition-all hover:border-[#00775B] hover:text-[#00775B] active:scale-[0.98]">
-                  <Eye className="h-3 w-3" />
-                  Full Frame
-                </button>
-              </div>
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-3 border-t border-neutral-200 pt-3">
-              {[
-                { label: "Frame", value: currentEvidence.frame, mono: true },
-                { label: "In-frame duration", value: currentEvidence.duration, mono: true },
-                { label: terminology.eventLabel, value: currentEvidence.label },
-              ].map((item) => (
-                <div key={item.label}>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-neutral-400">{item.label}</p>
-                  <p className={cn("mt-1 text-[13px] font-bold text-neutral-800", item.mono && "font-data tabular-nums")}>{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recognition summary */}
-          <div className="rounded-[4px] border border-neutral-200 bg-white p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Recognition Summary</p>
-            <div className="mt-3 divide-y divide-neutral-100">
-              {entity.stats.map((item) => (
-                <div key={item.label} className="flex items-center justify-between gap-4 py-2 first:pt-0 last:pb-0">
-                  <span className="text-[12px] text-neutral-500">{item.label}</span>
-                  <span className={cn("text-[12px] font-bold text-neutral-900", item.mono && "font-data tabular-nums")}>{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Capture sequence ── */}
-      <SectionLabel>{evidence.length} Captures In Sequence</SectionLabel>
-      <div className="border-b border-neutral-100 bg-white px-5 py-3">
-        <div className="flex flex-wrap gap-1.5">
-          {evidence.map((item, index) => (
-            <button
-              key={item.id}
-              onClick={() => setCurrentIndex(index)}
-              className={cn(
-                "inline-flex h-8 items-center gap-2 rounded-[4px] border px-3 text-[11px] font-bold transition-all",
-                index === currentIndex
-                  ? "border-[#00775B] bg-[#E5FFF9] text-[#00775B]"
-                  : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50"
-              )}
-            >
-              <span className="font-data tabular-nums text-[10px]">{index + 1}</span>
-              <span>{item.label}</span>
-              <span className="font-data tabular-nums text-[10px] text-neutral-400">{item.confidence}%</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Linked alerts ── */}
-      <SectionLabel>Linked Alerts &amp; Actions</SectionLabel>
-      <div className="space-y-2 px-5 py-4 pb-10 bg-white">
-        {entity.alerts.map((alert) => (
-          <div
-            key={alert.id}
-            className={cn(
-              "flex items-start gap-3 rounded-[4px] border p-4",
-              alertSeverityStyle(alert.severity)
-            )}
-          >
-            <AlertTriangle className={cn("mt-0.5 h-4 w-4 shrink-0", alertIconStyle(alert.severity))} />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[13px] font-bold text-neutral-800">{alert.label}</span>
-                {alert.status === "ACTIVE" && (
-                  <span className="inline-flex h-5 items-center rounded-[2px] bg-red-600 px-1.5 text-[9px] font-black uppercase tracking-wide text-white">
-                    Active
-                  </span>
+                <h3 className="text-base font-bold text-neutral-900 leading-tight">{entity.display_name}</h3>
+                {isMatched && (
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    {MOCK_MATCHED_ENTITY.metadata.department} · {MOCK_MATCHED_ENTITY.metadata.access_level}
+                  </p>
                 )}
               </div>
-              <div className="mt-1 flex items-center gap-3 text-[11px] text-neutral-400">
+              <MembershipBadge membership={entity.list_membership} />
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {entity.last_detection.timestamp}
+              </span>
+              <span className="flex items-center gap-1">
+                <Camera className="w-3.5 h-3.5" />
+                {entity.last_detection.camera_label}
+              </span>
+            </div>
+
+            {isMatched && (
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <ConfidenceDot value={MOCK_MATCHED_ENTITY.last_detection.match_confidence} />
+                <span className="font-data tabular-nums text-xs font-semibold text-neutral-700">
+                  {MOCK_MATCHED_ENTITY.last_detection.match_confidence}%
+                </span>
+                <span className="text-[10px] text-neutral-400">match confidence</span>
+              </div>
+            )}
+            {isUnknown && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-200">
+                  ▲ RECURRING
+                </span>
+                <span className="text-[10px] text-neutral-500">Seen 4 days this week</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={onViewJourney}
+            className="flex items-center gap-1.5 h-8 px-3 rounded bg-[#00775B] text-white text-xs font-semibold hover:bg-[#004E3D] transition-colors"
+          >
+            <Waypoints className="w-3.5 h-3.5" />
+            View Full Journey
+          </button>
+          {isUnknown && (
+            <button className="flex items-center gap-1.5 h-8 px-3 rounded border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:border-[#00775B] hover:text-[#00775B] transition-colors">
+              <UserPlus className="w-3.5 h-3.5" />
+              Enroll
+            </button>
+          )}
+          <button className="flex items-center gap-1.5 h-8 px-3 rounded border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:border-neutral-300 transition-colors">
+            <Shield className="w-3.5 h-3.5" />
+            Add to Watchlist
+          </button>
+          <button className="flex items-center gap-1.5 h-8 px-3 rounded border border-red-200 bg-red-50 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">
+            <Siren className="w-3.5 h-3.5" />
+            Escalate
+          </button>
+        </div>
+      </div>
+
+      {/* ── Detection Event ──────────────────────────────────────────────── */}
+      <SectionLabel>Detection Event</SectionLabel>
+      <div className="px-6 py-4 grid grid-cols-2 gap-3 border-b border-neutral-50">
+        {[
+          { label: "Timestamp", value: entity.last_detection.timestamp },
+          { label: "Camera", value: `${entity.last_detection.camera_label} · ${entity.last_detection.camera_id}` },
+          { label: "Frame #", value: entity.last_detection.frame_number },
+          { label: "Duration in Frame", value: `${entity.last_detection.duration_in_frame_sec}s`, mono: true },
+          { label: "Detection Confidence", value: `${entity.last_detection.detection_confidence}%`, mono: true },
+          isMatched
+            ? { label: "Match Confidence", value: `${entity.last_detection.match_confidence}%`, mono: true }
+            : { label: "Best Attempt", value: "61.2% (below 75% threshold)", mono: true },
+        ].map((item) => (
+          <div key={item.label}>
+            <p className="text-[10px] text-neutral-400 uppercase tracking-wide">{item.label}</p>
+            <p className={cn("text-xs text-neutral-800 font-semibold mt-0.5", item.mono && "font-data tabular-nums")}>
+              {item.value}
+            </p>
+          </div>
+        ))}
+        <div className="col-span-2 flex gap-2 pt-1">
+          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-neutral-200 text-[11px] text-neutral-600 hover:border-neutral-300 transition-colors">
+            <Download className="w-3 h-3" />
+            HD Crop
+          </button>
+          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-neutral-200 text-[11px] text-neutral-600 hover:border-neutral-300 transition-colors">
+            <Eye className="w-3 h-3" />
+            Full Frame
+          </button>
+        </div>
+      </div>
+
+      {/* ── Recognition Result ───────────────────────────────────────────── */}
+      <SectionLabel>
+        {isMatched ? "Recognition Result — Matched" : "Recognition Result — No Match"}
+      </SectionLabel>
+      <div className={cn("mx-6 my-4 rounded-lg border p-4",
+        isUnknown ? "bg-neutral-50 border-neutral-200" : "bg-[#E5FFF9] border-[#00775B]/20"
+      )}>
+        {isMatched ? (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Enrolled Name", value: MOCK_MATCHED_ENTITY.display_name },
+              { label: "Employee ID", value: MOCK_MATCHED_ENTITY.metadata.employee_id, mono: true },
+              { label: "Department", value: MOCK_MATCHED_ENTITY.metadata.department },
+              { label: "Access Level", value: MOCK_MATCHED_ENTITY.metadata.access_level },
+              { label: "Match Score", value: `${MOCK_MATCHED_ENTITY.last_detection.match_confidence}%`, mono: true },
+              { label: "Enrolled", value: MOCK_MATCHED_ENTITY.enrollment.enrolled_date },
+              { label: "Last Seen Before", value: MOCK_MATCHED_ENTITY.enrollment.last_seen_before },
+              { label: "Appearances (MTD)", value: String(MOCK_MATCHED_ENTITY.enrollment.monthly_appearances), mono: true },
+            ].map((item) => (
+              <div key={item.label}>
+                <p className="text-[10px] text-neutral-400 uppercase tracking-wide">{item.label}</p>
+                <p className={cn("text-xs text-neutral-800 font-semibold mt-0.5", item.mono && "font-data tabular-nums")}>
+                  {item.value}
+                </p>
+              </div>
+            ))}
+            <div className="col-span-2 pt-1">
+              <button className="text-xs text-[#00775B] font-semibold hover:underline flex items-center gap-1">
+                View enrollment record <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-neutral-700">Status</span>
+              <span className="text-xs font-bold text-neutral-500">Not enrolled — below threshold</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-neutral-500">Best attempt score</span>
+              <span className="font-data tabular-nums text-xs font-bold text-red-600">
+                {MOCK_UNKNOWN_ENTITY.recognition_attempt.best_match_score}%
+                <span className="text-neutral-400 font-normal"> / threshold {MOCK_UNKNOWN_ENTITY.recognition_attempt.threshold}%</span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-neutral-500">First seen</span>
+              <span className="text-xs text-neutral-700">{MOCK_UNKNOWN_ENTITY.first_seen}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-neutral-500">Total appearances</span>
+              <span className="font-data tabular-nums text-xs font-bold text-neutral-700">{MOCK_UNKNOWN_ENTITY.appearance_summary.total_appearances}</span>
+            </div>
+            <div className="pt-1 border-t border-neutral-200">
+              <p className="text-[10px] text-neutral-500 font-semibold mb-1.5">Possible reasons for no match:</p>
+              <ul className="space-y-0.5">
+                {MOCK_UNKNOWN_ENTITY.recognition_attempt.possible_reasons.map((r, i) => (
+                  <li key={i} className="text-[11px] text-neutral-500 flex items-start gap-1.5">
+                    <span className="text-neutral-300 mt-0.5">•</span>{r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button className="flex-1 h-8 rounded bg-[#00775B] text-white text-xs font-semibold hover:bg-[#004E3D] transition-colors flex items-center justify-center gap-1.5">
+                <UserPlus className="w-3.5 h-3.5" /> Enroll this person
+              </button>
+              <button className="flex-1 h-8 rounded border border-neutral-200 text-xs font-semibold text-neutral-700 hover:border-neutral-300 transition-colors">
+                Mark as Known Visitor
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Cross-Camera Path ─────────────────────────────────────────────── */}
+      {isMatched && (
+        <>
+          <SectionLabel>Cross-Camera Path Today</SectionLabel>
+          <div className="px-6 py-4 border-b border-neutral-50">
+            <div className="flex items-center gap-0 flex-wrap mb-2">
+              {MOCK_MATCHED_ENTITY.cross_camera_path.cameras.map((cam, i) => (
+                <span key={cam} className="flex items-center gap-0">
+                  <span className="text-xs bg-neutral-100 text-neutral-700 rounded px-2 py-1 font-semibold border border-neutral-200">
+                    {cam}
+                    <span className="ml-1.5 font-data tabular-nums text-[10px] text-neutral-400">
+                      {MOCK_MATCHED_ENTITY.cross_camera_path.times[i]}
+                    </span>
+                  </span>
+                  {i < MOCK_MATCHED_ENTITY.cross_camera_path.cameras.length - 1 && (
+                    <ChevronRight className="w-3 h-3 text-neutral-400 mx-0.5" />
+                  )}
+                </span>
+              ))}
+            </div>
+            <p className="text-[11px] text-neutral-400 mb-2">
+              Total journey: <span className="font-data tabular-nums font-semibold text-neutral-600">{MOCK_MATCHED_ENTITY.cross_camera_path.total_min} min</span>
+            </p>
+            <button
+              onClick={onViewJourney}
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#00775B] hover:underline"
+            >
+              <Waypoints className="w-3.5 h-3.5" />
+              View Full Journey Map
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ── Sighting History ──────────────────────────────────────────────── */}
+      {isMatched && (
+        <>
+          <SectionLabel>Sighting History — Today</SectionLabel>
+          <div className="px-6 py-3 border-b border-neutral-50">
+            <div className="space-y-2">
+              {todaySightings.map((sighting, i) => (
+                <div key={i} className={cn(
+                  "flex items-start gap-3 px-3 py-2.5 rounded-lg border transition-colors hover:bg-neutral-50",
+                  sighting.is_current ? "bg-[#E5FFF9] border-[#00775B]/20" : "bg-white border-neutral-100"
+                )}>
+                  {/* Avatar placeholder */}
+                  <div className="w-8 h-8 rounded bg-neutral-200 flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4 text-neutral-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-neutral-800">{sighting.camera_label}</span>
+                      <span className="font-data tabular-nums text-[10px] text-neutral-400">{sighting.timestamp}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <ConfidenceDot value={sighting.confidence} />
+                      <span className="font-data tabular-nums text-[10px] text-neutral-500">{sighting.confidence}%</span>
+                      <span className="text-[10px] text-neutral-400">{sighting.camera_id}</span>
+                      <span className="font-data tabular-nums text-[10px] text-neutral-400">{sighting.duration_sec}s</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {sighting.alerts.map((a) => (
+                        <AlertBadge key={a} severity={a.includes("BLACKLIST") ? "CRITICAL" : "MEDIUM"} label={a.replace(/_/g, " ")} />
+                      ))}
+                      {sighting.linked_lpr && (
+                        <span className="text-[10px] bg-blue-50 text-blue-600 border border-blue-200 rounded px-1.5 py-0.5 font-semibold">
+                          LPR: {sighting.linked_lpr} ↗
+                        </span>
+                      )}
+                      {sighting.is_current && (
+                        <span className="text-[10px] bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20 rounded px-1.5 py-0.5 font-bold">CURRENT</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {!showOlderToday && MOCK_MATCHED_ENTITY.sighting_history.today.length > 3 && (
+              <button
+                onClick={() => setShowOlderToday(true)}
+                className="mt-2 text-xs text-[#00775B] font-semibold hover:underline flex items-center gap-1"
+              >
+                +{MOCK_MATCHED_ENTITY.sighting_history.today.length - 3} more today
+              </button>
+            )}
+          </div>
+
+          <SectionLabel>Sighting History — Yesterday</SectionLabel>
+          <div className="px-6 py-3 border-b border-neutral-50">
+            <div className="space-y-2">
+              {MOCK_MATCHED_ENTITY.sighting_history.yesterday.map((sighting, i) => (
+                <div key={i} className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-neutral-100 bg-white hover:bg-neutral-50 transition-colors">
+                  <div className="w-8 h-8 rounded bg-neutral-200 flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4 text-neutral-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-neutral-800">{sighting.camera_label}</span>
+                      <span className="font-data tabular-nums text-[10px] text-neutral-400">{sighting.timestamp}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <ConfidenceDot value={sighting.confidence} />
+                      <span className="font-data tabular-nums text-[10px] text-neutral-500">{sighting.confidence}%</span>
+                      <span className="text-[10px] text-neutral-400">{sighting.camera_id}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button className="mt-2 text-xs text-[#00775B] font-semibold hover:underline">Load older sightings</button>
+          </div>
+        </>
+      )}
+
+      {/* ── Linked Alerts ─────────────────────────────────────────────────── */}
+      <SectionLabel>Linked Alerts & Incidents</SectionLabel>
+      <div className="px-6 py-4 space-y-2 pb-8">
+        {entity.linked_alerts.map((alert) => (
+          <div key={alert.id} className={cn(
+            "flex items-start gap-3 p-3 rounded-lg border",
+            alert.severity === "CRITICAL" ? "bg-[#FFE5E7] border-[#E7000B]/20" :
+            alert.severity === "MEDIUM"   ? "bg-[#FFF7E6] border-[#E19A04]/20" :
+                                            "bg-neutral-50 border-neutral-200"
+          )}>
+            <AlertTriangle className={cn("w-4 h-4 mt-0.5 shrink-0",
+              alert.severity === "CRITICAL" ? "text-[#E7000B]" :
+              alert.severity === "MEDIUM"   ? "text-[#E19A04]" : "text-neutral-500"
+            )} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <AlertBadge severity={alert.severity} label={alert.severity} />
+                <span className="text-xs font-semibold text-neutral-800">{alert.name.replace(/_/g, " ")}</span>
+              </div>
+              <div className="flex items-center gap-3 mt-1 text-[10px] text-neutral-400">
                 <span className="font-data tabular-nums">{alert.timestamp}</span>
-                <span className="capitalize">{alert.status.toLowerCase()}</span>
+                <span className={cn("font-bold", alert.status === "ACTIVE" ? "text-[#E7000B]" : "text-[#00A63E]")}>
+                  {alert.status}
+                </span>
               </div>
             </div>
-            <button className="shrink-0 flex h-8 items-center gap-1.5 rounded-[4px] border border-neutral-200 bg-white px-3 text-[11px] font-bold text-neutral-600 transition-all hover:border-[#00775B] hover:text-[#00775B] active:scale-[0.98]">
-              <Ban className="h-3 w-3" />
-              Acknowledge
-            </button>
+            {alert.status === "ACTIVE" && (
+              <button className="h-7 px-2.5 rounded border border-[#E7000B]/30 text-[10px] font-bold text-[#E7000B] hover:bg-[#E7000B]/10 transition-colors shrink-0">
+                Acknowledge
+              </button>
+            )}
           </div>
         ))}
       </div>

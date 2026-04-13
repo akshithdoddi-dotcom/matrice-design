@@ -1,574 +1,1987 @@
-import { useState, useEffect } from "react";
-import { ALL_INCIDENTS, Incident, SEVERITY_DISTRIBUTION, INCIDENT_TIMELINE, RESOLVED_INCIDENTS_LIST, SLA_DISTRIBUTION_DATA } from "@/app/data/mockData";
-import { IncidentCard } from "@/app/components/dashboard/IncidentCard";
+import { useState, useRef } from "react";
 import { Persona } from "../dashboard/PersonaSwitcher";
-import { ShieldCheck, AlertTriangle, TrendingDown, Clock, Activity, CheckCircle2, History, Video, VideoOff, Timer } from "lucide-react";
+import { AlertTriangle, Clock, Timer, TrendingDown, CheckCircle2, Video, ChevronDown, ChevronRight, Flame, Hand, Shield, AlertCircle, Play, Search, X, ChevronLeft } from "lucide-react";
 import { cn } from "@/app/lib/utils";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine, BarChart, Bar } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from "recharts";
 import { AnalyticsHeader } from "./AnalyticsHeader";
-import { MonitoringStaffTriageDashboard } from "./MonitoringStaffTriageDashboard";
-import { AnalyticsIncidentCard, AnalyticsIncident } from "./AnalyticsIncidentCard";
-import { ChevronDown } from "lucide-react";
 
-function useGridColumns() {
-  const [columns, setColumns] = useState(4); 
+// Mock data for incident analytics
+const PERFORMANCE_METRICS = {
+  totalIncidents: 142,
+  totalIncidentsChange: -8, // percentage
+  mtta: 15.2, // seconds
+  mttaTarget: 20, // seconds (target)
+  mttaChange: -3, // seconds (negative = faster)
+  mttr: 6.75, // minutes
+  mttrSLA: 8.0, // minutes (target)
+  falsePositiveRate: 4.2, // percentage
+  falsePositiveTarget: 5.0 // percentage
+};
 
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      // Adjust columns based on sidebar presence (approx 250px)
-      if (width >= 1536) setColumns(4); 
-      else if (width >= 1280) setColumns(3); 
-      else if (width >= 1024) setColumns(2); 
-      else if (width >= 640) setColumns(1); 
-      else setColumns(1);
-    };
+const PEAK_HOUR_DATA = [
+  { hour: "00:00", count: 2 },
+  { hour: "02:00", count: 1 },
+  { hour: "04:00", count: 3 },
+  { hour: "06:00", count: 8 },
+  { hour: "08:00", count: 24 },
+  { hour: "10:00", count: 18 },
+  { hour: "12:00", count: 15 },
+  { hour: "14:00", count: 12 },
+  { hour: "16:00", count: 20 },
+  { hour: "18:00", count: 22 },
+  { hour: "20:00", count: 11 },
+  { hour: "22:00", count: 6 },
+];
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+const SEVERITY_DONUT_DATA = [
+  { name: "Critical", value: 12, color: "#E7000B", severity: "critical" },
+  { name: "High", value: 28, color: "#EA580C", severity: "high" },
+  { name: "Medium", value: 45, color: "#E19A04", severity: "medium" },
+  { name: "Low", value: 57, color: "#2B7FFF", severity: "low" },
+];
 
-  return columns;
+const TOP_ZONES_DATA = [
+  { zone: "Warehouse A", count: 34 },
+  { zone: "Main Entrance", count: 28 },
+  { zone: "Parking Lot B", count: 22 },
+  { zone: "Assembly Line 3", count: 19 },
+  { zone: "North Fence", count: 15 },
+  { zone: "Loading Bay 1", count: 13 },
+  { zone: "Server Room", count: 11 },
+  { zone: "Cafeteria", count: 9 },
+  { zone: "South Gate", count: 8 },
+  { zone: "Lobby Area", count: 7 },
+  { zone: "R&D Lab 2", count: 6 },
+  { zone: "Storage Unit 4", count: 5 },
+];
+
+const SEVERITY_DISTRIBUTION = [
+  { name: "Critical", value: 12, color: "#E7000B" },
+  { name: "High", value: 28, color: "#EA580C" },
+  { name: "Medium", value: 45, color: "#E19A04" },
+  { name: "Low", value: 57, color: "#2B7FFF" },
+];
+
+const STAFF_LEADERBOARD = [
+  { name: "Sarah Chen", avgResponseTime: 12.3, incidents: 45, onTimeRate: 98 },
+  { name: "Mike Rodriguez", avgResponseTime: 14.8, incidents: 38, onTimeRate: 95 },
+  { name: "Admin User", avgResponseTime: 15.2, incidents: 32, onTimeRate: 94 },
+  { name: "Emma Thompson", avgResponseTime: 18.5, incidents: 27, onTimeRate: 89 },
+];
+
+const SYSTEM_THROUGHPUT = {
+  totalEvents: 2847,
+  flaggedIncidents: 142,
+  throughputRate: 5.0, // percentage
+  aiAccuracy: 95.8, // percentage
+  processingTime: 0.3, // seconds average
+};
+
+const COMPLIANCE_METRICS = {
+  auditScore: 92.5, // percentage
+  protocolCompliance: 89, // percentage
+  documentationComplete: 94, // percentage
+  slaCompliance: 87, // percentage
+};
+
+interface IncidentTimeline {
+  incidentId: string;
+  title: string;
+  zone: string;
+  application: string;
+  severity: "critical" | "high" | "medium" | "low";
+  startTime: string;
+  startHour: string;
+  acknowledgeTime: string | null;
+  actionTime: string | null;
+  endTime: string | null;
+  resolveTime: string | null;
+  acknowledgeGapSeconds: number | null;
+  resolveGapSeconds: number | null;
+  totalDurationSeconds: number;
+  acknowledgedBy: string | null;
+  validationStatus: "confirmed" | "false-positive" | "under-review" | null;
+  staffNote: string | null;
+  hasVideoClip: boolean;
+  protocolStepsCompleted: number;
+  protocolStepsTotal: number;
+  assignedTo: string | null;
+  deviceName: string;
+  duration: string;
 }
 
-export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
-  const gridColumns = useGridColumns();
-  const [sortBy, setSortBy] = useState<"severity" | "time" | "confidence">("severity");
-  const [selectedIncidents, setSelectedIncidents] = useState<string[]>([]);
-  const [filterZone, setFilterZone] = useState<string>("all");
-  const [filterApplication, setFilterApplication] = useState<string>("all");
-  const [groupByType, setGroupByType] = useState(false);
+const INCIDENT_TIMELINES: IncidentTimeline[] = [
+  {
+    incidentId: "INC-3051",
+    title: "Fire Detection",
+    zone: "Warehouse A",
+    application: "Fire Safety",
+    severity: "critical",
+    startTime: "14:23:00",
+    startHour: "14:00",
+    acknowledgeTime: "14:23:15",
+    actionTime: "14:23:45",
+    endTime: "14:28:00",
+    resolveTime: "14:29:00",
+    acknowledgeGapSeconds: 15,
+    resolveGapSeconds: 345,
+    totalDurationSeconds: 360,
+    acknowledgedBy: "Admin User",
+    validationStatus: "confirmed",
+    staffNote: "Fire suppression system activated. Area evacuated successfully.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 5,
+    protocolStepsTotal: 5,
+    assignedTo: "Sarah Chen",
+    deviceName: "CAM-WH-A-01",
+    duration: "6m 0s",
+  },
+  {
+    incidentId: "INC-3052",
+    title: "Tailgating Detection",
+    zone: "Main Entrance",
+    application: "Access Control",
+    severity: "high",
+    startTime: "09:15:22",
+    startHour: "08:00",
+    acknowledgeTime: "09:15:28",
+    actionTime: "09:15:50",
+    endTime: "09:16:10",
+    resolveTime: "09:16:45",
+    acknowledgeGapSeconds: 6,
+    resolveGapSeconds: 83,
+    totalDurationSeconds: 83,
+    acknowledgedBy: "Security Team A",
+    validationStatus: "confirmed",
+    staffNote: "Second individual denied by security guard. Badge verification completed.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 4,
+    protocolStepsTotal: 4,
+    assignedTo: "Michael Torres",
+    deviceName: "CAM-ENT-MAIN-01",
+    duration: "1m 23s",
+  },
+  {
+    incidentId: "INC-3053",
+    title: "PPE Violation",
+    zone: "Assembly Line 3",
+    application: "Safety Compliance",
+    severity: "medium",
+    startTime: "11:42:15",
+    startHour: "10:00",
+    acknowledgeTime: "11:43:30",
+    actionTime: "11:44:00",
+    endTime: "11:45:00",
+    resolveTime: "11:45:15",
+    acknowledgeGapSeconds: 75,
+    resolveGapSeconds: 180,
+    totalDurationSeconds: 180,
+    acknowledgedBy: "Safety Officer",
+    validationStatus: "confirmed",
+    staffNote: "Worker reminded of helmet requirement. Complied immediately.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 3,
+    assignedTo: "David Kim",
+    deviceName: "CAM-ASM-L3-02",
+    duration: "3m 0s",
+  },
+  {
+    incidentId: "INC-3054",
+    title: "Smoke Detection",
+    zone: "Parking Lot B",
+    application: "Fire Safety",
+    severity: "high",
+    startTime: "16:08:00",
+    startHour: "16:00",
+    acknowledgeTime: "16:08:22",
+    actionTime: "16:09:00",
+    endTime: "16:09:30",
+    resolveTime: "16:10:00",
+    acknowledgeGapSeconds: 22,
+    resolveGapSeconds: 120,
+    totalDurationSeconds: 120,
+    acknowledgedBy: "Monitoring Staff",
+    validationStatus: "false-positive",
+    staffNote: "False alarm. Steam from nearby HVAC vent misidentified as smoke.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 2,
+    protocolStepsTotal: 4,
+    assignedTo: "Emma Rodriguez",
+    deviceName: "CAM-PK-B-03",
+    duration: "2m 0s",
+  },
+  {
+    incidentId: "INC-3055",
+    title: "Unauthorized Access",
+    zone: "Server Room",
+    application: "Intrusion Detection",
+    severity: "critical",
+    startTime: "03:12:45",
+    startHour: "02:00",
+    acknowledgeTime: null,
+    actionTime: null,
+    endTime: "03:15:00",
+    resolveTime: null,
+    acknowledgeGapSeconds: null,
+    resolveGapSeconds: null,
+    totalDurationSeconds: 135,
+    acknowledgedBy: null,
+    validationStatus: "under-review",
+    staffNote: null,
+    hasVideoClip: true,
+    protocolStepsCompleted: 0,
+    protocolStepsTotal: 6,
+    assignedTo: null,
+    deviceName: "CAM-SRV-RM-01",
+    duration: "2m 15s",
+  },
+  {
+    incidentId: "INC-3056",
+    title: "Slip & Fall Risk",
+    zone: "Cafeteria",
+    application: "Safety Compliance",
+    severity: "medium",
+    startTime: "12:30:00",
+    startHour: "12:00",
+    acknowledgeTime: "12:31:15",
+    actionTime: "12:32:00",
+    endTime: "12:35:00",
+    resolveTime: "12:36:00",
+    acknowledgeGapSeconds: 75,
+    resolveGapSeconds: 360,
+    totalDurationSeconds: 360,
+    acknowledgedBy: "Facilities Team",
+    validationStatus: "confirmed",
+    staffNote: "Spill cleaned up. Wet floor sign placed.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 3,
+    assignedTo: "James Wilson",
+    deviceName: "CAM-CAF-01",
+    duration: "6m 0s",
+  },
+  {
+    incidentId: "INC-3057",
+    title: "Equipment Malfunction",
+    zone: "Warehouse A",
+    application: "Equipment Safety",
+    severity: "high",
+    startTime: "08:45:30",
+    startHour: "08:00",
+    acknowledgeTime: "08:45:38",
+    actionTime: "08:46:15",
+    endTime: "08:50:00",
+    resolveTime: "08:51:00",
+    acknowledgeGapSeconds: 8,
+    resolveGapSeconds: 330,
+    totalDurationSeconds: 330,
+    acknowledgedBy: "Maintenance Lead",
+    validationStatus: "confirmed",
+    staffNote: "Forklift sensor triggered. Machine shut down for inspection.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 5,
+    protocolStepsTotal: 5,
+    assignedTo: "Maria Garcia",
+    deviceName: "CAM-WH-A-03",
+    duration: "5m 30s",
+  },
+  {
+    incidentId: "INC-3058",
+    title: "Perimeter Breach",
+    zone: "North Fence",
+    application: "Intrusion Detection",
+    severity: "critical",
+    startTime: "22:15:00",
+    startHour: "22:00",
+    acknowledgeTime: "22:15:12",
+    actionTime: "22:15:45",
+    endTime: "22:18:30",
+    resolveTime: "22:19:00",
+    acknowledgeGapSeconds: 12,
+    resolveGapSeconds: 240,
+    totalDurationSeconds: 240,
+    acknowledgedBy: "Night Security",
+    validationStatus: "confirmed",
+    staffNote: "Wildlife (deer) triggered motion sensor. Perimeter secured.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 6,
+    protocolStepsTotal: 6,
+    assignedTo: "Robert Johnson",
+    deviceName: "CAM-FEN-N-04",
+    duration: "4m 0s",
+  },
+  {
+    incidentId: "INC-3059",
+    title: "Crowd Formation",
+    zone: "Main Entrance",
+    application: "Crowd Detection",
+    severity: "medium",
+    startTime: "17:30:22",
+    startHour: "16:00",
+    acknowledgeTime: "17:31:45",
+    actionTime: "17:32:15",
+    endTime: "17:35:00",
+    resolveTime: "17:35:30",
+    acknowledgeGapSeconds: 83,
+    resolveGapSeconds: 308,
+    totalDurationSeconds: 308,
+    acknowledgedBy: "Security Manager",
+    validationStatus: "confirmed",
+    staffNote: "Shift change caused temporary crowding. Dispersed naturally.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 3,
+    assignedTo: "Lisa Park",
+    deviceName: "CAM-ENT-MAIN-02",
+    duration: "5m 8s",
+  },
+  {
+    incidentId: "INC-3060",
+    title: "Vehicle Speeding",
+    zone: "Parking Lot B",
+    application: "Traffic Safety",
+    severity: "low",
+    startTime: "10:22:15",
+    startHour: "10:00",
+    acknowledgeTime: "10:23:00",
+    actionTime: "10:25:00",
+    endTime: "10:26:00",
+    resolveTime: "10:27:00",
+    acknowledgeGapSeconds: 45,
+    resolveGapSeconds: 285,
+    totalDurationSeconds: 285,
+    acknowledgedBy: "Parking Monitor",
+    validationStatus: "confirmed",
+    staffNote: "Driver identified and warned about speed limit.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 4,
+    protocolStepsTotal: 4,
+    assignedTo: "Tom Harris",
+    deviceName: "CAM-PK-B-05",
+    duration: "4m 45s",
+  },
+  {
+    incidentId: "INC-3061",
+    title: "Restricted Area Entry",
+    zone: "Server Room",
+    application: "Access Control",
+    severity: "high",
+    startTime: "15:10:30",
+    startHour: "14:00",
+    acknowledgeTime: "15:10:42",
+    actionTime: "15:11:15",
+    endTime: "15:13:00",
+    resolveTime: "15:14:00",
+    acknowledgeGapSeconds: 12,
+    resolveGapSeconds: 210,
+    totalDurationSeconds: 210,
+    acknowledgedBy: "IT Security",
+    validationStatus: "confirmed",
+    staffNote: "Unauthorized badge swipe. Employee escorted out.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 5,
+    protocolStepsTotal: 5,
+    assignedTo: "Alex Chen",
+    deviceName: "CAM-SRV-RM-02",
+    duration: "3m 30s",
+  },
+  {
+    incidentId: "INC-3062",
+    title: "Fire Alarm Test",
+    zone: "Assembly Line 3",
+    application: "Fire Safety",
+    severity: "low",
+    startTime: "09:00:00",
+    startHour: "08:00",
+    acknowledgeTime: "09:00:05",
+    actionTime: "09:00:30",
+    endTime: "09:05:00",
+    resolveTime: "09:05:30",
+    acknowledgeGapSeconds: 5,
+    resolveGapSeconds: 330,
+    totalDurationSeconds: 330,
+    acknowledgedBy: "Fire Safety Team",
+    validationStatus: "confirmed",
+    staffNote: "Scheduled weekly alarm test. All systems functional.",
+    hasVideoClip: false,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 3,
+    assignedTo: "Fire Warden",
+    deviceName: "CAM-ASM-L3-01",
+    duration: "5m 30s",
+  },
+  {
+    incidentId: "INC-3063",
+    title: "Loitering Detected",
+    zone: "North Fence",
+    application: "Intrusion Detection",
+    severity: "medium",
+    startTime: "20:45:15",
+    startHour: "20:00",
+    acknowledgeTime: "20:46:30",
+    actionTime: "20:47:00",
+    endTime: "20:50:00",
+    resolveTime: "20:51:00",
+    acknowledgeGapSeconds: 75,
+    resolveGapSeconds: 345,
+    totalDurationSeconds: 345,
+    acknowledgedBy: "Night Patrol",
+    validationStatus: "confirmed",
+    staffNote: "Individuals moved along. No breach attempted.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 4,
+    protocolStepsTotal: 4,
+    assignedTo: "Security B",
+    deviceName: "CAM-FEN-N-02",
+    duration: "5m 45s",
+  },
+  {
+    incidentId: "INC-3064",
+    title: "Equipment Left Unattended",
+    zone: "Warehouse A",
+    application: "Safety Compliance",
+    severity: "medium",
+    startTime: "13:20:00",
+    startHour: "12:00",
+    acknowledgeTime: "13:21:10",
+    actionTime: "13:22:00",
+    endTime: "13:25:00",
+    resolveTime: "13:26:00",
+    acknowledgeGapSeconds: 70,
+    resolveGapSeconds: 360,
+    totalDurationSeconds: 360,
+    acknowledgedBy: "Floor Supervisor",
+    validationStatus: "confirmed",
+    staffNote: "Forklift left running. Operator located and reminded of protocols.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 3,
+    assignedTo: "Warehouse Manager",
+    deviceName: "CAM-WH-A-05",
+    duration: "6m 0s",
+  },
+  {
+    incidentId: "INC-3065",
+    title: "Emergency Exit Blocked",
+    zone: "Assembly Line 3",
+    application: "Fire Safety",
+    severity: "high",
+    startTime: "14:15:30",
+    startHour: "14:00",
+    acknowledgeTime: "14:15:45",
+    actionTime: "14:16:30",
+    endTime: "14:20:00",
+    resolveTime: "14:21:00",
+    acknowledgeGapSeconds: 15,
+    resolveGapSeconds: 330,
+    totalDurationSeconds: 330,
+    acknowledgedBy: "Safety Officer",
+    validationStatus: "confirmed",
+    staffNote: "Pallets blocking emergency door. Immediate clearance ordered.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 5,
+    protocolStepsTotal: 5,
+    assignedTo: "Safety Lead",
+    deviceName: "CAM-ASM-L3-04",
+    duration: "5m 30s",
+  },
+  {
+    incidentId: "INC-3066",
+    title: "Smoke in Break Room",
+    zone: "Cafeteria",
+    application: "Fire Safety",
+    severity: "critical",
+    startTime: "11:05:00",
+    startHour: "10:00",
+    acknowledgeTime: "11:05:08",
+    actionTime: "11:05:30",
+    endTime: "11:10:00",
+    resolveTime: "11:11:00",
+    acknowledgeGapSeconds: 8,
+    resolveGapSeconds: 360,
+    totalDurationSeconds: 360,
+    acknowledgedBy: "Building Manager",
+    validationStatus: "confirmed",
+    staffNote: "Microwave fire. Extinguished immediately. Area ventilated.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 6,
+    protocolStepsTotal: 6,
+    assignedTo: "Emergency Team",
+    deviceName: "CAM-CAF-02",
+    duration: "6m 0s",
+  },
+  {
+    incidentId: "INC-3067",
+    title: "Unauthorized Vehicle",
+    zone: "Parking Lot B",
+    application: "Access Control",
+    severity: "medium",
+    startTime: "07:30:15",
+    startHour: "06:00",
+    acknowledgeTime: "07:31:45",
+    actionTime: "07:33:00",
+    endTime: "07:40:00",
+    resolveTime: "07:42:00",
+    acknowledgeGapSeconds: 90,
+    resolveGapSeconds: 705,
+    totalDurationSeconds: 705,
+    acknowledgedBy: "Parking Security",
+    validationStatus: "confirmed",
+    staffNote: "Vehicle without valid permit. Owner contacted and vehicle removed.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 4,
+    protocolStepsTotal: 4,
+    assignedTo: "Parking Manager",
+    deviceName: "CAM-PK-B-01",
+    duration: "11m 45s",
+  },
+  {
+    incidentId: "INC-3068",
+    title: "Chemical Spill Alert",
+    zone: "Assembly Line 3",
+    application: "Safety Compliance",
+    severity: "critical",
+    startTime: "16:42:00",
+    startHour: "16:00",
+    acknowledgeTime: "16:42:10",
+    actionTime: "16:42:45",
+    endTime: "16:50:00",
+    resolveTime: "16:52:00",
+    acknowledgeGapSeconds: 10,
+    resolveGapSeconds: 600,
+    totalDurationSeconds: 600,
+    acknowledgedBy: "Hazmat Team",
+    validationStatus: "confirmed",
+    staffNote: "Small coolant leak. Contained and cleaned per safety protocols.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 6,
+    protocolStepsTotal: 6,
+    assignedTo: "Safety Officer",
+    deviceName: "CAM-ASM-L3-03",
+    duration: "10m 0s",
+  },
+  {
+    incidentId: "INC-3069",
+    title: "Fence Damage Detected",
+    zone: "North Fence",
+    application: "Intrusion Detection",
+    severity: "high",
+    startTime: "06:15:30",
+    startHour: "06:00",
+    acknowledgeTime: "06:16:00",
+    actionTime: "06:18:00",
+    endTime: "06:25:00",
+    resolveTime: "06:27:00",
+    acknowledgeGapSeconds: 30,
+    resolveGapSeconds: 690,
+    totalDurationSeconds: 690,
+    acknowledgedBy: "Maintenance",
+    validationStatus: "confirmed",
+    staffNote: "Wind damage to section 7. Temporary repair completed, work order issued.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 4,
+    protocolStepsTotal: 5,
+    assignedTo: "Facilities Team",
+    deviceName: "CAM-FEN-N-01",
+    duration: "11m 30s",
+  },
+  {
+    incidentId: "INC-3070",
+    title: "Worker Without Badge",
+    zone: "Main Entrance",
+    application: "Access Control",
+    severity: "medium",
+    startTime: "08:10:00",
+    startHour: "08:00",
+    acknowledgeTime: "08:10:22",
+    actionTime: "08:11:00",
+    endTime: "08:15:00",
+    resolveTime: "08:16:00",
+    acknowledgeGapSeconds: 22,
+    resolveGapSeconds: 360,
+    totalDurationSeconds: 360,
+    acknowledgedBy: "Reception",
+    validationStatus: "confirmed",
+    staffNote: "Employee forgot badge at home. Temporary pass issued.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 3,
+    assignedTo: "Security A",
+    deviceName: "CAM-ENT-MAIN-03",
+    duration: "6m 0s",
+  },
+  {
+    incidentId: "INC-3071",
+    title: "Electrical Panel Alert",
+    zone: "Server Room",
+    application: "Equipment Safety",
+    severity: "critical",
+    startTime: "19:30:00",
+    startHour: "18:00",
+    acknowledgeTime: "19:30:18",
+    actionTime: "19:31:00",
+    endTime: "19:40:00",
+    resolveTime: "19:42:00",
+    acknowledgeGapSeconds: 18,
+    resolveGapSeconds: 720,
+    totalDurationSeconds: 720,
+    acknowledgedBy: "Facilities Manager",
+    validationStatus: "confirmed",
+    staffNote: "Overheating detected. Circuit breaker tripped. Cooling restored.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 5,
+    protocolStepsTotal: 5,
+    assignedTo: "Electrical Team",
+    deviceName: "CAM-SRV-RM-03",
+    duration: "12m 0s",
+  },
+  {
+    incidentId: "INC-3072",
+    title: "Wet Floor Hazard",
+    zone: "Cafeteria",
+    application: "Safety Compliance",
+    severity: "low",
+    startTime: "12:45:00",
+    startHour: "12:00",
+    acknowledgeTime: "12:45:30",
+    actionTime: "12:46:00",
+    endTime: "12:50:00",
+    resolveTime: "12:51:00",
+    acknowledgeGapSeconds: 30,
+    resolveGapSeconds: 360,
+    totalDurationSeconds: 360,
+    acknowledgedBy: "Janitorial Staff",
+    validationStatus: "confirmed",
+    staffNote: "Water leak from dispenser. Area cordoned and cleaned.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 3,
+    assignedTo: "Facilities",
+    deviceName: "CAM-CAF-03",
+    duration: "6m 0s",
+  },
+  {
+    incidentId: "INC-3073",
+    title: "Suspicious Package",
+    zone: "Main Entrance",
+    application: "Intrusion Detection",
+    severity: "high",
+    startTime: "10:05:00",
+    startHour: "10:00",
+    acknowledgeTime: "10:05:15",
+    actionTime: "10:06:00",
+    endTime: "10:15:00",
+    resolveTime: "10:18:00",
+    acknowledgeGapSeconds: 15,
+    resolveGapSeconds: 780,
+    totalDurationSeconds: 780,
+    acknowledgedBy: "Security Chief",
+    validationStatus: "false-positive",
+    staffNote: "Unattended bag belonged to visitor. Owner located and identified.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 4,
+    protocolStepsTotal: 5,
+    assignedTo: "Security Team",
+    deviceName: "CAM-ENT-MAIN-04",
+    duration: "13m 0s",
+  },
+  {
+    incidentId: "INC-3074",
+    title: "Loading Dock Violation",
+    zone: "Warehouse A",
+    application: "Safety Compliance",
+    severity: "medium",
+    startTime: "14:50:00",
+    startHour: "14:00",
+    acknowledgeTime: "14:51:05",
+    actionTime: "14:52:00",
+    endTime: "14:55:00",
+    resolveTime: "14:56:00",
+    acknowledgeGapSeconds: 65,
+    resolveGapSeconds: 360,
+    totalDurationSeconds: 360,
+    acknowledgedBy: "Dock Supervisor",
+    validationStatus: "confirmed",
+    staffNote: "Truck parked in restricted zone. Driver instructed to relocate.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 3,
+    assignedTo: "Loading Manager",
+    deviceName: "CAM-WH-A-06",
+    duration: "6m 0s",
+  },
+  {
+    incidentId: "INC-3075",
+    title: "Motion After Hours",
+    zone: "Assembly Line 3",
+    application: "Intrusion Detection",
+    severity: "low",
+    startTime: "23:30:00",
+    startHour: "22:00",
+    acknowledgeTime: "23:30:45",
+    actionTime: "23:32:00",
+    endTime: "23:35:00",
+    resolveTime: "23:36:00",
+    acknowledgeGapSeconds: 45,
+    resolveGapSeconds: 360,
+    totalDurationSeconds: 360,
+    acknowledgedBy: "Night Security",
+    validationStatus: "false-positive",
+    staffNote: "Cleaning crew working late. Verified with supervisor.",
+    hasVideoClip: true,
+    protocolStepsCompleted: 3,
+    protocolStepsTotal: 4,
+    assignedTo: "Night Watch",
+    deviceName: "CAM-ASM-L3-05",
+    duration: "6m 0s",
+  },
+];
 
-  // Generate enhanced incidents for analytics
-  const generateAnalyticsIncidents = (): AnalyticsIncident[] => {
-    return ALL_INCIDENTS.slice(0, 12).map((incident, index) => ({
-      ...incident,
-      confidence: Math.floor(Math.random() * 25) + 75, // 75-100%
-      targetType: 
-        incident.application.includes("Safety") || incident.application.includes("Behavioral") ? "person" :
-        incident.application.includes("Traffic") ? "vehicle" :
-        incident.application.includes("Fire") ? "environmental" : "object",
-      bboxAreaGrowth: incident.title.includes("Fire") || incident.title.includes("Flood") ? 
-                      [10, 15, 25, 40, 60, 85] : 
-                      incident.title.includes("Gas") ? [5, 8, 15, 28, 45, 62] : undefined,
-      spreadRate: incident.title.includes("Fire") ? 145 : 
-                  incident.title.includes("Flood") ? 78 : 
-                  incident.title.includes("Gas") ? 92 : undefined,
-      responseLatency: Math.floor(Math.random() * 120) + 30, // 30-150s
-      validationStatus: null,
-      acknowledged: Math.random() > 0.5,
-      acknowledgedAt: Math.random() > 0.5 ? "2m ago" : undefined,
-    }));
+const getSeverityConfig = (severity: string) => {
+  const config: Record<string, { bright: string; light: string; dark: string }> = {
+    critical: { bright: "#E7000B", light: "#FFE5E7", dark: "#B91C1C" },
+    high: { bright: "#EA580C", light: "#FEEFE7", dark: "#C2410C" },
+    medium: { bright: "#E19A04", light: "#FFF7E6", dark: "#CA8A04" },
+    low: { bright: "#2B7FFF", light: "#E5F0FF", dark: "#1D4ED8" },
+  };
+  return config[severity] || config.low;
+};
+
+const getValidationBadge = (status: string | null) => {
+  if (!status) return { label: "Under Review", color: "#64748B", bg: "#F0F2F4" };
+  if (status === "confirmed") return { label: "Confirmed Incident", color: "#00A63E", bg: "#E5FFEF" };
+  if (status === "false-positive") return { label: "False Positive", color: "#E19A04", bg: "#FFF7E6" };
+  return { label: "Under Review", color: "#64748B", bg: "#F0F2F4" };
+};
+
+const getAcknowledgeGapStatus = (gapSeconds: number | null) => {
+  if (gapSeconds === null) {
+    return { label: "NOT ACK'D", color: "#64748B", bg: "#F0F2F4" };
+  }
+  if (gapSeconds <= 15) {
+    return { label: `${gapSeconds}s`, color: "#00A63E", bg: "#E5FFEF" };
+  }
+  if (gapSeconds <= 60) {
+    return { label: `${gapSeconds}s`, color: "#E19A04", bg: "#FFF7E6" };
+  }
+  return { label: `${gapSeconds}s`, color: "#E7000B", bg: "#FFE5E7" };
+};
+
+export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
+  const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
+  const [selectedZone, setSelectedZone] = useState<string>("all");
+  const [selectedApplication, setSelectedApplication] = useState<string>("all");
+  const [selectedHour, setSelectedHour] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [timeRange, setTimeRange] = useState<string>("24H");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [sortBy, setSortBy] = useState<string>("severity-latency");
+  const [sideModalIncident, setSideModalIncident] = useState<IncidentTimeline | null>(null);
+  const [barChartStartIndex, setBarChartStartIndex] = useState<number>(0);
+  const itemsPerPage = 10;
+  const barsPerPage = 5;
+
+  const openSideModal = (incident: IncidentTimeline) => {
+    setSideModalIncident(incident);
   };
 
-  const analyticsIncidents = generateAnalyticsIncidents();
+  const closeSideModal = () => {
+    setSideModalIncident(null);
+  };
 
   // Extract unique zones and applications
-  const uniqueZones = ["all", ...Array.from(new Set(ALL_INCIDENTS.map(i => i.location)))];
-  const uniqueApplications = ["all", ...Array.from(new Set(ALL_INCIDENTS.map(i => i.application)))];
+  const uniqueZones = ["all", ...Array.from(new Set(INCIDENT_TIMELINES.map(i => i.zone)))];
+  const uniqueApplications = ["all", ...Array.from(new Set(INCIDENT_TIMELINES.map(i => i.application)))];
 
   // Filter incidents
-  const filteredIncidents = analyticsIncidents.filter(incident => {
-    const matchesZone = filterZone === "all" || incident.location === filterZone;
-    const matchesApp = filterApplication === "all" || incident.application === filterApplication;
-    return matchesZone && matchesApp;
-  });
+  const filteredIncidents = INCIDENT_TIMELINES.filter(incident => {
+    const matchesSeverity = selectedSeverity === "all" || incident.severity === selectedSeverity;
+    const matchesZone = selectedZone === "all" || incident.zone === selectedZone;
+    const matchesApplication = selectedApplication === "all" || incident.application === selectedApplication;
+    const matchesHour = selectedHour === null || incident.startHour === selectedHour;
+    const matchesSearch = searchQuery === "" ||
+      incident.incidentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      incident.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      incident.zone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      incident.staffNote?.toLowerCase().includes(searchQuery.toLowerCase());
 
-  // Group incidents by type if enabled
-  const groupedIncidents = groupByType 
-    ? filteredIncidents.reduce((acc, incident) => {
-        const existing = acc.find(g => g.title === incident.title);
-        if (existing) {
-          existing.count++;
-          existing.incidents.push(incident);
-        } else {
-          acc.push({ title: incident.title, count: 1, incidents: [incident], severity: incident.severity });
-        }
-        return acc;
-      }, [] as Array<{ title: string; count: number; incidents: AnalyticsIncident[]; severity: string }>)
-    : null;
+    return matchesSeverity && matchesZone && matchesApplication && matchesHour && matchesSearch;
+  });
 
   // Sort incidents
   const sortedIncidents = [...filteredIncidents].sort((a, b) => {
-    if (sortBy === "severity") {
-      const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4, resolved: 5 };
-      return severityOrder[a.severity] - severityOrder[b.severity];
-    } else if (sortBy === "confidence") {
-      return b.confidence - a.confidence;
+    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+
+    if (sortBy === "severity-latency") {
+      // Sort by severity first
+      const severityDiff = severityOrder[a.severity] - severityOrder[b.severity];
+      if (severityDiff !== 0) return severityDiff;
+
+      // Then by acknowledge gap (descending - highest latency first)
+      const aGap = a.acknowledgeGapSeconds ?? 0;
+      const bGap = b.acknowledgeGapSeconds ?? 0;
+      return bGap - aGap;
     }
-    return 0; // time sorting would need actual timestamps
+
+    return 0;
   });
 
-  // System Throughput
-  const totalCameras = 42;
-  const camerasOnline = 38;
-  const camerasOffline = totalCameras - camerasOnline;
+  // Pagination
+  const totalPages = Math.ceil(sortedIncidents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedIncidents = sortedIncidents.slice(startIndex, endIndex);
 
-  // Triage counter
-  const criticalCount = analyticsIncidents.filter(i => i.severity === "critical").length;
-  const highCount = analyticsIncidents.filter(i => i.severity === "high").length;
-  const totalCount = analyticsIncidents.length;
-
-  // Toggle incident selection
-  const toggleIncidentSelection = (incidentId: string) => {
-    setSelectedIncidents(prev => 
-      prev.includes(incidentId) 
-        ? prev.filter(id => id !== incidentId)
-        : [...prev, incidentId]
-    );
+  // Handle severity donut click
+  const handleSeverityClick = (severity: string) => {
+    setSelectedSeverity(selectedSeverity === severity ? "all" : severity);
   };
 
-  // Get severity configuration
-  const getSeverityConfig = (severity: string) => {
-    const config: Record<string, { brightColor: string; darkColor: string }> = {
-      critical: { brightColor: '#E7000B', darkColor: '#B91C1C' },
-      high: { brightColor: '#EA580C', darkColor: '#991B1B' },
-      medium: { brightColor: '#E19A04', darkColor: '#7C2D12' },
-      low: { brightColor: '#2B7FFF', darkColor: '#744210' },
-      info: { brightColor: '#64748B', darkColor: '#3B82F6' },
-      resolved: { brightColor: '#00A63E', darkColor: '#16A34A' },
-    };
-    return config[severity] || config.info;
+  // Handle peak hour click
+  const handleHourClick = (hour: string) => {
+    setSelectedHour(selectedHour === hour ? null : hour);
   };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedSeverity("all");
+    setSelectedZone("all");
+    setSelectedApplication("all");
+    setSelectedHour(null);
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = selectedSeverity !== "all" || selectedZone !== "all" || selectedApplication !== "all" || selectedHour !== null || searchQuery !== "";
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <AnalyticsHeader title="Incident Analytics" icon={AlertTriangle} />
 
-      {/* Monitoring Staff View: Triage & Action Dashboard */}
+      {/* Monitoring Staff Persona - Tactical Response */}
       {persona === "monitoring" && (
-        <MonitoringStaffTriageDashboard />
-      )}
-
-      {/* Manager View: Severity Donut & SLA Histogram */}
-      {persona === "manager" && (
         <>
-          {/* System Throughput Header */}
-          <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* System Throughput */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50">
-                  <Video className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">System Throughput</div>
-                  <div className="flex items-baseline gap-1">
-                    <span className={cn(
-                      "text-2xl font-data font-bold tabular-nums",
-                      camerasOffline > 5 ? "text-red-600" : "text-neutral-900"
-                    )}>
-                      {camerasOnline}
-                    </span>
-                    <span className="text-sm font-data tabular-nums text-neutral-400">/{totalCameras}</span>
-                  </div>
-                  {camerasOffline > 0 && (
-                    <div className="text-[10px] text-neutral-500 flex items-center gap-1">
-                      <VideoOff className="w-3 h-3" />
-                      {camerasOffline} offline
-                    </div>
-                  )}
-                </div>
+          {/* Performance KPI Cards with Secondary Analytics */}
+          <div className="grid grid-cols-1 xl:grid-cols-[689px_1fr] gap-4">
+        {/* KPI Cards - 2x2 Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[9px]">
+          {/* Total Incidents */}
+          <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] pt-3 px-3 pb-[11px] flex flex-col">
+            <div className="mb-2">
+              <p className="font-bold leading-[16px] not-italic text-[12px] text-white tracking-[0.5px] uppercase">
+                Total Incidents
+              </p>
+            </div>
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex items-center">
+                <p className="font-data font-bold leading-[32px] text-[30px] text-white tracking-[-0.75px]">
+                  {PERFORMANCE_METRICS.totalIncidents}
+                </p>
               </div>
-
-              {/* Triage Counter */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-neutral-50">
-                  <AlertTriangle className="w-5 h-5 text-neutral-600" />
+              <div className="bg-[#E5FFEF] rounded border border-[rgba(185,248,207,0.5)] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] pt-[5px] px-[9px] pb-[1px]">
+                <div className="flex items-center gap-1 mb-[2px]">
+                  <span className="font-data font-bold text-[#00A63E] text-[18px] leading-[18px]">
+                    -{Math.abs(PERFORMANCE_METRICS.totalIncidentsChange)}%
+                  </span>
+                  <TrendingDown className="w-4 h-4 text-[#00A63E]" />
                 </div>
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Active Incidents</div>
-                  <div className="text-2xl font-mono font-bold text-neutral-900">{totalCount}</div>
-                  <div className="flex items-center gap-2 text-[10px]">
-                    <span className="text-red-600 font-bold">{criticalCount} Critical</span>
-                    <span className="text-orange-600 font-bold">{highCount} High</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* MTTA */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-50">
-                  <Timer className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">MTTA</div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-mono font-bold text-neutral-900">123</span>
-                    <span className="text-sm font-mono text-neutral-400">sec</span>
-                  </div>
-                  <div className="text-[10px] text-neutral-500">Mean Time to Ack</div>
-                </div>
-              </div>
-
-              {/* Sort Controls */}
-              <div className="flex items-center justify-end gap-2">
-                <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Sort By:</span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setSortBy("severity")}
-                    className={cn(
-                      "px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all",
-                      sortBy === "severity"
-                        ? "bg-[#00775B] text-white"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                    )}
-                  >
-                    Severity
-                  </button>
-                  <button
-                    onClick={() => setSortBy("confidence")}
-                    className={cn(
-                      "px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all",
-                      sortBy === "confidence"
-                        ? "bg-[#00775B] text-white"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                    )}
-                  >
-                    Confidence
-                  </button>
-                </div>
+                <p className="font-bold text-[#00A63E] text-[9px] leading-[14.4px] uppercase tracking-[0.225px] opacity-80">
+                  vs last week
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Incident Cards Grid */}
-          <div className="space-y-3">
-            {/* Filter Controls */}
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-700">Incident Review Queue</h3>
-              
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Zone Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Zone:</span>
-                  <select
-                    value={filterZone}
-                    onChange={(e) => setFilterZone(e.target.value)}
-                    className="px-3 py-1.5 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
-                  >
-                    {uniqueZones.map(zone => (
-                      <option key={zone} value={zone}>
-                        {zone === "all" ? "All Zones" : zone}
-                      </option>
-                    ))}
-                  </select>
+          {/* Mean Time to Acknowledge */}
+          <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] pt-3 px-3 pb-[11px] flex flex-col">
+            <div className="mb-2">
+              <p className="font-bold leading-[16px] not-italic text-[12px] text-white tracking-[0.5px] uppercase">
+                Mean Time to Acknowledge
+              </p>
+            </div>
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex items-center">
+                <p className="font-data font-bold leading-[32px] text-[30px] text-white tracking-[-0.75px]">
+                  {PERFORMANCE_METRICS.mtta}s
+                </p>
+              </div>
+              <div className="bg-[#E5FFEF] rounded border border-[rgba(185,248,207,0.5)] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] pt-[5px] px-[9px] pb-[1px]">
+                <div className="flex items-center gap-1 mb-[2px]">
+                  <span className="font-data font-bold text-[#00A63E] text-[18px] leading-[18px]">
+                    -{Math.abs(PERFORMANCE_METRICS.mttaChange)}s
+                  </span>
+                  <TrendingDown className="w-4 h-4 text-[#00A63E]" />
                 </div>
+                <p className="font-bold text-[#00A63E] text-[9px] leading-[14.4px] uppercase tracking-[0.225px] opacity-80">
+                  vs last week
+                </p>
+              </div>
+            </div>
+            <p className="font-medium text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+              ✓ Target: &lt;{PERFORMANCE_METRICS.mttaTarget}s
+            </p>
+          </div>
 
-                {/* Application Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Application:</span>
-                  <select
-                    value={filterApplication}
-                    onChange={(e) => setFilterApplication(e.target.value)}
-                    className="px-3 py-1.5 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
-                  >
-                    {uniqueApplications.map(app => (
-                      <option key={app} value={app}>
-                        {app === "all" ? "All Applications" : app}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          {/* Mean Time to Resolve */}
+          <div className="bg-gradient-to-br from-[#8B0000] to-[#E7000B] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(231,0,11,0.3),0px_4px_6px_0px_rgba(139,0,0,0.2)] pt-3 px-3 pb-[11px] flex flex-col border-2 border-[#E7000B]/30">
+            <div className="mb-2">
+              <p className="font-bold leading-[16px] not-italic text-[12px] text-white tracking-[0.5px] uppercase">
+                Mean Time to Resolve
+              </p>
+            </div>
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex items-center">
+                <p className="font-data font-bold leading-[32px] text-[30px] text-white tracking-[-0.75px]">
+                  {PERFORMANCE_METRICS.mttr}m
+                </p>
+              </div>
+              <div className="bg-white/95 rounded border border-white/40 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.2),0px_1px_2px_0px_rgba(0,0,0,0.1)] pt-[5px] px-[9px] pb-[1px]">
+                <span className="font-data font-bold text-[#8B0000] text-[14px] leading-[18px] block text-center">
+                  {PERFORMANCE_METRICS.mttrSLA}m
+                </span>
+                <p className="font-bold text-[#8B0000] text-[9px] leading-[14.4px] uppercase tracking-[0.225px] opacity-80 text-center">
+                  SLA limit
+                </p>
+              </div>
+            </div>
+            <p className="font-medium text-white text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+              ⚠ EXCEEDING SLA
+            </p>
+          </div>
 
-                {/* Group by Type Toggle */}
+          {/* False Positive Rate */}
+          <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] pt-3 px-3 pb-[11px] flex flex-col">
+            <div className="mb-2">
+              <p className="font-bold leading-[16px] not-italic text-[12px] text-white tracking-[0.5px] uppercase">
+                False Positive Rate
+              </p>
+            </div>
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex items-center">
+                <p className="font-data font-bold leading-[32px] text-[30px] text-white tracking-[-0.75px]">
+                  {PERFORMANCE_METRICS.falsePositiveRate}%
+                </p>
+              </div>
+              <div className="bg-[#E5FFEF] rounded border border-[rgba(185,248,207,0.5)] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] pt-[5px] px-[9px] pb-[1px]">
+                <span className="font-data font-bold text-[#00A63E] text-[14px] leading-[18px] block text-center">
+                  &lt;{PERFORMANCE_METRICS.falsePositiveTarget}%
+                </span>
+                <p className="font-bold text-[#00A63E] text-[9px] leading-[14.4px] uppercase tracking-[0.225px] opacity-80 text-center">
+                  target
+                </p>
+              </div>
+            </div>
+            <p className="font-medium text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+              ✓ Within Range
+            </p>
+          </div>
+        </div>
+
+        {/* Secondary Analytics - Side by Side Charts */}
+        <div className="grid grid-cols-[280px_1fr] gap-[9px]">
+          {/* Severity Distribution Pie Chart */}
+          <div className="bg-white border border-[#E2E8F0] rounded-[10px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] p-4 flex flex-col">
+            <h3 className="font-bold text-xs leading-[16px] uppercase tracking-[0.5px] text-[#334155] mb-2 w-full">
+              Severity Distribution
+            </h3>
+            <div className="relative w-full h-[200px] flex items-center justify-center">
+              <div style={{ width: '200px', height: '200px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={SEVERITY_DISTRIBUTION}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={92}
+                      paddingAngle={0}
+                      dataKey="value"
+                      onClick={(data) => handleSeverityClick(data.name.toLowerCase())}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {SEVERITY_DISTRIBUTION.map((entry, index) => (
+                        <Cell key={`monitoring-severity-${entry.name}-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Center Text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <p className="font-data font-bold text-[36px] leading-[40px] text-[#0f172a]">
+                  {PERFORMANCE_METRICS.totalIncidents}
+                </p>
+                <p className="font-bold text-[10px] leading-[15px] text-[#94a3b8] uppercase tracking-[0.5px]">
+                  Total Incidents
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Top 5 Problem Zones */}
+          <div className="bg-white border border-[#E2E8F0] rounded-[10px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-xs leading-[16px] uppercase tracking-[0.5px] text-[#334155]">
+                Top Problem Zones
+              </h3>
+              <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setGroupByType(!groupByType)}
+                  onClick={() => setBarChartStartIndex(Math.max(0, barChartStartIndex - 1))}
+                  disabled={barChartStartIndex === 0}
                   className={cn(
-                    "px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all border-2",
-                    groupByType
-                      ? "bg-[#00775B] text-white border-[#00775B]"
-                      : "bg-white text-neutral-600 border-neutral-200 hover:border-[#00775B]"
+                    "p-1 rounded border transition-colors",
+                    barChartStartIndex === 0
+                      ? "border-neutral-200 text-neutral-300 cursor-not-allowed"
+                      : "border-neutral-300 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-400"
                   )}
                 >
-                  {groupByType ? "✓ Grouped" : "Group by Type"}
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setBarChartStartIndex(Math.min(TOP_ZONES_DATA.length - barsPerPage, barChartStartIndex + 1))}
+                  disabled={barChartStartIndex >= TOP_ZONES_DATA.length - barsPerPage}
+                  className={cn(
+                    "p-1 rounded border transition-colors",
+                    barChartStartIndex >= TOP_ZONES_DATA.length - barsPerPage
+                      ? "border-neutral-200 text-neutral-300 cursor-not-allowed"
+                      : "border-neutral-300 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-400"
+                  )}
+                >
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
-
-            {/* Grouped View */}
-            {groupByType && groupedIncidents ? (
-              <div className="space-y-2">
-                {groupedIncidents.map((group, idx) => (
-                  <div key={idx} className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
-                    {/* Group Header */}
-                    <div 
-                      className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-neutral-50 transition-colors"
-                      onClick={() => {
-                        // Toggle group expansion
-                        const elem = document.getElementById(`group-${idx}`);
-                        if (elem) {
-                          elem.classList.toggle('hidden');
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-1 h-6 rounded-full"
-                          style={{ backgroundColor: getSeverityConfig(group.severity).brightColor }}
-                        />
-                        <div>
-                          <h4 className="text-sm font-bold text-neutral-900">{group.title}</h4>
-                          <p className="text-xs text-neutral-500">
-                            {group.count} {group.count === 1 ? 'incident' : 'incidents'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-neutral-500">
-                          Click to expand
-                        </span>
-                        <ChevronDown className="w-4 h-4 text-neutral-400" />
-                      </div>
-                    </div>
-
-                    {/* Group Content */}
-                    <div id={`group-${idx}`} className="hidden border-t border-neutral-200 p-4 bg-neutral-50">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                        {group.incidents.map((incident) => (
-                          <AnalyticsIncidentCard 
-                            key={incident.incidentId} 
-                            incident={incident}
-                            selected={selectedIncidents.includes(incident.incidentId)}
-                            onSelect={toggleIncidentSelection}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="flex-1 min-h-[200px]">
+              <div style={{ height: '200px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={TOP_ZONES_DATA.slice(barChartStartIndex, barChartStartIndex + barsPerPage)} 
+                    layout="horizontal" 
+                    margin={{ top: 10, right: 20, bottom: 10, left: 10 }}
+                  >
+                    <XAxis
+                      dataKey="zone"
+                      type="category"
+                      tick={{ fontSize: 11, fill: '#64748B', fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                      height={50}
+                    />
+                    <YAxis type="number" hide />
+                    <Tooltip
+                      contentStyle={{ fontSize: '10px', borderRadius: '4px' }}
+                      cursor={{ fill: 'rgba(0, 119, 91, 0.1)' }}
+                    />
+                    <Bar dataKey="count" fill="#00775B" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            ) : (
-              /* Standard Grid View */
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {sortedIncidents.slice(0, 6).map((incident) => (
-                  <AnalyticsIncidentCard 
-                    key={incident.incidentId} 
-                    incident={incident}
-                    compact={incident.severity === "low" || incident.severity === "info"}
-                    selected={selectedIncidents.includes(incident.incidentId)}
-                    onSelect={toggleIncidentSelection}
-                  />
-                ))}
-              </div>
-            )}
-
-            {sortedIncidents.length > 6 && !groupByType && (
-              <div className="text-center pt-2">
-                <button className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#00775B] hover:text-[#009e78] transition-colors">
-                  View All {sortedIncidents.length} Incidents →
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Original Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in zoom-in-95 duration-300">
-            {/* Severity Distribution Donut */}
-            <div className="bg-white p-6 rounded-md border border-neutral-200 shadow-sm flex flex-col items-center justify-center relative min-h-[320px]">
-               <h3 className="absolute top-6 left-6 text-sm font-bold uppercase tracking-wider text-neutral-800">Severity Distribution</h3>
-               
-               <div className="h-64 w-full mt-8">
-                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                   <PieChart>
-                     <Pie
-                       data={SEVERITY_DISTRIBUTION}
-                       cx="50%"
-                       cy="50%"
-                       innerRadius={70}
-                       outerRadius={90}
-                       paddingAngle={4}
-                       dataKey="value"
-                       stroke="none"
-                     >
-                       {SEVERITY_DISTRIBUTION.map((entry, index) => (
-                         <Cell key={`cell-${index}`} fill={entry.color} />
-                       ))}
-                     </Pie>
-                     <Tooltip contentStyle={{ fontSize: '10px', borderRadius: '4px' }} />
-                   </PieChart>
-                 </ResponsiveContainer>
-                 
-                 {/* Center Metric */}
-                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-8">
-                    <span className="text-4xl font-mono font-bold text-neutral-900">{ALL_INCIDENTS.length}</span>
-                    <span className="text-[10px] uppercase font-bold text-neutral-400">Total Incidents</span>
-                 </div>
-               </div>
-    
-               <div className="flex flex-wrap gap-4 mt-4 justify-center text-xs">
-                  {SEVERITY_DISTRIBUTION.map((d, i) => (
-                     <div key={i} className="flex items-center gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color }} />
-                        <span className="text-neutral-600 font-medium uppercase tracking-wide text-[10px]">{d.name}</span>
-                        <span className="font-mono text-neutral-400 ml-1">{d.value}</span>
-                     </div>
-                  ))}
-               </div>
-            </div>
-    
-            {/* SLA Response Histogram */}
-            <div className="bg-white p-6 rounded-md border border-neutral-200 shadow-sm flex flex-col min-h-[320px]">
-               <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-800 mb-6 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#00775B]" />
-                  Response SLA Distribution
-               </h3>
-               
-               <div className="flex-1 w-full min-h-[200px] min-w-0">
-                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                   <BarChart data={SLA_DISTRIBUTION_DATA} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <XAxis dataKey="range" stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} />
-                      <Tooltip 
-                         cursor={{ fill: 'transparent' }}
-                         contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px' }}
-                      />
-                      <Bar dataKey="count" fill="#00775B" radius={[4, 4, 0, 0]} barSize={50} isAnimationActive={false}>
-                         {SLA_DISTRIBUTION_DATA.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.range === "> 5m" ? "#EF4444" : "#00775B"} />
-                         ))}
-                      </Bar>
-                   </BarChart>
-                 </ResponsiveContainer>
-               </div>
-               
-               <div className="mt-4 pt-4 border-t border-neutral-100">
-                  <div className="flex items-center justify-between text-xs">
-                     <span className="font-bold text-neutral-500">Avg Response Time</span>
-                     <span className="font-mono font-bold text-[#00775B]">42s</span>
-                  </div>
-                  <div className="w-full bg-neutral-100 h-1.5 rounded-full mt-2 overflow-hidden">
-                     <div className="h-full bg-[#00775B] w-[85%]" />
-                  </div>
-               </div>
             </div>
           </div>
+        </div>
+      </div>
         </>
       )}
 
-      {/* Director View: Risk Exposure (Existing) */}
+      {/* Manager Persona: Operational Efficiency */}
+      {persona === "manager" && (
+        <>
+          {/* Manager KPI Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] p-4">
+              <p className="font-bold text-[12px] text-white tracking-[0.5px] uppercase mb-2">
+                Total Incidents
+              </p>
+              <p className="font-data font-bold text-[30px] text-white tracking-[-0.75px]">
+                {PERFORMANCE_METRICS.totalIncidents}
+              </p>
+              <p className="font-bold text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+                ↓ {Math.abs(PERFORMANCE_METRICS.totalIncidentsChange)}% vs last week
+              </p>
+            </div>
+            <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] p-4">
+              <p className="font-bold text-[12px] text-white tracking-[0.5px] uppercase mb-2">
+                Avg Response
+              </p>
+              <p className="font-data font-bold text-[30px] text-white tracking-[-0.75px]">
+                {PERFORMANCE_METRICS.mtta}s
+              </p>
+              <p className="font-bold text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+                ✓ Target: &lt;{PERFORMANCE_METRICS.mttaTarget}s
+              </p>
+            </div>
+            <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] p-4">
+              <p className="font-bold text-[12px] text-white tracking-[0.5px] uppercase mb-2">
+                Avg Resolution
+              </p>
+              <p className="font-data font-bold text-[30px] text-white tracking-[-0.75px]">
+                {PERFORMANCE_METRICS.mttr}m
+              </p>
+              <p className="font-bold text-[#E7000B] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+                SLA: {PERFORMANCE_METRICS.mttrSLA}m
+              </p>
+            </div>
+            <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] p-4">
+              <p className="font-bold text-[12px] text-white tracking-[0.5px] uppercase mb-2">
+                False Positive
+              </p>
+              <p className="font-data font-bold text-[30px] text-white tracking-[-0.75px]">
+                {PERFORMANCE_METRICS.falsePositiveRate}%
+              </p>
+              <p className="font-bold text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+                ✓ Target: &lt;{PERFORMANCE_METRICS.falsePositiveTarget}%
+              </p>
+            </div>
+          </div>
+
+      {/* Manager Persona: Staff Performance & Capacity Planning */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        {/* Staff Leaderboard */}
+        <div className="bg-white border border-[#E2E8F0] rounded-[10px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] p-6">
+          <h3 className="font-bold text-xs leading-[16px] uppercase tracking-[0.5px] text-[#334155] mb-4">
+            Staff Performance Leaderboard
+          </h3>
+          <div className="space-y-3">
+            {STAFF_LEADERBOARD.map((staff, index) => (
+              <div key={staff.name} className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#00775B] text-white font-bold text-sm">
+                  {index + 1}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-neutral-900">{staff.name}</p>
+                  <p className="text-[10px] text-neutral-500">{staff.incidents} incidents handled</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-data font-bold text-[#00775B]">{staff.avgResponseTime}s</p>
+                  <p className="text-[10px] text-neutral-500">avg response</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-data font-bold text-neutral-900">{staff.onTimeRate}%</p>
+                  <p className="text-[10px] text-neutral-500">on-time</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Peak Hour Analysis */}
+        <div className="bg-white border border-[#E2E8F0] rounded-[10px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] p-6">
+          <h3 className="font-bold text-xs leading-[16px] uppercase tracking-[0.5px] text-[#334155] mb-4">
+            Peak Hour Analysis
+          </h3>
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={PEAK_HOUR_DATA} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                <XAxis
+                  dataKey="hour"
+                  tick={{ fontSize: 10, fill: '#64748B' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={1}
+                />
+                <YAxis tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: '10px', borderRadius: '4px' }}
+                  cursor={{ fill: 'rgba(43, 127, 255, 0.1)' }}
+                />
+                <Bar dataKey="count" fill="#2B7FFF" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-[10px] text-neutral-500 mt-3 text-center">
+            Schedule more staff during <span className="font-bold text-[#2B7FFF]">8:00-10:00</span> and <span className="font-bold text-[#2B7FFF]">18:00-20:00</span> peak periods
+          </p>
+        </div>
+      </div>
+        </>
+      )}
+
+      {/* Director Persona: Strategic ROI & Risk */}
       {persona === "director" && (
         <>
-          {/* System Throughput Header - Condensed for Director */}
-          <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Active Incidents */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-neutral-50">
-                  <AlertTriangle className="w-5 h-5 text-neutral-600" />
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Total Incidents</div>
-                  <div className="text-2xl font-mono font-bold text-neutral-900">{totalCount}</div>
-                  <div className="flex items-center gap-2 text-[10px]">
-                    <span className="text-red-600 font-bold">{criticalCount} Critical</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* System Health */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-50">
-                  <ShieldCheck className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">System Health</div>
-                  <div className="text-2xl font-mono font-bold text-green-600">
-                    {Math.floor((camerasOnline / totalCameras) * 100)}%
-                  </div>
-                  <div className="text-[10px] text-neutral-500">{camerasOnline}/{totalCameras} cameras</div>
-                </div>
-              </div>
-
-              {/* Response Efficiency */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#E5FFF9]">
-                  <CheckCircle2 className="w-5 h-5 text-[#00775B]" />
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Response Efficiency</div>
-                  <div className="text-2xl font-mono font-bold text-[#00775B]">94%</div>
-                  <div className="text-[10px] text-neutral-500">Within SLA</div>
-                </div>
-              </div>
+          {/* Director KPI Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] p-4">
+              <p className="font-bold text-[12px] text-white tracking-[0.5px] uppercase mb-2">
+                Total Incidents
+              </p>
+              <p className="font-data font-bold text-[30px] text-white tracking-[-0.75px]">
+                {PERFORMANCE_METRICS.totalIncidents}
+              </p>
+              <p className="font-bold text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+                ↓ {Math.abs(PERFORMANCE_METRICS.totalIncidentsChange)}% vs last week
+              </p>
+            </div>
+            <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] p-4">
+              <p className="font-bold text-[12px] text-white tracking-[0.5px] uppercase mb-2">
+                Audit Score
+              </p>
+              <p className="font-data font-bold text-[30px] text-white tracking-[-0.75px]">
+                {COMPLIANCE_METRICS.auditScore}%
+              </p>
+              <p className="font-bold text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+                ✓ Above Target
+              </p>
+            </div>
+            <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] p-4">
+              <p className="font-bold text-[12px] text-white tracking-[0.5px] uppercase mb-2">
+                System ROI
+              </p>
+              <p className="font-data font-bold text-[30px] text-white tracking-[-0.75px]">
+                342%
+              </p>
+              <p className="font-bold text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+                Based on prevented losses
+              </p>
+            </div>
+            <div className="bg-[#021D18] rounded-[10px] shadow-[0px_10px_15px_0px_rgba(0,0,0,0.1),0px_4px_6px_0px_rgba(0,0,0,0.1)] p-4">
+              <p className="font-bold text-[12px] text-white tracking-[0.5px] uppercase mb-2">
+                AI Accuracy
+              </p>
+              <p className="font-data font-bold text-[30px] text-white tracking-[-0.75px]">
+                {SYSTEM_THROUGHPUT.aiAccuracy}%
+              </p>
+              <p className="font-bold text-[#00A63E] text-[10px] leading-[16px] uppercase tracking-[0.225px] mt-2">
+                {SYSTEM_THROUGHPUT.throughputRate}% throughput
+              </p>
             </div>
           </div>
 
-          {/* High-Priority Incidents Only */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-700">Critical & High Priority Review</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {sortedIncidents
-                .filter(i => i.severity === "critical" || i.severity === "high")
-                .slice(0, 4)
-                .map((incident) => (
-                  <AnalyticsIncidentCard 
-                    key={incident.incidentId} 
-                    incident={incident}
-                  />
-                ))}
-            </div>
-          </div>
-
-          {/* Original Risk Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="bg-white p-6 rounded-md border border-neutral-200 shadow-sm flex flex-col justify-between h-64">
-               <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Total Liability Reduction</h3>
-                  <span className="text-5xl font-mono font-bold text-[#00775B] tracking-tight">$4.2M</span>
-                  <p className="text-xs text-neutral-400 mt-2">Estimated savings from prevented incidents (YTD)</p>
-               </div>
-               
-               <div className="space-y-3 mt-4">
-                  <div className="flex justify-between text-xs font-bold text-neutral-600">
-                     <span>Theft Prevention</span>
-                     <span className="font-mono">$2.1M</span>
-                  </div>
-                  <div className="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden">
-                     <div className="h-full bg-[#00775B] w-[50%]" />
-                  </div>
-                  
-                  <div className="flex justify-between text-xs font-bold text-neutral-600">
-                     <span>Safety Compliance</span>
-                     <span className="font-mono">$1.5M</span>
-                  </div>
-                  <div className="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden">
-                     <div className="h-full bg-[#00775B]/70 w-[35%]" />
-                  </div>
-
-                  <div className="flex justify-between text-xs font-bold text-neutral-600">
-                     <span>Property Damage</span>
-                     <span className="font-mono">$0.6M</span>
-                  </div>
-                  <div className="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden">
-                     <div className="h-full bg-[#00775B]/40 w-[15%]" />
-                  </div>
-               </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-md border border-neutral-200 shadow-sm flex flex-col justify-between h-64">
-               <div>
-                  <div className="flex justify-between items-start">
-                     <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Days Since Major Breach</h3>
-                     <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100 uppercase">Record High</span>
-                  </div>
-                  <span className="text-6xl font-mono font-bold text-neutral-900 tracking-tighter">142</span>
-                  <p className="text-xs text-neutral-400 mt-2">Previous record: 89 days</p>
-               </div>
-               
-               <div className="mt-auto bg-[#E5FFF9] rounded p-3 border border-[#00956D]/20">
-                  <div className="flex items-center gap-2 text-sm font-bold text-[#00775B] mb-1">
-                     <ShieldCheck className="w-4 h-4" />
-                     <span>System Integrity High</span>
-                  </div>
-                  <p className="text-[10px] text-neutral-600 leading-relaxed">
-                     AI-driven proactive threat detection has reduced major security breaches by <span className="font-bold">94%</span> YoY.
+          {/* Severity Distribution */}
+          <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-4">
+            <div className="bg-white border border-[#E2E8F0] rounded-[10px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] p-4 flex flex-col">
+              <h3 className="font-bold text-xs leading-[16px] uppercase tracking-[0.5px] text-[#334155] mb-2 w-full">
+                Severity Distribution
+              </h3>
+              <div className="relative w-full h-[200px] flex items-center justify-center">
+                <div style={{ width: '200px', height: '200px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={SEVERITY_DISTRIBUTION}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={92}
+                        paddingAngle={0}
+                        dataKey="value"
+                        onClick={(data) => handleSeverityClick(data.name.toLowerCase())}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {SEVERITY_DISTRIBUTION.map((entry, index) => (
+                          <Cell key={`director-severity-${entry.name}-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <p className="font-data font-bold text-[36px] leading-[40px] text-[#0f172a]">
+                    {PERFORMANCE_METRICS.totalIncidents}
                   </p>
-               </div>
+                  <p className="font-bold text-[10px] leading-[15px] text-[#94a3b8] uppercase tracking-[0.5px]">
+                    Total Incidents
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-[#E2E8F0] rounded-[10px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] p-4 flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-xs leading-[16px] uppercase tracking-[0.5px] text-[#334155]">
+                  Top Problem Zones
+                </h3>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setBarChartStartIndex(Math.max(0, barChartStartIndex - 1))}
+                    disabled={barChartStartIndex === 0}
+                    className={cn(
+                      "p-1 rounded border transition-colors",
+                      barChartStartIndex === 0
+                        ? "border-neutral-200 text-neutral-300 cursor-not-allowed"
+                        : "border-neutral-300 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-400"
+                    )}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setBarChartStartIndex(Math.min(TOP_ZONES_DATA.length - barsPerPage, barChartStartIndex + 1))}
+                    disabled={barChartStartIndex >= TOP_ZONES_DATA.length - barsPerPage}
+                    className={cn(
+                      "p-1 rounded border transition-colors",
+                      barChartStartIndex >= TOP_ZONES_DATA.length - barsPerPage
+                        ? "border-neutral-200 text-neutral-300 cursor-not-allowed"
+                        : "border-neutral-300 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-400"
+                    )}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 min-h-[200px]">
+                <div style={{ height: '200px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart 
+                      data={TOP_ZONES_DATA.slice(barChartStartIndex, barChartStartIndex + barsPerPage)} 
+                      layout="horizontal" 
+                      margin={{ top: 10, right: 20, bottom: 10, left: 10 }}
+                    >
+                      <XAxis
+                        dataKey="zone"
+                        type="category"
+                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval={0}
+                        height={50}
+                      />
+                      <YAxis type="number" hide />
+                      <Tooltip
+                        contentStyle={{ fontSize: '10px', borderRadius: '4px' }}
+                        cursor={{ fill: 'rgba(0, 119, 91, 0.1)' }}
+                      />
+                      <Bar dataKey="count" fill="#00775B" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             </div>
           </div>
+
         </>
+      )}
+
+      {/* Incident Table with Timeline - Shown for Monitoring Staff Only */}
+      {persona === "monitoring" && (
+      <div className="bg-white rounded-lg border border-neutral-200 shadow-sm overflow-hidden">
+        {/* Filter Bar */}
+        <div className="p-4 border-b border-neutral-200 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-700">
+              Incident Deep Dive
+            </h3>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-[#E7000B] hover:bg-[#FFE5E7] rounded transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Clear Filters
+              </button>
+            )}
+          </div>
+
+          {/* Time Range Lookback Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">
+              Lookback Window:
+            </span>
+            <div className="flex items-center gap-1">
+              {["1H", "6H", "12H", "24H", "Custom"].map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-colors",
+                    timeRange === range
+                      ? "bg-[#00775B] text-white"
+                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                  )}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search ID, title, zone, notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
+              />
+            </div>
+
+            {/* Zone Filter */}
+            <select
+              value={selectedZone}
+              onChange={(e) => setSelectedZone(e.target.value)}
+              className="px-3 py-2 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
+            >
+              {uniqueZones.map(zone => (
+                <option key={zone} value={zone}>
+                  {zone === "all" ? "All Zones" : zone}
+                </option>
+              ))}
+            </select>
+
+            {/* Application Filter */}
+            <select
+              value={selectedApplication}
+              onChange={(e) => setSelectedApplication(e.target.value)}
+              className="px-3 py-2 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
+            >
+              {uniqueApplications.map(app => (
+                <option key={app} value={app}>
+                  {app === "all" ? "All Applications" : app}
+                </option>
+              ))}
+            </select>
+
+            {/* Severity Filter */}
+            <select
+              value={selectedSeverity}
+              onChange={(e) => setSelectedSeverity(e.target.value)}
+              className="px-3 py-2 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
+            >
+              <option value="all">All Severity</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          {/* Active Filter Chips */}
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <span className="text-neutral-500 font-medium">Active Filters:</span>
+              {selectedSeverity !== "all" && (
+                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
+                  Severity: {selectedSeverity}
+                </span>
+              )}
+              {selectedZone !== "all" && (
+                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
+                  Zone: {selectedZone}
+                </span>
+              )}
+              {selectedApplication !== "all" && (
+                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
+                  App: {selectedApplication}
+                </span>
+              )}
+              {selectedHour && (
+                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
+                  Hour: {selectedHour}
+                </span>
+              )}
+              {searchQuery && (
+                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
+                  Search: "{searchQuery}"
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Incident List */}
+        <div className="divide-y divide-neutral-200">
+          {/* Pagination Header */}
+          <div className="px-4 py-3 bg-neutral-50 border-b border-neutral-200 flex items-center justify-between">
+            <div className="text-xs text-neutral-600">
+              Showing <span className="font-bold text-neutral-900 tabular-nums">{startIndex + 1}-{Math.min(endIndex, sortedIncidents.length)}</span> of <span className="font-bold text-neutral-900 tabular-nums">{sortedIncidents.length}</span> incidents
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-1.5 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
+              >
+                <option value="severity-latency">Sort: Severity → Latency</option>
+              </select>
+            </div>
+          </div>
+
+          {sortedIncidents.length === 0 ? (
+            <div className="px-4 py-12 text-center">
+              <AlertCircle className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+              <p className="text-sm font-medium text-neutral-500">No incidents match your filters</p>
+              <button
+                onClick={clearFilters}
+                className="mt-3 px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#00775B] hover:bg-[#E5FFF9] rounded transition-colors"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          ) : (
+            <div>
+              {/* Table Header Row */}
+              <div className="px-3 py-3 bg-[#021D18] grid grid-cols-[24px_1fr_80px_1fr_1fr_1fr_1fr_90px_80px] gap-4 items-center text-[10px] uppercase font-bold text-white/90 tracking-wider">
+                <div></div>
+                <div>Incident ID</div>
+                <div>Severity</div>
+                <div>Zone</div>
+                <div>Application</div>
+                <div>Assigned</div>
+                <div>Device</div>
+                <div className="text-right">Duration</div>
+                <div className="text-right">Response</div>
+              </div>
+
+              {/* Table Rows */}
+              {paginatedIncidents.map((incident, idx) => {
+              const severityConfig = getSeverityConfig(incident.severity);
+              const ackGapStatus = getAcknowledgeGapStatus(incident.acknowledgeGapSeconds);
+
+              return (
+                <div key={incident.incidentId} className="border-b border-neutral-100 last:border-b-0">
+                  <div
+                    onClick={() => openSideModal(incident)}
+                    className={cn(
+                      "px-3 py-2 grid grid-cols-[24px_1fr_80px_1fr_1fr_1fr_1fr_90px_80px] gap-4 items-center cursor-pointer hover:bg-[#E5FFF9] transition-colors text-xs",
+                      idx % 2 === 0 ? "bg-white" : "bg-neutral-50/50"
+                    )}
+                  >
+                    {/* Video Thumbnail */}
+                    <div className="w-6 h-6 bg-neutral-900 rounded flex items-center justify-center">
+                      {incident.hasVideoClip ? (
+                        <Video className="w-3 h-3 text-white/70" />
+                      ) : (
+                        <div className="w-3 h-3" />
+                      )}
+                    </div>
+
+                    {/* Incident ID */}
+                    <div className="truncate">
+                      <div className="text-xs font-bold text-neutral-900">{incident.incidentId}</div>
+                      <div className="text-[10px] text-neutral-500 truncate">{incident.title}</div>
+                    </div>
+
+                    {/* Severity Chip */}
+                    <div>
+                      <span
+                        className="inline-flex px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wide text-white"
+                        style={{ backgroundColor: severityConfig.bright }}
+                      >
+                        {incident.severity}
+                      </span>
+                    </div>
+
+                    {/* Zone */}
+                    <div className="text-[11px] font-medium text-neutral-700 truncate">
+                      {incident.zone}
+                    </div>
+
+                    {/* Application */}
+                    <div className="text-[11px] font-medium text-neutral-700 truncate">
+                      {incident.application}
+                    </div>
+
+                    {/* Assigned To */}
+                    <div className="text-[11px] font-medium text-neutral-700 truncate">
+                      {incident.assignedTo || <span className="text-neutral-400 italic">Unassigned</span>}
+                    </div>
+
+                    {/* Device */}
+                    <div className="text-[11px] font-data font-medium text-neutral-700 tracking-tight truncate">
+                      {incident.deviceName}
+                    </div>
+
+                    {/* Duration */}
+                    <div className="text-right">
+                      <div className="text-[11px] font-data font-bold text-neutral-700 tabular-nums">{incident.duration}</div>
+                    </div>
+
+                    {/* Response Time with Color Coding */}
+                    <div className="text-right">
+                      <div
+                        className="text-[11px] font-data font-bold tabular-nums"
+                        style={{ color: ackGapStatus.color }}
+                      >
+                        {ackGapStatus.label}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            </div>
+          )}
+
+            {/* Pagination Footer */}
+            {totalPages > 1 && (
+              <div className="px-4 py-4 bg-neutral-50 border-t border-neutral-200 flex items-center justify-between">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className={cn(
+                    "px-4 py-2 text-xs font-bold uppercase tracking-wider rounded transition-colors",
+                    currentPage === 1
+                      ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                      : "bg-[#00775B] text-white hover:bg-[#009e78]"
+                  )}
+                >
+                  Previous
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalPages }).map((_, idx) => {
+                    const page = idx + 1;
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={cn(
+                            "w-8 h-8 text-xs font-bold rounded transition-colors",
+                            currentPage === page
+                              ? "bg-[#00775B] text-white"
+                              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                          )}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (page === currentPage - 2 || page === currentPage + 2) {
+                      return (
+                        <span key={`ellipsis-${page}`} className="text-neutral-400">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  }).filter(Boolean)}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className={cn(
+                    "px-4 py-2 text-xs font-bold uppercase tracking-wider rounded transition-colors",
+                    currentPage === totalPages
+                      ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                      : "bg-[#00775B] text-white hover:bg-[#009e78]"
+                  )}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+        </div>
+      </div>
+      )}
+
+      {/* Side Modal for Incident Details */}
+      {sideModalIncident && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-end bg-black/50"
+          onClick={closeSideModal}
+        >
+          <div
+            className="bg-white h-screen w-full max-w-[550px] flex flex-col shadow-2xl animate-in slide-in-from-right duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(() => {
+              const incident = sideModalIncident;
+              const severityConfig = getSeverityConfig(incident.severity);
+              const validationBadge = getValidationBadge(incident.validationStatus);
+              const ackGapStatus = getAcknowledgeGapStatus(incident.acknowledgeGapSeconds);
+              const protocolComplete = incident.protocolStepsCompleted === incident.protocolStepsTotal;
+
+              return (
+                <div className="flex flex-col h-full">
+                  {/* Compact Identity Header */}
+                  <div className="bg-white border-b border-neutral-200 px-5 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <p className="font-bold text-neutral-900 text-base">{incident.incidentId}</p>
+                        <span
+                          className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white"
+                          style={{ backgroundColor: severityConfig.bright }}
+                        >
+                          {incident.severity}
+                        </span>
+                        <span className="text-xs text-neutral-400">|</span>
+                        <span className="text-xs text-neutral-600">{incident.application}</span>
+                        <span className="text-xs text-neutral-400">|</span>
+                        <span className="text-xs text-neutral-500">{incident.zone}</span>
+                      </div>
+                      <button
+                        onClick={closeSideModal}
+                        className="p-1 hover:bg-neutral-100 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4 text-neutral-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Scrollable Content */}
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="p-5 space-y-4">
+                      {/* Visual Evidence Container */}
+                      <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                        {incident.hasVideoClip ? (
+                          <div>
+                            <div className="group relative cursor-pointer aspect-[16/9] bg-neutral-900 rounded overflow-hidden">
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-center">
+                                  <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-2">
+                                    <Play className="w-6 h-6 text-white" fill="white" />
+                                  </div>
+                                  <p className="text-[10px] text-white/70 font-bold uppercase tracking-wide">Video Evidence</p>
+                                </div>
+                              </div>
+                            </div>
+                            {/* Tight 3-Column Metadata Strip */}
+                            <div className="mt-3 grid grid-cols-3 gap-3 text-[10px]">
+                              <div className="flex flex-col">
+                                <span className="text-neutral-400 uppercase tracking-wide mb-0.5">Duration</span>
+                                <span className="font-data font-bold text-neutral-900">
+                                  {Math.floor(incident.totalDurationSeconds / 60)}:{String(incident.totalDurationSeconds % 60).padStart(2, '0')}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-neutral-400 uppercase tracking-wide mb-0.5">Camera</span>
+                                <span className="font-data font-bold text-neutral-900 truncate">{incident.deviceName}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-neutral-400 uppercase tracking-wide mb-0.5">Timestamp</span>
+                                <span className="font-data font-bold text-neutral-900">{incident.startTime}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="aspect-[16/9] bg-neutral-100 rounded flex items-center justify-center">
+                            <div className="text-center">
+                              <Video className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
+                              <p className="text-xs text-neutral-400">No video available</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Latency Audit Container */}
+                      <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                        <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider mb-3">Latency Audit</div>
+                        <div className="relative space-y-0">
+                          {/* Step 1: Detected */}
+                          <div className="flex items-start gap-3 pb-2">
+                            <div className="flex flex-col items-center">
+                              <div className="w-5 h-5 rounded-full bg-[#E7000B] flex items-center justify-center flex-shrink-0">
+                                <Flame className="w-3 h-3 text-white" />
+                              </div>
+                              {incident.acknowledgeGapSeconds !== null && (
+                                <div
+                                  className="w-0.5 bg-[#E7000B] my-1"
+                                  style={{
+                                    height: `${Math.min(incident.acknowledgeGapSeconds * 2, 60)}px`
+                                  }}
+                                />
+                              )}
+                            </div>
+                            <div className="flex-1 pt-0.5">
+                              <div className="flex items-center justify-between">
+                                <div className="text-[11px] font-bold text-[#E7000B] uppercase tracking-wide">Detected</div>
+                                <div className="font-data text-[11px] text-neutral-600">{incident.startTime}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Latency Indicator */}
+                          {incident.acknowledgeGapSeconds !== null && (
+                            <>
+                              <div className="flex items-center gap-3 pb-2">
+                                <div className="w-5 flex justify-center"></div>
+                                <div className="flex-1">
+                                  <div
+                                    className="inline-flex px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
+                                    style={{
+                                      backgroundColor: ackGapStatus.bg,
+                                      color: ackGapStatus.color,
+                                    }}
+                                  >
+                                    +{incident.acknowledgeGapSeconds}s LATENCY
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Step 2: Acknowledged */}
+                              <div className="flex items-start gap-3 pb-2">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-5 h-5 rounded-full bg-[#EA580C] flex items-center justify-center flex-shrink-0">
+                                    <Hand className="w-3 h-3 text-white" />
+                                  </div>
+                                  {incident.resolveGapSeconds !== null && (
+                                    <div
+                                      className="w-0.5 bg-[#00A63E] my-1"
+                                      style={{
+                                        height: `${Math.min((incident.resolveGapSeconds - (incident.acknowledgeGapSeconds || 0)) / 5, 80)}px`
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex-1 pt-0.5">
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <div className="text-[11px] font-bold text-[#EA580C] uppercase tracking-wide">Acknowledged</div>
+                                    <div className="font-data text-[11px] text-neutral-600">{incident.acknowledgeTime}</div>
+                                  </div>
+                                  {incident.acknowledgedBy && (
+                                    <div className="text-[10px] text-neutral-500">by {incident.acknowledgedBy}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+
+                          {/* Processing Time */}
+                          {incident.resolveGapSeconds !== null && (
+                            <>
+                              <div className="flex items-center gap-3 pb-2">
+                                <div className="w-5 flex justify-center"></div>
+                                <div className="flex-1">
+                                  <div className="inline-flex px-2 py-0.5 rounded bg-[#00A63E]/10 text-[9px] font-bold uppercase tracking-wider text-[#00A63E]">
+                                    {Math.floor((incident.resolveGapSeconds - (incident.acknowledgeGapSeconds || 0)) / 60)}m {((incident.resolveGapSeconds - (incident.acknowledgeGapSeconds || 0)) % 60)}s PROCESSING
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Step 3: Resolved */}
+                              <div className="flex items-start gap-3">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-5 h-5 rounded-full bg-[#00A63E] flex items-center justify-center flex-shrink-0">
+                                    <Shield className="w-3 h-3 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex-1 pt-0.5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-[11px] font-bold text-[#00A63E] uppercase tracking-wide">Resolved</div>
+                                    <div className="font-data text-[11px] text-neutral-600">{incident.resolveTime}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Protocol Audit Container */}
+                      <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                        <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider mb-3">Protocol Audit</div>
+                        <div className="space-y-0">
+                          {Array.from({ length: incident.protocolStepsTotal }).map((_, idx) => {
+                            const stepNum = idx + 1;
+                            const isCompleted = stepNum <= incident.protocolStepsCompleted;
+                            const stepLabels = [
+                              "Incident Detected",
+                              "Alert Dispatched",
+                              "Staff Acknowledged",
+                              "Action Taken",
+                              "Resolution Confirmed",
+                              "Documentation Complete"
+                            ];
+                            return (
+                              <div
+                                key={idx}
+                                className={cn(
+                                  "flex items-center gap-2 text-[11px] py-2 px-3 border-b border-neutral-200 last:border-b-0",
+                                  isCompleted ? "bg-white" : "bg-neutral-50"
+                                )}
+                              >
+                                {isCompleted ? (
+                                  <CheckCircle2 className="w-4 h-4 text-[#00A63E] flex-shrink-0" />
+                                ) : (
+                                  <div className="w-4 h-4 rounded-full border-2 border-neutral-300 flex-shrink-0" />
+                                )}
+                                <span className={cn(
+                                  "font-medium flex-1",
+                                  isCompleted ? "text-[#00A63E]" : "text-neutral-400"
+                                )}>
+                                  {stepLabels[idx] || `Protocol Step ${stepNum}`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Staff Note */}
+                        {incident.staffNote && (
+                          <div className="mt-3 pt-3 border-t border-neutral-200">
+                            <div className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider mb-2">Staff Note</div>
+                            <p className="text-[11px] text-neutral-700 leading-relaxed bg-white rounded px-3 py-2 border border-neutral-200">
+                              {incident.staffNote}
+                            </p>
+                          </div>
+                        )}
+
+                        {!protocolComplete && (
+                          <div className="mt-3 pt-3 border-t border-neutral-200">
+                            <p className="text-[10px] text-[#E19A04] font-bold uppercase tracking-wide flex items-center gap-1.5">
+                              <AlertCircle className="w-4 h-4" />
+                              Incomplete Protocol - Operational Risk
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Metadata Grid */}
+                      <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                        <div className="grid grid-cols-2 gap-3 text-[10px]">
+                          <div className="flex flex-col">
+                            <span className="text-neutral-400 uppercase tracking-wide mb-1">Assigned</span>
+                            <span className="font-bold text-neutral-900">{incident.assignedTo || "Unassigned"}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-neutral-400 uppercase tracking-wide mb-1">Status</span>
+                            <span
+                              className="font-bold uppercase"
+                              style={{ color: validationBadge.color }}
+                            >
+                              {validationBadge.label}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sticky Footer with Action Buttons */}
+                  <div className="bg-white border-t border-neutral-200 px-5 py-4">
+                    {incident.validationStatus === "under-review" ? (
+                      <div className="flex gap-2">
+                        <button className="flex-1 h-10 flex items-center justify-center gap-2 bg-white border border-neutral-300 text-neutral-700 rounded text-xs font-bold uppercase tracking-wider hover:bg-neutral-50 transition-colors">
+                          <X className="w-3.5 h-3.5" />
+                          False Positive
+                        </button>
+                        <button className="flex-1 h-10 flex items-center justify-center gap-2 bg-white border border-neutral-300 text-neutral-700 rounded text-xs font-bold uppercase tracking-wider hover:bg-neutral-50 transition-colors">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          Escalate
+                        </button>
+                        <button className="flex-[2] h-10 flex items-center justify-center gap-2 bg-[#00775B] text-white rounded text-xs font-bold uppercase tracking-wider hover:bg-[#009e78] transition-colors">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Confirm Incident
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        className="px-4 py-2.5 rounded text-center text-xs font-bold uppercase tracking-wider"
+                        style={{
+                          backgroundColor: validationBadge.bg,
+                          color: validationBadge.color,
+                        }}
+                      >
+                        {validationBadge.label}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
       )}
     </div>
   );

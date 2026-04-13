@@ -33,6 +33,14 @@ interface CameraViewpoint {
   cells: Set<string>;
   floor: string;
   color: string;
+  intraZoneSections?: IntraZoneSection[];
+}
+
+interface IntraZoneSection {
+  id: string;
+  name: string;
+  cells: Set<string>;
+  color: string;
 }
 
 interface FloorPlan {
@@ -284,11 +292,28 @@ const FloorPlanUpload = ({
   const handleFileChange = (floorId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      console.error('Please select a valid image file');
+      return;
+    }
+
     const reader = new FileReader();
+    reader.onerror = () => {
+      console.error('Failed to read file');
+    };
     reader.onload = (ev) => {
       const url = ev.target?.result as string;
+      if (!url) return;
+
       const img = new Image();
-      img.onload = () => onFloorPlanUpload(floorId, url, img.naturalWidth, img.naturalHeight);
+      img.onerror = () => {
+        console.error('Failed to load image');
+      };
+      img.onload = () => {
+        onFloorPlanUpload(floorId, url, img.naturalWidth, img.naturalHeight);
+      };
       img.src = url;
     };
     reader.readAsDataURL(file);
@@ -931,9 +956,55 @@ const ZoneDrawingCanvas = ({
   const [pendingCells, setPendingCells] = useState<Set<string>>(new Set());
   const isDrawingRef = useRef(false);
 
+  // Zoom and Pan state
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef<{ x: number; y: number } | null>(null);
+
   const { canvasW, canvasH } = gd;
   const floorZones = zones.filter((z) => z.floor === currentFloor);
   const activeZone = floorZones.find((z) => z.id === selectedZone);
+
+  // Zoom and Pan handlers
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev * 1.5, 5));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev / 1.5, 0.5));
+  const handleResetView = () => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  const handlePanStart = (e: React.MouseEvent) => {
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle button or Shift+Left click
+      setIsPanning(true);
+      panStartRef.current = { x: e.clientX, y: e.clientY };
+      e.preventDefault();
+    }
+  };
+
+  const handlePanMove = (e: React.MouseEvent) => {
+    if (isPanning && panStartRef.current) {
+      const dx = e.clientX - panStartRef.current.x;
+      const dy = e.clientY - panStartRef.current.y;
+      setPanOffset(prev => ({
+        x: prev.x + dx * (canvasW / 1000), // Scale based on canvas size
+        y: prev.y + dy * (canvasH / 700)
+      }));
+      panStartRef.current = { x: e.clientX, y: e.clientY };
+    }
+  };
+
+  const handlePanEnd = () => {
+    setIsPanning(false);
+    panStartRef.current = null;
+  };
+
+  // Calculate viewBox with zoom and pan
+  const viewBoxWidth = canvasW / zoomLevel;
+  const viewBoxHeight = canvasH / zoomLevel;
+  const viewBoxX = (canvasW - viewBoxWidth) / 2 - panOffset.x;
+  const viewBoxY = (canvasH - viewBoxHeight) / 2 - panOffset.y;
+  const viewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
 
   const getCellFromSVGPoint = (svgPt: { x: number; y: number }) => ({
     x: Math.floor(svgPt.x / CELL_SIZE),
@@ -966,6 +1037,12 @@ const ZoneDrawingCanvas = ({
   };
 
   const handleSVGMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    // Check for pan mode first
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+      handlePanStart(e);
+      return;
+    }
+    
     if (e.button !== 0 && e.button !== 2) return;
     const svgEl = svgRef.current;
     if (!svgEl) return;
@@ -990,6 +1067,11 @@ const ZoneDrawingCanvas = ({
   };
 
   const handleSVGMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (isPanning) {
+      handlePanMove(e);
+      return;
+    }
+    
     const svgEl = svgRef.current;
     if (!svgEl) return;
     const pt = getSVGPoint(svgEl, e.clientX, e.clientY);
@@ -1006,7 +1088,10 @@ const ZoneDrawingCanvas = ({
   };
 
   useEffect(() => {
-    const handleMouseUp = () => { isDrawingRef.current = false; };
+    const handleMouseUp = () => { 
+      isDrawingRef.current = false;
+      handlePanEnd();
+    };
     window.addEventListener("mouseup", handleMouseUp);
     return () => window.removeEventListener("mouseup", handleMouseUp);
   }, []);
@@ -1041,18 +1126,49 @@ const ZoneDrawingCanvas = ({
   return (
     <div className="flex-1 flex min-h-0">
       <CanvasContainer canvasW={canvasW} canvasH={canvasH}>
+        {/* Zoom/Pan Controls */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 bg-white/90 backdrop-blur-sm rounded-md shadow-md p-1">
+          <button
+            onClick={handleZoomIn}
+            className="p-1.5 hover:bg-neutral-100 rounded transition-colors"
+            title="Zoom In (or scroll)"
+          >
+            <ZoomIn className="w-4 h-4 text-neutral-700" />
+          </button>
+          <button
+            onClick={handleZoomOut}
+            className="p-1.5 hover:bg-neutral-100 rounded transition-colors"
+            title="Zoom Out (or scroll)"
+          >
+            <ZoomOut className="w-4 h-4 text-neutral-700" />
+          </button>
+          <button
+            onClick={handleResetView}
+            className="p-1.5 hover:bg-neutral-100 rounded transition-colors border-t border-neutral-200"
+            title="Reset View"
+          >
+            <Move className="w-4 h-4 text-neutral-700" />
+          </button>
+          <div className="text-[9px] text-center text-neutral-500 font-mono px-1 border-t border-neutral-200 pt-1">
+            {(zoomLevel * 100).toFixed(0)}%
+          </div>
+        </div>
+
         <svg
           ref={svgRef}
           style={{
             position: "absolute", inset: 0, width: "100%", height: "100%",
             display: "block", userSelect: "none",
-            cursor: "crosshair",
+            cursor: isPanning ? "grabbing" : "crosshair",
           }}
-          viewBox={`0 0 ${canvasW} ${canvasH}`}
+          viewBox={viewBox}
           preserveAspectRatio="none"
           onMouseDown={handleSVGMouseDown}
           onMouseMove={handleSVGMouseMove}
-          onMouseLeave={() => setHoverCell(null)}
+          onMouseLeave={() => {
+            setHoverCell(null);
+            handlePanEnd();
+          }}
           onContextMenu={(e) => e.preventDefault()}
         >
           <defs>
@@ -1295,10 +1411,62 @@ const CameraViewpointCanvas = ({
   const [cvDrawMode, setCvDrawMode] = useState<"paint" | "erase">("paint");
   const isDrawingRef = useRef(false);
 
+  // Zoom and Pan state
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Intra Zone Sections state
+  const [showIntraSections, setShowIntraSections] = useState(false);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [pendingSectionCells, setPendingSectionCells] = useState<Set<string>>(new Set());
+
   const { canvasW, canvasH } = gd;
   const floorCVs = cameraViewpoints.filter((cv) => cv.floor === currentFloor);
   const floorZones = zones.filter((z) => z.floor === currentFloor);
   const activeCv = floorCVs.find((cv) => cv.id === selectedCVId);
+
+  // Zoom and Pan handlers
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev * 1.5, 5));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev / 1.5, 0.5));
+  const handleResetView = () => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  const handlePanStart = (e: React.MouseEvent) => {
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+      setIsPanning(true);
+      panStartRef.current = { x: e.clientX, y: e.clientY };
+      e.preventDefault();
+    }
+  };
+
+  const handlePanMove = (e: React.MouseEvent) => {
+    if (isPanning && panStartRef.current) {
+      const dx = e.clientX - panStartRef.current.x;
+      const dy = e.clientY - panStartRef.current.y;
+      setPanOffset(prev => ({
+        x: prev.x + dx * (canvasW / 1000),
+        y: prev.y + dy * (canvasH / 700)
+      }));
+      panStartRef.current = { x: e.clientX, y: e.clientY };
+    }
+  };
+
+  const handlePanEnd = () => {
+    setIsPanning(false);
+    panStartRef.current = null;
+  };
+
+  // Calculate viewBox with zoom and pan
+  const viewBoxWidth = canvasW / zoomLevel;
+  const viewBoxHeight = canvasH / zoomLevel;
+  const viewBoxX = (canvasW - viewBoxWidth) / 2 - panOffset.x;
+  const viewBoxY = (canvasH - viewBoxHeight) / 2 - panOffset.y;
+  const viewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
 
   const getCellFromSVGPoint = (svgPt: { x: number; y: number }) => ({
     x: Math.floor(svgPt.x / CELL_SIZE),
@@ -1318,25 +1486,127 @@ const CameraViewpointCanvas = ({
     );
   };
 
+  // Paint intra zone section cells
+  const paintSectionCells = (svgPt: { x: number; y: number }, mode: "paint" | "erase") => {
+    if (!showIntraSections || !activeCv) return;
+    const cell = getCellFromSVGPoint(svgPt);
+    if (cell.x < 0 || cell.x >= gd.cols || cell.y < 0 || cell.y >= gd.rows) return;
+    const k = `${cell.x},${cell.y}`;
+    
+    // Check if cell is within the FOV
+    if (!activeCv.cells.has(k)) return;
+
+    if (selectedSectionId) {
+      // Editing existing section
+      const sections = activeCv.intraZoneSections || [];
+      const section = sections.find(s => s.id === selectedSectionId);
+      if (!section) return;
+      
+      const newCells = new Set(section.cells);
+      if (mode === "paint") newCells.add(k);
+      else newCells.delete(k);
+      
+      const updatedSections = sections.map(s => 
+        s.id === selectedSectionId ? { ...s, cells: newCells } : s
+      );
+      
+      onCameraViewpointsChange(
+        cameraViewpoints.map((cv) => 
+          cv.id === activeCv.id ? { ...cv, intraZoneSections: updatedSections } : cv
+        ),
+      );
+    } else {
+      // Adding to pending cells
+      const newPending = new Set(pendingSectionCells);
+      if (mode === "paint") newPending.add(k);
+      else newPending.delete(k);
+      setPendingSectionCells(newPending);
+    }
+  };
+
+  const addIntraSection = () => {
+    if (!activeCv || !newSectionName.trim() || pendingSectionCells.size === 0) return;
+    
+    const sections = activeCv.intraZoneSections || [];
+    const newSection: IntraZoneSection = {
+      id: `section-${Date.now()}`,
+      name: newSectionName.trim(),
+      cells: new Set(pendingSectionCells),
+      color: `hsl(${(sections.length * 60) % 360}, 70%, 60%)`, // Generate colors
+    };
+    
+    onCameraViewpointsChange(
+      cameraViewpoints.map((cv) => 
+        cv.id === activeCv.id 
+          ? { ...cv, intraZoneSections: [...sections, newSection] } 
+          : cv
+      ),
+    );
+    
+    setNewSectionName("");
+    setPendingSectionCells(new Set());
+    setSelectedSectionId(null);
+  };
+
+  const deleteIntraSection = (sectionId: string) => {
+    if (!activeCv) return;
+    const sections = activeCv.intraZoneSections || [];
+    onCameraViewpointsChange(
+      cameraViewpoints.map((cv) => 
+        cv.id === activeCv.id 
+          ? { ...cv, intraZoneSections: sections.filter(s => s.id !== sectionId) } 
+          : cv
+      ),
+    );
+    if (selectedSectionId === sectionId) setSelectedSectionId(null);
+  };
+
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+      handlePanStart(e);
+      return;
+    }
+    
     if (!activeCv || e.button !== 0) return;
     const svgEl = svgRef.current;
     if (!svgEl) return;
     const pt = getSVGPoint(svgEl, e.clientX, e.clientY);
     const cell = getCellFromSVGPoint(pt);
     const k = `${cell.x},${cell.y}`;
-    // Toggle: clicking already-painted cell erases it
-    const mode = activeCv.cells.has(k) ? "erase" : "paint";
-    setCvDrawMode(mode);
-    isDrawingRef.current = true;
-    paintCells(pt, mode);
+    
+    if (showIntraSections) {
+      // In intra-section mode, paint sections within FOV
+      const mode = selectedSectionId ? 
+        ((activeCv.intraZoneSections?.find(s => s.id === selectedSectionId)?.cells.has(k)) ? "erase" : "paint") :
+        (pendingSectionCells.has(k) ? "erase" : "paint");
+      setCvDrawMode(mode);
+      isDrawingRef.current = true;
+      paintSectionCells(pt, mode);
+    } else {
+      // Regular FOV painting mode
+      const mode = activeCv.cells.has(k) ? "erase" : "paint";
+      setCvDrawMode(mode);
+      isDrawingRef.current = true;
+      paintCells(pt, mode);
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (isPanning) {
+      handlePanMove(e);
+      return;
+    }
+    
     if (!isDrawingRef.current) return;
     const svgEl = svgRef.current;
     if (!svgEl) return;
-    paintCells(getSVGPoint(svgEl, e.clientX, e.clientY), cvDrawMode);
+    const pt = getSVGPoint(svgEl, e.clientX, e.clientY);
+    
+    if (showIntraSections) {
+      paintSectionCells(pt, cvDrawMode);
+    } else {
+      paintCells(pt, cvDrawMode);
+    }
   };
 
   useEffect(() => {
@@ -1370,17 +1640,49 @@ const CameraViewpointCanvas = ({
   return (
     <div className="flex-1 flex min-h-0">
       <CanvasContainer canvasW={canvasW} canvasH={canvasH}>
+        {/* Zoom and Pan Controls */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          <button
+            onClick={handleZoomIn}
+            className="w-8 h-8 flex items-center justify-center bg-white border border-neutral-300 rounded shadow-sm hover:bg-neutral-50 transition-colors"
+            title="Zoom In"
+          >
+            <ZoomIn className="w-4 h-4 text-neutral-700" />
+          </button>
+          <button
+            onClick={handleZoomOut}
+            className="w-8 h-8 flex items-center justify-center bg-white border border-neutral-300 rounded shadow-sm hover:bg-neutral-50 transition-colors"
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-4 h-4 text-neutral-700" />
+          </button>
+          <button
+            onClick={handleResetView}
+            className="w-8 h-8 flex items-center justify-center bg-white border border-neutral-300 rounded shadow-sm hover:bg-neutral-50 transition-colors text-[9px] font-mono font-bold text-neutral-700"
+            title="Reset View"
+          >
+            1:1
+          </button>
+          <div className="text-[9px] text-center text-neutral-500 font-mono px-1 border-t border-neutral-200 pt-1 bg-white/80">
+            {(zoomLevel * 100).toFixed(0)}%
+          </div>
+        </div>
+        
         <svg
           ref={svgRef}
           style={{
             position: "absolute", inset: 0, width: "100%", height: "100%",
             display: "block", userSelect: "none",
-            cursor: activeCv ? "crosshair" : "default",
+            cursor: isPanning ? "grabbing" : (activeCv ? "crosshair" : "default"),
           }}
-          viewBox={`0 0 ${canvasW} ${canvasH}`}
+          viewBox={viewBox}
           preserveAspectRatio="none"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
+          onMouseLeave={() => {
+            isDrawingRef.current = false;
+            handlePanEnd();
+          }}
         >
           <defs>
             <pattern id="cam-grid" width={CELL_SIZE} height={CELL_SIZE} patternUnits="userSpaceOnUse">
@@ -1456,6 +1758,7 @@ const CameraViewpointCanvas = ({
               ? (cellArr.reduce((s, k) => s + parseInt(k.split(",")[1]), 0) / cellArr.length + 0.5) * CELL_SIZE
               : null;
             const iconSize = 16;
+            const isValidCenter = centerX !== null && centerY !== null && !isNaN(centerX) && !isNaN(centerY);
             return (
               <g key={`cv-group-${cv.id}`} style={{ pointerEvents: "none" }}>
                 {/* FOV fill */}
@@ -1480,7 +1783,7 @@ const CameraViewpointCanvas = ({
                   />
                 )}
                 {/* Camera icon at center for completed (non-selected) cameras */}
-                {centerX !== null && centerY !== null && cv.cells.size > 0 && cv.id !== selectedCVId && (
+                {isValidCenter && cv.cells.size > 0 && cv.id !== selectedCVId && (
                   <g transform={`translate(${centerX}, ${centerY}) scale(${iconSize / 24}) translate(-12, -12)`}>
                     <path
                       d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"
@@ -1489,9 +1792,64 @@ const CameraViewpointCanvas = ({
                     <circle cx="12" cy="13" r="3" fill="white" />
                   </g>
                 )}
+                
+                {/* Intra Zone Sections for selected camera */}
+                {showIntraSections && cv.id === selectedCVId && cv.intraZoneSections && cv.intraZoneSections.map((section) => {
+                  const sectionCellArr = Array.from(section.cells);
+                  const sectionOutline = getZoneOutlinePath(section.cells, CELL_SIZE);
+                  return (
+                    <g key={`section-${section.id}`} style={{ pointerEvents: "none" }}>
+                      {sectionCellArr.map((cellKey) => {
+                        const [cx, cy] = cellKey.split(",").map(Number);
+                        return (
+                          <rect
+                            key={`section-${section.id}-${cellKey}`}
+                            x={cx * CELL_SIZE}
+                            y={cy * CELL_SIZE}
+                            width={CELL_SIZE}
+                            height={CELL_SIZE}
+                            fill={section.color}
+                            opacity={selectedSectionId === section.id ? 0.7 : 0.4}
+                          />
+                        );
+                      })}
+                      {sectionOutline && (
+                        <path
+                          d={sectionOutline}
+                          fill="none"
+                          stroke={section.color}
+                          strokeWidth={selectedSectionId === section.id ? 2.5 : 1.5}
+                          strokeDasharray={selectedSectionId === section.id ? "none" : "4 2"}
+                        />
+                      )}
+                    </g>
+                  );
+                })}
               </g>
             );
           })}
+          
+          {/* Pending section cells (before adding) */}
+          {showIntraSections && activeCv && pendingSectionCells.size > 0 && !selectedSectionId && (
+            <g style={{ pointerEvents: "none" }}>
+              {Array.from(pendingSectionCells).map((cellKey) => {
+                const [cx, cy] = cellKey.split(",").map(Number);
+                return (
+                  <rect
+                    key={`pending-${cellKey}`}
+                    x={cx * CELL_SIZE}
+                    y={cy * CELL_SIZE}
+                    width={CELL_SIZE}
+                    height={CELL_SIZE}
+                    fill="#FFD700"
+                    opacity={0.5}
+                    stroke="#FFA500"
+                    strokeWidth={1}
+                  />
+                );
+              })}
+            </g>
+          )}
         </svg>
       </CanvasContainer>
 
@@ -1556,11 +1914,126 @@ const CameraViewpointCanvas = ({
             )}
           </div>
 
-          {activeCv && (
+          {activeCv && !showIntraSections && (
             <div className="text-xs bg-neutral-50 rounded p-2 text-neutral-500 leading-relaxed">
               Painting FOV for{" "}
               <span className="font-semibold" style={{ color: activeCv.color }}>{activeCv.cameraName}</span>.
               Click to paint · click painted to erase.
+            </div>
+          )}
+
+          {/* Intra Zone Sections (Optional) */}
+          {activeCv && activeCv.cells.size > 0 && (
+            <div className="border-t border-neutral-200 pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                  Intra-Zone Sections
+                  <span className="ml-1 text-neutral-300">(Optional)</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowIntraSections(!showIntraSections);
+                    setSelectedSectionId(null);
+                    setPendingSectionCells(new Set());
+                  }}
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide transition-colors",
+                    showIntraSections 
+                      ? "bg-[#00775B] text-white" 
+                      : "bg-neutral-200 text-neutral-600 hover:bg-neutral-300"
+                  )}
+                >
+                  {showIntraSections ? "Exit" : "Add"}
+                </button>
+              </div>
+
+              {showIntraSections && (
+                <div className="space-y-2">
+                  <div className="text-[10px] text-neutral-500 mb-2 leading-relaxed">
+                    Define focused areas within the camera FOV where key events occur.
+                  </div>
+
+                  {/* Existing Sections */}
+                  {activeCv.intraZoneSections && activeCv.intraZoneSections.length > 0 && (
+                    <div className="space-y-1 mb-2">
+                      {activeCv.intraZoneSections.map((section) => (
+                        <div
+                          key={section.id}
+                          onClick={() => setSelectedSectionId(selectedSectionId === section.id ? null : section.id)}
+                          className={cn(
+                            "flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer border transition-colors",
+                            selectedSectionId === section.id 
+                              ? "border-[#00775B] bg-green-50" 
+                              : "border-neutral-200 hover:bg-neutral-50"
+                          )}
+                        >
+                          <div 
+                            className="w-3 h-3 rounded flex-shrink-0" 
+                            style={{ backgroundColor: section.color }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[11px] font-semibold text-neutral-800 truncate">
+                              {section.name}
+                            </div>
+                            <div className="text-[9px] text-neutral-400">
+                              {section.cells.size} cells
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              deleteIntraSection(section.id);
+                            }}
+                            className="text-neutral-300 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add New Section */}
+                  <div className="bg-neutral-50 rounded p-2 space-y-2">
+                    <input
+                      type="text"
+                      value={newSectionName}
+                      onChange={(e) => setNewSectionName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addIntraSection()}
+                      placeholder="Section name..."
+                      className="w-full border border-neutral-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-[#00775B]"
+                    />
+                    <button
+                      onClick={addIntraSection}
+                      disabled={!newSectionName.trim() || pendingSectionCells.size === 0}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#00775B] text-white rounded text-xs font-bold hover:bg-[#005f48] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add Section ({pendingSectionCells.size} cells)
+                    </button>
+                  </div>
+
+                  {selectedSectionId && (
+                    <div className="text-xs bg-blue-50 rounded p-2 text-blue-700 leading-relaxed">
+                      Editing <span className="font-semibold">
+                        {activeCv.intraZoneSections?.find(s => s.id === selectedSectionId)?.name}
+                      </span>. Paint within FOV to modify.
+                    </div>
+                  )}
+
+                  {!selectedSectionId && pendingSectionCells.size > 0 && (
+                    <div className="text-xs bg-amber-50 rounded p-2 text-amber-700 leading-relaxed">
+                      {pendingSectionCells.size} cells selected. Enter name and click "Add Section".
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!showIntraSections && activeCv.intraZoneSections && activeCv.intraZoneSections.length > 0 && (
+                <div className="text-[10px] text-neutral-500 mt-1">
+                  {activeCv.intraZoneSections.length} section(s) defined
+                </div>
+              )}
             </div>
           )}
 
@@ -1739,7 +2212,7 @@ export const ZoneConfigurationModal = ({
               </div>
               <div>
                 <Dialog.Title className="font-bold text-neutral-900 text-sm">Zone Configuration</Dialog.Title>
-                <div className="text-xs text-neutral-400 font-medium">Step {currentStep} of {steps.length}</div>
+                <Dialog.Description className="text-xs text-neutral-400 font-medium">Step {currentStep} of {steps.length}</Dialog.Description>
               </div>
             </div>
 

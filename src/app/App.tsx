@@ -1,39 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { SeverityIcon } from "@/app/components/ui/SeverityIcon";
-import { AppSidebar } from "@/app/components/layout/AppSidebar";
-import type { Page } from "@/app/components/layout/AppSidebar";
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/app/components/ui/sidebar";
-import {
-  CommandDialog,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandSeparator,
-} from "@/app/components/ui/command";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/app/components/ui/popover";
+import { Sidebar, Page } from "@/app/components/layout/Sidebar";
 import { IncidentCard } from "@/app/components/dashboard/IncidentCard";
 import { IncidentDetailModal } from "@/app/components/dashboard/IncidentDetailModal";
 import { Button } from "@/app/components/ui/Button";
 import { GridBackground } from "@/app/components/layout/GridBackground";
-import { Bell, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Clock, Filter, LayoutGrid, List, Check, User, Video, MapPin, X, ChevronDown, Info, Trash2, Copy, ImageIcon, Activity, ExternalLink, Search, ShieldCheck, Hexagon, Zap, Shield, Command, Moon, LogOut, TrendingUp, ShieldAlert, ShoppingBag, Fingerprint, ScanFace, CarFront, ClipboardCheck, Map, LayoutDashboard } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Clock, Filter, LayoutGrid, List, Check, User, Video, MapPin, X, ChevronDown, Info, Trash2, Copy, ImageIcon, Activity, ExternalLink, Search, ShieldCheck, Hexagon, Zap, Shield, PanelLeft, Command } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { Checkbox } from "@/app/components/ui/Checkbox";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
@@ -45,6 +17,7 @@ import { VolumeAnalytics } from "@/app/components/pages/VolumeAnalytics";
 import { IncidentAnalytics } from "@/app/components/pages/IncidentAnalytics";
 import { ZoneAnalytics } from "@/app/components/pages/ZoneAnalytics";
 import { QualityAnalytics } from "@/app/components/pages/QualityAnalytics";
+import { SafetyAnalytics } from "@/app/components/pages/SafetyAnalytics";
 import { IdentityAnalytics } from "@/app/components/pages/IdentityAnalytics";
 import { FacialRecognition } from "@/app/components/pages/FacialRecognition";
 import { LicensePlates } from "@/app/components/pages/LicensePlates";
@@ -265,6 +238,9 @@ export default function App() {
   const [isClientSwitcherOpen, setIsClientSwitcherOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(CLIENTS[0]);
   const [isGlobalFilterOpen, setIsGlobalFilterOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; }
+  });
   const [globalFilterType, setGlobalFilterType] = useState<"project" | "camera">("project");
   const [globalFilterQuery, setGlobalFilterQuery] = useState("");
   const [appliedProject, setAppliedProject] = useState<string | null>(null);
@@ -274,20 +250,13 @@ export default function App() {
   const [draftPipeline, setDraftPipeline] = useState<string | null>(null);
   const [draftCameraGroups, setDraftCameraGroups] = useState<Set<string>>(new Set());
 
-  // Command palette + search
-  const [searchOpen, setSearchOpen] = useState(false);
+  // Suppress layout transition on first paint to avoid flash
+  const sidebarMounted = useRef(false);
+  useEffect(() => { sidebarMounted.current = true; }, []);
 
-  // ⌘K / Ctrl+K opens global search
   useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setSearchOpen((v) => !v);
-      }
-    };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
+    try { localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed)); } catch {}
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (isGlobalFilterOpen) {
@@ -416,6 +385,7 @@ export default function App() {
     incident:             "Incident Analytics",
     zone:                 "Zone Analytics",
     quality:              "Quality Analytics",
+    safety:               "Safety Analytics",
     identity:             "Identity Analytics",
     "facial-recognition": "Facial Recognition",
     "license-plates":     "License Plates",
@@ -425,26 +395,28 @@ export default function App() {
   };
 
   return (
-    <SidebarProvider
-      defaultOpen={false}
-      style={{ "--sidebar-width": "14rem" } as React.CSSProperties}
-      className="h-screen font-sans text-neutral-900"
-    >
-      <AppSidebar activePage={activePage} onPageChange={setActivePage} />
+    <div className="flex h-screen bg-[#F8FAFC] font-sans text-neutral-900 relative overflow-hidden">
+      <Sidebar activePage={activePage} onPageChange={setActivePage} collapsed={sidebarCollapsed} noTransition={!sidebarMounted.current} />
 
-      <SidebarInset className="overflow-hidden bg-sidebar">
-        <header className={cn("shrink-0 flex h-12 items-center gap-2 bg-sidebar text-sidebar-foreground px-3 border-b border-sidebar-border transition-all duration-300", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
-          {/* ── Left: trigger + page title ── */}
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5 rounded-md" />
-            <div className="w-px h-4 bg-sidebar-border" />
-            <span className="text-sm font-semibold text-sidebar-foreground/90 tracking-tight">
+      <div className={cn("flex-1 relative z-10 w-full min-w-0 h-full overflow-y-auto overflow-x-hidden", sidebarMounted.current && "transition-all duration-300", sidebarCollapsed ? "lg:pl-14" : "lg:pl-56", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
+        <header className={cn("sticky top-0 z-30 flex h-12 items-center justify-between bg-[#0d1f1b] px-4 border-b border-white/8 text-white transition-all duration-300", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
+          {/* ── Left: toggle + page title ── */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarCollapsed((c) => !c)}
+              className="p-1.5 rounded-md text-white/50 hover:text-white hover:bg-white/8 transition-colors"
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <PanelLeft className={cn("w-4 h-4 transition-transform duration-300", sidebarCollapsed && "rotate-180")} />
+            </button>
+            <div className="w-px h-4 bg-white/10" />
+            <span className="text-sm font-semibold text-white/90 tracking-tight">
               {PAGE_TITLES[activePage] ?? "Dashboard"}
             </span>
           </div>
 
           {/* ── Right: actions ── */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2">
 
             {/* LIVE pill */}
             <div className="flex items-center gap-1.5 px-3 py-1 bg-[#00775B] rounded-full text-white text-xs font-semibold shadow-md shadow-[#00775B]/30">
@@ -537,87 +509,29 @@ export default function App() {
             </div>
 
             {/* Search */}
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="hidden lg:flex items-center gap-2 h-8 px-3 rounded-lg border border-white/10 text-xs text-white/40 bg-white/5 hover:bg-white/8 cursor-pointer transition-colors min-w-[140px]"
-            >
+            <div className="hidden lg:flex items-center gap-2 h-8 px-3 rounded-lg border border-white/10 text-xs text-white/40 bg-white/5 hover:bg-white/8 cursor-pointer transition-colors min-w-[140px]">
               <Search className="w-3.5 h-3.5 shrink-0" />
-              <span className="flex-1 text-left">Search</span>
+              <span className="flex-1">Search</span>
               <div className="flex items-center gap-0.5 opacity-60">
                 <kbd className="text-[10px] font-mono px-1 py-0.5 rounded border border-white/20 bg-white/10">⌘</kbd>
                 <kbd className="text-[10px] font-mono px-1 py-0.5 rounded border border-white/20 bg-white/10">K</kbd>
               </div>
+            </div>
+
+            {/* Bell */}
+            <button className="relative h-8 w-8 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/8 border border-white/10 transition-colors">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-[#021d18]" />
             </button>
 
-            {/* Bell with notification popover */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="relative h-8 w-8 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/8 border border-white/10 transition-colors">
-                  <Bell className="w-4 h-4" />
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-[#021d18]" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 p-0 shadow-xl">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                  <span className="text-sm font-semibold">Notifications</span>
-                  <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">3</span>
-                </div>
-                <div className="divide-y divide-border max-h-[320px] overflow-y-auto">
-                  {[
-                    { dot: "bg-red-500", title: "Critical: Fire Detection spike", desc: "ISS-1023 — False positive rate +23% on Qatar_Demo", time: "30 min ago", unread: true },
-                    { dot: "bg-orange-500", title: "New issue assigned to you", desc: "ISS-1024 — Camera feed dropping on Car_Park_30", time: "2 h ago", unread: true },
-                    { dot: "bg-primary", title: "Firmware v3.2.1 available", desc: "New gateway firmware ready for download", time: "5 h ago", unread: true },
-                    { dot: "bg-blue-500", title: "Compute node H100 memory high", desc: "RAM at 92% on H100-Lan-default", time: "1 day ago", unread: false },
-                  ].map((n, i) => (
-                    <div key={i} className={cn("flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors", n.unread && "bg-primary/[0.03]")}>
-                      <span className={cn("w-2 h-2 rounded-full shrink-0 mt-1.5", n.dot)} />
-                      <div className="flex-1 min-w-0">
-                        <p className={cn("text-sm truncate", n.unread ? "font-medium" : "text-muted-foreground")}>{n.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{n.desc}</p>
-                        <span className="text-[11px] text-muted-foreground/60 mt-0.5 block">{n.time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="px-4 py-2.5 border-t border-border">
-                  <button className="text-xs text-primary hover:underline w-full text-center">View all activity</button>
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Profile dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="h-8 w-8 rounded-full bg-[#00775B] flex items-center justify-center text-white text-xs font-bold shadow-md hover:bg-[#006649] transition-colors ring-0 outline-none">
-                  MU
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel className="font-normal">
-                  <p className="text-sm font-semibold">Mohammed Usman F</p>
-                  <p className="text-xs text-muted-foreground">mohammed.usman@matrice.ai</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="gap-2 cursor-pointer">
-                  <User className="size-4" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2 cursor-pointer">
-                  <Moon className="size-4" />
-                  Dark Mode
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="gap-2 cursor-pointer text-red-600 focus:text-red-600">
-                  <LogOut className="size-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* User avatar */}
+            <button className="h-8 w-8 rounded-full bg-[#00775B] flex items-center justify-center text-white text-xs font-bold shadow-md hover:bg-[#006649] transition-colors">
+              AU
+            </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-tl-2xl bg-[#F8FAFC]">
-        <div className="p-6 space-y-6 relative w-full">
+        <div className="p-6 space-y-6 relative w-full overflow-x-hidden rounded-tl-lg">
           <GridBackground className="fixed inset-0 z-[-1] pointer-events-none" />
           
           <div className="xl:hidden mb-4">
@@ -629,6 +543,7 @@ export default function App() {
             {activePage === "incident" && <IncidentAnalytics persona={activePersona} />}
             {activePage === "zone" && <ZoneAnalytics persona={activePersona} />}
             {activePage === "quality" && <QualityAnalytics persona={activePersona} />}
+            {activePage === "safety" && <SafetyAnalytics persona={activePersona} />}
             {activePage === "identity" && <IdentityAnalytics persona={activePersona} />}
             {activePage === "facial-recognition" && <FacialRecognition />}
             {activePage === "license-plates" && <LicensePlates />}
@@ -775,11 +690,10 @@ export default function App() {
           )}
           </section>
         </div>
-        </div>
-      </SidebarInset>
+      </div>
 
       {/* Incident Detail Modal */}
-      <IncidentDetailModal
+      <IncidentDetailModal 
         incident={currentIncident}
         open={detailModalOpen}
         onOpenChange={(open) => {
@@ -795,42 +709,6 @@ export default function App() {
           setAssignModalOpen(true);
         }}
       />
-
-      {/* ⌘K Global Search */}
-      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <CommandInput placeholder="Search pages and analytics..." />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Navigation">
-            {(
-              [
-                { id: "dashboard" as const,          label: "Dashboard",           icon: LayoutDashboard },
-                { id: "volume" as const,              label: "Volume Analytics",    icon: TrendingUp },
-                { id: "incident" as const,            label: "Incident Analytics",  icon: ShieldAlert },
-                { id: "zone" as const,                label: "Zone Analytics",      icon: MapPin },
-                { id: "quality" as const,             label: "Quality Analytics",   icon: ShoppingBag },
-                { id: "identity" as const,            label: "Identity Analytics",  icon: Fingerprint },
-                { id: "facial-recognition" as const,  label: "Facial Recognition",  icon: ScanFace },
-                { id: "license-plates" as const,      label: "License Plates",      icon: CarFront },
-                { id: "cameras" as const,             label: "Cameras",             icon: Video },
-                { id: "metrics" as const,             label: "Metrics & Rules",     icon: Map },
-                { id: "compliance" as const,          label: "Compliance",          icon: ClipboardCheck },
-              ] as { id: Parameters<typeof setActivePage>[0]; label: string; icon: React.ElementType }[]
-            ).map((item) => (
-              <CommandItem
-                key={item.id}
-                onSelect={() => {
-                  setActivePage(item.id);
-                  setSearchOpen(false);
-                }}
-              >
-                <item.icon className="mr-2 size-4" />
-                {item.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
-      </CommandDialog>
-    </SidebarProvider>
+    </div>
   );
 }

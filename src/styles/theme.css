@@ -8,7 +8,6 @@
   --primary-hover: #004E3D;
   --primary-active: #003D32;
   --primary-light: #00956D;
-  --primary-dark: #001E18;
   --primary-subtle: #E5FFF9;
   --primary-glow: rgba(0, 119, 91, 0.4);
 
@@ -25,19 +24,11 @@
   --neutral-800: #1E293B;
   --neutral-900: #0F172A;
 
-  /* Analytics Severity & Status Colors */
-  --severity-critical: #E7000B;
-  --severity-critical-light: #FFE5E7;
-  --severity-high: #EA580C;
-  --severity-high-light: #FEEFE7;
-  --severity-medium: #E19A04;
-  --severity-medium-light: #FFF7E6;
-  --severity-low: #2B7FFF;
-  --severity-low-light: #E5F0FF;
-  --severity-info: #64748B;
-  --severity-info-light: #F0F2F4;
-  --severity-success: #00A63E;
-  --severity-success-light: #E5FFEF;
+  /* Semantic Colors */
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #BE123C;
+  --color-info: #0284C7;
 
   /* Backgrounds & Surfaces (Light Mode) */
   --bg-body: var(--neutral-100);
@@ -73,13 +64,13 @@
   --chart-3: #D97706;
   --chart-4: #BE123C;
   --chart-5: #059669;
-  --sidebar: #021d18;
+  --sidebar: #0F172A;
   --sidebar-foreground: #F1F5F9;
   --sidebar-primary: #00775B;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #062b20;
-  --sidebar-accent-foreground: #cbd5e1;
-  --sidebar-border: rgba(255,255,255,0.06);
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #CBD5E1;
+  --sidebar-border: #1E293B;
   --sidebar-ring: #00775B;
 
   /* Spacing (8px Grid) - Mapping to rem */
@@ -233,10 +224,10 @@
   --color-neutral-800: var(--neutral-800);
   --color-neutral-900: var(--neutral-900);
 
-  --color-success: var(--severity-success);
-  --color-warning: var(--severity-medium);
-  --color-error: var(--severity-critical);
-  --color-info: var(--severity-low);
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #BE123C;
+  --color-info: #0284C7;
 
   /* Semantic Backgrounds (legacy aliases) */
   --color-surface: var(--bg-surface);

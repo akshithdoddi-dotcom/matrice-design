@@ -214,7 +214,6 @@ export const IdentityAnalytics = ({ persona }: IdentityAnalyticsProps) => {
         onClose={() => setEntityPanelOpen(false)}
         entityType={entityType}
         onViewJourney={openJourney}
-        terminology={terminology}
       />
 
       <CameraFeedPanel

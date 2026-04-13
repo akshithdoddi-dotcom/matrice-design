@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const DirectorView = ({ terminology, timeRange: _timeRange }: Props) => (
-  <div className="flex flex-col gap-4 bg-neutral-50 min-h-full">
+  <div className="flex flex-col gap-6 bg-neutral-50 min-h-full max-w-6xl mx-auto w-full">
     <ExecutiveSummaryBar terminology={terminology} />
     <SixMonthTrendChart terminology={terminology} />
     <CostOfQualitySection terminology={terminology} />

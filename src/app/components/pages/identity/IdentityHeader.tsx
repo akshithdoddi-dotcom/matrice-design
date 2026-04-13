@@ -85,30 +85,60 @@ export const IdentityHeader = ({
 
   return (
     <div className="rounded-md border border-neutral-200 bg-white px-4 py-3 shadow-sm">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="rounded-sm bg-[#E5FFF9] p-2 text-[#00775B]">
-              {identityType === "FACE" ? (
-                <Fingerprint className="h-5 w-5" />
-              ) : (
-                <ScanLine className="h-5 w-5" />
-              )}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="rounded-sm bg-[#E5FFF9] p-2 text-[#00775B]">
+            {identityType === "FACE" ? (
+              <Fingerprint className="h-5 w-5" />
+            ) : (
+              <ScanLine className="h-5 w-5" />
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-900">
+                Identity Analytics
+              </h2>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[#00775B]">
+                {terminology.appLabel}
+              </p>
             </div>
 
-            <div className="space-y-1">
-              <div>
-                <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-900">
-                  Identity Analytics
-                </h2>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[#00775B]">
-                  {terminology.appLabel}
-                </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="rounded-sm border border-neutral-200 bg-neutral-50 p-0.5">
+                <button
+                  onClick={() => onIdentityTypeChange("FACE")}
+                  className={cn(
+                    "rounded-sm px-3 py-1 text-[10px] font-bold uppercase tracking-wide transition-all",
+                    identityType === "FACE"
+                      ? "bg-[#00775B] text-white shadow-sm"
+                      : "text-neutral-500 hover:bg-white"
+                  )}
+                >
+                  Face Recognition
+                </button>
+                <button
+                  onClick={() => onIdentityTypeChange("PLATE")}
+                  className={cn(
+                    "rounded-sm px-3 py-1 text-[10px] font-bold uppercase tracking-wide transition-all",
+                    identityType === "PLATE"
+                      ? "bg-[#00775B] text-white shadow-sm"
+                      : "text-neutral-500 hover:bg-white"
+                  )}
+                >
+                  License Plate
+                </button>
+              </div>
+
+              <div className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-neutral-500">
+                {activeApp.siteLabel}
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative" ref={appRef}>
             <button
               onClick={() => setIsAppOpen((current) => !current)}
@@ -243,48 +273,20 @@ export const IdentityHeader = ({
             )}
           </div>
 
-            <div className="flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[10px] font-mono text-neutral-500">
-              {persona === "monitoring" ? (
-                <>
-                  <span className="h-2 w-2 rounded-full bg-[#00775B] animate-pulse" />
-                  <span>Updated {secondsAgo}s ago</span>
-                </>
-              ) : (
-                <>
-                  <Clock3 className="h-3 w-3" />
-                  <span>
-                    {persona === "manager" ? "Daily aggregate ready" : "Monthly aggregate ready"}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-3">
-          <div className="rounded-sm border border-neutral-200 bg-neutral-50 p-0.5">
-            <button
-              onClick={() => onIdentityTypeChange("FACE")}
-              className={cn(
-                "rounded-sm px-3 py-1 text-[10px] font-bold uppercase tracking-wide transition-all",
-                identityType === "FACE"
-                  ? "bg-[#00775B] text-white shadow-sm"
-                  : "text-neutral-500 hover:bg-white"
-              )}
-            >
-              Face Recognition
-            </button>
-            <button
-              onClick={() => onIdentityTypeChange("PLATE")}
-              className={cn(
-                "rounded-sm px-3 py-1 text-[10px] font-bold uppercase tracking-wide transition-all",
-                identityType === "PLATE"
-                  ? "bg-[#00775B] text-white shadow-sm"
-                  : "text-neutral-500 hover:bg-white"
-              )}
-            >
-              License Plate
-            </button>
+          <div className="flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[10px] font-mono text-neutral-500">
+            {persona === "monitoring" ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-[#00775B] animate-pulse" />
+                <span>Updated {secondsAgo}s ago</span>
+              </>
+            ) : (
+              <>
+                <Clock3 className="h-3 w-3" />
+                <span>
+                  {persona === "manager" ? "Daily aggregate ready" : "Monthly aggregate ready"}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
