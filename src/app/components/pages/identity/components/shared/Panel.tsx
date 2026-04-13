@@ -13,6 +13,8 @@ interface PanelProps {
   collapsible?: boolean;
   defaultOpen?: boolean;
   headerRight?: ReactNode;
+  /** Makes the panel fill its container height; inner content becomes flex-1 */
+  grow?: boolean;
 }
 
 export const Panel = ({
@@ -24,13 +26,18 @@ export const Panel = ({
   collapsible = false,
   defaultOpen = true,
   headerRight,
+  grow = false,
 }: PanelProps) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={cn("bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden", className)}>
+    <div className={cn(
+      "bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden",
+      grow && "flex flex-col h-full",
+      className,
+    )}>
       <div
         className={cn(
-          "flex items-center justify-between px-4 py-3 border-b border-neutral-50",
+          "flex items-center justify-between px-4 py-3 border-b border-neutral-50 shrink-0",
           collapsible && "cursor-pointer hover:bg-neutral-50/50"
         )}
         onClick={collapsible ? () => setOpen((o) => !o) : undefined}
@@ -49,7 +56,7 @@ export const Panel = ({
           )}
         </div>
       </div>
-      {open && <div className="p-4">{children}</div>}
+      {open && <div className={cn("p-4", grow && "flex-1 flex flex-col min-h-0")}>{children}</div>}
     </div>
   );
 };
