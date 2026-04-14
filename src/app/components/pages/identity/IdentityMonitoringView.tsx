@@ -8,6 +8,7 @@ import {
   Users, Plus, ChevronRight,
 } from "lucide-react";
 import { IdentityEvidenceMedia } from "./components/shared/IdentityEvidenceMedia";
+import { SlidePanel } from "./components/panels/SlidePanel";
 import { IDENTITY_LIVE_STATUS, IDENTITY_ZONES, UNKNOWN_TRACKERS } from "./data/mockData";
 import type { IdentityTerminology } from "./data/types";
 import type { IdentityAppOption } from "../IdentityAnalytics";
@@ -436,25 +437,22 @@ function WatchlistForm({
   );
 }
 
-// ─── Action Drawer — slides in from right over the entity modal ────────────────
+// ─── Action Drawer — second SlidePanel over the entity panel ─────────────────
 function ActionDrawer({
   mode, isThreat, isLPR, person, onClose,
 }: {
-  mode: DrawerMode; isThreat: boolean; isLPR: boolean;
+  mode: DrawerMode | null; isThreat: boolean; isLPR: boolean;
   person: FeedPerson; onClose: () => void;
 }) {
   const [miniConfirm, setMiniConfirm] = useState(false);
   const [done, setDone] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, [onClose]);
+  // Reset state when mode changes
+  useEffect(() => { setDone(false); setDoneMsg(""); setMiniConfirm(false); }, [mode]);
 
-  const action = mode.kind === "action" ? mode.action : null;
-  const isWL   = mode.kind === "watchlist";
+  const action   = mode?.kind === "action" ? mode.action : null;
+  const isWL     = mode?.kind === "watchlist";
   const isDanger = isThreat || action?.variant === "danger";
 
   const handleExecute = () => {
@@ -466,50 +464,58 @@ function ActionDrawer({
     setTimeout(onClose, 2200);
   };
 
+  const drawerTitle = isWL
+    ? (isLPR ? "Add / Manage Vehicle" : "Add / Manage Flagged Person")
+    : (action?.label ?? "");
+
+  const drawerSubtitle = `${person.displayName} · ${person.zone}`;
+
+  // Icon badge for header
+  const headerIcon = (
+    <div className={cn(
+      "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
+      isWL ? "bg-[#00775B]/10" : isDanger ? "bg-red-100" : "bg-[#00775B]/10"
+    )}>
+      {isWL
+        ? <Plus className="w-3.5 h-3.5 text-[#00775B]" />
+        : action?.icon
+        ? <action.icon className={cn("w-3.5 h-3.5", isDanger ? "text-red-600" : "text-[#00775B]")} />
+        : null}
+    </div>
+  );
+
+  // Footer buttons for non-watchlist, non-done state
+  const footer = !done && !isWL && action ? (
+    <div className="border-t border-neutral-100 px-5 py-3.5 flex gap-2.5 shrink-0 bg-white">
+      <button
+        onClick={onClose}
+        className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
+      >Cancel</button>
+      <button
+        onClick={() => isDanger ? setMiniConfirm(true) : handleExecute()}
+        className={cn(
+          "flex-1 h-9 rounded-[6px] text-[12px] font-bold text-white transition-colors inline-flex items-center justify-center gap-1.5",
+          isDanger ? "bg-red-600 hover:bg-red-700" : "bg-[#00775B] hover:bg-[#006349]"
+        )}
+      >
+        {isDanger ? "Proceed" : "Confirm"}
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  ) : null;
+
   return (
     <>
-      {/* Overlay behind drawer */}
-      <div className="fixed inset-0 z-[55] bg-black/30 backdrop-blur-[1px]" onClick={onClose} />
-
-      {/* Slide-in drawer */}
-      <div
-        className="fixed right-0 top-0 h-full z-[56] w-[420px] max-w-[95vw] bg-white shadow-2xl flex flex-col"
-        style={{ animation: "slideInRight 180ms cubic-bezier(0.22,1,0.36,1)" }}
-        onClick={e => e.stopPropagation()}
+      <SlidePanel
+        isOpen={!!mode}
+        onClose={onClose}
+        title={drawerTitle}
+        subtitle={drawerSubtitle}
+        width="w-[440px]"
+        headerRight={headerIcon}
       >
-        {/* Drawer header */}
-        <div className={cn(
-          "flex items-center gap-3 px-5 py-4 border-b shrink-0",
-          isWL ? "border-neutral-100 bg-white"
-            : isDanger ? "border-red-100 bg-red-50"
-            : "border-[#00775B]/15 bg-[#F0FFF9]"
-        )}>
-          {action?.icon && (
-            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-              isDanger ? "bg-red-100" : "bg-[#00775B]/10"
-            )}>
-              <action.icon className={cn("w-4 h-4", isDanger ? "text-red-600" : "text-[#00775B]")} />
-            </div>
-          )}
-          {isWL && (
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#00775B]/10 shrink-0">
-              <Plus className="w-4 h-4 text-[#00775B]" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-neutral-900 truncate">
-              {isWL ? (isLPR ? "Add / Manage Vehicle" : "Add / Manage Flagged Person") : action?.label}
-            </p>
-            <p className="text-[10px] text-neutral-400 truncate">{person.displayName} · {person.zone}</p>
-          </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors shrink-0">
-            <X className="w-3.5 h-3.5 text-neutral-500" />
-          </button>
-        </div>
-
-        {/* Done state */}
         {done ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+          <div className="flex flex-col items-center justify-center gap-4 p-12 text-center min-h-[300px]">
             <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
               <CheckCircle2 className="w-7 h-7 text-emerald-600" />
             </div>
@@ -521,69 +527,53 @@ function ActionDrawer({
           <WatchlistForm isLPR={isLPR} person={person} onCancel={onClose} onSubmit={handleWLSubmit} />
 
         ) : (
-          <>
-            <div className="flex-1 overflow-y-auto px-5 py-5">
+          <div className="flex flex-col h-full">
+            <div className="flex-1 px-6 py-5">
               <p className="text-[13px] text-neutral-600 leading-relaxed">{action?.confirmMsg}</p>
               {isDanger && (
-                <div className="mt-4 flex items-start gap-2 px-3.5 py-2.5 bg-red-50 border border-red-200 rounded-[6px]">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                <div className="mt-4 flex items-start gap-2.5 px-3.5 py-3 bg-red-50 border border-red-200 rounded-[6px]">
+                  <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                   <p className="text-[11px] text-red-700 font-medium leading-relaxed">
                     This action is logged and visible to all operators. It cannot be undone.
                   </p>
                 </div>
               )}
             </div>
-            <div className="border-t border-neutral-100 px-5 py-3.5 flex gap-2.5 shrink-0">
-              <button onClick={onClose} className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors">
-                Cancel
-              </button>
-              <button
-                onClick={() => isDanger ? setMiniConfirm(true) : handleExecute()}
-                className={cn(
-                  "flex-1 h-9 rounded-[6px] text-[12px] font-bold text-white transition-colors",
-                  isDanger ? "bg-red-600 hover:bg-red-700" : "bg-[#00775B] hover:bg-[#006349]"
-                )}
-              >
-                {isDanger ? "Proceed" : "Confirm"}
-                <ChevronRight className="w-3.5 h-3.5 inline ml-1" />
-              </button>
-            </div>
-          </>
+            {footer}
+          </div>
         )}
-      </div>
+      </SlidePanel>
 
-      {/* ── Mini-confirm modal for destructive actions ── */}
+      {/* ── Mini-confirm modal (sits above everything) ── */}
       {miniConfirm && action && (
         <>
-          <div className="fixed inset-0 z-[60] bg-black/50" onClick={() => setMiniConfirm(false)} />
+          <div className="fixed inset-0 z-[1100] bg-black/50" onClick={() => setMiniConfirm(false)} />
           <div
-            className="fixed z-[61] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] bg-white rounded-[12px] shadow-2xl p-5"
+            className="fixed z-[1101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] bg-white rounded-[12px] shadow-2xl p-5"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-start gap-3 mb-3">
+            <div className="flex items-start gap-3 mb-4">
               <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4.5 h-4.5 text-red-600" />
+                <AlertTriangle className="w-4 h-4 text-red-600" />
               </div>
               <div>
                 <p className="text-[13px] font-black text-neutral-900">Confirm action</p>
-                <p className="text-[11px] text-neutral-500 mt-0.5 leading-relaxed">{action.confirmMsg}</p>
+                <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed">{action.confirmMsg}</p>
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-2">
               <button
                 onClick={() => setMiniConfirm(false)}
-                className="flex-1 h-8 rounded-[6px] border border-neutral-200 text-[11px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
+                className="flex-1 h-9 rounded-[6px] border border-neutral-200 text-[11px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
               >Cancel</button>
               <button
                 onClick={handleExecute}
-                className="flex-1 h-8 rounded-[6px] bg-red-600 text-[11px] font-bold text-white hover:bg-red-700 transition-colors"
+                className="flex-1 h-9 rounded-[6px] bg-red-600 text-[11px] font-bold text-white hover:bg-red-700 transition-colors"
               >Yes, proceed</button>
             </div>
           </div>
         </>
       )}
-
-      <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
     </>
   );
 }
@@ -836,25 +826,18 @@ function FeedTableRow({
 
 // ─── Entity Detail Modal ───────────────────────────────────────────────────────
 function EntityModal({
-  person, journey, isLPR, terminology, onClose,
+  isOpen, person, journey, isLPR, terminology, onClose,
 }: {
-  person: FeedPerson; journey: JourneyStop[];
+  isOpen: boolean; person: FeedPerson | null; journey: JourneyStop[];
   isLPR: boolean; terminology: IdentityTerminology;
   onClose: () => void;
 }) {
   const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
 
-  // Close on Escape (only when drawer is not open)
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (drawerMode) setDrawerMode(null);
-        else onClose();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose, drawerMode]);
+  // Reset drawer when panel closes
+  useEffect(() => { if (!isOpen) setDrawerMode(null); }, [isOpen]);
+
+  if (!person) return null;
 
   const cfg = STATUS_CFG[person.status];
   const isThreat = person.status === "BLACKLIST" || person.status === "BOLO";
@@ -900,46 +883,38 @@ function EntityModal({
   const actions = isLPR ? lprActions : frActions;
   const isPlate = isLPR || person.identType === "PLATE";
 
+  // Status badge for SlidePanel headerRight
+  const statusBadge = (
+    <div className="flex items-center gap-2">
+      <span className={cn(
+        "text-[9px] font-black tracking-widest uppercase px-2 py-1 rounded-[3px] text-white",
+        cfg.headerBg
+      )}>
+        {cfg.label}
+      </span>
+      {isThreat && (
+        <span className="flex items-center gap-1 text-[9px] font-bold text-red-600 uppercase">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+          Active Threat
+        </span>
+      )}
+      <span className="text-[10px] font-mono text-neutral-400">{person.time}</span>
+    </div>
+  );
+
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-50"
-        onClick={onClose}
-      />
-
-      {/* Modal panel */}
-      <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[680px] max-w-[95vw] max-h-[90vh] flex flex-col bg-white rounded-xl shadow-2xl overflow-hidden"
-        onClick={e => e.stopPropagation()}
+      <SlidePanel
+        isOpen={isOpen}
+        onClose={onClose}
+        title={person.displayName}
+        subtitle={`${person.zone} · ${person.camera}`}
+        width="w-[680px]"
+        headerRight={statusBadge}
       >
-        {/* ── Modal header (status-colored) ── */}
-        <div className={cn("flex items-center gap-3 px-5 py-3.5 shrink-0", cfg.headerBg)}>
-          <span className="text-[10px] font-black tracking-widest text-white/90 uppercase px-2 py-1 rounded bg-black/20">
-            {cfg.label}
-          </span>
-          {isThreat && (
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              <span className="text-[10px] font-bold text-white uppercase tracking-wider">Active Threat</span>
-            </div>
-          )}
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-[11px] font-mono text-white/70">{person.time}</span>
-            <button
-              onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/30 transition-colors"
-            >
-              <X className="w-3.5 h-3.5 text-white" />
-            </button>
-          </div>
-        </div>
 
-        {/* ── Scrollable body ── */}
-        <div className="flex-1 overflow-y-auto">
-
-          {/* Identity section */}
-          <div className="flex gap-5 p-5 pb-4 border-b border-neutral-100">
+        {/* Identity section */}
+        <div className="flex gap-5 p-5 pb-4 border-b border-neutral-100">
             {/* Media — large */}
             <div className="shrink-0">
               {isPlate ? (
@@ -1079,19 +1054,17 @@ function EntityModal({
             onSelectAction={a => setDrawerMode({ kind: "action", action: a })}
             onManageWatchlist={() => setDrawerMode({ kind: "watchlist" })}
           />
-        </div>
-      </div>
 
-      {/* Action drawer */}
-      {drawerMode && (
-        <ActionDrawer
-          mode={drawerMode}
-          isThreat={isThreat}
-          isLPR={isLPR}
-          person={person}
-          onClose={() => setDrawerMode(null)}
-        />
-      )}
+      </SlidePanel>
+
+      {/* Action drawer — second SlidePanel layer */}
+      <ActionDrawer
+        mode={drawerMode}
+        isThreat={isThreat}
+        isLPR={isLPR}
+        person={person}
+        onClose={() => setDrawerMode(null)}
+      />
     </>
   );
 }
@@ -1516,16 +1489,15 @@ export const IdentityMonitoringView = ({
       </div>
       </div>
 
-      {/* ── Entity Detail Modal ───────────────────────────────────────────── */}
-      {modalPerson && (
-        <EntityModal
-          person={modalPerson}
-          journey={modalJourney}
-          isLPR={isLPR}
-          terminology={terminology}
-          onClose={() => setModalPersonId(null)}
-        />
-      )}
+      {/* ── Entity Detail Slide Panel ─────────────────────────────────────── */}
+      <EntityModal
+        isOpen={!!modalPerson}
+        person={modalPerson}
+        journey={modalJourney}
+        isLPR={isLPR}
+        terminology={terminology}
+        onClose={() => setModalPersonId(null)}
+      />
     </div>
   );
 };
