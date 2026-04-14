@@ -62,7 +62,7 @@ export const ZonePerformanceTable = ({ terminology }: Props) => {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-neutral-100">
+            <tr className="border-b border-neutral-100 bg-neutral-50/80">
               {[
                 { label: "Zone", col: "zone_name" as SortKey },
                 { label: `${terminology.primaryMetricLabel}`, col: "compliance_pct" as SortKey },
@@ -74,7 +74,7 @@ export const ZonePerformanceTable = ({ terminology }: Props) => {
               ].map(({ label, col }) => (
                 <th
                   key={col}
-                  className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-3 whitespace-nowrap cursor-pointer hover:text-neutral-600"
+                  className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 py-2 pr-3 first:pl-4 whitespace-nowrap cursor-pointer hover:text-neutral-600"
                   onClick={() => handleSort(col)}
                 >
                   {label} <SortBtn col={col} />
@@ -82,13 +82,13 @@ export const ZonePerformanceTable = ({ terminology }: Props) => {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-neutral-50">
             {sorted.map((zone) => (
               <tr
                 key={zone.zone_id}
-                className={cn("border-b border-neutral-50 transition-colors", rowBg(zone.status))}
+                className={cn("transition-colors hover:bg-neutral-50/60", rowBg(zone.status))}
               >
-                <td className="py-2.5 pr-3 font-semibold text-neutral-700 whitespace-nowrap">
+                <td className="py-2.5 pr-3 pl-4 font-semibold text-neutral-700 whitespace-nowrap">
                   {zone.zone_name}
                 </td>
                 <td className={cn("py-2.5 pr-3 font-black tabular-nums font-data", compColor(zone.compliance_pct))}>

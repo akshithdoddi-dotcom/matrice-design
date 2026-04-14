@@ -36,7 +36,7 @@ export const RepeatViolatorsSection = ({ terminology }: Props) => {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-neutral-100">
+            <tr className="border-b border-neutral-100 bg-neutral-50/80">
               {[
                 `${terminology.entityLabel} ID`,
                 `${terminology.negativeEventLabel}s`,
@@ -49,18 +49,18 @@ export const RepeatViolatorsSection = ({ terminology }: Props) => {
               ].map((h) => (
                 <th
                   key={h}
-                  className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-3 whitespace-nowrap"
+                  className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 py-2 pr-3 whitespace-nowrap"
                 >
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-neutral-50">
             {REPEAT_VIOLATORS.map((v) => (
               <tr
                 key={v.tracker_id}
-                className="border-b border-neutral-50 hover:bg-neutral-50 transition-colors"
+                className="hover:bg-neutral-50/60 transition-colors"
               >
                 <td className="py-2.5 pr-3 font-semibold text-neutral-700">{v.anonymized_label}</td>
                 <td className="py-2.5 pr-3 font-black font-data tabular-nums text-red-500">{v.violation_count}</td>
