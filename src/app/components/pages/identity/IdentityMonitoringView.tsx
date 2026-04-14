@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/app/lib/utils";
 import {
   ShieldAlert, UserX, Eye, Clock, Radio, Lock, UserPlus,
@@ -421,23 +422,24 @@ function WatchlistForm({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-neutral-100 px-5 py-3.5 flex gap-2.5 shrink-0">
+      <div className="border-t border-neutral-100 px-5 py-3.5 flex items-center justify-end gap-2.5 shrink-0">
         <button
           onClick={onCancel}
           className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
         >Cancel</button>
         <button
           onClick={onSubmit}
-          className="flex-1 h-9 rounded-[6px] bg-[#00775B] text-[12px] font-bold text-white hover:bg-[#006349] transition-colors"
+          className="h-9 px-6 rounded-[6px] bg-[#00775B] text-[12px] font-bold text-white hover:bg-[#006349] transition-colors inline-flex items-center gap-1.5"
         >
           {isLPR ? "Add Vehicle to Watchlist" : "Add to Watchlist"}
+          <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </>
   );
 }
 
-// ─── Action Drawer — second SlidePanel over the entity panel ─────────────────
+// ─── Action Modal — centered popup over the entity panel ──────────────────────
 function ActionDrawer({
   mode, isThreat, isLPR, person, onClose,
 }: {
@@ -450,6 +452,13 @@ function ActionDrawer({
 
   // Reset state when mode changes
   useEffect(() => { setDone(false); setDoneMsg(""); setMiniConfirm(false); }, [mode]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && mode) onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [mode, onClose]);
 
   const action   = mode?.kind === "action" ? mode.action : null;
   const isWL     = mode?.kind === "watchlist";
@@ -464,90 +473,129 @@ function ActionDrawer({
     setTimeout(onClose, 2200);
   };
 
-  const drawerTitle = isWL
+  const modalTitle = isWL
     ? (isLPR ? "Add / Manage Vehicle" : "Add / Manage Flagged Person")
     : (action?.label ?? "");
 
-  const drawerSubtitle = `${person.displayName} · ${person.zone}`;
+  if (!mode) return null;
 
-  // Icon badge for header
-  const headerIcon = (
-    <div className={cn(
-      "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
-      isWL ? "bg-[#00775B]/10" : isDanger ? "bg-red-100" : "bg-[#00775B]/10"
-    )}>
-      {isWL
-        ? <Plus className="w-3.5 h-3.5 text-[#00775B]" />
-        : action?.icon
-        ? <action.icon className={cn("w-3.5 h-3.5", isDanger ? "text-red-600" : "text-[#00775B]")} />
-        : null}
-    </div>
-  );
-
-  // Footer buttons for non-watchlist, non-done state
-  const footer = !done && !isWL && action ? (
-    <div className="border-t border-neutral-100 px-5 py-3.5 flex gap-2.5 shrink-0 bg-white">
-      <button
-        onClick={onClose}
-        className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
-      >Cancel</button>
-      <button
-        onClick={() => isDanger ? setMiniConfirm(true) : handleExecute()}
-        className={cn(
-          "flex-1 h-9 rounded-[6px] text-[12px] font-bold text-white transition-colors inline-flex items-center justify-center gap-1.5",
-          isDanger ? "bg-red-600 hover:bg-red-700" : "bg-[#00775B] hover:bg-[#006349]"
-        )}
-      >
-        {isDanger ? "Proceed" : "Confirm"}
-        <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  ) : null;
-
-  return (
+  return createPortal(
     <>
-      <SlidePanel
-        isOpen={!!mode}
-        onClose={onClose}
-        title={drawerTitle}
-        subtitle={drawerSubtitle}
-        width="w-[440px]"
-        headerRight={headerIcon}
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[1000] bg-black/50 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+
+      {/* Centered modal */}
+      <div
+        className={cn(
+          "fixed z-[1001] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+          "bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden",
+          "max-w-[95vw] max-h-[90vh]",
+          isWL ? "w-[560px]" : "w-[460px]"
+        )}
+        onClick={e => e.stopPropagation()}
       >
-        {done ? (
-          <div className="flex flex-col items-center justify-center gap-4 p-12 text-center min-h-[300px]">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
-              <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+        {/* Modal header */}
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-neutral-100 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+              isWL ? "bg-[#00775B]/10" : isDanger ? "bg-red-100" : "bg-[#00775B]/10"
+            )}>
+              {isWL
+                ? <Plus className="w-3.5 h-3.5 text-[#00775B]" />
+                : action?.icon
+                ? <action.icon className={cn("w-3.5 h-3.5", isDanger ? "text-red-600" : "text-[#00775B]")} />
+                : null}
             </div>
-            <p className="text-[14px] font-bold text-neutral-800">{doneMsg}</p>
-            <p className="text-[11px] text-neutral-400">Closing automatically…</p>
+            <div className="min-w-0">
+              <h3 className="text-[13px] font-bold text-neutral-900 leading-tight">{modalTitle}</h3>
+              <p className="text-[11px] text-neutral-400 mt-0.5 truncate">{person.displayName} · {person.zone}</p>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
-        ) : isWL ? (
-          <WatchlistForm isLPR={isLPR} person={person} onCancel={onClose} onSubmit={handleWLSubmit} />
+        {/* Modal body — scrollable */}
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          {done ? (
+            <div className="flex flex-col items-center justify-center gap-4 p-12 text-center min-h-[200px]">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+              </div>
+              <p className="text-[14px] font-bold text-neutral-800">{doneMsg}</p>
+              <p className="text-[11px] text-neutral-400">Closing automatically…</p>
+            </div>
 
-        ) : (
-          <div className="flex flex-col h-full">
-            <div className="flex-1 px-6 py-5">
-              <p className="text-[13px] text-neutral-600 leading-relaxed">{action?.confirmMsg}</p>
+          ) : isWL ? (
+            <WatchlistForm isLPR={isLPR} person={person} onCancel={onClose} onSubmit={handleWLSubmit} />
+
+          ) : (
+            <div className="px-6 py-6 space-y-4">
+              {/* Confirm message */}
+              <p className="text-[14px] text-neutral-700 leading-relaxed">{action?.confirmMsg}</p>
+
+              {/* Subject summary */}
+              <div className="flex items-center gap-3 px-3.5 py-3 bg-neutral-50 border border-neutral-200 rounded-[8px]">
+                <div className="w-8 h-8 rounded-full bg-neutral-200 overflow-hidden shrink-0">
+                  <img
+                    src={person.imageSrc ?? `https://i.pravatar.cc/64?u=${person.id}`}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[12px] font-bold text-neutral-800 truncate">{person.displayName}</p>
+                  <p className="text-[10px] text-neutral-400 font-mono truncate">{person.zone} · {person.camera}</p>
+                </div>
+              </div>
+
+              {/* Danger warning */}
               {isDanger && (
-                <div className="mt-4 flex items-start gap-2.5 px-3.5 py-3 bg-red-50 border border-red-200 rounded-[6px]">
+                <div className="flex items-start gap-2.5 px-3.5 py-3 bg-red-50 border border-red-200 rounded-[8px]">
                   <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                   <p className="text-[11px] text-red-700 font-medium leading-relaxed">
-                    This action is logged and visible to all operators. It cannot be undone.
+                    Critical security action — this will be logged and is irreversible once executed.
                   </p>
                 </div>
               )}
             </div>
-            {footer}
+          )}
+        </div>
+
+        {/* Modal footer — action buttons (non-watchlist, non-done) */}
+        {!done && !isWL && action && (
+          <div className="border-t border-neutral-100 px-5 py-3.5 flex items-center justify-end gap-2.5 shrink-0 bg-white">
+            <button
+              onClick={onClose}
+              className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
+            >Cancel</button>
+            <button
+              onClick={() => isDanger ? setMiniConfirm(true) : handleExecute()}
+              className={cn(
+                "h-9 px-6 rounded-[6px] text-[12px] font-bold text-white transition-colors inline-flex items-center gap-1.5",
+                isDanger ? "bg-red-600 hover:bg-red-700" : "bg-[#00775B] hover:bg-[#006349]"
+              )}
+            >
+              Confirm
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
-      </SlidePanel>
+      </div>
 
-      {/* ── Mini-confirm modal (sits above everything) ── */}
+      {/* ── Mini-confirm modal (sits above the action modal) ── */}
       {miniConfirm && action && (
         <>
-          <div className="fixed inset-0 z-[1100] bg-black/50" onClick={() => setMiniConfirm(false)} />
+          <div className="fixed inset-0 z-[1100] bg-black/40" onClick={() => setMiniConfirm(false)} />
           <div
             className="fixed z-[1101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] bg-white rounded-[12px] shadow-2xl p-5"
             onClick={e => e.stopPropagation()}
@@ -557,7 +605,7 @@ function ActionDrawer({
                 <AlertTriangle className="w-4 h-4 text-red-600" />
               </div>
               <div>
-                <p className="text-[13px] font-black text-neutral-900">Confirm action</p>
+                <p className="text-[13px] font-black text-neutral-900">Are you sure?</p>
                 <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed">{action.confirmMsg}</p>
               </div>
             </div>
@@ -574,7 +622,8 @@ function ActionDrawer({
           </div>
         </>
       )}
-    </>
+    </>,
+    document.body
   );
 }
 
@@ -845,39 +894,39 @@ function EntityModal({
   const isVIP = person.status === "VIP";
 
   const frActions = isThreat ? [
-    { key: "dispatch", label: "Dispatch Security to Zone",    confirmMsg: `Send security team to ${person.zone}? This will be logged and visible to all operators.`,   successMsg: `Security team en route to ${person.zone}`,      icon: Radio,         variant: "danger"   as const },
-    { key: "lockdown", label: "Initiate Zone Lockdown",       confirmMsg: `Lock down ${person.zone} and restrict all access? This will alert all entry points.`,        successMsg: `${person.zone} is now locked — all entries blocked`, icon: Lock,       variant: "danger"   as const },
-    { key: "control",  label: "Alert Control Room",           confirmMsg: "Broadcast critical alert to control room operators?",                                        successMsg: "Control room notified — standby for response",   icon: Zap,           variant: "primary"  as const },
-    { key: "fp",       label: "Mark as False Match",          confirmMsg: "Mark as false positive? This will re-open the camera feed and remove the alert.",            successMsg: "Alert cleared — feed restored",                  icon: X,             variant: "default"  as const },
+    { key: "dispatch", label: "Dispatch Security to Zone",    confirmMsg: `Send the security team to ${person.zone} to intercept this individual.`,                  successMsg: `Security team en route to ${person.zone}`,      icon: Radio,         variant: "danger"   as const },
+    { key: "lockdown", label: "Initiate Zone Lockdown",       confirmMsg: `Restrict all access to ${person.zone} and lock all entry points immediately.`,            successMsg: `${person.zone} locked down — all entries blocked`, icon: Lock,       variant: "danger"   as const },
+    { key: "control",  label: "Alert Control Room",           confirmMsg: "Broadcast a critical alert to all control room operators on duty.",                        successMsg: "Control room notified — standby for response",   icon: Zap,           variant: "primary"  as const },
+    { key: "fp",       label: "Mark as False Match",          confirmMsg: "Dismiss this match as a false positive and remove the active alert.",                     successMsg: "Alert cleared — feed restored",                  icon: X,             variant: "default"  as const },
   ] : isUnknown ? [
-    { key: "officer",   label: "Deploy Officer",              confirmMsg: `Send an officer to ${person.zone} to verify identity?`,                                     successMsg: "Officer dispatched — ETA 2 min",                 icon: UserPlus,      variant: "primary"  as const },
-    { key: "track",     label: "Enable Cross-Camera Track",   confirmMsg: "Enable real-time cross-camera tracking for this individual?",                               successMsg: "Tracking enabled — monitoring all zones",         icon: Navigation2,   variant: "primary"  as const },
-    { key: "watchlist", label: "Add to Watchlist",            confirmMsg: "Add to watchlist? Future appearances will trigger immediate alerts.",                       successMsg: "Added — alerts enabled for future appearances",   icon: BookmarkPlus,  variant: "default"  as const },
-    { key: "dismiss",   label: "Clear Alert",                 confirmMsg: "Clear this alert? The individual will no longer be flagged unless re-detected.",            successMsg: "Alert cleared",                                  icon: X,             variant: "default"  as const },
+    { key: "officer",   label: "Deploy Officer",              confirmMsg: `Send an officer to ${person.zone} to physically verify the identity of this individual.`, successMsg: "Officer dispatched — ETA 2 min",                 icon: UserPlus,      variant: "primary"  as const },
+    { key: "track",     label: "Enable Cross-Camera Tracking",confirmMsg: "Begin real-time cross-camera tracking for this individual across all connected zones.",   successMsg: "Tracking enabled — monitoring all zones",         icon: Navigation2,   variant: "primary"  as const },
+    { key: "watchlist", label: "Add to Watchlist",            confirmMsg: "Add this person to the watchlist. Future appearances will trigger immediate alerts.",     successMsg: "Added — alerts active for future appearances",    icon: BookmarkPlus,  variant: "default"  as const },
+    { key: "dismiss",   label: "Clear Alert",                 confirmMsg: "Clear this alert. The individual will not be flagged again unless re-detected.",          successMsg: "Alert cleared",                                  icon: X,             variant: "default"  as const },
   ] : isVIP ? [
-    { key: "escort",    label: "Activate Escort Protocol",   confirmMsg: `Assign a security escort for ${person.displayName} at ${person.zone}?`,                     successMsg: "Escort team notified — meeting at zone entry",    icon: Shield,        variant: "primary"  as const },
-    { key: "desk",      label: "Alert Front Desk",           confirmMsg: "Notify front desk of VIP arrival?",                                                         successMsg: "Front desk alerted — guest log updated",          icon: Zap,           variant: "default"  as const },
-    { key: "route",     label: "Open VIP Access Route",      confirmMsg: "Unlock VIP-designated gates and elevators?",                                                successMsg: "VIP route unlocked — access granted",             icon: Navigation2,   variant: "default"  as const },
+    { key: "escort",    label: "Activate Escort Protocol",   confirmMsg: `Assign a dedicated security escort for ${person.displayName} at ${person.zone}.`,          successMsg: "Escort team notified — meeting at zone entry",    icon: Shield,        variant: "primary"  as const },
+    { key: "desk",      label: "Alert Front Desk",           confirmMsg: "Notify the front desk of this VIP arrival so they can prepare a reception.",               successMsg: "Front desk alerted — guest log updated",          icon: Zap,           variant: "default"  as const },
+    { key: "route",     label: "Open VIP Access Route",      confirmMsg: "Unlock VIP-designated gates and elevators for immediate access.",                          successMsg: "VIP route unlocked — access granted",             icon: Navigation2,   variant: "default"  as const },
   ] : [
-    { key: "log",     label: "Log as Cleared Entry",         confirmMsg: "Log this as a verified and cleared entry in the access register?",                          successMsg: "Entry logged in access register",                 icon: CheckCircle2,  variant: "default"  as const },
-    { key: "flag",    label: "Flag for Supervisor Review",   confirmMsg: "Flag this event for supervisor review? A notification will be sent.",                       successMsg: "Flagged — supervisor notified",                   icon: AlertTriangle, variant: "default"  as const },
+    { key: "log",     label: "Log as Cleared Entry",         confirmMsg: "Confirm and record this as a verified, cleared entry in the access register.",             successMsg: "Entry logged in access register",                 icon: CheckCircle2,  variant: "default"  as const },
+    { key: "flag",    label: "Flag for Supervisor Review",   confirmMsg: "Flag this event and send a notification to the on-duty supervisor for review.",            successMsg: "Flagged — supervisor notified",                   icon: AlertTriangle, variant: "default"  as const },
   ];
 
   const lprActions = isThreat ? [
-    { key: "seal",   label: "Seal Entry Point",              confirmMsg: `Close and lock the gate at ${person.zone}? Security will be notified.`,                     successMsg: `Gate sealed at ${person.zone} — security alerted`, icon: Ban,         variant: "danger"   as const },
-    { key: "police", label: "Notify Police",                 confirmMsg: "Send BOLO vehicle details to local police? This action is logged.",                         successMsg: "Police notified — case reference generated",       icon: Radio,       variant: "danger"   as const },
-    { key: "alert",  label: "Alert All Gate Operators",      confirmMsg: "Broadcast this plate to all entry/exit gate operators?",                                    successMsg: "All gates on alert — plate flagged",               icon: Zap,         variant: "primary"  as const },
-    { key: "fp",     label: "Mark as False Match",           confirmMsg: "Mark as false positive and lift the gate block?",                                           successMsg: "Alert cleared — gate access restored",             icon: X,           variant: "default"  as const },
+    { key: "seal",   label: "Seal Entry Point",              confirmMsg: `Close and lock the gate at ${person.zone}. All approaching vehicles will be stopped.`,     successMsg: `Gate sealed at ${person.zone} — security alerted`, icon: Ban,         variant: "danger"   as const },
+    { key: "police", label: "Notify Police",                 confirmMsg: "Transmit BOLO vehicle details to local law enforcement. A case reference will be generated.", successMsg: "Police notified — case reference generated",    icon: Radio,       variant: "danger"   as const },
+    { key: "alert",  label: "Alert All Gate Operators",      confirmMsg: "Broadcast this plate number to all entry and exit gate operators across the site.",         successMsg: "All gates on alert — plate flagged",               icon: Zap,         variant: "primary"  as const },
+    { key: "fp",     label: "Mark as False Match",           confirmMsg: "Dismiss as a false positive. The gate block will be lifted and the alert removed.",         successMsg: "Alert cleared — gate access restored",             icon: X,           variant: "default"  as const },
   ] : isUnknown ? [
-    { key: "block",   label: "Deny Entry",                   confirmMsg: `Block this vehicle at ${person.zone}? Barrier will remain closed.`,                        successMsg: "Entry denied — barrier locked",                    icon: Ban,         variant: "danger"   as const },
-    { key: "visitor", label: "Register as Day Visitor",      confirmMsg: "Issue a temporary visitor pass for this vehicle (valid today only)?",                       successMsg: "Day-pass issued — plate added to visitor list",     icon: UserPlus,   variant: "primary"  as const },
-    { key: "bolo",    label: "Escalate to BOLO List",        confirmMsg: "Add plate to the BOLO watch list? All operators and gates will be notified.",               successMsg: "Plate added to BOLO — all gates on alert",          icon: AlertTriangle, variant: "default" as const },
+    { key: "block",   label: "Deny Entry",                   confirmMsg: `Block this vehicle at ${person.zone}. The barrier will remain closed until manually released.`, successMsg: "Entry denied — barrier locked",               icon: Ban,         variant: "danger"   as const },
+    { key: "visitor", label: "Register as Day Visitor",      confirmMsg: "Issue a temporary visitor permit for this vehicle, valid for today only.",                  successMsg: "Day pass issued — plate added to visitor list",     icon: UserPlus,   variant: "primary"  as const },
+    { key: "bolo",    label: "Escalate to BOLO List",        confirmMsg: "Escalate this plate to the BOLO watchlist. All operators and gate cameras will be notified.", successMsg: "Plate added to BOLO — all gates on alert",        icon: AlertTriangle, variant: "default" as const },
   ] : isVIP ? [
-    { key: "valet",    label: "Activate Valet Service",      confirmMsg: "Dispatch valet to receive this vehicle at the gate?",                                       successMsg: "Valet dispatched — arrival confirmed",             icon: Star,        variant: "primary"  as const },
-    { key: "desk",     label: "Alert Front Desk",            confirmMsg: "Notify front desk of executive vehicle arrival?",                                           successMsg: "Front desk alerted — guest record updated",        icon: Zap,         variant: "default"  as const },
+    { key: "valet",    label: "Activate Valet Service",      confirmMsg: "Dispatch the valet team to receive this executive vehicle at the gate.",                    successMsg: "Valet dispatched — arrival confirmed",             icon: Star,        variant: "primary"  as const },
+    { key: "desk",     label: "Alert Front Desk",            confirmMsg: "Notify the front desk of this executive vehicle's arrival.",                                successMsg: "Front desk alerted — guest record updated",        icon: Zap,         variant: "default"  as const },
   ] : [
-    { key: "log",  label: "Log Authorised Entry",            confirmMsg: "Confirm and log this as an authorised vehicle entry?",                                      successMsg: "Entry logged in vehicle access register",          icon: CheckCircle2, variant: "default" as const },
-    { key: "flag", label: "Flag for Review",                 confirmMsg: "Flag this vehicle event for supervisor review?",                                            successMsg: "Flagged — supervisor notified",                    icon: AlertTriangle, variant: "default" as const },
+    { key: "log",  label: "Log Authorised Entry",            confirmMsg: "Confirm and record this as an authorised vehicle entry in the access log.",                 successMsg: "Entry logged in vehicle access register",          icon: CheckCircle2, variant: "default" as const },
+    { key: "flag", label: "Flag for Review",                 confirmMsg: "Flag this vehicle event and notify the on-duty supervisor for follow-up.",                  successMsg: "Flagged — supervisor notified",                    icon: AlertTriangle, variant: "default" as const },
   ];
 
   const actions = isLPR ? lprActions : frActions;
@@ -1015,29 +1064,81 @@ function EntityModal({
             <div className="mt-3 space-y-1.5">
               {journey.map((stop, i) => (
                 <div key={i} className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-[6px] text-[11px]",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-[6px] text-[11px]",
                   stop.isCurrent
                     ? isThreat ? "bg-red-50 border border-red-200" : "bg-[#E5FFF9] border border-[#00775B]/20"
-                    : "bg-neutral-50"
+                    : "bg-neutral-50 border border-transparent"
                 )}>
+                  {/* Status dot */}
                   <span className={cn("w-2 h-2 rounded-full shrink-0",
                     stop.isCurrent
                       ? isThreat ? "bg-red-500 animate-pulse" : "bg-[#00775B] animate-pulse"
                       : i === 0 ? "bg-neutral-400" : "bg-[#00775B]"
                   )} />
+
+                  {/* Camera snapshot thumbnail */}
+                  <div className="shrink-0 w-14 h-10 rounded-[4px] overflow-hidden border border-neutral-200 bg-neutral-900 relative">
+                    {isLPR ? (
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,#1a2535_0%,#111827_100%)] flex items-center justify-center">
+                        <Camera className="w-4 h-4 text-neutral-600" />
+                        <div className="absolute bottom-0 inset-x-0 bg-black/60 text-center">
+                          <span className="text-[7px] font-mono text-amber-300 font-bold tracking-wide leading-none block py-[2px]">
+                            {person.plateText ?? "──"}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <img
+                          src={`https://i.pravatar.cc/112?u=${person.id}-stop${i}-cam`}
+                          alt=""
+                          className="w-full h-full object-cover opacity-80"
+                          style={{ filter: "contrast(1.1) saturate(0.7) brightness(0.85)" }}
+                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/40" />
+                      </>
+                    )}
+                    {/* Camera label overlay */}
+                    <div className="absolute top-0 left-0 right-0 bg-black/70 px-1 py-[1px]">
+                      <span className="text-[6px] font-mono text-[#00FF84] tracking-wider">{stop.camera}</span>
+                    </div>
+                    {/* Live indicator for current stop */}
+                    {stop.isCurrent && (
+                      <div className="absolute bottom-0.5 right-0.5 flex items-center gap-0.5 bg-black/70 rounded-[2px] px-1 py-[1px]">
+                        <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                        <span className="text-[6px] font-bold text-white">LIVE</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Time */}
                   <span className="font-mono text-neutral-400 shrink-0 w-10">{stop.time}</span>
+
+                  {/* Zone name */}
                   <span className="font-semibold text-neutral-800 flex-1">{stop.zone}</span>
-                  <span className="text-neutral-400 font-mono">{stop.dwellText}</span>
+
+                  {/* Dwell */}
+                  <span className={cn(
+                    "text-[10px] font-mono shrink-0",
+                    stop.isCurrent && isThreat ? "text-red-500 font-bold" : "text-neutral-400"
+                  )}>{stop.dwellText}</span>
+
+                  {/* Alert badge */}
                   {stop.alertNote && (
                     <span className={cn(
-                      "text-[10px] font-bold px-1.5 py-0.5 rounded-[3px]",
-                      stop.isCurrent && isThreat ? "bg-red-100 text-red-700" : "bg-amber-50 text-amber-700"
+                      "text-[9px] font-bold px-1.5 py-0.5 rounded-[3px] shrink-0",
+                      stop.isCurrent && isThreat
+                        ? "bg-red-600 text-white"
+                        : stop.alertNote.toLowerCase().includes("resolved") || stop.alertNote.toLowerCase().includes("authoris")
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
                     )}>
                       {stop.alertNote}
                     </span>
                   )}
                   {stop.linkedPlate && (
-                    <span className="text-[10px] font-mono text-[#00775B] font-bold">
+                    <span className="text-[9px] font-mono text-[#00775B] font-bold shrink-0 bg-[#E5FFF9] px-1.5 py-0.5 rounded-[3px]">
                       Linked: {stop.linkedPlate}
                     </span>
                   )}
