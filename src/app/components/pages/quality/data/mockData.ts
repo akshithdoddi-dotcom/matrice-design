@@ -555,3 +555,45 @@ export const COQ_MONTHLY = [
   { month: "Mar", coq: 9600  },
   { month: "Apr", coq: 8200  },
 ];
+
+// Hourly trend data for defect primary KPIs (06:00 → current hour)
+export const DEFECT_HOURLY_TREND = [
+  { hour: "06", total_inspected: 148, defect_count: 4,  defect_rate: 2.7, defect_density: 3.1 },
+  { hour: "07", total_inspected: 201, defect_count: 5,  defect_rate: 2.5, defect_density: 2.9 },
+  { hour: "08", total_inspected: 265, defect_count: 6,  defect_rate: 2.3, defect_density: 2.8 },
+  { hour: "09", total_inspected: 312, defect_count: 7,  defect_rate: 2.2, defect_density: 2.6 },
+  { hour: "10", total_inspected: 289, defect_count: 5,  defect_rate: 1.7, defect_density: 2.3 },
+  { hour: "11", total_inspected: 334, defect_count: 5,  defect_rate: 1.5, defect_density: 2.1 },
+  { hour: "12", total_inspected: 198, defect_count: 3,  defect_rate: 1.5, defect_density: 2.0 },
+  { hour: "13", total_inspected: 278, defect_count: 4,  defect_rate: 1.4, defect_density: 1.9 },
+  { hour: "14", total_inspected: 301, defect_count: 4,  defect_rate: 1.3, defect_density: 2.1 },
+  { hour: "15", total_inspected: 154, defect_count: 4,  defect_rate: 2.6, defect_density: 3.0 },
+];
+
+// Primary KPIs for defect apps (bottle, pcb, welding, car-damage)
+export const DEFECT_KPIS = {
+  total_inspected: 2480,
+  defect_count: 47,
+  defect_rate_pct: 1.9,
+  defect_density_pct: 2.3,
+  vs_yesterday: {
+    total_inspected: 2310,
+    defect_count: 58,
+    defect_rate_pct: 2.5,
+    defect_density_pct: 2.8,
+  },
+};
+
+// Primary KPIs for compliance apps (ppe, mask, construction)
+export const COMPLIANCE_KPIS = {
+  total_observations: 980,
+  violation_count: 43,
+  compliance_rate_pct: 87.3,
+  high_risk_zones: 2,
+  vs_yesterday: {
+    total_observations: 920,
+    violation_count: 51,
+    compliance_rate_pct: 84.1,
+    high_risk_zones: 3,
+  },
+};
