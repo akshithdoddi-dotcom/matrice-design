@@ -4,7 +4,8 @@ import {
   ShieldAlert, UserX, Eye, Clock, Radio, Lock, UserPlus,
   Shield, Ban, Navigation2, Fingerprint, ChevronDown,
   CheckCircle2, X, AlertTriangle, Star, Camera,
-  Zap, BookmarkPlus, MapPin, Activity,
+  Zap, BookmarkPlus, MapPin, Activity, Upload, Mail,
+  Users, Plus, ChevronRight,
 } from "lucide-react";
 import { IdentityEvidenceMedia } from "./components/shared/IdentityEvidenceMedia";
 import { IDENTITY_LIVE_STATUS, IDENTITY_ZONES, UNKNOWN_TRACKERS } from "./data/mockData";
@@ -14,7 +15,6 @@ import type { IdentityAppOption } from "../IdentityAnalytics";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type MatchStatus = "BLACKLIST" | "UNKNOWN" | "WHITELIST" | "AUTHORIZED" | "VIP" | "UNREGISTERED" | "BOLO";
 type FeedFilter  = "all" | "threats" | "unknowns" | "vip" | "authorized";
-type ActionState = "idle" | "confirming" | "success";
 
 interface FeedPerson {
   id: string;
@@ -224,93 +224,406 @@ type ActionDef = {
   icon?: React.ElementType; variant: "danger" | "primary" | "default";
 };
 
-// Tiered actions section — primary / secondary / more
-function ActionsSection({ actions, isThreat }: { actions: ActionDef[]; isThreat: boolean }) {
-  const [states, setStates] = useState<Record<string, ActionState>>({});
-  const [confirmKey, setConfirmKey] = useState<string | null>(null);
-  const [showMore, setShowMore] = useState(false);
+type DrawerMode = { kind: "action"; action: ActionDef } | { kind: "watchlist" };
 
-  const setState = (key: string, s: ActionState) =>
-    setStates(prev => ({ ...prev, [key]: s }));
+// ─── Watchlist Form (inside ActionDrawer) ──────────────────────────────────────
+const WL_REASONS = [
+  "Terminated Employee", "High Security VIP", "Shoplifting Suspect",
+  "Security Threat", "Banned Visitor", "Previous Incident", "Custom Reason",
+];
+const WL_CAMERAS = [
+  "All Cameras", "Camera 01", "Camera 02", "Camera 03", "Camera 04",
+  "Camera 05", "Camera 09", "Camera 11", "Camera 12", "Camera 14", "Camera 20",
+];
+const WL_GROUPS = [
+  "Security Team", "Operations Manager", "Site Supervisor",
+  "Executive Team", "Dispatch Center",
+];
 
-  const handleConfirm = (key: string) => {
-    setState(key, "success");
-    setConfirmKey(null);
-    setTimeout(() => setState(key, "idle"), 5000);
+function WatchlistForm({
+  isLPR, person, onCancel, onSubmit,
+}: {
+  isLPR: boolean; person: FeedPerson;
+  onCancel: () => void; onSubmit: () => void;
+}) {
+  const [name, setName] = useState(person.displayName);
+  const [personId, setPersonId] = useState(person.employeeId ?? "");
+  const [reason, setReason] = useState("");
+  const [severity, setSeverity] = useState<"Critical" | "High" | "Informational">("High");
+  const [cameras, setCameras] = useState<string[]>(["All Cameras"]);
+  const [notes, setNotes] = useState("");
+  const [email, setEmail] = useState("");
+  const [groups, setGroups] = useState<string[]>([]);
+  const [reasonOpen, setReasonOpen] = useState(false);
+
+  const toggleCamera = (cam: string) => {
+    if (cam === "All Cameras") { setCameras(["All Cameras"]); return; }
+    setCameras(prev => {
+      const filtered = prev.filter(c => c !== "All Cameras");
+      return filtered.includes(cam) ? filtered.filter(c => c !== cam) : [...filtered, cam];
+    });
   };
-
-  const primary    = actions[0];
-  const secondary  = actions.slice(1, 3);
-  const more       = actions.slice(3);
-  const confirming = confirmKey ? actions.find(a => a.key === confirmKey) : null;
-  const successKey = Object.entries(states).find(([, s]) => s === "success")?.[0];
-  const successMsg = successKey ? actions.find(a => a.key === successKey)?.successMsg : null;
+  const toggleGroup = (g: string) =>
+    setGroups(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
 
   return (
-    <div className="px-5 py-4 bg-neutral-50/80 border-t border-neutral-100">
-      <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-3">Actions</p>
+    <>
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <p className="text-[11px] text-neutral-500 leading-relaxed">
+          {isLPR
+            ? "Add this vehicle to the watchlist for immediate alerting when detected by any camera."
+            : "Add this individual to the watchlist for immediate alerting when detected by facial recognition."}
+        </p>
 
-      {/* ── Success feedback ── */}
-      {successMsg && (
-        <div className="flex items-center gap-2 px-3.5 py-2.5 mb-3 bg-emerald-50 border border-emerald-200 rounded-[8px]">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span className="text-[12px] text-emerald-700 font-semibold">{successMsg}</span>
+        {/* Image upload */}
+        <div className="border-2 border-dashed border-neutral-200 rounded-[8px] p-4 text-center hover:border-[#00775B]/40 transition-colors cursor-pointer bg-neutral-50">
+          <Upload className="w-5 h-5 text-neutral-400 mx-auto mb-1.5" />
+          <p className="text-[11px] text-neutral-500">
+            <span className="font-semibold text-[#00775B]">Click to upload</span> or drag and drop
+          </p>
+          <p className="text-[9px] text-neutral-400 mt-0.5">PNG, JPG, GIF up to 10MB</p>
         </div>
-      )}
 
-      {/* ── Confirmation banner (replaces nothing, just floats above) ── */}
-      {confirming && (
-        <div className={cn(
-          "mb-3 rounded-[10px] border p-4",
-          isThreat
-            ? "bg-red-50 border-red-200"
-            : confirming.variant === "primary"
-            ? "bg-[#E5FFF9] border-[#00775B]/25"
-            : "bg-neutral-100 border-neutral-200"
-        )}>
-          <div className="flex gap-2.5 mb-3">
-            <AlertTriangle className={cn(
-              "w-4 h-4 mt-0.5 shrink-0",
-              isThreat ? "text-red-500" : confirming.variant === "primary" ? "text-[#00775B]" : "text-neutral-500"
-            )} />
-            <p className="text-[12px] text-neutral-700 font-medium leading-relaxed">{confirming.confirmMsg}</p>
+        {/* Name + ID */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">
+              {isLPR ? "Plate / Vehicle" : "Person Name"} <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={name} onChange={e => setName(e.target.value)}
+              placeholder={isLPR ? "e.g. KA05MJ4421" : "e.g. John Doe"}
+              className="w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300"
+            />
           </div>
-          <div className="flex gap-2 justify-end">
-            <button
-              onClick={() => setConfirmKey(null)}
-              className="h-8 px-4 rounded-[6px] border border-neutral-300 bg-white text-[11px] font-bold text-neutral-600 hover:border-neutral-400 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleConfirm(confirming.key)}
-              className={cn(
-                "h-8 px-5 rounded-[6px] text-[11px] font-bold text-white transition-colors",
-                isThreat || confirming.variant === "danger"
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-[#00775B] hover:bg-[#006349]"
-              )}
-            >
-              Confirm
-            </button>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">
+              {isLPR ? "Vehicle Desc." : "Person ID"} <span className="text-neutral-300">(optional)</span>
+            </label>
+            <input
+              value={personId} onChange={e => setPersonId(e.target.value)}
+              placeholder={isLPR ? "e.g. Black Toyota Innova" : "e.g. EMP-1234"}
+              className="w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300"
+            />
           </div>
         </div>
-      )}
 
-      {/* ── Primary action ── */}
-      {primary && states[primary.key] !== "success" && (
-        <div className="mb-2.5">
+        {/* Watchlist reason dropdown */}
+        <div className="relative">
+          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">
+            Watchlist Name / Reason <span className="text-red-500">*</span>
+          </label>
           <button
-            onClick={() => setConfirmKey(primary.key)}
-            disabled={!!confirmKey}
+            onClick={() => setReasonOpen(v => !v)}
+            className="w-full h-8 px-3 flex items-center justify-between rounded-[6px] border border-neutral-200 text-[12px] text-left text-neutral-600 focus:outline-none hover:border-neutral-300 transition-colors"
+          >
+            <span className={reason ? "text-neutral-800" : "text-neutral-300"}>{reason || "Select a reason"}</span>
+            <ChevronDown className={cn("w-3.5 h-3.5 text-neutral-400 transition-transform", reasonOpen && "rotate-180")} />
+          </button>
+          {reasonOpen && (
+            <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-[6px] border border-neutral-200 bg-white shadow-lg overflow-hidden">
+              {WL_REASONS.map(r => (
+                <button
+                  key={r}
+                  onClick={() => { setReason(r); setReasonOpen(false); }}
+                  className={cn(
+                    "w-full px-3 py-2 text-left text-[12px] hover:bg-[#E5FFF9] transition-colors",
+                    reason === r ? "text-[#00775B] font-semibold bg-[#E5FFF9]" : "text-neutral-700"
+                  )}
+                >{r}</button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Severity */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Severity Level</label>
+          <div className="flex gap-1.5">
+            {(["Critical", "High", "Informational"] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setSeverity(s)}
+                className={cn(
+                  "flex-1 h-8 rounded-[6px] text-[10px] font-bold border transition-all",
+                  severity === s
+                    ? s === "Critical" ? "bg-red-600 border-red-600 text-white"
+                      : s === "High" ? "bg-amber-500 border-amber-500 text-white"
+                      : "bg-blue-500 border-blue-500 text-white"
+                    : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
+                )}
+              >{s}</button>
+            ))}
+          </div>
+          <p className="text-[9px] text-neutral-400 mt-1">This priority level will determine alert prominence on the main dashboard.</p>
+        </div>
+
+        {/* Cameras */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Associated Cameras / Zones</label>
+          <div className="border border-neutral-200 rounded-[6px] p-2.5 max-h-36 overflow-y-auto space-y-1">
+            {WL_CAMERAS.map(cam => (
+              <label key={cam} className="flex items-center gap-2 cursor-pointer hover:text-neutral-900 py-0.5">
+                <input
+                  type="checkbox" checked={cameras.includes(cam)}
+                  onChange={() => toggleCamera(cam)}
+                  className="w-3 h-3 accent-[#00775B] rounded"
+                />
+                <span className="text-[11px] text-neutral-700">{cam}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">Notes / Context</label>
+          <textarea
+            value={notes} onChange={e => setNotes(e.target.value)}
+            rows={2}
+            placeholder="Enter security instructions (e.g. Contact supervisor immediately. Do not engage)"
+            className="w-full px-3 py-2 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300 resize-none"
+          />
+        </div>
+
+        {/* Notifications */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">
+            <Mail className="w-3 h-3 inline mr-1" />Notification Recipients
+          </label>
+          <input
+            value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="e.g. admin@matrice.ai, security@matrice.ai"
+            className="w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300"
+          />
+          <p className="text-[9px] text-neutral-400 mt-0.5">Separate multiple email addresses with commas</p>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1.5">
+            <Users className="w-3 h-3 inline mr-1" />Notification Groups
+          </label>
+          <div className="space-y-1">
+            {WL_GROUPS.map(g => (
+              <label key={g} className="flex items-center gap-2 cursor-pointer py-0.5">
+                <input
+                  type="checkbox" checked={groups.includes(g)}
+                  onChange={() => toggleGroup(g)}
+                  className="w-3 h-3 accent-[#00775B] rounded"
+                />
+                <span className="text-[11px] text-neutral-700">{g}</span>
+              </label>
+            ))}
+          </div>
+          <p className="text-[9px] text-neutral-400 mt-1.5">Selected groups will receive immediate notifications (Email/SMS/Platform) upon facial recognition match.</p>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-neutral-100 px-5 py-3.5 flex gap-2.5 shrink-0">
+        <button
+          onClick={onCancel}
+          className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
+        >Cancel</button>
+        <button
+          onClick={onSubmit}
+          className="flex-1 h-9 rounded-[6px] bg-[#00775B] text-[12px] font-bold text-white hover:bg-[#006349] transition-colors"
+        >
+          {isLPR ? "Add Vehicle to Watchlist" : "Add to Watchlist"}
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ─── Action Drawer — slides in from right over the entity modal ────────────────
+function ActionDrawer({
+  mode, isThreat, isLPR, person, onClose,
+}: {
+  mode: DrawerMode; isThreat: boolean; isLPR: boolean;
+  person: FeedPerson; onClose: () => void;
+}) {
+  const [miniConfirm, setMiniConfirm] = useState(false);
+  const [done, setDone] = useState(false);
+  const [doneMsg, setDoneMsg] = useState("");
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  const action = mode.kind === "action" ? mode.action : null;
+  const isWL   = mode.kind === "watchlist";
+  const isDanger = isThreat || action?.variant === "danger";
+
+  const handleExecute = () => {
+    if (action) { setDoneMsg(action.successMsg); setDone(true); setMiniConfirm(false); setTimeout(onClose, 2200); }
+  };
+  const handleWLSubmit = () => {
+    setDoneMsg(isLPR ? "Vehicle added to watchlist — alerts enabled" : "Person added to watchlist — alerts enabled");
+    setDone(true);
+    setTimeout(onClose, 2200);
+  };
+
+  return (
+    <>
+      {/* Overlay behind drawer */}
+      <div className="fixed inset-0 z-[55] bg-black/30 backdrop-blur-[1px]" onClick={onClose} />
+
+      {/* Slide-in drawer */}
+      <div
+        className="fixed right-0 top-0 h-full z-[56] w-[420px] max-w-[95vw] bg-white shadow-2xl flex flex-col"
+        style={{ animation: "slideInRight 180ms cubic-bezier(0.22,1,0.36,1)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Drawer header */}
+        <div className={cn(
+          "flex items-center gap-3 px-5 py-4 border-b shrink-0",
+          isWL ? "border-neutral-100 bg-white"
+            : isDanger ? "border-red-100 bg-red-50"
+            : "border-[#00775B]/15 bg-[#F0FFF9]"
+        )}>
+          {action?.icon && (
+            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+              isDanger ? "bg-red-100" : "bg-[#00775B]/10"
+            )}>
+              <action.icon className={cn("w-4 h-4", isDanger ? "text-red-600" : "text-[#00775B]")} />
+            </div>
+          )}
+          {isWL && (
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#00775B]/10 shrink-0">
+              <Plus className="w-4 h-4 text-[#00775B]" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-neutral-900 truncate">
+              {isWL ? (isLPR ? "Add / Manage Vehicle" : "Add / Manage Flagged Person") : action?.label}
+            </p>
+            <p className="text-[10px] text-neutral-400 truncate">{person.displayName} · {person.zone}</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors shrink-0">
+            <X className="w-3.5 h-3.5 text-neutral-500" />
+          </button>
+        </div>
+
+        {/* Done state */}
+        {done ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
+              <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+            </div>
+            <p className="text-[14px] font-bold text-neutral-800">{doneMsg}</p>
+            <p className="text-[11px] text-neutral-400">Closing automatically…</p>
+          </div>
+
+        ) : isWL ? (
+          <WatchlistForm isLPR={isLPR} person={person} onCancel={onClose} onSubmit={handleWLSubmit} />
+
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto px-5 py-5">
+              <p className="text-[13px] text-neutral-600 leading-relaxed">{action?.confirmMsg}</p>
+              {isDanger && (
+                <div className="mt-4 flex items-start gap-2 px-3.5 py-2.5 bg-red-50 border border-red-200 rounded-[6px]">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-red-700 font-medium leading-relaxed">
+                    This action is logged and visible to all operators. It cannot be undone.
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="border-t border-neutral-100 px-5 py-3.5 flex gap-2.5 shrink-0">
+              <button onClick={onClose} className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={() => isDanger ? setMiniConfirm(true) : handleExecute()}
+                className={cn(
+                  "flex-1 h-9 rounded-[6px] text-[12px] font-bold text-white transition-colors",
+                  isDanger ? "bg-red-600 hover:bg-red-700" : "bg-[#00775B] hover:bg-[#006349]"
+                )}
+              >
+                {isDanger ? "Proceed" : "Confirm"}
+                <ChevronRight className="w-3.5 h-3.5 inline ml-1" />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Mini-confirm modal for destructive actions ── */}
+      {miniConfirm && action && (
+        <>
+          <div className="fixed inset-0 z-[60] bg-black/50" onClick={() => setMiniConfirm(false)} />
+          <div
+            className="fixed z-[61] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] bg-white rounded-[12px] shadow-2xl p-5"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4.5 h-4.5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-[13px] font-black text-neutral-900">Confirm action</p>
+                <p className="text-[11px] text-neutral-500 mt-0.5 leading-relaxed">{action.confirmMsg}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setMiniConfirm(false)}
+                className="flex-1 h-8 rounded-[6px] border border-neutral-200 text-[11px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
+              >Cancel</button>
+              <button
+                onClick={handleExecute}
+                className="flex-1 h-8 rounded-[6px] bg-red-600 text-[11px] font-bold text-white hover:bg-red-700 transition-colors"
+              >Yes, proceed</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+    </>
+  );
+}
+
+// ─── Actions section — compact button strip ────────────────────────────────────
+function ActionsSection({
+  actions, isThreat, isLPR, onSelectAction, onManageWatchlist,
+}: {
+  actions: ActionDef[]; isThreat: boolean; isLPR: boolean;
+  onSelectAction: (a: ActionDef) => void;
+  onManageWatchlist: () => void;
+}) {
+  const [showMore, setShowMore] = useState(false);
+  const primary   = actions[0];
+  const secondary = actions.slice(1, 3);
+  const more      = actions.slice(3);
+
+  return (
+    <div className="px-5 py-4 border-t border-neutral-100 bg-neutral-50/60">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Actions</p>
+        <button
+          onClick={onManageWatchlist}
+          className="inline-flex items-center gap-1 h-6 px-2.5 rounded-[4px] bg-[#E5FFF9] border border-[#00775B]/20 text-[9px] font-bold text-[#00775B] hover:bg-[#00775B]/10 transition-colors"
+        >
+          <Plus className="w-2.5 h-2.5" />
+          {isLPR ? "Manage Vehicle" : "Manage Person"}
+        </button>
+      </div>
+
+      {/* Primary */}
+      {primary && (
+        <div className="mb-2">
+          <button
+            onClick={() => onSelectAction(primary)}
             className={cn(
-              "inline-flex items-center gap-2 h-9 px-5 rounded-[6px] text-[12px] font-bold transition-all",
+              "inline-flex items-center gap-2 h-9 px-4 rounded-[6px] text-[12px] font-bold transition-all",
               primary.variant === "danger"
-                ? "bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-100"
-                : primary.variant === "primary"
-                ? "bg-[#00775B] text-white hover:bg-[#006349] shadow-sm shadow-emerald-100"
-                : "border border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400",
-              !!confirmKey && "opacity-40 cursor-not-allowed",
+                ? "bg-red-600 text-white hover:bg-red-700"
+                : "bg-[#00775B] text-white hover:bg-[#006349]",
             )}
           >
             {primary.icon && <primary.icon className="w-3.5 h-3.5" />}
@@ -319,64 +632,43 @@ function ActionsSection({ actions, isThreat }: { actions: ActionDef[]; isThreat:
         </div>
       )}
 
-      {/* ── Secondary actions ── */}
+      {/* Secondary */}
       {secondary.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2.5">
+        <div className="flex flex-wrap gap-2 mb-2">
           {secondary.map(a => (
-            <button
-              key={a.key}
-              onClick={() => setConfirmKey(a.key)}
-              disabled={!!confirmKey}
+            <button key={a.key} onClick={() => onSelectAction(a)}
               className={cn(
-                "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[11px] font-bold transition-all",
-                states[a.key] === "success"
-                  ? "bg-emerald-50 border border-emerald-200 text-emerald-700 cursor-default"
-                  : a.variant === "danger"
-                  ? "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
+                "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[11px] font-bold border transition-all",
+                a.variant === "danger"
+                  ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
                   : a.variant === "primary"
-                  ? "bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/25 hover:bg-[#00775B]/10"
-                  : "border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:text-neutral-800",
-                !!confirmKey && states[a.key] !== "success" && "opacity-40 cursor-not-allowed",
+                  ? "bg-[#E5FFF9] text-[#00775B] border-[#00775B]/25 hover:bg-[#00775B]/10"
+                  : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300",
               )}
             >
-              {states[a.key] === "success"
-                ? <><CheckCircle2 className="w-3 h-3" />{a.successMsg}</>
-                : <>{a.icon && <a.icon className="w-3.5 h-3.5" />}{a.label}</>
-              }
+              {a.icon && <a.icon className="w-3.5 h-3.5" />}{a.label}
             </button>
           ))}
         </div>
       )}
 
-      {/* ── More actions ── */}
+      {/* More */}
       {more.length > 0 && (
         <div>
           <button
             onClick={() => setShowMore(v => !v)}
-            className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors mb-2"
+            className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors mb-1.5"
           >
-            <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", showMore && "rotate-180")} />
+            <ChevronDown className={cn("w-3 h-3 transition-transform", showMore && "rotate-180")} />
             {showMore ? "Fewer" : "More"} options
           </button>
           {showMore && (
             <div className="space-y-1.5">
               {more.map(a => (
-                <button
-                  key={a.key}
-                  onClick={() => setConfirmKey(a.key)}
-                  disabled={!!confirmKey}
-                  className={cn(
-                    "w-full h-8 flex items-center gap-2 px-3 rounded-[6px] text-[11px] font-medium transition-all text-left",
-                    states[a.key] === "success"
-                      ? "bg-emerald-50 border border-emerald-200 text-emerald-700 cursor-default"
-                      : "border border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-700",
-                    !!confirmKey && states[a.key] !== "success" && "opacity-40 cursor-not-allowed",
-                  )}
+                <button key={a.key} onClick={() => onSelectAction(a)}
+                  className="w-full h-8 flex items-center gap-2 px-3 rounded-[6px] border border-neutral-200 bg-white text-[11px] font-medium text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 transition-all text-left"
                 >
-                  {states[a.key] === "success"
-                    ? <><CheckCircle2 className="w-3 h-3" />{a.successMsg}</>
-                    : <>{a.icon && <a.icon className="w-3 h-3 shrink-0" />}{a.label}</>
-                  }
+                  {a.icon && <a.icon className="w-3 h-3 shrink-0" />}{a.label}
                 </button>
               ))}
             </div>
@@ -550,12 +842,19 @@ function EntityModal({
   isLPR: boolean; terminology: IdentityTerminology;
   onClose: () => void;
 }) {
-  // Close on Escape
+  const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
+
+  // Close on Escape (only when drawer is not open)
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (drawerMode) setDrawerMode(null);
+        else onClose();
+      }
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [onClose, drawerMode]);
 
   const cfg = STATUS_CFG[person.status];
   const isThreat = person.status === "BLACKLIST" || person.status === "BOLO";
@@ -773,9 +1072,26 @@ function EntityModal({
           </div>
 
           {/* Actions section */}
-          <ActionsSection actions={actions} isThreat={isThreat} />
+          <ActionsSection
+            actions={actions}
+            isThreat={isThreat}
+            isLPR={isLPR}
+            onSelectAction={a => setDrawerMode({ kind: "action", action: a })}
+            onManageWatchlist={() => setDrawerMode({ kind: "watchlist" })}
+          />
         </div>
       </div>
+
+      {/* Action drawer */}
+      {drawerMode && (
+        <ActionDrawer
+          mode={drawerMode}
+          isThreat={isThreat}
+          isLPR={isLPR}
+          person={person}
+          onClose={() => setDrawerMode(null)}
+        />
+      )}
     </>
   );
 }
