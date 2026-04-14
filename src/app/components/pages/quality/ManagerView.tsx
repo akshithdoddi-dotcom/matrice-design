@@ -1,6 +1,5 @@
 import { KPISummaryRow }          from "./components/manager/KPISummaryRow";
 import { ComplianceTrendSection }  from "./components/manager/ComplianceTrendSection";
-import { HourlyCompliancePanel }  from "./components/monitoring/HourlyCompliancePanel";
 import { TimeToCompliancePanel }  from "./components/monitoring/TimeToCompliancePanel";
 import { ZonePerformanceTable }    from "./components/manager/ZonePerformanceTable";
 import { RepeatViolatorsSection }  from "./components/manager/RepeatViolatorsSection";
@@ -19,13 +18,10 @@ export const ManagerView = ({ terminology, timeRange }: Props) => (
     {/* Compliance trend over selected time range */}
     <ComplianceTrendSection terminology={terminology} timeRange={timeRange} />
 
-    {/* Hourly breakdown + time-to-compliance side by side */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <HourlyCompliancePanel terminology={terminology} />
-      {!terminology.isDefectApp && (
-        <TimeToCompliancePanel terminology={terminology} />
-      )}
-    </div>
+    {/* Time-to-compliance (safety apps only) */}
+    {!terminology.isDefectApp && (
+      <TimeToCompliancePanel terminology={terminology} />
+    )}
 
     {/* Zone-level performance table */}
     <ZonePerformanceTable terminology={terminology} />

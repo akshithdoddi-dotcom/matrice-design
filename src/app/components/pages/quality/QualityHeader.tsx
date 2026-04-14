@@ -6,19 +6,29 @@ import type { QualityAppId, QualityTerminology } from "./data/mockData";
 
 const APP_OPTIONS: { id: QualityAppId; label: string; group: "defect" | "safety" }[] = [
   // Defect apps
-  { id: "bottle",       label: "Bottle Defect",        group: "defect"  },
-  { id: "pcb",          label: "PCB Defect",            group: "defect"  },
-  { id: "welding",      label: "Welding Defect",        group: "defect"  },
-  { id: "car-damage",   label: "Car Damage",            group: "defect"  },
-  { id: "corrosion",    label: "Corrosion Detection",   group: "defect"  },
-  { id: "road-damage",  label: "Road Damage",           group: "defect"  },
-  { id: "pothole",      label: "Pothole Detection",     group: "defect"  },
-  { id: "phone-screen", label: "Screen Defect",         group: "defect"  },
-  { id: "assembly",     label: "Assembly Line QC",      group: "defect"  },
+  { id: "bottle",        label: "Bottle Defect",          group: "defect" },
+  { id: "pcb",           label: "PCB Defect",             group: "defect" },
+  { id: "welding",       label: "Welding Defect",         group: "defect" },
+  { id: "car-damage",    label: "Car Damage",             group: "defect" },
+  { id: "corrosion",     label: "Corrosion Detection",    group: "defect" },
+  { id: "road-damage",   label: "Road Damage",            group: "defect" },
+  { id: "pothole",       label: "Pothole Detection",      group: "defect" },
+  { id: "phone-screen",  label: "Screen Defect",          group: "defect" },
+  { id: "assembly",      label: "Assembly Line QC",       group: "defect" },
+  { id: "food-quality",  label: "Food Quality",           group: "defect" },
+  { id: "textile",       label: "Textile Defect",         group: "defect" },
+  { id: "solar-panel",   label: "Solar Panel QC",         group: "defect" },
+  { id: "semiconductor", label: "Semiconductor Inspection",group: "defect" },
+  { id: "metal-surface", label: "Metal Surface",          group: "defect" },
+  { id: "glass",         label: "Glass Defect",           group: "defect" },
+  { id: "paint",         label: "Paint Defect",           group: "defect" },
+  { id: "wire-harness",  label: "Wire Harness QC",        group: "defect" },
+  { id: "packaging",     label: "Packaging Inspection",   group: "defect" },
+  { id: "wood",          label: "Wood Defect",            group: "defect" },
   // Safety / compliance apps
-  { id: "ppe",          label: "PPE Detection",         group: "safety"  },
-  { id: "mask",         label: "Mask Detection",        group: "safety"  },
-  { id: "construction", label: "Construction Safety",   group: "safety"  },
+  { id: "ppe",           label: "PPE Detection",          group: "safety" },
+  { id: "mask",          label: "Mask Detection",         group: "safety" },
+  { id: "construction",  label: "Construction Safety",    group: "safety" },
 ];
 
 const TIME_RANGES: Record<Persona, string[]> = {
