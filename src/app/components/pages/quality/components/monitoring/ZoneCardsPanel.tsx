@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react";
+import { MapPin, TrendingUp, TrendingDown, Minus, ChevronRight, UserPlus, Zap } from "lucide-react";
 import { ZONE_DATA } from "../../data/mockData";
 import type { QualityTerminology, ZoneMetric } from "../../data/types";
 import { cn } from "@/app/lib/utils";
@@ -11,6 +11,15 @@ interface Props {
 
 export const ZoneCardsPanel = ({ terminology }: Props) => {
   const [selectedZone, setSelectedZone] = useState<ZoneMetric | null>(null);
+  const [dispatched, setDispatched] = useState<Set<string>>(new Set());
+
+  const handleDispatch = (zoneId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDispatched(prev => new Set([...prev, zoneId]));
+    setTimeout(() => setDispatched(prev => {
+      const next = new Set(prev); next.delete(zoneId); return next;
+    }), 3000);
+  };
 
   return (
     <>
@@ -101,7 +110,25 @@ export const ZoneCardsPanel = ({ terminology }: Props) => {
                         </span>
                       </td>
                       <td className="pl-2 pr-4 py-3">
-                        <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-[#00775B] transition-colors" />
+                        {isHighRisk ? (
+                          <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                            {dispatched.has(zone.zone_id) ? (
+                              <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-1">
+                                <Zap className="w-3 h-3" />Sent
+                              </span>
+                            ) : (
+                              <button
+                                onClick={(e) => handleDispatch(zone.zone_id, e)}
+                                className="inline-flex items-center gap-1 h-6 px-2 rounded-[3px] bg-red-600 text-white text-[9px] font-bold hover:bg-red-700 transition-colors whitespace-nowrap"
+                              >
+                                <UserPlus className="w-2.5 h-2.5" />
+                                Deploy
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-[#00775B] transition-colors" />
+                        )}
                       </td>
                     </tr>
                   );
