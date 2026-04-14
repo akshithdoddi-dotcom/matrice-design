@@ -4,12 +4,21 @@ import { cn } from "@/app/lib/utils";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
 import type { QualityAppId, QualityTerminology } from "./data/mockData";
 
-const APP_OPTIONS: { id: QualityAppId; label: string }[] = [
-  { id: "ppe",          label: "PPE Detection" },
-  { id: "pcb",          label: "PCB Defect" },
-  { id: "welding",      label: "Welding QC" },
-  { id: "car-damage",   label: "Car Damage" },
-  { id: "construction", label: "Construction Safety" },
+const APP_OPTIONS: { id: QualityAppId; label: string; group: "defect" | "safety" }[] = [
+  // Defect apps
+  { id: "bottle",       label: "Bottle Defect",        group: "defect"  },
+  { id: "pcb",          label: "PCB Defect",            group: "defect"  },
+  { id: "welding",      label: "Welding Defect",        group: "defect"  },
+  { id: "car-damage",   label: "Car Damage",            group: "defect"  },
+  { id: "corrosion",    label: "Corrosion Detection",   group: "defect"  },
+  { id: "road-damage",  label: "Road Damage",           group: "defect"  },
+  { id: "pothole",      label: "Pothole Detection",     group: "defect"  },
+  { id: "phone-screen", label: "Screen Defect",         group: "defect"  },
+  { id: "assembly",     label: "Assembly Line QC",      group: "defect"  },
+  // Safety / compliance apps
+  { id: "ppe",          label: "PPE Detection",         group: "safety"  },
+  { id: "mask",         label: "Mask Detection",        group: "safety"  },
+  { id: "construction", label: "Construction Safety",   group: "safety"  },
 ];
 
 const TIME_RANGES: Record<Persona, string[]> = {
@@ -90,20 +99,42 @@ export const QualityHeader = ({
             <ChevronDown className={cn("w-3 h-3 transition-transform", isAppOpen && "rotate-180")} />
           </button>
           {isAppOpen && (
-            <div className="absolute top-full left-0 mt-1 w-52 rounded-sm border border-neutral-200 bg-white shadow-lg z-50 overflow-hidden">
-              {APP_OPTIONS.map((opt) => (
+            <div className="absolute top-full left-0 mt-1 w-56 rounded-sm border border-neutral-200 bg-white shadow-lg z-50 overflow-hidden max-h-[360px] overflow-y-auto">
+              {/* Defect apps group */}
+              <div className="px-3 pt-2 pb-1">
+                <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400">Defect Detection</p>
+              </div>
+              {APP_OPTIONS.filter(o => o.group === "defect").map((opt) => (
                 <div
                   key={opt.id}
                   onClick={() => { onAppChange(opt.id); setIsAppOpen(false); }}
                   className={cn(
-                    "px-3 py-2 text-xs font-medium cursor-pointer flex items-center justify-between text-neutral-600 hover:bg-neutral-50",
-                    activeApp === opt.id && "text-[#00775B]"
+                    "px-3 py-1.5 text-xs font-medium cursor-pointer flex items-center justify-between text-neutral-600 hover:bg-neutral-50",
+                    activeApp === opt.id && "text-[#00775B] bg-[#E5FFF9]"
                   )}
                 >
                   <span>{opt.label}</span>
                   {activeApp === opt.id && <Check className="w-3 h-3" />}
                 </div>
               ))}
+              {/* Safety apps group */}
+              <div className="px-3 pt-2 pb-1 border-t border-neutral-100 mt-1">
+                <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400">Safety & Compliance</p>
+              </div>
+              {APP_OPTIONS.filter(o => o.group === "safety").map((opt) => (
+                <div
+                  key={opt.id}
+                  onClick={() => { onAppChange(opt.id); setIsAppOpen(false); }}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium cursor-pointer flex items-center justify-between text-neutral-600 hover:bg-neutral-50",
+                    activeApp === opt.id && "text-[#00775B] bg-[#E5FFF9]"
+                  )}
+                >
+                  <span>{opt.label}</span>
+                  {activeApp === opt.id && <Check className="w-3 h-3" />}
+                </div>
+              ))}
+              <div className="pb-1" />
             </div>
           )}
         </div>

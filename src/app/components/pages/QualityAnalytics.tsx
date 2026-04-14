@@ -16,7 +16,7 @@ const DEFAULT_TIME_RANGE: Record<Persona, string> = {
 };
 
 export const QualityAnalytics = ({ persona }: { persona: Persona }) => {
-  const [activeApp, setActiveApp]     = useState<QualityAppId>("ppe");
+  const [activeApp, setActiveApp]     = useState<QualityAppId>("bottle");
   const [timeRange, setTimeRange]     = useState(DEFAULT_TIME_RANGE[persona]);
 
   const terminology = TERMINOLOGY_MAP[activeApp];
@@ -36,7 +36,7 @@ export const QualityAnalytics = ({ persona }: { persona: Persona }) => {
       />
 
       {persona === "monitoring" && (
-        <MonitoringView terminology={terminology} timeRange={timeRange} />
+        <MonitoringView terminology={terminology} timeRange={timeRange} appId={activeApp} />
       )}
 
       {persona === "manager" && (

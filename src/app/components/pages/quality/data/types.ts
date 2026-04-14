@@ -4,15 +4,19 @@ export interface QualityTerminology {
   primaryMetricLabel: string;    // "Compliance Rate" | "Pass Rate"
   negativeEventLabel: string;    // "Violation" | "Defect"
   negativeCountLabel: string;    // "Violation Count" | "Defect Count"
-  entityLabel: string;           // "Worker" | "Unit"
+  entityLabel: string;           // "Worker" | "Unit" | "Batch"
   zoneRiskLabel: string;         // "High-Risk Zone" | "High-Defect Zone"
   repeatOffenderLabel: string;   // "Repeat Violator" | "Repeat Defect Source"
   safeLabel: string;             // "Compliant" | "Pass"
   unsafeLabel: string;           // "Non-Compliant" | "Fail"
+  stageLabel: string;            // "Production Stage" | "Inspection Zone" | "Road Segment"
   isDefectApp: boolean;
 }
 
-export type QualityAppId = "ppe" | "mask" | "construction" | "pcb" | "welding" | "car-damage" | "bottle";
+export type QualityAppId =
+  | "ppe" | "mask" | "construction"
+  | "pcb" | "welding" | "car-damage" | "bottle"
+  | "corrosion" | "road-damage" | "pothole" | "phone-screen" | "assembly";
 
 export interface LiveStatus {
   compliance_rate_pct: number;
@@ -110,4 +114,27 @@ export interface SixMonthPoint {
   label: string;
   compliance_pct: number;
   defect_rate_pct: number;
+}
+
+// ── Defect-app specific ───────────────────────────────────────────────────────
+
+export interface StageDefect {
+  id: string;
+  stage: string;           // e.g. "Bottle Forming", "Reflow Soldering"
+  units_inspected: number;
+  defect_count: number;
+  defect_rate: number;     // percentage
+  defect_density: number;  // % surface area covered
+  status: "GREEN" | "AMBER" | "RED";
+  top_defect_types: string[];
+  trend: "up" | "down" | "stable";
+}
+
+export interface DensityItem {
+  id: string;
+  label: string;           // "Batch #47", "Unit A-12"
+  density_pct: number;
+  defect_count: number;
+  status: "PASS" | "WARN" | "FAIL";
+  defect_types: string[];
 }
