@@ -54,14 +54,14 @@ const FR_PEOPLE: FeedPerson[] = [
   },
   {
     id: "f2", identType: "FACE", status: "UNKNOWN",
-    displayName: "Unknown #88", subLabel: "Recurring — 4 of 5 days · dwell 4m 12s",
+    displayName: "Unknown #88", subLabel: "4-day repeat · High dwell",
     camera: "CAM-SE-01", cameraId: "cam_south_entrance", zone: "South Entrance",
     time: "14:30:55", dwell: 252, recurringDays: 4, severity: "HIGH",
     imageSrc: "https://i.pravatar.cc/160?u=unk088-recurringz",
   },
   {
     id: "f3", identType: "FACE", status: "UNKNOWN",
-    displayName: "Unknown #134", subLabel: "Recurring over 2 days · Garage area",
+    displayName: "Unknown #134", subLabel: "2-day repeat · Garage area",
     camera: "CAM-GB-01", cameraId: "cam_garage_entry_b", zone: "Garage Entry B",
     time: "14:28:45", dwell: 88, recurringDays: 2, severity: "MEDIUM",
     imageSrc: "https://i.pravatar.cc/160?u=unk134-garagek",
@@ -104,7 +104,7 @@ const LPR_PEOPLE: FeedPerson[] = [
   },
   {
     id: "p2", identType: "PLATE", status: "UNREGISTERED",
-    displayName: "UP80MN1123", subLabel: "Unknown vehicle · Entry blocked · 3rd attempt",
+    displayName: "UP80MN1123", subLabel: "3rd entry attempt · Blocked each time",
     camera: "CAM-GA-01", cameraId: "cam_garage_entry_a", zone: "Garage Entry A",
     time: "14:31:06", confidence: 91.0, recurringDays: 3, severity: "HIGH",
     plateText: "UP80MN1123", vehicleDesc: "Silver Maruti Swift",
@@ -773,43 +773,27 @@ function FeedTableRow({
   const isThreat = person.status === "BLACKLIST" || person.status === "BOLO" ||
     person.status === "UNKNOWN" || person.status === "UNREGISTERED";
   const isActive = isThreat && (person.severity === "CRITICAL" || person.severity === "HIGH");
+  const isBlacklist = person.status === "BLACKLIST" || person.status === "BOLO";
   const isPlate = isLPR || person.identType === "PLATE";
   const id = `${isLPR ? "LP" : "FR"}-${String(rowIndex + 1).padStart(3, "0")}`;
-
-  const severityColor =
-    person.status === "BLACKLIST" || person.status === "BOLO" ? "bg-red-600" :
-    person.status === "UNKNOWN" || person.status === "UNREGISTERED" ? "bg-amber-500" :
-    person.status === "VIP" ? "bg-yellow-500" : "bg-emerald-600";
 
   return (
     <tr
       onClick={onClick}
       className={cn(
-        "group h-[72px] cursor-pointer transition-colors border-b border-neutral-100 last:border-b-0",
+        "group cursor-pointer transition-colors border-b border-neutral-100 last:border-b-0",
         "hover:bg-[#E5FFF9]",
-        (person.status === "BLACKLIST" || person.status === "BOLO") && rowIndex === 0 && "bg-red-50/40",
+        isBlacklist && rowIndex === 0 && "bg-red-50/40",
       )}
     >
-      {/* Severity */}
-      <td className="px-3 text-center">
-        <div className={cn("h-6 w-6 inline-flex items-center justify-center rounded-[2px] shadow-sm shrink-0", severityColor)}>
-          {isActive
-            ? <AlertTriangle className="w-3 h-3 text-white" />
-            : person.status === "VIP"
-            ? <Star className="w-3 h-3 text-white" />
-            : <CheckCircle2 className="w-3 h-3 text-white" />
-          }
-        </div>
-      </td>
-
       {/* ID */}
-      <td className="px-3">
+      <td className="px-3 py-2">
         <span className="text-[10px] font-mono font-bold text-neutral-500">{id}</span>
       </td>
 
       {/* Snapshot */}
-      <td className="px-3 py-1.5">
-        <div className="h-12 w-[68px] rounded-[2px] overflow-hidden border border-neutral-200 group-hover:border-[#00775B]/30 transition-colors bg-neutral-100 relative shrink-0">
+      <td className="px-3 py-2">
+        <div className="h-10 w-[60px] rounded-[2px] overflow-hidden border border-neutral-200 group-hover:border-[#00775B]/30 transition-colors bg-neutral-100 relative shrink-0">
           {isPlate ? (
             <IdentityEvidenceMedia kind="PLATE" seed={person.id} plateText={person.plateText} className="h-full w-full" />
           ) : (
@@ -819,12 +803,15 @@ function FeedTableRow({
       </td>
 
       {/* Identity details */}
-      <td className="px-3 max-w-[180px]">
+      <td className="px-3 py-2 max-w-[200px]">
         <div className="flex items-center gap-1.5 mb-0.5">
-          <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide shrink-0", cfg.bg, cfg.text)}>
+          <span className={cn(
+            "text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide shrink-0",
+            cfg.bg, cfg.text,
+            isBlacklist && "animate-pulse"
+          )}>
             {cfg.label}
           </span>
-          {isActive && <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse shrink-0", cfg.dotColor)} />}
         </div>
         <p className="text-[11px] font-bold text-neutral-900 truncate leading-tight">{person.displayName}</p>
         {person.subLabel && (
@@ -834,28 +821,23 @@ function FeedTableRow({
         )}
       </td>
 
-      {/* Zone */}
-      <td className="px-3">
+      {/* Zone — name only */}
+      <td className="px-3 py-2">
         <p className="text-[11px] font-semibold text-neutral-700 truncate">{person.zone}</p>
-        {person.dwell != null && (
-          <p className={cn("text-[9px] font-mono mt-0.5", person.dwell > 180 ? "text-amber-600 font-bold" : "text-neutral-400")}>
-            dwell {fmtDwell(person.dwell)}
-          </p>
-        )}
       </td>
 
       {/* Camera */}
-      <td className="px-3">
+      <td className="px-3 py-2">
         <p className="text-[11px] font-mono text-neutral-600">{person.camera}</p>
       </td>
 
       {/* Time */}
-      <td className="px-3 text-right">
+      <td className="px-3 py-2 text-right">
         <span className="text-[10px] font-mono text-neutral-500">{person.time}</span>
       </td>
 
       {/* Action */}
-      <td className="px-3 text-right">
+      <td className="px-3 py-2 text-right">
         <button
           onClick={e => { e.stopPropagation(); onClick(); }}
           className={cn(
@@ -1215,9 +1197,7 @@ function WatchlistPanel({
               const cfg = STATUS_CFG[p.status];
               const isCritical = p.status === "BLACKLIST" || p.status === "BOLO";
               const isPlate = isLPR || p.identType === "PLATE";
-              const severityLabel = p.severity === "CRITICAL" ? "CRITICAL"
-                : p.severity === "HIGH" ? "HIGH"
-                : p.severity === "MEDIUM" ? "MED" : "LOW";
+              const severityLabel = p.severity ?? "";
 
               return (
                 <div
@@ -1460,10 +1440,9 @@ export const IdentityMonitoringView = ({
             ) : (
               <table className="w-full text-left border-collapse">
                 <thead className="bg-[#001E18] sticky top-0 z-10">
-                  <tr className="text-[9px] uppercase tracking-widest font-bold text-white/80 h-9">
-                    <th className="px-3 py-2 text-center w-12">Severity</th>
-                    <th className="px-3 py-2 w-20">ID</th>
-                    <th className="px-3 py-2 w-20">Snapshot</th>
+                  <tr className="text-[9px] uppercase tracking-widest font-bold text-white/80 h-8">
+                    <th className="px-3 py-2 w-16">ID</th>
+                    <th className="px-3 py-2 w-16">Snapshot</th>
                     <th className="px-3 py-2">Identity</th>
                     <th className="px-3 py-2">Zone</th>
                     <th className="px-3 py-2 w-28">Camera</th>
