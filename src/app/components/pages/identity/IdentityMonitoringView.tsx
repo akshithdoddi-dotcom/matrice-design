@@ -54,14 +54,14 @@ const FR_PEOPLE: FeedPerson[] = [
   },
   {
     id: "f2", identType: "FACE", status: "UNKNOWN",
-    displayName: "Unknown #88", subLabel: "4-day repeat · High dwell",
+    displayName: "Unknown #88", subLabel: "Action required · High dwell",
     camera: "CAM-SE-01", cameraId: "cam_south_entrance", zone: "South Entrance",
     time: "14:30:55", dwell: 252, recurringDays: 4, severity: "HIGH",
     imageSrc: "https://i.pravatar.cc/160?u=unk088-recurringz",
   },
   {
     id: "f3", identType: "FACE", status: "UNKNOWN",
-    displayName: "Unknown #134", subLabel: "2-day repeat · Garage area",
+    displayName: "Unknown #134", subLabel: "Action required · Garage area",
     camera: "CAM-GB-01", cameraId: "cam_garage_entry_b", zone: "Garage Entry B",
     time: "14:28:45", dwell: 88, recurringDays: 2, severity: "MEDIUM",
     imageSrc: "https://i.pravatar.cc/160?u=unk134-garagek",
@@ -104,14 +104,14 @@ const LPR_PEOPLE: FeedPerson[] = [
   },
   {
     id: "p2", identType: "PLATE", status: "UNREGISTERED",
-    displayName: "UP80MN1123", subLabel: "3rd entry attempt · Blocked each time",
+    displayName: "UP80MN1123", subLabel: "Action required · Entry blocked",
     camera: "CAM-GA-01", cameraId: "cam_garage_entry_a", zone: "Garage Entry A",
     time: "14:31:06", confidence: 91.0, recurringDays: 3, severity: "HIGH",
     plateText: "UP80MN1123", vehicleDesc: "Silver Maruti Swift",
   },
   {
     id: "p3", identType: "PLATE", status: "UNREGISTERED",
-    displayName: "KL-3312-MH", subLabel: "No permit found — Parking Lot A",
+    displayName: "KL-3312-MH", subLabel: "Action required · No permit",
     camera: "CAM-PL-01", cameraId: "cam_parking_lot", zone: "Parking Lot A",
     time: "14:25:01", confidence: 89.0, severity: "MEDIUM",
     plateText: "KL-3312-MH", vehicleDesc: "Red Honda City",
@@ -831,6 +831,34 @@ function FeedTableRow({
         <p className="text-[11px] font-mono text-neutral-600">{person.camera}</p>
       </td>
 
+      {/* Match % */}
+      <td className="px-3 py-2 text-right">
+        {person.confidence != null ? (
+          <span className={cn(
+            "text-[11px] font-mono font-bold tabular-nums",
+            person.confidence >= 90 ? "text-emerald-600" : "text-amber-500"
+          )}>
+            {person.confidence.toFixed(1)}%
+          </span>
+        ) : (
+          <span className="text-[11px] text-neutral-300 font-mono">—</span>
+        )}
+      </td>
+
+      {/* Dwell */}
+      <td className="px-3 py-2 text-right">
+        {person.dwell != null ? (
+          <span className={cn(
+            "text-[11px] font-mono font-bold tabular-nums",
+            person.dwell > 180 ? "text-amber-500" : "text-neutral-500"
+          )}>
+            {fmtDwell(person.dwell)}
+          </span>
+        ) : (
+          <span className="text-[11px] text-neutral-300 font-mono">—</span>
+        )}
+      </td>
+
       {/* Time */}
       <td className="px-3 py-2 text-right">
         <span className="text-[10px] font-mono text-neutral-500">{person.time}</span>
@@ -1446,6 +1474,8 @@ export const IdentityMonitoringView = ({
                     <th className="px-3 py-2">Identity</th>
                     <th className="px-3 py-2">Zone</th>
                     <th className="px-3 py-2 w-28">Camera</th>
+                    <th className="px-3 py-2 w-20 text-right">Match %</th>
+                    <th className="px-3 py-2 w-20 text-right">Dwell</th>
                     <th className="px-3 py-2 w-24 text-right">Time</th>
                     <th className="px-3 py-2 w-16 text-right">Action</th>
                   </tr>
