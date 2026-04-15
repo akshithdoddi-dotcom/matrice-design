@@ -228,16 +228,20 @@ type ActionDef = {
 
 type DrawerMode = { kind: "action"; action: ActionDef } | { kind: "watchlist" };
 
-// ─── Watchlist Form (inside ActionDrawer) ──────────────────────────────────────
+// ─── Watchlist Form ────────────────────────────────────────────────────────────
 const FR_REASONS = [
-  "Security Threat", "Terminated Employee", "Banned Visitor",
-  "Shoplifting Suspect", "Previous Incident", "VIP Registration",
-  "Unauthorised Access", "Custom Reason",
+  "Terminated Employee", "High Security VIP", "Shoplifting Suspect",
+  "Security Threat", "Banned Visitor", "Previous Incident", "Custom Reason",
 ];
 const LPR_REASONS = [
-  "Stolen Vehicle", "No Access Permit", "Expired Permit",
-  "BOLO Vehicle", "Parking Violation", "Suspicious Activity",
-  "Blacklisted Owner", "Custom Reason",
+  "Banned Visitor", "Executive VIP", "Security Threat",
+  "Previous Incident", "Unauthorised Vehicle", "Custom Reason",
+];
+const WL_CAMERAS = [
+  "All Cameras",
+  "Camera 01", "Camera 02", "Camera 03", "Camera 04", "Camera 05",
+  "Camera 07", "Camera 09", "Camera 11", "Camera 12", "Camera 14",
+  "Camera 15", "Camera 20",
 ];
 const WL_GROUPS = [
   "Security Team", "Operations Manager", "Site Supervisor",
@@ -247,143 +251,98 @@ const WL_GROUPS = [
 function WatchlistForm({
   isLPR, person, onCancel, onSubmit,
 }: {
-  isLPR: boolean; person: FeedPerson;
+  isLPR: boolean; person?: Partial<FeedPerson>;
   onCancel: () => void; onSubmit: () => void;
 }) {
   const reasons = isLPR ? LPR_REASONS : FR_REASONS;
-  const frStatuses  = ["BLACKLIST", "BOLO", "VIP", "WATCH"] as const;
-  const lprStatuses = ["BLACKLIST", "BOLO", "PERMITTED", "WATCH"] as const;
-  const statuses = isLPR ? lprStatuses : frStatuses;
-  const statusStyle: Record<string, string> = {
-    BLACKLIST: "bg-red-600 border-red-600 text-white",
-    BOLO:      "bg-red-500 border-red-500 text-white",
-    VIP:       "bg-yellow-500 border-yellow-500 text-yellow-900",
-    PERMITTED: "bg-emerald-600 border-emerald-600 text-white",
-    WATCH:     "bg-amber-500 border-amber-500 text-white",
-  };
 
-  const [name,        setName]        = useState(isLPR ? (person.plateText ?? person.displayName) : person.displayName);
-  const [vehicleDesc, setVehicleDesc] = useState(person.vehicleDesc ?? "");
-  const [ownerName,   setOwnerName]   = useState("");
-  const [wlStatus,    setWlStatus]    = useState<string>("BLACKLIST");
-  const [severity,    setSeverity]    = useState<"Critical" | "High" | "Medium">("High");
-  const [accessLevel, setAccessLevel] = useState("None");
+  // FR state
+  const [frName,    setFrName]    = useState(person?.displayName ?? "");
+  const [personId,  setPersonId]  = useState(person?.employeeId ?? "");
+  // LPR state
+  const [plates,    setPlates]    = useState(person?.plateText ?? "");
+  const [customReason, setCustomReason] = useState("");
+  // Shared
   const [reason,      setReason]      = useState("");
   const [reasonOpen,  setReasonOpen]  = useState(false);
-  const [watchFrom,   setWatchFrom]   = useState("");
-  const [watchUntil,  setWatchUntil]  = useState("");
-  const [caseRef,     setCaseRef]     = useState("");
+  const [severity,    setSeverity]    = useState<"Critical" | "High" | "Informational">("High");
+  const [cameras,     setCameras]     = useState<string[]>(["All Cameras"]);
+  const [hasEndDate,  setHasEndDate]  = useState(false);
+  const [endDate,     setEndDate]     = useState("");
   const [notes,       setNotes]       = useState("");
   const [email,       setEmail]       = useState("");
   const [groups,      setGroups]      = useState<string[]>([]);
 
+  const toggleCamera = (cam: string) => {
+    if (cam === "All Cameras") { setCameras(["All Cameras"]); return; }
+    setCameras(prev => {
+      const filtered = prev.filter(c => c !== "All Cameras");
+      return filtered.includes(cam) ? filtered.filter(c => c !== cam) : [...filtered, cam];
+    });
+  };
   const toggleGroup = (g: string) =>
     setGroups(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
 
   const inputCls = "w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300";
   const labelCls = "block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1";
 
+  const selectedCount = cameras.includes("All Cameras") ? "All" : cameras.length;
+
   return (
     <>
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <p className="text-[11px] text-neutral-500 leading-relaxed">
+          {isLPR
+            ? "Add license plates to the BOLO (Be On the Lookout) watchlist. Multiple plates can be added at once."
+            : "Add individuals to the watchlist for immediate alerting when detected by facial recognition."}
+        </p>
 
-        {/* ── Identity info ─────────────────────────── */}
         {isLPR ? (
+          /* ── LPR: multi-plate textarea ── */
+          <div>
+            <label className={labelCls}>License Plate Number(s) <span className="text-red-500">*</span></label>
+            <textarea
+              value={plates} onChange={e => setPlates(e.target.value)}
+              rows={3}
+              placeholder={"Enter plate numbers separated by commas or new lines.\ne.g., ABC-1234, XYZ-5678\nor one per line"}
+              className="w-full px-3 py-2 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300 resize-none"
+            />
+            <p className="text-[9px] text-neutral-400 mt-0.5">Supports bulk entry. Separate multiple plates with commas or new lines.</p>
+          </div>
+        ) : (
+          /* ── FR: name + ID + image ── */
           <>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Plate Number <span className="text-red-500">*</span></label>
-                <input value={name} onChange={e => setName(e.target.value)}
-                  placeholder="e.g. KA05MJ4421" className={inputCls} />
+                <label className={labelCls}>Person Name <span className="text-red-500">*</span></label>
+                <input value={frName} onChange={e => setFrName(e.target.value)}
+                  placeholder="e.g. John Doe" className={inputCls} />
+                <p className="text-[9px] text-neutral-400 mt-0.5">Primary identifier for this flagged individual.</p>
               </div>
               <div>
-                <label className={labelCls}>Vehicle Description</label>
-                <input value={vehicleDesc} onChange={e => setVehicleDesc(e.target.value)}
-                  placeholder="e.g. Black Toyota Innova" className={inputCls} />
+                <label className={labelCls}>Person ID <span className="text-neutral-300">(Optional)</span></label>
+                <input value={personId} onChange={e => setPersonId(e.target.value)}
+                  placeholder="e.g. EMP-2451 or PER-1234" className={inputCls} />
+                <p className="text-[9px] text-neutral-400 mt-0.5">Internal employee or person ID if applicable.</p>
               </div>
             </div>
             <div>
-              <label className={labelCls}>Owner Name <span className="text-neutral-300">(optional)</span></label>
-              <input value={ownerName} onChange={e => setOwnerName(e.target.value)}
-                placeholder="e.g. Full name of registered owner" className={inputCls} />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="border-2 border-dashed border-neutral-200 rounded-[8px] p-4 text-center hover:border-[#00775B]/40 transition-colors cursor-pointer bg-neutral-50">
-              <Upload className="w-5 h-5 text-neutral-400 mx-auto mb-1.5" />
-              <p className="text-[11px] text-neutral-500">
-                <span className="font-semibold text-[#00775B]">Upload reference photo</span> — drag & drop or click
-              </p>
-              <p className="text-[9px] text-neutral-400 mt-0.5">PNG, JPG up to 10MB · Used for FR matching</p>
-            </div>
-            <div>
-              <label className={labelCls}>Display Name <span className="text-red-500">*</span></label>
-              <input value={name} onChange={e => setName(e.target.value)}
-                placeholder="e.g. John Doe" className={inputCls} />
+              <label className={labelCls}>Reference Image Upload</label>
+              <div className="border-2 border-dashed border-neutral-200 rounded-[8px] p-5 text-center hover:border-[#00775B]/40 transition-colors cursor-pointer bg-neutral-50">
+                <Upload className="w-5 h-5 text-neutral-400 mx-auto mb-1.5" />
+                <p className="text-[11px] text-neutral-500">
+                  <span className="font-semibold text-[#00775B]">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-[9px] text-neutral-400 mt-0.5">PNG, JPG, GIF up to 10MB</p>
+              </div>
+              <p className="text-[9px] text-neutral-400 mt-1">Upload a clear photo for facial recognition matching. Highly recommended for accurate detection.</p>
             </div>
           </>
         )}
 
-        {/* ── Status + Severity ─────────────────────── */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Watchlist Status</label>
-            <div className="flex flex-wrap gap-1.5">
-              {statuses.map(s => (
-                <button key={s} onClick={() => setWlStatus(s)}
-                  className={cn(
-                    "h-7 px-2.5 rounded-[5px] text-[9px] font-bold border transition-all",
-                    wlStatus === s ? (statusStyle[s] ?? "bg-neutral-700 text-white border-neutral-700") : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
-                  )}
-                >{s}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Alert Severity</label>
-            <div className="flex gap-1.5">
-              {(["Critical", "High", "Medium"] as const).map(s => (
-                <button key={s} onClick={() => setSeverity(s)}
-                  className={cn(
-                    "flex-1 h-7 rounded-[5px] text-[9px] font-bold border transition-all",
-                    severity === s
-                      ? s === "Critical" ? "bg-red-600 border-red-600 text-white"
-                        : s === "High"   ? "bg-amber-500 border-amber-500 text-white"
-                        : "bg-blue-500 border-blue-500 text-white"
-                      : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
-                  )}
-                >{s}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* LPR: Access Permit */}
-        {isLPR && (
-          <div>
-            <label className={labelCls}>Access Permit</label>
-            <div className="flex gap-1.5">
-              {(["Valid", "Expired", "None", "Visitor"] as const).map(lvl => (
-                <button key={lvl} onClick={() => setAccessLevel(lvl)}
-                  className={cn(
-                    "flex-1 h-7 rounded-[5px] text-[9px] font-bold border transition-all",
-                    accessLevel === lvl
-                      ? lvl === "Valid"    ? "bg-emerald-600 border-emerald-600 text-white"
-                        : lvl === "Expired" ? "bg-amber-500 border-amber-500 text-white"
-                        : lvl === "Visitor" ? "bg-blue-500 border-blue-500 text-white"
-                        : "bg-neutral-700 border-neutral-700 text-white"
-                      : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
-                  )}
-                >{lvl}</button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Flag Reason ───────────────────────────── */}
+        {/* ── Watchlist Reason ── */}
         <div className="relative">
-          <label className={labelCls}>Flag Reason <span className="text-red-500">*</span></label>
+          <label className={labelCls}>Watchlist Name / Reason <span className="text-red-500">*</span></label>
           <button
             onClick={() => setReasonOpen(v => !v)}
             className="w-full h-8 px-3 flex items-center justify-between rounded-[6px] border border-neutral-200 text-[12px] text-left focus:outline-none hover:border-neutral-300 transition-colors"
@@ -401,77 +360,213 @@ function WatchlistForm({
               ))}
             </div>
           )}
+          {/* LPR: custom reason text input */}
+          {isLPR && reason === "Custom Reason" && (
+            <input
+              value={customReason} onChange={e => setCustomReason(e.target.value)}
+              placeholder="Enter custom reason for this watchlist entry"
+              className={cn(inputCls, "mt-2")}
+            />
+          )}
         </div>
 
-        {/* ── Watch Period + Case Ref ───────────────── */}
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className={labelCls}>Watch From</label>
-            <input type="date" value={watchFrom} onChange={e => setWatchFrom(e.target.value)}
-              className="w-full h-8 px-2 rounded-[6px] border border-neutral-200 text-[11px] text-neutral-800 focus:outline-none focus:border-[#00775B]" />
-          </div>
-          <div>
-            <label className={labelCls}>Watch Until</label>
-            <input type="date" value={watchUntil} onChange={e => setWatchUntil(e.target.value)}
-              className="w-full h-8 px-2 rounded-[6px] border border-neutral-200 text-[11px] text-neutral-800 focus:outline-none focus:border-[#00775B]" />
-          </div>
-          <div>
-            <label className={labelCls}>Case Ref. <span className="text-neutral-300">(opt)</span></label>
-            <input value={caseRef} onChange={e => setCaseRef(e.target.value)}
-              placeholder="e.g. INC-2024-001"
-              className="w-full h-8 px-2 rounded-[6px] border border-neutral-200 text-[11px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300" />
-          </div>
-        </div>
-
-        {/* ── Notes ────────────────────────────────── */}
+        {/* ── Severity ── */}
         <div>
-          <label className={labelCls}>Notes / Instructions</label>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-            placeholder="e.g. Do not approach — contact supervisor immediately."
-            className="w-full px-3 py-2 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300 resize-none"
-          />
+          <label className={labelCls}>Severity Level <span className="text-red-500">*</span></label>
+          <div className="flex gap-2">
+            {(["Critical", "High", "Informational"] as const).map(s => (
+              <button key={s} onClick={() => setSeverity(s)}
+                className={cn(
+                  "flex-1 h-8 rounded-[6px] text-[11px] font-bold border transition-all",
+                  severity === s
+                    ? s === "Critical"      ? "bg-red-50 border-red-500 text-red-600"
+                      : s === "High"        ? "bg-amber-50 border-amber-500 text-amber-600"
+                      : "bg-blue-50 border-blue-400 text-blue-600"
+                    : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
+                )}
+              >{s}</button>
+            ))}
+          </div>
+          <p className="text-[9px] text-neutral-400 mt-1">This priority level will determine alert prominence on the main dashboard.</p>
         </div>
 
-        {/* ── Notifications ─────────────────────────── */}
-        <div className="border-t border-neutral-100 pt-3 space-y-3">
-          <p className={labelCls}><Mail className="w-3 h-3 inline mr-1" />Alert Notifications</p>
-          <input value={email} onChange={e => setEmail(e.target.value)}
-            placeholder="Recipient emails (comma-separated)"
-            className={inputCls} />
+        {/* ── FR: Associated Cameras/Zones ── */}
+        {!isLPR && (
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-wide text-neutral-400 mb-1.5">
-              <Users className="w-3 h-3 inline mr-1" />Notify Groups
-            </p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-              {WL_GROUPS.map(g => (
-                <label key={g} className="flex items-center gap-2 cursor-pointer py-1 hover:text-neutral-900">
-                  <input type="checkbox" checked={groups.includes(g)} onChange={() => toggleGroup(g)}
-                    className="w-3 h-3 accent-[#00775B] rounded" />
-                  <span className="text-[11px] text-neutral-700">{g}</span>
-                </label>
-              ))}
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={cn(labelCls, "mb-0")}>Associated Cameras / Zones</label>
+              <div className="flex items-center gap-2 text-[9px] text-neutral-500">
+                <span className="font-semibold text-[#00775B]">{selectedCount} cameras selected</span>
+                <button onClick={() => setCameras([])}
+                  className="text-neutral-400 hover:text-neutral-600 underline"
+                >Clear all</button>
+              </div>
+            </div>
+            <div className="border border-neutral-200 rounded-[6px] overflow-hidden">
+              <div className="grid grid-cols-2 divide-x divide-neutral-100">
+                <div className="max-h-40 overflow-y-auto p-2 space-y-0.5">
+                  {WL_CAMERAS.map(cam => (
+                    <label key={cam} className="flex items-center gap-2 cursor-pointer px-1 py-1 hover:bg-neutral-50 rounded-[4px]">
+                      <input type="checkbox" checked={cameras.includes(cam)} onChange={() => toggleCamera(cam)}
+                        className="w-3 h-3 accent-[#00775B] rounded" />
+                      <span className="text-[11px] text-neutral-700">{cam}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="p-2.5 text-[10px] text-neutral-400 flex flex-col gap-1">
+                  <p className="font-semibold text-neutral-500">Selected:</p>
+                  {cameras.length === 0
+                    ? <p className="italic">None selected</p>
+                    : cameras.includes("All Cameras")
+                    ? <p className="text-[#00775B] font-medium">All Cameras · Defaults to all cameras if none selected</p>
+                    : cameras.map(c => <span key={c} className="text-neutral-600">{c}</span>)
+                  }
+                </div>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* ── End Date ── */}
+        <div>
+          {isLPR ? (
+            <label className="flex items-center gap-2 cursor-pointer mb-1">
+              <input type="checkbox" checked={hasEndDate} onChange={e => setHasEndDate(e.target.checked)}
+                className="w-3.5 h-3.5 accent-[#00775B] rounded" />
+              <span className={cn(labelCls, "mb-0")}>End Date <span className="text-neutral-300 normal-case font-normal">(Optional)</span></span>
+            </label>
+          ) : (
+            <label className={labelCls}>End Date <span className="text-neutral-300 normal-case font-normal">(Optional)</span></label>
+          )}
+          {(!isLPR || hasEndDate) && (
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+              className="w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B]" />
+          )}
+          {(!isLPR || hasEndDate) && (
+            <p className="text-[9px] text-neutral-400 mt-0.5">Set an automatic expiry date for temporary watch entries.</p>
+          )}
+        </div>
+
+        {/* ── Notes ── */}
+        <div>
+          <label className={labelCls}>Notes / Context</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+            placeholder={isLPR
+              ? "Enter any additional notes or context for this watchlist entry"
+              : "Enter security instructions (e.g. Contact supervisor immediately. Do not engage)"}
+            className="w-full px-3 py-2 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300 resize-none"
+          />
+          <p className="text-[9px] text-neutral-400 mt-0.5">
+            {isLPR ? "Internal administrative notes regarding this watch entry." : "Security instructions and administrative notes regarding this watch entry."}
+          </p>
+        </div>
+
+        {/* ── Notifications ── */}
+        <div>
+          <label className={labelCls}><Mail className="w-3 h-3 inline mr-1" />Notification Recipients</label>
+          <div className="space-y-1">
+            <label className="block text-[9px] font-semibold uppercase tracking-wide text-neutral-400 mb-0.5">Email Recipients</label>
+            <input value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="e.g. admin@matrice.ai, security@matrice.ai"
+              className={inputCls} />
+            <p className="text-[9px] text-neutral-400">Separate multiple email addresses with commas</p>
+          </div>
+        </div>
+
+        <div>
+          <label className={labelCls}><Users className="w-3 h-3 inline mr-1" />Notification Groups</label>
+          <div className="space-y-1">
+            {WL_GROUPS.map(g => (
+              <label key={g} className="flex items-center gap-2 cursor-pointer py-0.5">
+                <input type="checkbox" checked={groups.includes(g)} onChange={() => toggleGroup(g)}
+                  className="w-3 h-3 accent-[#00775B] rounded" />
+                <span className="text-[11px] text-neutral-700">{g}</span>
+              </label>
+            ))}
+          </div>
+          <p className="text-[9px] text-neutral-400 mt-1.5">
+            Selected groups will receive immediate notifications (Email/SMS/Platform) upon {isLPR ? "LPR match." : "facial recognition match."}
+          </p>
         </div>
 
       </div>
 
       {/* Footer */}
-      <div className="border-t border-neutral-100 px-5 py-3.5 flex items-center justify-between shrink-0">
-        <p className="text-[10px] text-neutral-400">Alerts activate immediately upon save</p>
-        <div className="flex items-center gap-2.5">
-          <button onClick={onCancel}
-            className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
-          >Cancel</button>
-          <button onClick={onSubmit}
-            className="h-9 px-6 rounded-[6px] bg-[#00775B] text-[12px] font-bold text-white hover:bg-[#006349] transition-colors inline-flex items-center gap-1.5"
-          >
-            {isLPR ? "Save Vehicle" : "Save Person"}
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      <div className="border-t border-neutral-100 px-5 py-3.5 flex items-center justify-end gap-2.5 shrink-0">
+        <button onClick={onCancel}
+          className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
+        >Cancel</button>
+        <button onClick={onSubmit}
+          className="h-9 px-6 rounded-[6px] bg-[#00775B] text-[12px] font-bold text-white hover:bg-[#006349] transition-colors inline-flex items-center gap-1.5"
+        >
+          {isLPR ? "Process Plates" : "Add to Watchlist"}
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
       </div>
     </>
+  );
+}
+
+// ─── Standalone Manage Modal (triggered from page header) ─────────────────────
+export function ManageModal({ isOpen, isLPR, onClose }: {
+  isOpen: boolean; isLPR: boolean; onClose: () => void;
+}) {
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) { setDone(false); }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && isOpen) onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    setDone(true);
+    setTimeout(onClose, 2000);
+  };
+
+  return createPortal(
+    <>
+      <div className="fixed inset-0 z-[1000] bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
+      <div
+        className="fixed z-[1001] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden w-[560px] max-w-[95vw] max-h-[90vh]"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-neutral-100 shrink-0">
+          <div>
+            <h3 className="text-[14px] font-bold text-neutral-900">
+              {isLPR ? "Add/Manage Watchlist Plates" : "Add/Manage Flagged Persons"}
+            </h3>
+            <p className="text-[11px] text-neutral-400 mt-0.5">
+              {isLPR ? "BOLO Watchlist" : "Facial Recognition Watchlist"}
+            </p>
+          </div>
+          <button onClick={onClose}
+            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {done ? (
+          <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8">
+            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+            <p className="text-[14px] font-bold text-neutral-800">
+              {isLPR ? "Plates processed — watchlist updated" : "Person added — alerts active"}
+            </p>
+          </div>
+        ) : (
+          <WatchlistForm isLPR={isLPR} onCancel={onClose} onSubmit={handleSubmit} />
+        )}
+      </div>
+    </>,
+    document.body
   );
 }
 

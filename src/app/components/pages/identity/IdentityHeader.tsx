@@ -6,6 +6,7 @@ import {
   Download,
   RefreshCw,
   Rows3,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
@@ -33,6 +34,7 @@ interface IdentityHeaderProps {
   onAppChange: (appId: string) => void;
   timeRange: string;
   onTimeRangeChange: (range: string) => void;
+  onManage: () => void;
 }
 
 export const IdentityHeader = ({
@@ -44,6 +46,7 @@ export const IdentityHeader = ({
   onAppChange,
   timeRange,
   onTimeRangeChange,
+  onManage,
 }: IdentityHeaderProps) => {
   const [isAppOpen, setIsAppOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -260,6 +263,15 @@ export const IdentityHeader = ({
               </>
             )}
           </div>
+
+          {/* Manage People / Vehicle button */}
+          <button
+            onClick={onManage}
+            className="flex items-center gap-1.5 rounded-sm border border-[#00775B]/30 bg-[#E5FFF9] px-3 py-1.5 text-[10px] font-bold text-[#00775B] hover:bg-[#00775B]/10 transition-colors"
+          >
+            <Plus className="h-3 w-3" />
+            {identityType === "FACE" ? "Manage People" : "Manage Vehicles"}
+          </button>
         </div>
       </div>
     </div>

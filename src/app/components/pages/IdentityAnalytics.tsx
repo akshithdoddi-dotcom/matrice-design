@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
 import { IdentityHeader } from "./identity/IdentityHeader";
-import { IdentityMonitoringView } from "./identity/IdentityMonitoringView";
+import { IdentityMonitoringView, ManageModal } from "./identity/IdentityMonitoringView";
 import { IdentityManagerView } from "./identity/IdentityManagerView";
 import { IdentityDirectorView } from "./identity/IdentityDirectorView";
 import { EntityDetailPanel } from "./identity/components/panels/EntityDetailPanel";
@@ -119,6 +119,9 @@ export const IdentityAnalytics = ({ persona }: IdentityAnalyticsProps) => {
   const [activeAppId, setActiveAppId] = useState("facial-hq");
   const [timeRange, setTimeRange] = useState(DEFAULT_TIME_RANGE[persona]);
 
+  // Manage modal state
+  const [manageOpen, setManageOpen] = useState(false);
+
   // Panel / modal state
   const [entityPanelOpen, setEntityPanelOpen] = useState(false);
   const [entityType, setEntityType] = useState<"matched" | "unknown" | "blacklist">("matched");
@@ -178,6 +181,14 @@ export const IdentityAnalytics = ({ persona }: IdentityAnalyticsProps) => {
         onAppChange={setActiveAppId}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
+        onManage={() => setManageOpen(true)}
+      />
+
+      {/* Manage People / Vehicles modal */}
+      <ManageModal
+        isOpen={manageOpen}
+        isLPR={terminology.isLPR}
+        onClose={() => setManageOpen(false)}
       />
 
       {/* ── Persona views ─────────────────────────────────────────────── */}
