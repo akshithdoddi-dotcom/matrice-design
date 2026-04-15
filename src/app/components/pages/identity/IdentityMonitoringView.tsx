@@ -627,20 +627,11 @@ function ActionDrawer({
   );
 }
 
-// ─── Actions section ──────────────────────────────────────────────────────────
-function ActionsSection({
-  actions, isThreat: _isThreat, isLPR, onSelectAction, onManageWatchlist,
-}: {
-  actions: ActionDef[]; isThreat: boolean; isLPR: boolean;
-  onSelectAction: (a: ActionDef) => void;
-  onManageWatchlist: () => void;
-}) {
+// ─── Notify section ───────────────────────────────────────────────────────────
+function ActionsSection() {
   const [showGroup, setShowGroup]       = useState(false);
   const [selected, setSelected]         = useState<string[]>([]);
   const [notified, setNotified]         = useState<"admin" | "group" | null>(null);
-
-  const primary   = actions[0];
-  const secondary = actions.slice(1);
 
   const toggleGroup = (g: string) =>
     setSelected(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
@@ -661,59 +652,11 @@ function ActionsSection({
   return (
     <div className="border-t border-neutral-100 bg-neutral-50/40">
 
-      {/* Header row */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-3">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Actions</p>
-        <button
-          onClick={onManageWatchlist}
-          className="inline-flex items-center gap-1 h-6 px-2.5 rounded-[4px] bg-[#E5FFF9] border border-[#00775B]/20 text-[9px] font-bold text-[#00775B] hover:bg-[#00775B]/10 transition-colors"
-        >
-          <Plus className="w-2.5 h-2.5" />
-          {isLPR ? "Manage Vehicle" : "Manage Person"}
-        </button>
-      </div>
-
-      <div className="px-5 pb-4 space-y-2">
-
-        {/* Primary — full width */}
-        {primary && (
-          <button
-            onClick={() => onSelectAction(primary)}
-            className={cn(
-              "w-full flex items-center justify-center gap-2 h-10 px-4 rounded-[6px] text-[12px] font-bold transition-all",
-              primary.variant === "danger"
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-[#00775B] text-white hover:bg-[#006349]",
-            )}
-          >
-            {primary.icon && <primary.icon className="w-3.5 h-3.5" />}
-            {primary.label}
-          </button>
-        )}
-
-        {/* Secondary actions */}
-        {secondary.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {secondary.map(a => (
-              <button key={a.key} onClick={() => onSelectAction(a)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[11px] font-bold border transition-all",
-                  a.variant === "danger"
-                    ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                    : a.variant === "primary"
-                    ? "bg-[#E5FFF9] text-[#00775B] border-[#00775B]/25 hover:bg-[#00775B]/10"
-                    : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300",
-                )}
-              >
-                {a.icon && <a.icon className="w-3.5 h-3.5" />}{a.label}
-              </button>
-            ))}
-          </div>
-        )}
+      <div className="px-5 py-4 space-y-2">
 
         {/* ── Notify section ───────────────────────────────────────────────── */}
-        <div className="pt-1 border-t border-neutral-100">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-2.5 mt-2">Notify</p>
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-2.5">Notify</p>
 
           <div className="flex gap-2 flex-wrap">
             {/* Notify Admin */}
@@ -1248,6 +1191,9 @@ function EntityModal({
               ))}
             </div>
           </div>
+
+          {/* Notify actions */}
+          <ActionsSection />
 
       </SlidePanel>
 
