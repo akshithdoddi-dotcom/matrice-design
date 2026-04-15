@@ -817,7 +817,7 @@ function FeedTableRow({
         <span className={cn(
           "text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide whitespace-nowrap",
           cfg.bg, cfg.text,
-          isBlacklist && "animate-pulse"
+          "animate-pulse"
         )}>
           {cfg.label}
         </span>
@@ -1249,9 +1249,9 @@ function WatchlistPanel({
                   {/* ── Top: badge row ─────────────────────────────────────── */}
                   <div className="flex items-center gap-1.5 pl-3.5 pr-2.5 pt-2.5 pb-2">
                     <span className={cn(
-                      "text-[8px] font-black uppercase tracking-[0.1em] px-1.5 py-[3px] rounded-[3px]",
+                      "text-[8px] font-black uppercase tracking-[0.1em] px-1.5 py-[3px] rounded-[3px] animate-pulse",
                       isCritical
-                        ? "bg-red-600 text-white animate-pulse"
+                        ? "bg-red-600 text-white"
                         : "bg-amber-100 text-amber-800"
                     )}>
                       {cfg.label}
