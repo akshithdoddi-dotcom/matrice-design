@@ -1227,111 +1227,125 @@ function WatchlistPanel({
               const cfg = STATUS_CFG[p.status];
               const isCritical = p.status === "BLACKLIST" || p.status === "BOLO";
               const isPlate = isLPR || p.identType === "PLATE";
-              const severityLabel = p.severity ?? "";
 
               return (
                 <div
                   key={p.id}
                   onClick={() => onOpenModal(p.id)}
                   className={cn(
-                    "group relative rounded-[8px] overflow-hidden cursor-pointer transition-all select-none",
-                    "hover:shadow-lg hover:-translate-y-[1px] active:translate-y-0 active:shadow-sm",
+                    "group relative rounded-[6px] overflow-hidden cursor-pointer transition-all select-none flex flex-col",
+                    "hover:shadow-md hover:-translate-y-[1px] active:translate-y-0",
                     isCritical
-                      ? "bg-white border border-red-200/80 shadow-[0_1px_4px_rgba(220,38,38,0.12)]"
-                      : "bg-white border border-amber-200/80 shadow-[0_1px_4px_rgba(217,119,6,0.10)]",
+                      ? "bg-white border border-red-200 shadow-[0_1px_6px_rgba(220,38,38,0.10)]"
+                      : "bg-white border border-amber-200/70 shadow-[0_1px_6px_rgba(217,119,6,0.08)]",
                   )}
                 >
-                  {/* Colored left accent bar */}
+                  {/* Left accent bar */}
                   <div className={cn(
                     "absolute left-0 top-0 bottom-0 w-[3px]",
                     isCritical ? "bg-red-600" : "bg-amber-500"
                   )} />
 
-                  {/* Header: status badge + live pulse + severity */}
-                  <div className="flex items-center gap-1.5 pl-4 pr-2.5 pt-2.5 pb-2">
+                  {/* ── Top: badge row ─────────────────────────────────────── */}
+                  <div className="flex items-center gap-1.5 pl-3.5 pr-2.5 pt-2.5 pb-2">
                     <span className={cn(
-                      "text-[8px] font-black uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-[3px]",
-                      isCritical ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                      "text-[8px] font-black uppercase tracking-[0.1em] px-1.5 py-[3px] rounded-[3px]",
+                      isCritical
+                        ? "bg-red-600 text-white animate-pulse"
+                        : "bg-amber-100 text-amber-800"
                     )}>
                       {cfg.label}
                     </span>
-                    {(p.severity === "CRITICAL" || p.severity === "HIGH") && (
+                    {p.severity && (
                       <span className={cn(
-                        "flex items-center gap-[3px] text-[8px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-[3px]",
-                        isCritical ? "bg-red-600 text-white" : "bg-amber-500 text-white"
+                        "flex items-center gap-[3px] text-[8px] font-bold uppercase tracking-wide px-1.5 py-[3px] rounded-[3px]",
+                        isCritical ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"
                       )}>
-                        <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                        {severityLabel}
+                        <span className={cn("w-1 h-1 rounded-full", isCritical ? "bg-red-500 animate-pulse" : "bg-amber-400")} />
+                        {p.severity}
                       </span>
                     )}
-                    <div className="ml-auto">
-                      <span className="text-[8px] font-mono text-neutral-400">{p.time.slice(0, 5)}</span>
-                    </div>
+                    <span className="ml-auto text-[9px] font-mono text-neutral-400">{p.time.slice(0, 5)}</span>
                   </div>
 
-                  {/* Media + confidence side by side */}
-                  <div className="flex items-center gap-2.5 pl-4 pr-2.5 pb-2.5">
+                  {/* ── Body: image left, info right ───────────────────────── */}
+                  <div className="flex gap-2.5 pl-3.5 pr-2.5 pb-2.5 flex-1">
+
+                    {/* Image — taller portrait crop */}
                     <div className={cn(
-                      "shrink-0 rounded-[6px] overflow-hidden border",
-                      isCritical ? "border-red-200" : "border-amber-200"
+                      "shrink-0 rounded-[4px] overflow-hidden border",
+                      isCritical ? "border-red-200" : "border-amber-200/80"
                     )}>
                       {isPlate ? (
                         <IdentityEvidenceMedia
                           kind="PLATE" seed={p.id} plateText={p.plateText}
-                          className="h-11 w-[88px]"
+                          className="h-[72px] w-[90px]"
                         />
                       ) : (
                         <IdentityEvidenceMedia
                           kind="FACE" seed={p.id} imageSrc={p.imageSrc}
                           live={isCritical}
-                          className="h-14 w-14"
+                          className="h-[72px] w-[56px]"
                         />
                       )}
                     </div>
 
-                    {/* Text info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-bold text-neutral-900 truncate leading-tight">{p.displayName}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
-                        <p className="text-[9px] text-neutral-500 truncate">{p.zone}</p>
-                      </div>
-                      {p.subLabel && (
-                        <p className={cn(
-                          "text-[9px] mt-1.5 leading-snug line-clamp-2",
-                          isCritical ? "text-red-600 font-semibold" : "text-amber-700"
-                        )}>
-                          {p.subLabel}
-                        </p>
-                      )}
-                      {p.confidence != null && (
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <Fingerprint className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
-                          <span className={cn(
-                            "text-[9px] font-mono font-bold",
-                            p.confidence >= 90 ? "text-emerald-600" : "text-amber-600"
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <p className="text-[13px] font-black text-neutral-900 truncate leading-tight">{p.displayName}</p>
+                        <div className="flex items-center gap-1 mt-0.5 mb-1.5">
+                          <MapPin className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                          <p className="text-[10px] text-neutral-500 truncate">{p.zone}</p>
+                        </div>
+                        {p.subLabel && (
+                          <p className={cn(
+                            "text-[9px] leading-snug line-clamp-2",
+                            isCritical ? "text-red-600 font-semibold" : "text-amber-700 font-medium"
                           )}>
-                            {p.confidence}%
-                          </span>
-                          <span className="text-[8px] text-neutral-400">match</span>
+                            {p.subLabel}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Confidence bar */}
+                      {p.confidence != null && (
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[8px] text-neutral-400 uppercase tracking-wide">Match</span>
+                            <span className={cn(
+                              "text-[9px] font-black font-mono tabular-nums",
+                              p.confidence >= 90 ? "text-emerald-600" : "text-amber-600"
+                            )}>
+                              {p.confidence.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="h-[3px] bg-neutral-100 rounded-full overflow-hidden">
+                            <div
+                              className={cn("h-full rounded-full transition-all", p.confidence >= 90 ? "bg-emerald-500" : "bg-amber-400")}
+                              style={{ width: `${p.confidence}%` }}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Footer: camera + act button */}
+                  {/* ── Footer: camera + act button ─────────────────────────── */}
                   <div className={cn(
-                    "flex items-center justify-between pl-4 pr-2.5 py-2 border-t",
-                    isCritical ? "border-red-100 bg-red-50/60" : "border-amber-100 bg-amber-50/40"
+                    "flex items-center justify-between pl-3.5 pr-2.5 py-2 border-t mt-auto",
+                    isCritical ? "border-red-100 bg-red-50/50" : "border-amber-100/80 bg-amber-50/30"
                   )}>
-                    <span className="text-[8px] font-mono text-neutral-400">{p.camera}</span>
-                    <span className={cn(
-                      "text-[8px] font-bold uppercase tracking-wide flex items-center gap-0.5",
-                      isCritical ? "text-red-600" : "text-amber-700",
-                      "group-hover:gap-1.5 transition-all"
+                    <span className="text-[9px] font-mono text-neutral-400">{p.camera}</span>
+                    <button className={cn(
+                      "h-6 px-2.5 rounded-[4px] text-[9px] font-bold flex items-center gap-1 transition-colors",
+                      isCritical
+                        ? "bg-red-600 text-white hover:bg-red-700 group-hover:bg-red-700"
+                        : "bg-amber-500 text-white hover:bg-amber-600 group-hover:bg-amber-600"
                     )}>
-                      Act <span className="text-[9px]">→</span>
-                    </span>
+                      Act
+                      <ChevronRight className="w-2.5 h-2.5" />
+                    </button>
                   </div>
                 </div>
               );
