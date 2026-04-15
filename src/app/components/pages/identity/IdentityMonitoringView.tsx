@@ -803,22 +803,24 @@ function FeedTableRow({
       </td>
 
       {/* Identity details */}
-      <td className="px-3 py-2 max-w-[200px]">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className={cn(
-            "text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide shrink-0",
-            cfg.bg, cfg.text,
-            isBlacklist && "animate-pulse"
-          )}>
-            {cfg.label}
-          </span>
-        </div>
+      <td className="px-3 py-2 max-w-[180px]">
         <p className="text-[11px] font-bold text-neutral-900 truncate leading-tight">{person.displayName}</p>
         {person.subLabel && (
           <p className={cn("text-[9px] truncate mt-0.5 leading-snug",
             isThreat ? "text-red-600 font-semibold" : "text-neutral-400"
           )}>{person.subLabel}</p>
         )}
+      </td>
+
+      {/* Status */}
+      <td className="px-3 py-2">
+        <span className={cn(
+          "text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide whitespace-nowrap",
+          cfg.bg, cfg.text,
+          isBlacklist && "animate-pulse"
+        )}>
+          {cfg.label}
+        </span>
       </td>
 
       {/* Zone — name only */}
@@ -1472,6 +1474,7 @@ export const IdentityMonitoringView = ({
                     <th className="px-3 py-2 w-16">ID</th>
                     <th className="px-3 py-2 w-16">Snapshot</th>
                     <th className="px-3 py-2">Identity</th>
+                    <th className="px-3 py-2 w-28">Status</th>
                     <th className="px-3 py-2">Zone</th>
                     <th className="px-3 py-2 w-28">Camera</th>
                     <th className="px-3 py-2 w-20 text-right">Match %</th>
