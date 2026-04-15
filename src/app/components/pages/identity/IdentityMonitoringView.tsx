@@ -229,13 +229,15 @@ type ActionDef = {
 type DrawerMode = { kind: "action"; action: ActionDef } | { kind: "watchlist" };
 
 // ─── Watchlist Form (inside ActionDrawer) ──────────────────────────────────────
-const WL_REASONS = [
-  "Terminated Employee", "High Security VIP", "Shoplifting Suspect",
-  "Security Threat", "Banned Visitor", "Previous Incident", "Custom Reason",
+const FR_REASONS = [
+  "Security Threat", "Terminated Employee", "Banned Visitor",
+  "Shoplifting Suspect", "Previous Incident", "VIP Registration",
+  "Unauthorised Access", "Custom Reason",
 ];
-const WL_CAMERAS = [
-  "All Cameras", "Camera 01", "Camera 02", "Camera 03", "Camera 04",
-  "Camera 05", "Camera 09", "Camera 11", "Camera 12", "Camera 14", "Camera 20",
+const LPR_REASONS = [
+  "Stolen Vehicle", "No Access Permit", "Expired Permit",
+  "BOLO Vehicle", "Parking Violation", "Suspicious Activity",
+  "Blacklisted Owner", "Custom Reason",
 ];
 const WL_GROUPS = [
   "Security Team", "Operations Manager", "Site Supervisor",
@@ -248,192 +250,226 @@ function WatchlistForm({
   isLPR: boolean; person: FeedPerson;
   onCancel: () => void; onSubmit: () => void;
 }) {
-  const [name, setName] = useState(person.displayName);
-  const [personId, setPersonId] = useState(person.employeeId ?? "");
-  const [reason, setReason] = useState("");
-  const [severity, setSeverity] = useState<"Critical" | "High" | "Informational">("High");
-  const [cameras, setCameras] = useState<string[]>(["All Cameras"]);
-  const [notes, setNotes] = useState("");
-  const [email, setEmail] = useState("");
-  const [groups, setGroups] = useState<string[]>([]);
-  const [reasonOpen, setReasonOpen] = useState(false);
-
-  const toggleCamera = (cam: string) => {
-    if (cam === "All Cameras") { setCameras(["All Cameras"]); return; }
-    setCameras(prev => {
-      const filtered = prev.filter(c => c !== "All Cameras");
-      return filtered.includes(cam) ? filtered.filter(c => c !== cam) : [...filtered, cam];
-    });
+  const reasons = isLPR ? LPR_REASONS : FR_REASONS;
+  const frStatuses  = ["BLACKLIST", "BOLO", "VIP", "WATCH"] as const;
+  const lprStatuses = ["BLACKLIST", "BOLO", "PERMITTED", "WATCH"] as const;
+  const statuses = isLPR ? lprStatuses : frStatuses;
+  const statusStyle: Record<string, string> = {
+    BLACKLIST: "bg-red-600 border-red-600 text-white",
+    BOLO:      "bg-red-500 border-red-500 text-white",
+    VIP:       "bg-yellow-500 border-yellow-500 text-yellow-900",
+    PERMITTED: "bg-emerald-600 border-emerald-600 text-white",
+    WATCH:     "bg-amber-500 border-amber-500 text-white",
   };
+
+  const [name,        setName]        = useState(isLPR ? (person.plateText ?? person.displayName) : person.displayName);
+  const [vehicleDesc, setVehicleDesc] = useState(person.vehicleDesc ?? "");
+  const [ownerName,   setOwnerName]   = useState("");
+  const [wlStatus,    setWlStatus]    = useState<string>("BLACKLIST");
+  const [severity,    setSeverity]    = useState<"Critical" | "High" | "Medium">("High");
+  const [accessLevel, setAccessLevel] = useState("None");
+  const [reason,      setReason]      = useState("");
+  const [reasonOpen,  setReasonOpen]  = useState(false);
+  const [watchFrom,   setWatchFrom]   = useState("");
+  const [watchUntil,  setWatchUntil]  = useState("");
+  const [caseRef,     setCaseRef]     = useState("");
+  const [notes,       setNotes]       = useState("");
+  const [email,       setEmail]       = useState("");
+  const [groups,      setGroups]      = useState<string[]>([]);
+
   const toggleGroup = (g: string) =>
     setGroups(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+
+  const inputCls = "w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300";
+  const labelCls = "block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1";
 
   return (
     <>
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        <p className="text-[11px] text-neutral-500 leading-relaxed">
-          {isLPR
-            ? "Add this vehicle to the watchlist for immediate alerting when detected by any camera."
-            : "Add this individual to the watchlist for immediate alerting when detected by facial recognition."}
-        </p>
 
-        {/* Image upload */}
-        <div className="border-2 border-dashed border-neutral-200 rounded-[8px] p-4 text-center hover:border-[#00775B]/40 transition-colors cursor-pointer bg-neutral-50">
-          <Upload className="w-5 h-5 text-neutral-400 mx-auto mb-1.5" />
-          <p className="text-[11px] text-neutral-500">
-            <span className="font-semibold text-[#00775B]">Click to upload</span> or drag and drop
-          </p>
-          <p className="text-[9px] text-neutral-400 mt-0.5">PNG, JPG, GIF up to 10MB</p>
-        </div>
+        {/* ── Identity info ─────────────────────────── */}
+        {isLPR ? (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Plate Number <span className="text-red-500">*</span></label>
+                <input value={name} onChange={e => setName(e.target.value)}
+                  placeholder="e.g. KA05MJ4421" className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Vehicle Description</label>
+                <input value={vehicleDesc} onChange={e => setVehicleDesc(e.target.value)}
+                  placeholder="e.g. Black Toyota Innova" className={inputCls} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Owner Name <span className="text-neutral-300">(optional)</span></label>
+              <input value={ownerName} onChange={e => setOwnerName(e.target.value)}
+                placeholder="e.g. Full name of registered owner" className={inputCls} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="border-2 border-dashed border-neutral-200 rounded-[8px] p-4 text-center hover:border-[#00775B]/40 transition-colors cursor-pointer bg-neutral-50">
+              <Upload className="w-5 h-5 text-neutral-400 mx-auto mb-1.5" />
+              <p className="text-[11px] text-neutral-500">
+                <span className="font-semibold text-[#00775B]">Upload reference photo</span> — drag & drop or click
+              </p>
+              <p className="text-[9px] text-neutral-400 mt-0.5">PNG, JPG up to 10MB · Used for FR matching</p>
+            </div>
+            <div>
+              <label className={labelCls}>Display Name <span className="text-red-500">*</span></label>
+              <input value={name} onChange={e => setName(e.target.value)}
+                placeholder="e.g. John Doe" className={inputCls} />
+            </div>
+          </>
+        )}
 
-        {/* Name + ID */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* ── Status + Severity ─────────────────────── */}
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">
-              {isLPR ? "Plate / Vehicle" : "Person Name"} <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={name} onChange={e => setName(e.target.value)}
-              placeholder={isLPR ? "e.g. KA05MJ4421" : "e.g. John Doe"}
-              className="w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300"
-            />
+            <label className={labelCls}>Watchlist Status</label>
+            <div className="flex flex-wrap gap-1.5">
+              {statuses.map(s => (
+                <button key={s} onClick={() => setWlStatus(s)}
+                  className={cn(
+                    "h-7 px-2.5 rounded-[5px] text-[9px] font-bold border transition-all",
+                    wlStatus === s ? (statusStyle[s] ?? "bg-neutral-700 text-white border-neutral-700") : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
+                  )}
+                >{s}</button>
+              ))}
+            </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">
-              {isLPR ? "Vehicle Desc." : "Person ID"} <span className="text-neutral-300">(optional)</span>
-            </label>
-            <input
-              value={personId} onChange={e => setPersonId(e.target.value)}
-              placeholder={isLPR ? "e.g. Black Toyota Innova" : "e.g. EMP-1234"}
-              className="w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300"
-            />
+            <label className={labelCls}>Alert Severity</label>
+            <div className="flex gap-1.5">
+              {(["Critical", "High", "Medium"] as const).map(s => (
+                <button key={s} onClick={() => setSeverity(s)}
+                  className={cn(
+                    "flex-1 h-7 rounded-[5px] text-[9px] font-bold border transition-all",
+                    severity === s
+                      ? s === "Critical" ? "bg-red-600 border-red-600 text-white"
+                        : s === "High"   ? "bg-amber-500 border-amber-500 text-white"
+                        : "bg-blue-500 border-blue-500 text-white"
+                      : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
+                  )}
+                >{s}</button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Watchlist reason dropdown */}
+        {/* LPR: Access Permit */}
+        {isLPR && (
+          <div>
+            <label className={labelCls}>Access Permit</label>
+            <div className="flex gap-1.5">
+              {(["Valid", "Expired", "None", "Visitor"] as const).map(lvl => (
+                <button key={lvl} onClick={() => setAccessLevel(lvl)}
+                  className={cn(
+                    "flex-1 h-7 rounded-[5px] text-[9px] font-bold border transition-all",
+                    accessLevel === lvl
+                      ? lvl === "Valid"    ? "bg-emerald-600 border-emerald-600 text-white"
+                        : lvl === "Expired" ? "bg-amber-500 border-amber-500 text-white"
+                        : lvl === "Visitor" ? "bg-blue-500 border-blue-500 text-white"
+                        : "bg-neutral-700 border-neutral-700 text-white"
+                      : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
+                  )}
+                >{lvl}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Flag Reason ───────────────────────────── */}
         <div className="relative">
-          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">
-            Watchlist Name / Reason <span className="text-red-500">*</span>
-          </label>
+          <label className={labelCls}>Flag Reason <span className="text-red-500">*</span></label>
           <button
             onClick={() => setReasonOpen(v => !v)}
-            className="w-full h-8 px-3 flex items-center justify-between rounded-[6px] border border-neutral-200 text-[12px] text-left text-neutral-600 focus:outline-none hover:border-neutral-300 transition-colors"
+            className="w-full h-8 px-3 flex items-center justify-between rounded-[6px] border border-neutral-200 text-[12px] text-left focus:outline-none hover:border-neutral-300 transition-colors"
           >
             <span className={reason ? "text-neutral-800" : "text-neutral-300"}>{reason || "Select a reason"}</span>
             <ChevronDown className={cn("w-3.5 h-3.5 text-neutral-400 transition-transform", reasonOpen && "rotate-180")} />
           </button>
           {reasonOpen && (
             <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-[6px] border border-neutral-200 bg-white shadow-lg overflow-hidden">
-              {WL_REASONS.map(r => (
-                <button
-                  key={r}
-                  onClick={() => { setReason(r); setReasonOpen(false); }}
-                  className={cn(
-                    "w-full px-3 py-2 text-left text-[12px] hover:bg-[#E5FFF9] transition-colors",
+              {reasons.map(r => (
+                <button key={r} onClick={() => { setReason(r); setReasonOpen(false); }}
+                  className={cn("w-full px-3 py-2 text-left text-[12px] hover:bg-[#E5FFF9] transition-colors",
                     reason === r ? "text-[#00775B] font-semibold bg-[#E5FFF9]" : "text-neutral-700"
-                  )}
-                >{r}</button>
+                  )}>{r}</button>
               ))}
             </div>
           )}
         </div>
 
-        {/* Severity */}
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Severity Level</label>
-          <div className="flex gap-1.5">
-            {(["Critical", "High", "Informational"] as const).map(s => (
-              <button
-                key={s}
-                onClick={() => setSeverity(s)}
-                className={cn(
-                  "flex-1 h-8 rounded-[6px] text-[10px] font-bold border transition-all",
-                  severity === s
-                    ? s === "Critical" ? "bg-red-600 border-red-600 text-white"
-                      : s === "High" ? "bg-amber-500 border-amber-500 text-white"
-                      : "bg-blue-500 border-blue-500 text-white"
-                    : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300"
-                )}
-              >{s}</button>
-            ))}
+        {/* ── Watch Period + Case Ref ───────────────── */}
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className={labelCls}>Watch From</label>
+            <input type="date" value={watchFrom} onChange={e => setWatchFrom(e.target.value)}
+              className="w-full h-8 px-2 rounded-[6px] border border-neutral-200 text-[11px] text-neutral-800 focus:outline-none focus:border-[#00775B]" />
           </div>
-          <p className="text-[9px] text-neutral-400 mt-1">This priority level will determine alert prominence on the main dashboard.</p>
-        </div>
-
-        {/* Cameras */}
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Associated Cameras / Zones</label>
-          <div className="border border-neutral-200 rounded-[6px] p-2.5 max-h-36 overflow-y-auto space-y-1">
-            {WL_CAMERAS.map(cam => (
-              <label key={cam} className="flex items-center gap-2 cursor-pointer hover:text-neutral-900 py-0.5">
-                <input
-                  type="checkbox" checked={cameras.includes(cam)}
-                  onChange={() => toggleCamera(cam)}
-                  className="w-3 h-3 accent-[#00775B] rounded"
-                />
-                <span className="text-[11px] text-neutral-700">{cam}</span>
-              </label>
-            ))}
+          <div>
+            <label className={labelCls}>Watch Until</label>
+            <input type="date" value={watchUntil} onChange={e => setWatchUntil(e.target.value)}
+              className="w-full h-8 px-2 rounded-[6px] border border-neutral-200 text-[11px] text-neutral-800 focus:outline-none focus:border-[#00775B]" />
+          </div>
+          <div>
+            <label className={labelCls}>Case Ref. <span className="text-neutral-300">(opt)</span></label>
+            <input value={caseRef} onChange={e => setCaseRef(e.target.value)}
+              placeholder="e.g. INC-2024-001"
+              className="w-full h-8 px-2 rounded-[6px] border border-neutral-200 text-[11px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300" />
           </div>
         </div>
 
-        {/* Notes */}
+        {/* ── Notes ────────────────────────────────── */}
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">Notes / Context</label>
-          <textarea
-            value={notes} onChange={e => setNotes(e.target.value)}
-            rows={2}
-            placeholder="Enter security instructions (e.g. Contact supervisor immediately. Do not engage)"
+          <label className={labelCls}>Notes / Instructions</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+            placeholder="e.g. Do not approach — contact supervisor immediately."
             className="w-full px-3 py-2 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300 resize-none"
           />
         </div>
 
-        {/* Notifications */}
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1">
-            <Mail className="w-3 h-3 inline mr-1" />Notification Recipients
-          </label>
-          <input
-            value={email} onChange={e => setEmail(e.target.value)}
-            placeholder="e.g. admin@matrice.ai, security@matrice.ai"
-            className="w-full h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 focus:outline-none focus:border-[#00775B] placeholder:text-neutral-300"
-          />
-          <p className="text-[9px] text-neutral-400 mt-0.5">Separate multiple email addresses with commas</p>
+        {/* ── Notifications ─────────────────────────── */}
+        <div className="border-t border-neutral-100 pt-3 space-y-3">
+          <p className={labelCls}><Mail className="w-3 h-3 inline mr-1" />Alert Notifications</p>
+          <input value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="Recipient emails (comma-separated)"
+            className={inputCls} />
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wide text-neutral-400 mb-1.5">
+              <Users className="w-3 h-3 inline mr-1" />Notify Groups
+            </p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              {WL_GROUPS.map(g => (
+                <label key={g} className="flex items-center gap-2 cursor-pointer py-1 hover:text-neutral-900">
+                  <input type="checkbox" checked={groups.includes(g)} onChange={() => toggleGroup(g)}
+                    className="w-3 h-3 accent-[#00775B] rounded" />
+                  <span className="text-[11px] text-neutral-700">{g}</span>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wide text-neutral-500 mb-1.5">
-            <Users className="w-3 h-3 inline mr-1" />Notification Groups
-          </label>
-          <div className="space-y-1">
-            {WL_GROUPS.map(g => (
-              <label key={g} className="flex items-center gap-2 cursor-pointer py-0.5">
-                <input
-                  type="checkbox" checked={groups.includes(g)}
-                  onChange={() => toggleGroup(g)}
-                  className="w-3 h-3 accent-[#00775B] rounded"
-                />
-                <span className="text-[11px] text-neutral-700">{g}</span>
-              </label>
-            ))}
-          </div>
-          <p className="text-[9px] text-neutral-400 mt-1.5">Selected groups will receive immediate notifications (Email/SMS/Platform) upon facial recognition match.</p>
-        </div>
       </div>
 
       {/* Footer */}
-      <div className="border-t border-neutral-100 px-5 py-3.5 flex items-center justify-end gap-2.5 shrink-0">
-        <button
-          onClick={onCancel}
-          className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
-        >Cancel</button>
-        <button
-          onClick={onSubmit}
-          className="h-9 px-6 rounded-[6px] bg-[#00775B] text-[12px] font-bold text-white hover:bg-[#006349] transition-colors inline-flex items-center gap-1.5"
-        >
-          {isLPR ? "Add Vehicle to Watchlist" : "Add to Watchlist"}
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+      <div className="border-t border-neutral-100 px-5 py-3.5 flex items-center justify-between shrink-0">
+        <p className="text-[10px] text-neutral-400">Alerts activate immediately upon save</p>
+        <div className="flex items-center gap-2.5">
+          <button onClick={onCancel}
+            className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
+          >Cancel</button>
+          <button onClick={onSubmit}
+            className="h-9 px-6 rounded-[6px] bg-[#00775B] text-[12px] font-bold text-white hover:bg-[#006349] transition-colors inline-flex items-center gap-1.5"
+          >
+            {isLPR ? "Save Vehicle" : "Save Person"}
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </>
   );
@@ -742,51 +778,6 @@ function ActionsSection() {
   );
 }
 
-// Journey map SVG — wider, taller for modal
-function JourneyMapSVG({ stops }: { stops: JourneyStop[] }) {
-  const n = stops.length;
-  if (n === 0) return null;
-  const W = 520, H = 88;
-  const xStep = n === 1 ? 0 : (W - 60) / (n - 1);
-  const cy = H / 2 - 4;
-  const nodes = stops.map((s, i) => ({ x: 30 + i * xStep, y: cy, ...s }));
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 88 }}>
-      <rect width={W} height={H} rx={6} fill="#0a1628" />
-      {nodes.slice(0, -1).map((a, i) => {
-        const b = nodes[i + 1];
-        return (
-          <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-            stroke="#00FF84" strokeWidth={1.5} strokeDasharray="5 4" opacity={0.4} />
-        );
-      })}
-      {nodes.map((nd, i) => {
-        const isCur = nd.isCurrent;
-        const r = isCur ? 8 : 5;
-        const fill = isCur ? "#FF3B30" : i === 0 ? "#4B5563" : "#00775B";
-        return (
-          <g key={i}>
-            {isCur && (
-              <circle cx={nd.x} cy={nd.y} r={14} fill="#FF3B30" opacity={0.15}>
-                <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.2;0.04;0.2" dur="2s" repeatCount="indefinite" />
-              </circle>
-            )}
-            <circle cx={nd.x} cy={nd.y} r={r} fill={fill} />
-            <text x={nd.x} y={nd.y + 18} textAnchor="middle" fill="#9CA3AF" fontSize={8}>
-              {nd.zone.split(" ").slice(0, 2).join(" ")}
-            </text>
-            <text x={nd.x} y={cy - 12} textAnchor="middle" fill="#6B7280" fontSize={7.5}>
-              {nd.time}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
 // Feed table row
 function FeedTableRow({
   person, rowIndex, onClick, isLPR,
@@ -998,130 +989,141 @@ function EntityModal({
         headerRight={statusBadge}
       >
 
-        {/* Identity section */}
-        <div className="flex gap-5 p-5 pb-4 border-b border-neutral-100">
-            {/* Media — large */}
-            <div className="shrink-0">
-              {isPlate ? (
-                <IdentityEvidenceMedia
-                  kind="PLATE" seed={person.id}
-                  plateText={person.plateText}
-                  confidence={person.confidence}
-                  size="lg" live={isThreat}
-                  className="w-48 h-32"
-                />
-              ) : (
-                <IdentityEvidenceMedia
-                  kind="FACE" seed={person.id}
-                  imageSrc={person.imageSrc}
-                  confidence={person.confidence}
-                  size="lg" live={isThreat}
-                  className="w-36 h-36"
-                />
-              )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0 flex flex-col justify-between">
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-1">
-                  <h2 className="text-xl font-black text-neutral-900 leading-tight">{person.displayName}</h2>
-                  <button
-                    onClick={() => setDrawerMode({ kind: "watchlist" })}
-                    className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-[5px] bg-[#E5FFF9] border border-[#00775B]/25 text-[10px] font-bold text-[#00775B] hover:bg-[#00775B]/10 transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    {isLPR ? "Manage Vehicle" : "Manage Person"}
-                  </button>
-                </div>
-                {person.subLabel && (
-                  <p className={cn("text-[12px] font-medium mb-3 leading-snug", isThreat ? "text-red-600" : "text-neutral-500")}>
-                    {person.subLabel}
-                  </p>
-                )}
-                {person.vehicleDesc && (
-                  <p className="text-[11px] text-neutral-500 mb-3">{person.vehicleDesc}</p>
-                )}
-              </div>
-
-              {/* Detail grid */}
-              <div className="grid grid-cols-3 gap-x-4 gap-y-2.5">
-                <div>
-                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Zone</p>
-                  <p className="text-[12px] text-neutral-800 font-semibold">{person.zone}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Camera</p>
-                  <p className="text-[12px] font-mono text-neutral-800">{person.camera}</p>
-                </div>
-                {person.confidence != null && (
-                  <div>
-                    <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">{terminology.matchScoreLabel}</p>
-                    <p className={cn("text-[12px] font-mono font-bold", person.confidence >= 90 ? "text-emerald-600" : "text-amber-600")}>
-                      {person.confidence}%
-                    </p>
-                  </div>
-                )}
-                {person.dwell != null && (
-                  <div>
-                    <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Dwell Time</p>
-                    <p className={cn("text-[12px] font-mono font-bold", person.dwell > 180 ? "text-amber-600" : "text-neutral-700")}>
-                      {fmtDwell(person.dwell)}
-                    </p>
-                  </div>
-                )}
-                {person.department && (
-                  <div>
-                    <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Department</p>
-                    <p className="text-[12px] text-neutral-800 font-semibold">{person.department}</p>
-                  </div>
-                )}
-                {person.employeeId && (
-                  <div>
-                    <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Employee ID</p>
-                    <p className="text-[12px] font-mono text-neutral-700">{person.employeeId}</p>
-                  </div>
-                )}
-                {person.totalAppearances != null && (
-                  <div>
-                    <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Total Visits</p>
-                    <p className="text-[12px] font-mono text-neutral-700">{person.totalAppearances}</p>
-                  </div>
-                )}
-              </div>
-            </div>
+        {/* ── Identity Hero ─────────────────────────────────────── */}
+        <div className={cn(
+          "flex gap-4 p-5 border-b border-neutral-100",
+          isThreat ? "bg-red-50/40" : isUnknown ? "bg-amber-50/20" : isVIP ? "bg-yellow-50/20" : ""
+        )}>
+          {/* Image */}
+          <div className="shrink-0">
+            {isPlate ? (
+              <IdentityEvidenceMedia
+                kind="PLATE" seed={person.id}
+                plateText={person.plateText}
+                confidence={person.confidence}
+                size="lg" live={isThreat}
+                className="w-48 h-32"
+              />
+            ) : (
+              <IdentityEvidenceMedia
+                kind="FACE" seed={person.id}
+                imageSrc={person.imageSrc}
+                confidence={person.confidence}
+                size="lg" live={isThreat}
+                className="w-36 h-36"
+              />
+            )}
           </div>
 
-          {/* Journey section */}
-          <div className="px-5 py-4 border-b border-neutral-100">
-            <div className="flex items-center gap-2 mb-3">
-              <Navigation2 className="w-3.5 h-3.5 text-[#00775B]" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                {isLPR ? "Gate History" : "Movement Path Tracking"}
-              </span>
-              <span className="ml-auto text-[9px] text-neutral-400 font-mono">{journey.length} checkpoint{journey.length !== 1 ? "s" : ""}</span>
+          {/* Info */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <div>
+                  <h2 className="text-xl font-black text-neutral-900 leading-tight">{person.displayName}</h2>
+                  {person.subLabel && (
+                    <p className={cn("text-[12px] mt-0.5", isThreat ? "text-red-600 font-medium" : "text-neutral-500")}>
+                      {person.subLabel}
+                    </p>
+                  )}
+                  {person.vehicleDesc && (
+                    <p className="text-[11px] text-neutral-500 mt-0.5">{person.vehicleDesc}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setDrawerMode({ kind: "watchlist" })}
+                  className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-[5px] bg-[#E5FFF9] border border-[#00775B]/25 text-[10px] font-bold text-[#00775B] hover:bg-[#00775B]/10 transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  {isLPR ? "Manage Vehicle" : "Manage Person"}
+                </button>
+              </div>
             </div>
 
-            {/* SVG map */}
-            <JourneyMapSVG stops={journey} />
+            {/* Stats row */}
+            <div className="flex flex-wrap gap-x-5 gap-y-2.5 mt-2">
+              <div>
+                <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Zone</p>
+                <p className="text-[12px] font-semibold text-neutral-800">{person.zone}</p>
+              </div>
+              <div>
+                <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Camera</p>
+                <p className="text-[12px] font-mono text-neutral-800">{person.camera}</p>
+              </div>
+              {person.confidence != null && (
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">{terminology.matchScoreLabel}</p>
+                  <p className={cn("text-[12px] font-mono font-bold", person.confidence >= 90 ? "text-emerald-600" : "text-amber-600")}>
+                    {person.confidence}%
+                  </p>
+                </div>
+              )}
+              {person.dwell != null && (
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Dwell</p>
+                  <p className={cn("text-[12px] font-mono font-bold", person.dwell > 180 ? "text-amber-600" : "text-neutral-700")}>
+                    {fmtDwell(person.dwell)}
+                  </p>
+                </div>
+              )}
+              {person.department && (
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Dept.</p>
+                  <p className="text-[12px] font-semibold text-neutral-800">{person.department}</p>
+                </div>
+              )}
+              {person.employeeId && (
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">ID</p>
+                  <p className="text-[12px] font-mono text-neutral-700">{person.employeeId}</p>
+                </div>
+              )}
+              {person.totalAppearances != null && (
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-0.5">Visits</p>
+                  <p className="text-[12px] font-mono text-neutral-700">{person.totalAppearances}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
-            {/* Timeline list */}
-            <div className="mt-3 space-y-1.5">
+        {/* ── Movement Path / Gate History ─────────────────────── */}
+        <div className="px-5 py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-2 mb-4">
+            <Navigation2 className="w-3.5 h-3.5 text-[#00775B]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+              {isLPR ? "Gate History" : "Movement Path Tracking"}
+            </span>
+            <span className="ml-auto text-[9px] text-neutral-400 font-mono">
+              {journey.length} checkpoint{journey.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {/* Timeline with vertical connector */}
+          <div className="relative pl-1">
+            {journey.length > 1 && (
+              <div className="absolute left-[7px] top-5 bottom-5 w-[2px] bg-neutral-200 rounded-full" />
+            )}
+            <div className="space-y-2">
               {journey.map((stop, i) => (
                 <div key={i} className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-[6px] text-[11px]",
+                  "flex items-center gap-3 pr-3 py-2.5 rounded-[6px] text-[11px] relative pl-3",
                   stop.isCurrent
                     ? isThreat ? "bg-red-50 border border-red-200" : "bg-[#E5FFF9] border border-[#00775B]/20"
                     : "bg-neutral-50 border border-transparent"
                 )}>
                   {/* Status dot */}
-                  <span className={cn("w-2 h-2 rounded-full shrink-0",
+                  <span className={cn(
+                    "w-3 h-3 rounded-full shrink-0 z-10",
                     stop.isCurrent
-                      ? isThreat ? "bg-red-500 animate-pulse" : "bg-[#00775B] animate-pulse"
+                      ? isThreat
+                        ? "bg-red-500 animate-pulse ring-2 ring-red-200"
+                        : "bg-[#00775B] animate-pulse ring-2 ring-emerald-200"
                       : i === 0 ? "bg-neutral-400" : "bg-[#00775B]"
                   )} />
 
-                  {/* Camera snapshot thumbnail */}
+                  {/* Camera thumbnail */}
                   <div className="shrink-0 w-14 h-10 rounded-[4px] overflow-hidden border border-neutral-200 bg-neutral-900 relative">
                     {isLPR ? (
                       <div className="absolute inset-0 bg-[linear-gradient(180deg,#1a2535_0%,#111827_100%)] flex items-center justify-center">
@@ -1144,11 +1146,9 @@ function EntityModal({
                         <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/40" />
                       </>
                     )}
-                    {/* Camera label overlay */}
                     <div className="absolute top-0 left-0 right-0 bg-black/70 px-1 py-[1px]">
                       <span className="text-[6px] font-mono text-[#00FF84] tracking-wider">{stop.camera}</span>
                     </div>
-                    {/* Live indicator for current stop */}
                     {stop.isCurrent && (
                       <div className="absolute bottom-0.5 right-0.5 flex items-center gap-0.5 bg-black/70 rounded-[2px] px-1 py-[1px]">
                         <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
@@ -1157,19 +1157,12 @@ function EntityModal({
                     )}
                   </div>
 
-                  {/* Time */}
                   <span className="font-mono text-neutral-400 shrink-0 w-10">{stop.time}</span>
-
-                  {/* Zone name */}
                   <span className="font-semibold text-neutral-800 flex-1">{stop.zone}</span>
-
-                  {/* Dwell */}
-                  <span className={cn(
-                    "text-[10px] font-mono shrink-0",
+                  <span className={cn("text-[10px] font-mono shrink-0",
                     stop.isCurrent && isThreat ? "text-red-500 font-bold" : "text-neutral-400"
                   )}>{stop.dwellText}</span>
 
-                  {/* Alert badge */}
                   {stop.alertNote && (
                     <span className={cn(
                       "text-[9px] font-bold px-1.5 py-0.5 rounded-[3px] shrink-0",
@@ -1178,9 +1171,7 @@ function EntityModal({
                         : stop.alertNote.toLowerCase().includes("resolved") || stop.alertNote.toLowerCase().includes("authoris")
                         ? "bg-emerald-100 text-emerald-700"
                         : "bg-amber-100 text-amber-700"
-                    )}>
-                      {stop.alertNote}
-                    </span>
+                    )}>{stop.alertNote}</span>
                   )}
                   {stop.linkedPlate && (
                     <span className="text-[9px] font-mono text-[#00775B] font-bold shrink-0 bg-[#E5FFF9] px-1.5 py-0.5 rounded-[3px]">
@@ -1191,9 +1182,10 @@ function EntityModal({
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Notify actions */}
-          <ActionsSection />
+        {/* Notify actions */}
+        <ActionsSection />
 
       </SlidePanel>
 
