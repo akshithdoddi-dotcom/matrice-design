@@ -627,22 +627,42 @@ function ActionDrawer({
   );
 }
 
-// ─── Actions section — compact button strip ────────────────────────────────────
+// ─── Actions section ──────────────────────────────────────────────────────────
 function ActionsSection({
-  actions, isThreat, isLPR, onSelectAction, onManageWatchlist,
+  actions, isThreat: _isThreat, isLPR, onSelectAction, onManageWatchlist,
 }: {
   actions: ActionDef[]; isThreat: boolean; isLPR: boolean;
   onSelectAction: (a: ActionDef) => void;
   onManageWatchlist: () => void;
 }) {
-  const [showMore, setShowMore] = useState(false);
+  const [showGroup, setShowGroup]       = useState(false);
+  const [selected, setSelected]         = useState<string[]>([]);
+  const [notified, setNotified]         = useState<"admin" | "group" | null>(null);
+
   const primary   = actions[0];
-  const secondary = actions.slice(1, 3);
-  const more      = actions.slice(3);
+  const secondary = actions.slice(1);
+
+  const toggleGroup = (g: string) =>
+    setSelected(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+
+  const handleNotifyAdmin = () => {
+    setNotified("admin");
+    setTimeout(() => setNotified(null), 3000);
+  };
+
+  const handleSendGroup = () => {
+    if (!selected.length) return;
+    setNotified("group");
+    setShowGroup(false);
+    setSelected([]);
+    setTimeout(() => setNotified(null), 3000);
+  };
 
   return (
-    <div className="px-5 py-4 border-t border-neutral-100 bg-neutral-50/60">
-      <div className="flex items-center justify-between mb-3">
+    <div className="border-t border-neutral-100 bg-neutral-50/40">
+
+      {/* Header row */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Actions</p>
         <button
           onClick={onManageWatchlist}
@@ -653,13 +673,14 @@ function ActionsSection({
         </button>
       </div>
 
-      {/* Primary */}
-      {primary && (
-        <div className="mb-2">
+      <div className="px-5 pb-4 space-y-2">
+
+        {/* Primary — full width */}
+        {primary && (
           <button
             onClick={() => onSelectAction(primary)}
             className={cn(
-              "inline-flex items-center gap-2 h-9 px-4 rounded-[6px] text-[12px] font-bold transition-all",
+              "w-full flex items-center justify-center gap-2 h-10 px-4 rounded-[6px] text-[12px] font-bold transition-all",
               primary.variant === "danger"
                 ? "bg-red-600 text-white hover:bg-red-700"
                 : "bg-[#00775B] text-white hover:bg-[#006349]",
@@ -668,52 +689,112 @@ function ActionsSection({
             {primary.icon && <primary.icon className="w-3.5 h-3.5" />}
             {primary.label}
           </button>
-        </div>
-      )}
+        )}
 
-      {/* Secondary */}
-      {secondary.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
-          {secondary.map(a => (
-            <button key={a.key} onClick={() => onSelectAction(a)}
+        {/* Secondary actions */}
+        {secondary.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {secondary.map(a => (
+              <button key={a.key} onClick={() => onSelectAction(a)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[11px] font-bold border transition-all",
+                  a.variant === "danger"
+                    ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                    : a.variant === "primary"
+                    ? "bg-[#E5FFF9] text-[#00775B] border-[#00775B]/25 hover:bg-[#00775B]/10"
+                    : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300",
+                )}
+              >
+                {a.icon && <a.icon className="w-3.5 h-3.5" />}{a.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── Notify section ───────────────────────────────────────────────── */}
+        <div className="pt-1 border-t border-neutral-100">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-2.5 mt-2">Notify</p>
+
+          <div className="flex gap-2 flex-wrap">
+            {/* Notify Admin */}
+            <button
+              onClick={handleNotifyAdmin}
+              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[11px] font-bold border border-neutral-200 bg-white text-neutral-600 hover:border-[#00775B]/40 hover:text-[#00775B] transition-all"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              Notify Admin
+            </button>
+
+            {/* Notify Group toggle */}
+            <button
+              onClick={() => setShowGroup(v => !v)}
               className={cn(
                 "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[11px] font-bold border transition-all",
-                a.variant === "danger"
-                  ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                  : a.variant === "primary"
-                  ? "bg-[#E5FFF9] text-[#00775B] border-[#00775B]/25 hover:bg-[#00775B]/10"
-                  : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300",
+                showGroup
+                  ? "border-[#00775B] bg-[#E5FFF9] text-[#00775B]"
+                  : "border-neutral-200 bg-white text-neutral-600 hover:border-[#00775B]/40 hover:text-[#00775B]"
               )}
             >
-              {a.icon && <a.icon className="w-3.5 h-3.5" />}{a.label}
+              <Users className="w-3.5 h-3.5" />
+              Notify Group
+              <ChevronDown className={cn("w-3 h-3 transition-transform", showGroup && "rotate-180")} />
             </button>
-          ))}
-        </div>
-      )}
+          </div>
 
-      {/* More */}
-      {more.length > 0 && (
-        <div>
-          <button
-            onClick={() => setShowMore(v => !v)}
-            className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors mb-1.5"
-          >
-            <ChevronDown className={cn("w-3 h-3 transition-transform", showMore && "rotate-180")} />
-            {showMore ? "Fewer" : "More"} options
-          </button>
-          {showMore && (
-            <div className="space-y-1.5">
-              {more.map(a => (
-                <button key={a.key} onClick={() => onSelectAction(a)}
-                  className="w-full h-8 flex items-center gap-2 px-3 rounded-[6px] border border-neutral-200 bg-white text-[11px] font-medium text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 transition-all text-left"
+          {/* Group selector */}
+          {showGroup && (
+            <div className="mt-2 rounded-[6px] border border-neutral-200 bg-white overflow-hidden">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 px-3 pt-2.5 pb-1.5">
+                Select groups to notify
+              </p>
+              <div className="divide-y divide-neutral-50">
+                {WL_GROUPS.map(g => (
+                  <label key={g} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-neutral-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(g)}
+                      onChange={() => toggleGroup(g)}
+                      className="w-3.5 h-3.5 accent-[#00775B] cursor-pointer"
+                    />
+                    <span className="text-[12px] text-neutral-700 font-medium">{g}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="px-3 py-2.5 border-t border-neutral-100 bg-neutral-50/60">
+                <button
+                  onClick={handleSendGroup}
+                  disabled={!selected.length}
+                  className={cn(
+                    "w-full h-8 rounded-[6px] text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all",
+                    selected.length
+                      ? "bg-[#00775B] text-white hover:bg-[#006349]"
+                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                  )}
                 >
-                  {a.icon && <a.icon className="w-3 h-3 shrink-0" />}{a.label}
+                  <Mail className="w-3 h-3" />
+                  {selected.length
+                    ? `Send to ${selected.length} group${selected.length > 1 ? "s" : ""}`
+                    : "Select a group"}
+                  {selected.length > 0 && <ChevronRight className="w-3 h-3" />}
                 </button>
-              ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sent confirmation */}
+          {notified && (
+            <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-[6px] bg-emerald-50 border border-emerald-200">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <p className="text-[11px] font-semibold text-emerald-700">
+                {notified === "admin"
+                  ? "Admin notified — email sent successfully"
+                  : "Notification sent to selected groups"}
+              </p>
             </div>
           )}
         </div>
-      )}
+
+      </div>
     </div>
   );
 }
@@ -906,13 +987,13 @@ function EntityModal({
   const isVIP = person.status === "VIP";
 
   const frActions = isThreat ? [
-    { key: "dispatch", label: "Dispatch Security to Zone",    confirmMsg: `Send the security team to ${person.zone} to intercept this individual.`,                  successMsg: `Security team en route to ${person.zone}`,      icon: Radio,         variant: "danger"   as const },
-    { key: "lockdown", label: "Initiate Zone Lockdown",       confirmMsg: `Restrict all access to ${person.zone} and lock all entry points immediately.`,            successMsg: `${person.zone} locked down — all entries blocked`, icon: Lock,       variant: "danger"   as const },
+    { key: "dispatch", label: "Dispatch Officer",             confirmMsg: `Send an officer to ${person.zone} to intercept and verify this individual.`,              successMsg: `Officer dispatched — en route to ${person.zone}`, icon: Radio,         variant: "danger"   as const },
+    { key: "lockdown", label: "Lock Zone",                    confirmMsg: `Restrict all access to ${person.zone} and secure all entry points immediately.`,          successMsg: `${person.zone} secured — all entries restricted`, icon: Lock,          variant: "danger"   as const },
     { key: "control",  label: "Alert Control Room",           confirmMsg: "Broadcast a critical alert to all control room operators on duty.",                        successMsg: "Control room notified — standby for response",   icon: Zap,           variant: "primary"  as const },
     { key: "fp",       label: "Mark as False Match",          confirmMsg: "Dismiss this match as a false positive and remove the active alert.",                     successMsg: "Alert cleared — feed restored",                  icon: X,             variant: "default"  as const },
   ] : isUnknown ? [
     { key: "officer",   label: "Deploy Officer",              confirmMsg: `Send an officer to ${person.zone} to physically verify the identity of this individual.`, successMsg: "Officer dispatched — ETA 2 min",                 icon: UserPlus,      variant: "primary"  as const },
-    { key: "track",     label: "Enable Cross-Camera Tracking",confirmMsg: "Begin real-time cross-camera tracking for this individual across all connected zones.",   successMsg: "Tracking enabled — monitoring all zones",         icon: Navigation2,   variant: "primary"  as const },
+    { key: "track",     label: "Enable Movement Tracking",    confirmMsg: "Begin real-time movement tracking for this individual across all connected zones.",        successMsg: "Tracking enabled — monitoring all zones",         icon: Navigation2,   variant: "primary"  as const },
     { key: "watchlist", label: "Add to Watchlist",            confirmMsg: "Add this person to the watchlist. Future appearances will trigger immediate alerts.",     successMsg: "Added — alerts active for future appearances",    icon: BookmarkPlus,  variant: "default"  as const },
     { key: "dismiss",   label: "Clear Alert",                 confirmMsg: "Clear this alert. The individual will not be flagged again unless re-detected.",          successMsg: "Alert cleared",                                  icon: X,             variant: "default"  as const },
   ] : isVIP ? [
@@ -926,8 +1007,8 @@ function EntityModal({
 
   const lprActions = isThreat ? [
     { key: "seal",   label: "Seal Entry Point",              confirmMsg: `Close and lock the gate at ${person.zone}. All approaching vehicles will be stopped.`,     successMsg: `Gate sealed at ${person.zone} — security alerted`, icon: Ban,         variant: "danger"   as const },
-    { key: "police", label: "Notify Police",                 confirmMsg: "Transmit BOLO vehicle details to local law enforcement. A case reference will be generated.", successMsg: "Police notified — case reference generated",    icon: Radio,       variant: "danger"   as const },
-    { key: "alert",  label: "Alert All Gate Operators",      confirmMsg: "Broadcast this plate number to all entry and exit gate operators across the site.",         successMsg: "All gates on alert — plate flagged",               icon: Zap,         variant: "primary"  as const },
+    { key: "police", label: "Alert Authorities",              confirmMsg: "Transmit vehicle details to the relevant authorities. A reference number will be generated.",    successMsg: "Authorities alerted — reference number generated", icon: Radio,     variant: "danger"   as const },
+    { key: "alert",  label: "Alert All Operators",           confirmMsg: "Broadcast this vehicle ID to all entry and exit operators across the site.",                successMsg: "All operators on alert — vehicle flagged",          icon: Zap,         variant: "primary"  as const },
     { key: "fp",     label: "Mark as False Match",           confirmMsg: "Dismiss as a false positive. The gate block will be lifted and the alert removed.",         successMsg: "Alert cleared — gate access restored",             icon: X,           variant: "default"  as const },
   ] : isUnknown ? [
     { key: "block",   label: "Deny Entry",                   confirmMsg: `Block this vehicle at ${person.zone}. The barrier will remain closed until manually released.`, successMsg: "Entry denied — barrier locked",               icon: Ban,         variant: "danger"   as const },
@@ -1064,7 +1145,7 @@ function EntityModal({
             <div className="flex items-center gap-2 mb-3">
               <Navigation2 className="w-3.5 h-3.5 text-[#00775B]" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                {isLPR ? "Gate History" : "Cross-Camera Journey"}
+                {isLPR ? "Gate History" : "Movement Path Tracking"}
               </span>
               <span className="ml-auto text-[9px] text-neutral-400 font-mono">{journey.length} checkpoint{journey.length !== 1 ? "s" : ""}</span>
             </div>
