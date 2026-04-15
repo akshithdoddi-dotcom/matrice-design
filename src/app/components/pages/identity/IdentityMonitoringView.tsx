@@ -1081,7 +1081,16 @@ function EntityModal({
             {/* Info */}
             <div className="flex-1 min-w-0 flex flex-col justify-between">
               <div>
-                <h2 className="text-xl font-black text-neutral-900 leading-tight mb-1">{person.displayName}</h2>
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <h2 className="text-xl font-black text-neutral-900 leading-tight">{person.displayName}</h2>
+                  <button
+                    onClick={() => setDrawerMode({ kind: "watchlist" })}
+                    className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-[5px] bg-[#E5FFF9] border border-[#00775B]/25 text-[10px] font-bold text-[#00775B] hover:bg-[#00775B]/10 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    {isLPR ? "Manage Vehicle" : "Manage Person"}
+                  </button>
+                </div>
                 {person.subLabel && (
                   <p className={cn("text-[12px] font-medium mb-3 leading-snug", isThreat ? "text-red-600" : "text-neutral-500")}>
                     {person.subLabel}
@@ -1239,15 +1248,6 @@ function EntityModal({
               ))}
             </div>
           </div>
-
-          {/* Actions section */}
-          <ActionsSection
-            actions={actions}
-            isThreat={isThreat}
-            isLPR={isLPR}
-            onSelectAction={a => setDrawerMode({ kind: "action", action: a })}
-            onManageWatchlist={() => setDrawerMode({ kind: "watchlist" })}
-          />
 
       </SlidePanel>
 
