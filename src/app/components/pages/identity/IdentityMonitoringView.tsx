@@ -248,28 +248,42 @@ const WL_GROUPS = [
   "Executive Team", "Dispatch Center",
 ];
 
-function WatchlistForm({
-  isLPR, person, onCancel, onSubmit,
+export interface WatchlistEntry {
+  id: string;
+  type: "FR" | "LPR";
+  name: string;         // person name or first plate
+  plates?: string;      // LPR only – raw textarea value
+  reason: string;
+  severity: "Critical" | "High" | "Informational";
+  cameras: string[];
+  endDate?: string;
+  notes: string;
+  addedAt: string;      // ISO timestamp
+}
+
+export function WatchlistForm({
+  isLPR, person, initialEntry, onCancel, onSubmit,
 }: {
   isLPR: boolean; person?: Partial<FeedPerson>;
-  onCancel: () => void; onSubmit: () => void;
+  initialEntry?: WatchlistEntry;
+  onCancel: () => void; onSubmit: (entry: WatchlistEntry) => void;
 }) {
   const reasons = isLPR ? LPR_REASONS : FR_REASONS;
 
   // FR state
-  const [frName,    setFrName]    = useState(person?.displayName ?? "");
+  const [frName,    setFrName]    = useState(initialEntry?.name ?? person?.displayName ?? "");
   const [personId,  setPersonId]  = useState(person?.employeeId ?? "");
   // LPR state
-  const [plates,    setPlates]    = useState(person?.plateText ?? "");
+  const [plates,    setPlates]    = useState(initialEntry?.plates ?? person?.plateText ?? "");
   const [customReason, setCustomReason] = useState("");
   // Shared
-  const [reason,      setReason]      = useState("");
+  const [reason,      setReason]      = useState(initialEntry?.reason ?? "");
   const [reasonOpen,  setReasonOpen]  = useState(false);
-  const [severity,    setSeverity]    = useState<"Critical" | "High" | "Informational">("High");
-  const [cameras,     setCameras]     = useState<string[]>(["All Cameras"]);
-  const [hasEndDate,  setHasEndDate]  = useState(false);
-  const [endDate,     setEndDate]     = useState("");
-  const [notes,       setNotes]       = useState("");
+  const [severity,    setSeverity]    = useState<"Critical" | "High" | "Informational">(initialEntry?.severity ?? "High");
+  const [cameras,     setCameras]     = useState<string[]>(initialEntry?.cameras ?? ["All Cameras"]);
+  const [hasEndDate,  setHasEndDate]  = useState(!!initialEntry?.endDate);
+  const [endDate,     setEndDate]     = useState(initialEntry?.endDate ?? "");
+  const [notes,       setNotes]       = useState(initialEntry?.notes ?? "");
   const [email,       setEmail]       = useState("");
   const [groups,      setGroups]      = useState<string[]>([]);
 
@@ -496,10 +510,24 @@ function WatchlistForm({
         <button onClick={onCancel}
           className="h-9 px-5 rounded-[6px] border border-neutral-200 text-[12px] font-bold text-neutral-600 hover:border-neutral-300 transition-colors"
         >Cancel</button>
-        <button onClick={onSubmit}
+        <button onClick={() => {
+            const entry: WatchlistEntry = {
+              id: initialEntry?.id ?? `wl-${Date.now()}`,
+              type: isLPR ? "LPR" : "FR",
+              name: isLPR ? (plates.split(/[,\n]/)[0]?.trim() || "—") : (frName.trim() || "Unknown"),
+              plates: isLPR ? plates : undefined,
+              reason: reason === "Custom Reason" ? customReason : reason,
+              severity,
+              cameras,
+              endDate: hasEndDate ? endDate : undefined,
+              notes,
+              addedAt: initialEntry?.addedAt ?? new Date().toISOString(),
+            };
+            onSubmit(entry);
+          }}
           className="h-9 px-6 rounded-[6px] bg-[#00775B] text-[12px] font-bold text-white hover:bg-[#006349] transition-colors inline-flex items-center gap-1.5"
         >
-          {isLPR ? "Process Plates" : "Add to Watchlist"}
+          {initialEntry ? "Save Changes" : isLPR ? "Process Plates" : "Add to Watchlist"}
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -508,8 +536,9 @@ function WatchlistForm({
 }
 
 // ─── Standalone Manage Modal (triggered from page header) ─────────────────────
-export function ManageModal({ isOpen, isLPR, onClose }: {
+export function ManageModal({ isOpen, isLPR, onClose, onWatchlistAdd }: {
   isOpen: boolean; isLPR: boolean; onClose: () => void;
+  onWatchlistAdd?: (entry: WatchlistEntry) => void;
 }) {
   const [done, setDone] = useState(false);
 
@@ -525,7 +554,8 @@ export function ManageModal({ isOpen, isLPR, onClose }: {
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = (entry: WatchlistEntry) => {
+    onWatchlistAdd?.(entry);
     setDone(true);
     setTimeout(onClose, 2000);
   };
@@ -598,7 +628,7 @@ function ActionDrawer({
   const handleExecute = () => {
     if (action) { setDoneMsg(action.successMsg); setDone(true); setMiniConfirm(false); setTimeout(onClose, 2200); }
   };
-  const handleWLSubmit = () => {
+  const handleWLSubmit = (_entry: WatchlistEntry) => {
     setDoneMsg(isLPR ? "Vehicle added to watchlist — alerts enabled" : "Person added to watchlist — alerts enabled");
     setDone(true);
     setTimeout(onClose, 2200);
@@ -759,116 +789,108 @@ function ActionDrawer({
 }
 
 // ─── Notify section ───────────────────────────────────────────────────────────
-function ActionsSection() {
-  const [showGroup, setShowGroup]       = useState(false);
-  const [selected, setSelected]         = useState<string[]>([]);
-  const [notified, setNotified]         = useState<"admin" | "group" | null>(null);
+function ActionsSection({ groups }: { groups: string[] }) {
+  const allRecipients = ["Admin", ...groups];
+  const [selected, setSelected]     = useState<string[]>([]);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [notified, setNotified]     = useState(false);
+  const [lastSentTo, setLastSentTo] = useState<string[]>([]);
 
-  const toggleGroup = (g: string) =>
-    setSelected(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+  const toggle = (r: string) =>
+    setSelected(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
 
-  const handleNotifyAdmin = () => {
-    setNotified("admin");
-    setTimeout(() => setNotified(null), 3000);
-  };
-
-  const handleSendGroup = () => {
-    if (!selected.length) return;
-    setNotified("group");
-    setShowGroup(false);
+  const handleConfirm = () => {
+    setLastSentTo([...selected]);
+    setShowConfirm(false);
+    setNotified(true);
     setSelected([]);
-    setTimeout(() => setNotified(null), 3000);
+    setTimeout(() => setNotified(false), 3500);
   };
 
   return (
     <div className="border-t border-neutral-100 bg-neutral-50/40">
+      <div className="px-5 py-4">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-2.5">Notify</p>
 
-      <div className="px-5 py-4 space-y-2">
-
-        {/* ── Notify section ───────────────────────────────────────────────── */}
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-2.5">Notify</p>
-
-          <div className="flex gap-2 flex-wrap">
-            {/* Notify Admin */}
-            <button
-              onClick={handleNotifyAdmin}
-              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[11px] font-bold border border-neutral-200 bg-white text-neutral-600 hover:border-[#00775B]/40 hover:text-[#00775B] transition-all"
-            >
-              <Mail className="w-3.5 h-3.5" />
-              Notify Admin
-            </button>
-
-            {/* Notify Group toggle */}
-            <button
-              onClick={() => setShowGroup(v => !v)}
-              className={cn(
-                "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[11px] font-bold border transition-all",
-                showGroup
-                  ? "border-[#00775B] bg-[#E5FFF9] text-[#00775B]"
-                  : "border-neutral-200 bg-white text-neutral-600 hover:border-[#00775B]/40 hover:text-[#00775B]"
-              )}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Notify Group
-              <ChevronDown className={cn("w-3 h-3 transition-transform", showGroup && "rotate-180")} />
-            </button>
+        {/* Always-visible recipient list */}
+        <div className="rounded-[6px] border border-neutral-200 bg-white overflow-hidden">
+          <div className="divide-y divide-neutral-50">
+            {allRecipients.map(r => (
+              <label key={r} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-neutral-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(r)}
+                  onChange={() => toggle(r)}
+                  className="w-3.5 h-3.5 accent-[#00775B] cursor-pointer"
+                />
+                <span className="text-[12px] text-neutral-700 font-medium flex-1">{r}</span>
+                {r === "Admin" && (
+                  <span className="text-[9px] font-bold uppercase tracking-wide text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5">Admin</span>
+                )}
+              </label>
+            ))}
           </div>
 
-          {/* Group selector */}
-          {showGroup && (
-            <div className="mt-2 rounded-[6px] border border-neutral-200 bg-white overflow-hidden">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 px-3 pt-2.5 pb-1.5">
-                Select groups to notify
-              </p>
-              <div className="divide-y divide-neutral-50">
-                {WL_GROUPS.map(g => (
-                  <label key={g} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-neutral-50 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(g)}
-                      onChange={() => toggleGroup(g)}
-                      className="w-3.5 h-3.5 accent-[#00775B] cursor-pointer"
-                    />
-                    <span className="text-[12px] text-neutral-700 font-medium">{g}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="px-3 py-2.5 border-t border-neutral-100 bg-neutral-50/60">
-                <button
-                  onClick={handleSendGroup}
-                  disabled={!selected.length}
-                  className={cn(
-                    "w-full h-8 rounded-[6px] text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all",
-                    selected.length
-                      ? "bg-[#00775B] text-white hover:bg-[#006349]"
-                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                  )}
-                >
-                  <Mail className="w-3 h-3" />
-                  {selected.length
-                    ? `Send to ${selected.length} group${selected.length > 1 ? "s" : ""}`
-                    : "Select a group"}
-                  {selected.length > 0 && <ChevronRight className="w-3 h-3" />}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Sent confirmation */}
-          {notified && (
-            <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-[6px] bg-emerald-50 border border-emerald-200">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <p className="text-[11px] font-semibold text-emerald-700">
-                {notified === "admin"
-                  ? "Admin notified — email sent successfully"
-                  : "Notification sent to selected groups"}
-              </p>
-            </div>
-          )}
+          <div className="px-3 py-2.5 border-t border-neutral-100 bg-neutral-50/60">
+            <button
+              onClick={() => selected.length && setShowConfirm(true)}
+              disabled={!selected.length}
+              className={cn(
+                "w-full h-8 rounded-[6px] text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all",
+                selected.length
+                  ? "bg-[#00775B] text-white hover:bg-[#006349]"
+                  : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+              )}
+            >
+              <Mail className="w-3 h-3" />
+              {selected.length
+                ? `Send to ${selected.length} recipient${selected.length > 1 ? "s" : ""}`
+                : "Select recipients"}
+            </button>
+          </div>
         </div>
 
+        {/* Success banner */}
+        {notified && (
+          <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-[6px] bg-emerald-50 border border-emerald-200">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <p className="text-[11px] font-semibold text-emerald-700">
+              Notification sent to {lastSentTo.join(", ")}
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Confirmation popup portal */}
+      {showConfirm && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" onClick={() => setShowConfirm(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl border border-neutral-200 w-80 p-5">
+            <h3 className="text-sm font-bold text-neutral-900 mb-1">Confirm Notification</h3>
+            <p className="text-[12px] text-neutral-500 mb-1">
+              Send alert notification to:
+            </p>
+            <p className="text-[12px] font-semibold text-neutral-800 mb-4">
+              {selected.join(", ")}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 h-8 rounded-[6px] border border-neutral-200 text-[11px] font-bold text-neutral-600 hover:bg-neutral-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="flex-1 h-8 rounded-[6px] bg-[#00775B] text-white text-[11px] font-bold hover:bg-[#006349] transition-colors"
+              >
+                Send Notification
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -976,31 +998,17 @@ function FeedTableRow({
         <span className="text-[10px] font-mono text-neutral-500">{person.time}</span>
       </td>
 
-      {/* Action */}
-      <td className="px-3 py-2 text-right">
-        <button
-          onClick={e => { e.stopPropagation(); onClick(); }}
-          className={cn(
-            "h-7 w-7 inline-flex items-center justify-center rounded-full border transition-colors",
-            isActive
-              ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
-              : "border-neutral-200 bg-white text-neutral-500 hover:border-[#00775B] hover:text-[#00775B]"
-          )}
-          title="View details"
-        >
-          <Eye className="w-3.5 h-3.5" />
-        </button>
-      </td>
     </tr>
   );
 }
 
 // ─── Entity Detail Modal ───────────────────────────────────────────────────────
 function EntityModal({
-  isOpen, person, journey, isLPR, terminology, onClose,
+  isOpen, person, journey, isLPR, terminology, groups, onClose,
 }: {
   isOpen: boolean; person: FeedPerson | null; journey: JourneyStop[];
   isLPR: boolean; terminology: IdentityTerminology;
+  groups: string[];
   onClose: () => void;
 }) {
   const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
@@ -1082,6 +1090,7 @@ function EntityModal({
         subtitle={`${person.zone} · ${person.camera}`}
         width="w-[680px]"
         headerRight={statusBadge}
+        footer={<ActionsSection groups={groups} />}
       >
 
         {/* ── Identity Hero ─────────────────────────────────────── */}
@@ -1279,9 +1288,6 @@ function EntityModal({
           </div>
         </div>
 
-        {/* Notify actions */}
-        <ActionsSection />
-
       </SlidePanel>
 
       {/* Action drawer — second SlidePanel layer */}
@@ -1477,13 +1483,15 @@ interface Props {
   terminology: IdentityTerminology;
   timeRange: string;
   activeApp: IdentityAppOption;
-  onEntityClick?: (type: "matched" | "unknown" | "blacklist") => void;
+  groups?: string[];
+  onEntityClick?: (type: "matched" | "unknown" | "blacklist", personId?: string) => void;
   onCameraClick?: (id?: string) => void;
-  onJourneyClick?: () => void;
 }
 
 export const IdentityMonitoringView = ({
   terminology,
+  groups = WL_GROUPS,
+  onEntityClick,
 }: Props) => {
   const isLPR = terminology.isLPR;
   const people = isLPR ? LPR_PEOPLE : FR_PEOPLE;
@@ -1491,6 +1499,17 @@ export const IdentityMonitoringView = ({
 
   const [modalPersonId, setModalPersonId] = useState<string | null>(null);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
+
+  const openEntity = (person: FeedPerson) => {
+    if (onEntityClick) {
+      const type = (person.status === "BLACKLIST" || person.status === "BOLO") ? "blacklist"
+        : (person.status === "UNKNOWN" || person.status === "UNREGISTERED") ? "unknown"
+        : "matched";
+      onEntityClick(type, person.id);
+    } else {
+      setModalPersonId(person.id);
+    }
+  };
 
   const status = IDENTITY_LIVE_STATUS;
 
@@ -1506,6 +1525,8 @@ export const IdentityMonitoringView = ({
 
   const modalPerson = modalPersonId ? people.find(p => p.id === modalPersonId) ?? null : null;
   const modalJourney = modalPersonId ? (journeyMap[modalPersonId] ?? []) : [];
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const selectedZone = selectedZoneId ? IDENTITY_ZONES.find(z => z.zone_id === selectedZoneId) ?? null : null;
 
   const threatCount = people.filter(p => p.status === "BLACKLIST" || p.status === "BOLO").length;
   const unknownCount = people.filter(p => p.status === "UNKNOWN" || p.status === "UNREGISTERED").length;
@@ -1551,7 +1572,7 @@ export const IdentityMonitoringView = ({
 
       {/* ── Priority Watchlist — full width row ──────────────────────────── */}
       <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden">
-        <WatchlistPanel people={people} onOpenModal={setModalPersonId} isLPR={isLPR} />
+        <WatchlistPanel people={people} onOpenModal={(id) => { const p = people.find(x => x.id === id); if (p) openEntity(p); }} isLPR={isLPR} />
       </div>
 
       {/* ── Live Feed + Right sidebar ─────────────────────────────────────── */}
@@ -1609,7 +1630,6 @@ export const IdentityMonitoringView = ({
                     <th className="px-3 py-2 w-20 text-right">Match %</th>
                     <th className="px-3 py-2 w-20 text-right">Dwell</th>
                     <th className="px-3 py-2 w-24 text-right">Time</th>
-                    <th className="px-3 py-2 w-16 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1618,7 +1638,7 @@ export const IdentityMonitoringView = ({
                       key={p.id}
                       person={p}
                       rowIndex={i}
-                      onClick={() => setModalPersonId(p.id)}
+                      onClick={() => openEntity(p)}
                       isLPR={isLPR}
                     />
                   ))}
@@ -1631,76 +1651,7 @@ export const IdentityMonitoringView = ({
         {/* ── RIGHT: Zone Command ──────────────────────────────────────────── */}
         <div className="flex flex-col gap-3">
 
-          {/* Zone status grid */}
-          <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-neutral-50">
-              <MapPin className="w-3.5 h-3.5 text-[#00775B]" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Zone Status</span>
-            </div>
-            <div className="p-2 grid grid-cols-2 gap-1.5">
-              {IDENTITY_ZONES.slice(0, 8).map(zone => {
-                const color = zone.status === "CRITICAL" ? "bg-red-50 border-red-300 text-red-700"
-                  : zone.status === "WATCH" ? "bg-amber-50 border-amber-300 text-amber-700"
-                  : zone.status === "AMBER" ? "bg-orange-50 border-orange-200 text-orange-700"
-                  : "bg-emerald-50/30 border-neutral-200 text-neutral-600";
-                const dot = zone.status === "CRITICAL" ? "bg-red-500 animate-pulse"
-                  : zone.status === "WATCH" ? "bg-amber-400"
-                  : zone.status === "AMBER" ? "bg-orange-400"
-                  : "bg-emerald-400";
-                return (
-                  <div key={zone.zone_id} className={cn("rounded-[3px] border px-2 py-1.5", color)}>
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dot)} />
-                      <span className="text-[9px] font-bold truncate">{zone.zone_name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[8px] font-mono opacity-70">
-                      <span>{zone.identifications} IDs</span>
-                      {zone.blacklist_hits > 0 && <span className="font-black text-red-600">🚨 {zone.blacklist_hits}</span>}
-                      {zone.unknown > 0 && <span>{zone.unknown} unk</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Active unknowns tracker */}
-          <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden flex-1">
-            <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-neutral-50">
-              <UserX className="w-3.5 h-3.5 text-amber-500" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-                {isLPR ? "Unregistered Vehicles" : "Unknown Trackers"}
-              </span>
-            </div>
-            <div className="divide-y divide-neutral-50">
-              {UNKNOWN_TRACKERS.slice(0, 3).map(t => (
-                <div key={t.tracker_id} className="px-3 py-2 flex gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <p className="text-[10px] font-bold text-neutral-800 truncate">{t.anonymized_label}</p>
-                      {t.badge && (
-                        <span className="text-[8px] font-black px-1 py-0.5 rounded-[2px] bg-amber-100 text-amber-700 shrink-0">
-                          {t.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[9px] text-neutral-400">{t.appearances} appearances · {t.first_seen}–{t.last_seen}</p>
-                    <p className="text-[9px] text-neutral-400 truncate">{t.cameras.join(" → ")}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className={cn("text-[9px] font-mono font-bold", t.confidence >= 75 ? "text-amber-600" : "text-red-500")}>
-                      {t.confidence}%
-                    </span>
-                    {t.cross_camera && (
-                      <p className="text-[8px] text-[#00775B] font-bold">cross-cam</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Camera status strip */}
+          {/* Camera status strip — moved above zone status */}
           <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
@@ -1727,6 +1678,43 @@ export const IdentityMonitoringView = ({
             </div>
           </div>
 
+          {/* Zone status grid — clickable cards */}
+          <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden flex-1">
+            <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-neutral-50">
+              <MapPin className="w-3.5 h-3.5 text-[#00775B]" />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Zone Status</span>
+            </div>
+            <div className="p-2 grid grid-cols-2 gap-1.5">
+              {IDENTITY_ZONES.slice(0, 8).map(zone => {
+                const color = zone.status === "CRITICAL" ? "bg-red-50 border-red-300 text-red-700"
+                  : zone.status === "WATCH" ? "bg-amber-50 border-amber-300 text-amber-700"
+                  : zone.status === "AMBER" ? "bg-orange-50 border-orange-200 text-orange-700"
+                  : "bg-emerald-50/30 border-neutral-200 text-neutral-600";
+                const dot = zone.status === "CRITICAL" ? "bg-red-500 animate-pulse"
+                  : zone.status === "WATCH" ? "bg-amber-400"
+                  : zone.status === "AMBER" ? "bg-orange-400"
+                  : "bg-emerald-400";
+                return (
+                  <button
+                    key={zone.zone_id}
+                    onClick={() => setSelectedZoneId(zone.zone_id)}
+                    className={cn("rounded-[3px] border px-2 py-1.5 text-left transition-all hover:ring-1 hover:ring-[#00775B]/30 hover:shadow-sm", color)}
+                  >
+                    <div className="flex items-center gap-1 mb-0.5">
+                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dot)} />
+                      <span className="text-[9px] font-bold truncate">{zone.zone_name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[8px] font-mono opacity-70">
+                      <span>{zone.identifications} IDs</span>
+                      {zone.blacklist_hits > 0 && <span className="font-black text-red-600">🚨 {zone.blacklist_hits}</span>}
+                      {zone.unknown > 0 && <span>{zone.unknown} unk</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
         </div>
       </div>
       </div>
@@ -1738,8 +1726,132 @@ export const IdentityMonitoringView = ({
         journey={modalJourney}
         isLPR={isLPR}
         terminology={terminology}
+        groups={groups}
         onClose={() => setModalPersonId(null)}
       />
+
+      {/* ── Zone Detail Slide Panel ───────────────────────────────────────── */}
+      <SlidePanel
+        isOpen={!!selectedZone}
+        onClose={() => setSelectedZoneId(null)}
+        title={selectedZone?.zone_name ?? ""}
+        subtitle={`${selectedZone?.status ?? ""} · ${selectedZone?.identifications ?? 0} ${isLPR ? "plates" : "IDs"}`}
+        width="w-[480px]"
+      >
+        {selectedZone && (() => {
+          const isCritical = selectedZone.status === "CRITICAL";
+          const isWatch = selectedZone.status === "WATCH" || selectedZone.status === "AMBER";
+          const statusColor = isCritical ? "text-red-700 bg-red-50 border-red-200"
+            : isWatch ? "text-amber-700 bg-amber-50 border-amber-200"
+            : "text-emerald-700 bg-emerald-50 border-emerald-200";
+          const dotColor = isCritical ? "bg-red-500 animate-pulse"
+            : isWatch ? "bg-amber-400"
+            : "bg-emerald-400";
+
+          const zonePeople = people.filter(p => p.zone === selectedZone.zone_name);
+
+          return (
+            <div className="flex flex-col gap-0">
+
+              {/* Status banner */}
+              <div className={cn("flex items-center gap-2.5 px-5 py-3 border-b", statusColor)}>
+                <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", dotColor)} />
+                <span className="text-[11px] font-black uppercase tracking-widest">{selectedZone.status}</span>
+                <span className="ml-auto text-[10px] font-mono opacity-70">{selectedZone.zone_id}</span>
+              </div>
+
+              {/* Stat cards */}
+              <div className="grid grid-cols-4 divide-x divide-neutral-100 border-b border-neutral-100">
+                {[
+                  { label: isLPR ? "Plates" : "IDs", value: selectedZone.identifications, color: "text-neutral-900" },
+                  { label: "Threats", value: selectedZone.blacklist_hits, color: selectedZone.blacklist_hits > 0 ? "text-red-600" : "text-neutral-400" },
+                  { label: "Unknown", value: selectedZone.unknown, color: selectedZone.unknown > 0 ? "text-amber-600" : "text-neutral-400" },
+                  { label: "Denied", value: selectedZone.denied, color: selectedZone.denied > 0 ? "text-orange-600" : "text-neutral-400" },
+                ].map(stat => (
+                  <div key={stat.label} className="flex flex-col items-center py-4 px-2">
+                    <span className={cn("text-2xl font-black tabular-nums font-mono", stat.color)}>{stat.value}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mt-1">{stat.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Camera list */}
+              <div className="px-5 py-4 border-b border-neutral-100">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <Camera className="w-3.5 h-3.5 text-[#00775B]" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Active Cameras</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[1, 2, 3, 4].map(i => {
+                    const camId = `CAM-${selectedZone.zone_id.toUpperCase()}-0${i}`;
+                    const isOnline = i <= 3;
+                    return (
+                      <div key={camId} className="flex items-center gap-2 px-2.5 py-2 rounded-[4px] border border-neutral-100 bg-neutral-50">
+                        <span className={cn("w-2 h-2 rounded-full shrink-0", isOnline ? "bg-emerald-400" : "bg-red-400")} />
+                        <span className="text-[10px] font-mono text-neutral-700 truncate">{camId}</span>
+                        <span className={cn("ml-auto text-[8px] font-bold uppercase", isOnline ? "text-emerald-600" : "text-red-500")}>
+                          {isOnline ? "Online" : "Offline"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Live detections in this zone */}
+              <div className="px-5 py-4">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <Activity className="w-3.5 h-3.5 text-[#00775B]" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Recent Detections</span>
+                  {zonePeople.length > 0 && (
+                    <span className="ml-auto text-[9px] font-bold text-neutral-400">{zonePeople.length} found</span>
+                  )}
+                </div>
+
+                {zonePeople.length === 0 ? (
+                  <p className="text-[11px] text-neutral-400 text-center py-6">No recent detections in this zone</p>
+                ) : (
+                  <div className="space-y-2">
+                    {zonePeople.map(p => {
+                      const cfg = STATUS_CFG[p.status];
+                      const isPlate = isLPR || p.identType === "PLATE";
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            setSelectedZoneId(null);
+                            openEntity(p);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[6px] border border-neutral-100 bg-neutral-50 hover:bg-[#E5FFF9] hover:border-[#00775B]/20 transition-colors text-left"
+                        >
+                          <div className="w-10 h-10 rounded-[3px] overflow-hidden border border-neutral-200 shrink-0 bg-neutral-100">
+                            {isPlate ? (
+                              <IdentityEvidenceMedia kind="PLATE" seed={p.id} plateText={p.plateText} className="w-full h-full" />
+                            ) : (
+                              <IdentityEvidenceMedia kind="FACE" seed={p.id} imageSrc={p.imageSrc} className="w-full h-full" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-bold text-neutral-800 truncate">{p.displayName}</p>
+                            <p className="text-[9px] text-neutral-400 font-mono">{p.camera} · {p.time}</p>
+                          </div>
+                          <span className={cn(
+                            "shrink-0 text-[8px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-[2px]",
+                            cfg.bg, cfg.text
+                          )}>
+                            {cfg.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          );
+        })()}
+      </SlidePanel>
     </div>
   );
 };

@@ -11,6 +11,7 @@ interface SlidePanelProps {
   width?: string;
   children: ReactNode;
   headerRight?: ReactNode;
+  footer?: ReactNode;
 }
 
 export const SlidePanel = ({
@@ -21,6 +22,7 @@ export const SlidePanel = ({
   width = "w-[720px]",
   children,
   headerRight,
+  footer,
 }: SlidePanelProps) => {
   // Close on Escape key
   useEffect(() => {
@@ -70,7 +72,7 @@ export const SlidePanel = ({
             {headerRight}
             <button
               onClick={onClose}
-              className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -81,6 +83,13 @@ export const SlidePanel = ({
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {children}
         </div>
+
+        {/* Panel footer — sticky, always visible */}
+        {footer && (
+          <div className="shrink-0 border-t border-neutral-100">
+            {footer}
+          </div>
+        )}
       </div>
     </>,
     document.body

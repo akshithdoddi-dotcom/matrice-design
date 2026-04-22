@@ -17,47 +17,6 @@ import type {
 export type { QualityAppId, QualityTerminology };
 
 export const TERMINOLOGY_MAP: Record<QualityAppId, QualityTerminology> = {
-  // ── Compliance apps ────────────────────────────────────────────────────────
-  ppe: {
-    appLabel: "PPE Detection",
-    primaryMetricLabel: "Compliance Rate",
-    negativeEventLabel: "Violation",
-    negativeCountLabel: "Violation Count",
-    entityLabel: "Worker",
-    zoneRiskLabel: "High-Risk Zone",
-    repeatOffenderLabel: "Repeat Violator",
-    safeLabel: "Compliant",
-    unsafeLabel: "Non-Compliant",
-    stageLabel: "Zone",
-    isDefectApp: false,
-  },
-  mask: {
-    appLabel: "Mask Detection",
-    primaryMetricLabel: "Mask Compliance Rate",
-    negativeEventLabel: "Violation",
-    negativeCountLabel: "Violation Count",
-    entityLabel: "Worker",
-    zoneRiskLabel: "High-Risk Zone",
-    repeatOffenderLabel: "Repeat Violator",
-    safeLabel: "Compliant",
-    unsafeLabel: "Non-Compliant",
-    stageLabel: "Zone",
-    isDefectApp: false,
-  },
-  construction: {
-    appLabel: "Construction Safety",
-    primaryMetricLabel: "Compliance Rate",
-    negativeEventLabel: "Violation",
-    negativeCountLabel: "Violation Count",
-    entityLabel: "Worker",
-    zoneRiskLabel: "High-Risk Zone",
-    repeatOffenderLabel: "Repeat Violator",
-    safeLabel: "Compliant",
-    unsafeLabel: "Non-Compliant",
-    stageLabel: "Site Zone",
-    isDefectApp: false,
-  },
-  // ── Defect apps ────────────────────────────────────────────────────────────
   pcb: {
     appLabel: "PCB Defect Detection",
     primaryMetricLabel: "Pass Rate",

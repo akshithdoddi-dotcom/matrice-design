@@ -8,6 +8,7 @@ import { QualityHeader } from "./quality/QualityHeader";
 import { MonitoringView } from "./quality/MonitoringView";
 import { ManagerView } from "./quality/ManagerView";
 import { DirectorView } from "./quality/DirectorView";
+import { DEFAULT_QUALITY_GROUPS } from "./quality/components/monitoring/InstantAnalyticsPanel";
 
 const DEFAULT_TIME_RANGE: Record<Persona, string> = {
   monitoring: "1h",
@@ -16,13 +17,11 @@ const DEFAULT_TIME_RANGE: Record<Persona, string> = {
 };
 
 export const QualityAnalytics = ({ persona }: { persona: Persona }) => {
-  const [activeApp, setActiveApp]     = useState<QualityAppId>("bottle");
-  const [timeRange, setTimeRange]     = useState(DEFAULT_TIME_RANGE[persona]);
+  const [activeApp, setActiveApp] = useState<QualityAppId>("bottle");
+  const [timeRange, setTimeRange] = useState(DEFAULT_TIME_RANGE[persona]);
+  const [groups, setGroups]       = useState<string[]>(DEFAULT_QUALITY_GROUPS);
 
   const terminology = TERMINOLOGY_MAP[activeApp];
-
-  // Reset time range to persona-appropriate default when persona changes externally
-  // (persona itself is managed by parent App.tsx, so we just use it as-is)
 
   return (
     <div>
@@ -33,10 +32,12 @@ export const QualityAnalytics = ({ persona }: { persona: Persona }) => {
         onAppChange={setActiveApp}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
+        groups={groups}
+        onUpdateGroups={setGroups}
       />
 
       {persona === "monitoring" && (
-        <MonitoringView terminology={terminology} timeRange={timeRange} appId={activeApp} />
+        <MonitoringView terminology={terminology} timeRange={timeRange} appId={activeApp} groups={groups} />
       )}
 
       {persona === "manager" && (

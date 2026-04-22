@@ -14,7 +14,6 @@ export interface QualityTerminology {
 }
 
 export type QualityAppId =
-  | "ppe" | "mask" | "construction"
   | "pcb" | "welding" | "car-damage" | "bottle"
   | "corrosion" | "road-damage" | "pothole" | "phone-screen" | "assembly"
   | "food-quality" | "textile" | "solar-panel" | "semiconductor"

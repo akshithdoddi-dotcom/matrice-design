@@ -1,34 +1,30 @@
 import { useState, useRef, useEffect } from "react";
-import { ShieldCheck, ChevronDown, Download, Clock, Check } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ShieldCheck, ChevronDown, Download, Clock, Check, Settings, X, Plus, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
 import type { QualityAppId, QualityTerminology } from "./data/mockData";
 
-const APP_OPTIONS: { id: QualityAppId; label: string; group: "defect" | "safety" }[] = [
-  // Defect apps
-  { id: "bottle",        label: "Bottle Defect",          group: "defect" },
-  { id: "pcb",           label: "PCB Defect",             group: "defect" },
-  { id: "welding",       label: "Welding Defect",         group: "defect" },
-  { id: "car-damage",    label: "Car Damage",             group: "defect" },
-  { id: "corrosion",     label: "Corrosion Detection",    group: "defect" },
-  { id: "road-damage",   label: "Road Damage",            group: "defect" },
-  { id: "pothole",       label: "Pothole Detection",      group: "defect" },
-  { id: "phone-screen",  label: "Screen Defect",          group: "defect" },
-  { id: "assembly",      label: "Assembly Line QC",       group: "defect" },
-  { id: "food-quality",  label: "Food Quality",           group: "defect" },
-  { id: "textile",       label: "Textile Defect",         group: "defect" },
-  { id: "solar-panel",   label: "Solar Panel QC",         group: "defect" },
-  { id: "semiconductor", label: "Semiconductor Inspection",group: "defect" },
-  { id: "metal-surface", label: "Metal Surface",          group: "defect" },
-  { id: "glass",         label: "Glass Defect",           group: "defect" },
-  { id: "paint",         label: "Paint Defect",           group: "defect" },
-  { id: "wire-harness",  label: "Wire Harness QC",        group: "defect" },
-  { id: "packaging",     label: "Packaging Inspection",   group: "defect" },
-  { id: "wood",          label: "Wood Defect",            group: "defect" },
-  // Safety / compliance apps
-  { id: "ppe",           label: "PPE Detection",          group: "safety" },
-  { id: "mask",          label: "Mask Detection",         group: "safety" },
-  { id: "construction",  label: "Construction Safety",    group: "safety" },
+const APP_OPTIONS: { id: QualityAppId; label: string }[] = [
+  { id: "bottle",        label: "Bottle Defect"            },
+  { id: "pcb",           label: "PCB Defect"               },
+  { id: "welding",       label: "Welding Defect"           },
+  { id: "car-damage",    label: "Car Damage"               },
+  { id: "corrosion",     label: "Corrosion Detection"      },
+  { id: "road-damage",   label: "Road Damage"              },
+  { id: "pothole",       label: "Pothole Detection"        },
+  { id: "phone-screen",  label: "Screen Defect"            },
+  { id: "assembly",      label: "Assembly Line QC"         },
+  { id: "food-quality",  label: "Food Quality"             },
+  { id: "textile",       label: "Textile Defect"           },
+  { id: "solar-panel",   label: "Solar Panel QC"           },
+  { id: "semiconductor", label: "Semiconductor Inspection" },
+  { id: "metal-surface", label: "Metal Surface"            },
+  { id: "glass",         label: "Glass Defect"             },
+  { id: "paint",         label: "Paint Defect"             },
+  { id: "wire-harness",  label: "Wire Harness QC"          },
+  { id: "packaging",     label: "Packaging Inspection"     },
+  { id: "wood",          label: "Wood Defect"              },
 ];
 
 const TIME_RANGES: Record<Persona, string[]> = {
@@ -37,6 +33,119 @@ const TIME_RANGES: Record<Persona, string[]> = {
   director:   ["This Month", "This Quarter"],
 };
 
+// ── Settings Modal ────────────────────────────────────────────────────────────
+
+function SettingsModal({
+  isOpen,
+  groups,
+  onUpdateGroups,
+  onClose,
+}: {
+  isOpen: boolean;
+  groups: string[];
+  onUpdateGroups: (groups: string[]) => void;
+  onClose: () => void;
+}) {
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editValue, setEditValue]   = useState("");
+  const [newValue, setNewValue]     = useState("");
+
+  useEffect(() => { if (isOpen) { setEditingIdx(null); setNewValue(""); } }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const startEdit = (i: number) => { setEditingIdx(i); setEditValue(groups[i]); };
+  const saveEdit  = () => {
+    const v = editValue.trim();
+    if (!v) return;
+    onUpdateGroups(groups.map((g, i) => i === editingIdx ? v : g));
+    setEditingIdx(null);
+  };
+  const remove    = (i: number) => { if (editingIdx === i) setEditingIdx(null); onUpdateGroups(groups.filter((_, idx) => idx !== i)); };
+  const create    = () => {
+    const v = newValue.trim();
+    if (!v) return;
+    onUpdateGroups([...groups, v]);
+    setNewValue("");
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-2xl border border-neutral-200 w-[420px] max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 shrink-0">
+          <h2 className="text-sm font-bold text-neutral-900">Configure Notification Groups</h2>
+          <button onClick={onClose} className="w-6 h-6 flex items-center justify-center rounded hover:bg-neutral-100 transition-colors">
+            <X className="w-4 h-4 text-neutral-500" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Create */}
+          <div className="rounded-lg border border-neutral-200 p-3 space-y-2">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Add Group</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Group name (e.g. QA Lead)"
+                value={newValue}
+                onChange={e => setNewValue(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && create()}
+                className="flex-1 h-8 px-3 rounded-[6px] border border-neutral-200 text-[12px] text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-[#00775B] transition-colors"
+              />
+              <button
+                onClick={create}
+                disabled={!newValue.trim()}
+                className={cn(
+                  "h-8 px-3 rounded-[6px] text-[11px] font-bold transition-colors flex items-center gap-1",
+                  newValue.trim() ? "bg-[#00775B] text-white hover:bg-[#006349]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                )}
+              >
+                <Plus className="w-3 h-3" /> Add
+              </button>
+            </div>
+          </div>
+
+          {/* Existing */}
+          {groups.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Current Groups</p>
+              {groups.map((g, i) => (
+                <div key={i} className={cn("rounded-lg border overflow-hidden transition-colors", editingIdx === i ? "border-[#00775B]/40 bg-[#E5FFF9]/30" : "border-neutral-200 bg-neutral-50")}>
+                  {editingIdx === i ? (
+                    <div className="p-2.5 flex gap-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingIdx(null); }}
+                        className="flex-1 h-7 px-2.5 rounded-[5px] border border-[#00775B]/40 text-[12px] font-bold focus:outline-none focus:border-[#00775B]"
+                      />
+                      <button onClick={() => setEditingIdx(null)} className="h-7 px-2 rounded-[5px] border border-neutral-200 text-[11px] font-bold text-neutral-500 hover:bg-neutral-100">Cancel</button>
+                      <button onClick={saveEdit} disabled={!editValue.trim()} className={cn("h-7 px-2 rounded-[5px] text-[11px] font-bold flex items-center gap-1 transition-colors", editValue.trim() ? "bg-[#00775B] text-white hover:bg-[#006349]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed")}>
+                        <Check className="w-3 h-3" /> Save
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 px-3 py-2.5">
+                      <p className="flex-1 text-[12px] font-bold text-neutral-800">{g}</p>
+                      <button onClick={() => startEdit(i)} className="text-neutral-400 hover:text-[#00775B] transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => remove(i)} className="text-neutral-400 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
 interface QualityHeaderProps {
   persona: Persona;
   terminology: QualityTerminology;
@@ -44,6 +153,8 @@ interface QualityHeaderProps {
   onAppChange: (app: QualityAppId) => void;
   timeRange: string;
   onTimeRangeChange: (range: string) => void;
+  groups: string[];
+  onUpdateGroups: (groups: string[]) => void;
 }
 
 export const QualityHeader = ({
@@ -53,10 +164,13 @@ export const QualityHeader = ({
   onAppChange,
   timeRange,
   onTimeRangeChange,
+  groups,
+  onUpdateGroups,
 }: QualityHeaderProps) => {
-  const [isAppOpen, setIsAppOpen]       = useState(false);
-  const [isExportOpen, setIsExportOpen] = useState(false);
-  const [secondsAgo, setSecondsAgo]     = useState(2);
+  const [isAppOpen, setIsAppOpen]         = useState(false);
+  const [isExportOpen, setIsExportOpen]   = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [secondsAgo, setSecondsAgo]       = useState(2);
   const appRef    = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +192,7 @@ export const QualityHeader = ({
   const ranges = TIME_RANGES[persona];
 
   return (
+    <>
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 bg-white border border-neutral-200 rounded-md px-4 py-3 shadow-sm">
       {/* Left: Title */}
       <div className="flex items-center gap-3">
@@ -110,41 +225,21 @@ export const QualityHeader = ({
           </button>
           {isAppOpen && (
             <div className="absolute top-full left-0 mt-1 w-56 rounded-sm border border-neutral-200 bg-white shadow-lg z-50 overflow-hidden max-h-[360px] overflow-y-auto">
-              {/* Defect apps group */}
-              <div className="px-3 pt-2 pb-1">
-                <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400">Defect Detection</p>
+              <div className="py-1">
+                {APP_OPTIONS.map((opt) => (
+                  <div
+                    key={opt.id}
+                    onClick={() => { onAppChange(opt.id); setIsAppOpen(false); }}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium cursor-pointer flex items-center justify-between text-neutral-600 hover:bg-neutral-50",
+                      activeApp === opt.id && "text-[#00775B] bg-[#E5FFF9]"
+                    )}
+                  >
+                    <span>{opt.label}</span>
+                    {activeApp === opt.id && <Check className="w-3 h-3" />}
+                  </div>
+                ))}
               </div>
-              {APP_OPTIONS.filter(o => o.group === "defect").map((opt) => (
-                <div
-                  key={opt.id}
-                  onClick={() => { onAppChange(opt.id); setIsAppOpen(false); }}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium cursor-pointer flex items-center justify-between text-neutral-600 hover:bg-neutral-50",
-                    activeApp === opt.id && "text-[#00775B] bg-[#E5FFF9]"
-                  )}
-                >
-                  <span>{opt.label}</span>
-                  {activeApp === opt.id && <Check className="w-3 h-3" />}
-                </div>
-              ))}
-              {/* Safety apps group */}
-              <div className="px-3 pt-2 pb-1 border-t border-neutral-100 mt-1">
-                <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400">Safety & Compliance</p>
-              </div>
-              {APP_OPTIONS.filter(o => o.group === "safety").map((opt) => (
-                <div
-                  key={opt.id}
-                  onClick={() => { onAppChange(opt.id); setIsAppOpen(false); }}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium cursor-pointer flex items-center justify-between text-neutral-600 hover:bg-neutral-50",
-                    activeApp === opt.id && "text-[#00775B] bg-[#E5FFF9]"
-                  )}
-                >
-                  <span>{opt.label}</span>
-                  {activeApp === opt.id && <Check className="w-3 h-3" />}
-                </div>
-              ))}
-              <div className="pb-1" />
             </div>
           )}
         </div>
@@ -206,7 +301,24 @@ export const QualityHeader = ({
             </>
           )}
         </div>
+
+        {/* Settings */}
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          title="Settings"
+          className="flex items-center justify-center w-7 h-7 rounded-sm border border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 transition-colors"
+        >
+          <Settings className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
+
+    <SettingsModal
+      isOpen={isSettingsOpen}
+      groups={groups}
+      onUpdateGroups={onUpdateGroups}
+      onClose={() => setIsSettingsOpen(false)}
+    />
+    </>
   );
 };

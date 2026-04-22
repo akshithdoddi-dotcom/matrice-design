@@ -534,10 +534,6 @@ export default function App() {
         <div className="p-6 space-y-6 relative w-full overflow-x-hidden rounded-tl-lg">
           <GridBackground className="fixed inset-0 z-[-1] pointer-events-none" />
           
-          <div className="xl:hidden mb-4">
-             <Legend variant="light" />
-          </div>
-
           <section className="w-full">
             {activePage === "volume" && <VolumeAnalytics persona={activePersona} />}
             {activePage === "incident" && <IncidentAnalytics persona={activePersona} />}

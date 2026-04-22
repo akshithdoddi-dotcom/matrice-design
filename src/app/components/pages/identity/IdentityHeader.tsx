@@ -3,10 +3,10 @@ import {
   Check,
   ChevronDown,
   Clock3,
-  Download,
   RefreshCw,
   Rows3,
   Plus,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
@@ -35,6 +35,7 @@ interface IdentityHeaderProps {
   timeRange: string;
   onTimeRangeChange: (range: string) => void;
   onManage: () => void;
+  onSettings: () => void;
 }
 
 export const IdentityHeader = ({
@@ -47,15 +48,14 @@ export const IdentityHeader = ({
   timeRange,
   onTimeRangeChange,
   onManage,
+  onSettings,
 }: IdentityHeaderProps) => {
   const [isAppOpen, setIsAppOpen] = useState(false);
-  const [isExportOpen, setIsExportOpen] = useState(false);
   const [isRefreshOpen, setIsRefreshOpen] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState("15s");
   const [secondsAgo, setSecondsAgo] = useState(12);
 
   const appRef = useRef<HTMLDivElement>(null);
-  const exportRef = useRef<HTMLDivElement>(null);
   const refreshRef = useRef<HTMLDivElement>(null);
 
   const activeApps = useMemo(
@@ -76,7 +76,6 @@ export const IdentityHeader = ({
     const handler = (event: MouseEvent) => {
       const target = event.target as Node;
       if (appRef.current && !appRef.current.contains(target)) setIsAppOpen(false);
-      if (exportRef.current && !exportRef.current.contains(target)) setIsExportOpen(false);
       if (refreshRef.current && !refreshRef.current.contains(target)) setIsRefreshOpen(false);
     };
 
@@ -201,53 +200,6 @@ export const IdentityHeader = ({
             </div>
           )}
 
-          <div className="flex items-center rounded-sm border border-neutral-200 bg-white p-0.5 shadow-sm">
-            {TIME_RANGES[persona].map((range) => (
-              <button
-                key={range}
-                onClick={() => onTimeRangeChange(range)}
-                className={cn(
-                  "rounded-sm px-3 py-1 text-[10px] font-bold uppercase tracking-wide transition-all",
-                  timeRange === range
-                    ? "bg-[#00775B] text-white shadow-sm"
-                    : "text-neutral-500 hover:bg-neutral-50"
-                )}
-              >
-                {range}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative" ref={exportRef}>
-            <button
-              onClick={() => setIsExportOpen((current) => !current)}
-              className="flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 transition-all hover:border-neutral-300"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>Export</span>
-              <ChevronDown
-                className={cn(
-                  "h-3 w-3 transition-transform",
-                  isExportOpen && "rotate-180"
-                )}
-              />
-            </button>
-
-            {isExportOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-sm border border-neutral-200 bg-white shadow-lg">
-                {["CSV", "PDF", "Image"].map((format) => (
-                  <button
-                    key={format}
-                    onClick={() => setIsExportOpen(false)}
-                    className="w-full px-3 py-2 text-left text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                  >
-                    Export {format}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           <div className="flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[10px] font-mono text-neutral-500">
             {persona === "monitoring" ? (
               <>
@@ -263,6 +215,15 @@ export const IdentityHeader = ({
               </>
             )}
           </div>
+
+          {/* Settings icon button */}
+          <button
+            onClick={onSettings}
+            title="Settings"
+            className="flex items-center justify-center w-7 h-7 rounded-sm border border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </button>
 
           {/* Manage People / Vehicle button */}
           <button

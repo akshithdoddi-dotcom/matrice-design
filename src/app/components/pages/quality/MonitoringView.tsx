@@ -12,9 +12,10 @@ interface Props {
   terminology: QualityTerminology;
   timeRange: string;
   appId: string;
+  groups?: string[];
 }
 
-export const MonitoringView = ({ terminology, timeRange: _timeRange, appId }: Props) => {
+export const MonitoringView = ({ terminology, timeRange: _timeRange, appId, groups }: Props) => {
   return (
     <div className="flex flex-col gap-3 bg-neutral-50 min-h-full">
 
@@ -22,7 +23,7 @@ export const MonitoringView = ({ terminology, timeRange: _timeRange, appId }: Pr
       <PrimaryKPIRow terminology={terminology} />
 
       {/* ── Row 2: Instant Analytics — live actionable feed (all apps) ──────── */}
-      <InstantAnalyticsPanel terminology={terminology} appId={appId} />
+      <InstantAnalyticsPanel terminology={terminology} appId={appId} groups={groups} />
 
       {terminology.isDefectApp ? (
         <>
