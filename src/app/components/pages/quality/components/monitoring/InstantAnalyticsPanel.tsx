@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Radio, AlertTriangle, CheckCircle2, XCircle,
-  Pause, RotateCcw, Wrench, UserPlus, Lock, ClipboardList,
+  RotateCcw, Wrench, UserPlus, Lock, ClipboardList,
   ShieldAlert, Eye, PhoneCall, Hammer, RefreshCw, X,
   Bell, ChevronRight, MapPin, Camera, Clock,
   Mail, Check,
@@ -73,8 +73,8 @@ const APP_CONFIG: Record<string, {
   cameras: string[];
   eventTitles: [string, string][];  // [title, detail]
 }> = {
-  bottle:        { imgSeeds:[101,102,103,104,105,106,107,108], locations:["Filling Station","QC Station","Labeling Stage","Capping Line","Forming Stage","Inspection Zone","Moulding Stage","Curing Stage"], cameras:["Line 3 · Cam 01","Batch Cam 02","Zone D · Cam 04","Camera B2","Line 2 · Cam 06","Cam 07","Cam 08","Oven 1 · Cam 09"], eventTitles:[["Defect spike — Filling","8 bottle defects in 5 min — rate 5.1%"],["Batch #043 held at QC","Surface crack density 6.2% — limit 3.5%"],["3 batches with Underfill","Batches #041–#043 — same mould cavity"],["Labeling stage crossed threshold","Rate 4.8% — up 1.3% vs last hour"],["Camera B2 offline","No frames for 3 min — coverage gap"],["Repeat defect: Shape Deform","5th occurrence this shift — same mould"],["Batch #040 cleared QC","200 units passed — density 1.1%"],["High temp at Curing Stage","94°C — above 88°C threshold"]] },
-  pcb:           { imgSeeds:[201,202,203,204,205,206,207,208], locations:["SMT Line A","AOI Station","Reflow Oven","Wave Solder","X-Ray Station","Rework Bay","Electrical Test","Final QC"], cameras:["Line A · Cam 01","AOI Cam 02","Oven Cam 03","Solder Cam 04","X-Ray Cam 05","Rework Cam 06","Test Cam 07","QC Cam 08"], eventTitles:[["Solder bridge spike on SMT A","6 bridges detected in 4 min — rate 4.2%"],["Batch #PCB-88 failed AOI","Tombstone defect rate 5.8% — limit 2%"],["Reflow profile deviation","Peak temp 248°C — above 245°C spec"],["Missing component: C204","3 boards missing 100nF cap on Line A"],["X-Ray camera offline","No frames for 2 min — Station 3"],["Repeat cold joint — same board position","4th occurrence this shift — pad R112"],["Batch #PCB-85 released","140 boards passed — defect rate 0.8%"],["Flux residue above threshold","Ionic contamination 12µg/cm² — limit 10"]] },
+  bottle:        { imgSeeds:[101,102,103,104,105,106,107,108], locations:["Filling Station","QC Station","Labeling Stage","Capping Line","Forming Stage","Inspection Zone","Moulding Stage","Curing Stage"], cameras:["Line 3 · Cam 01","Batch Cam 02","Zone D · Cam 04","Camera B2","Line 2 · Cam 06","Cam 07","Cam 08","Oven 1 · Cam 09"], eventTitles:[["Defect spike — Filling","Defect rate hit 5.1% — 8 units flagged in the last 5 min"],["Batch #043 held at QC","Crack density above limit — batch held pending QC review"],["3 batches with Underfill","Same mould cavity flagged across 3 consecutive batches"],["Labeling stage crossed threshold","Defect rate rising — up 1.3 points since last hour"],["Camera B2 offline","No frames received for 3+ min — coverage gap at line"],["Repeat defect: Shape Deform","Same mould flagged 5 times this shift — root cause unresolved"],["Batch #040 cleared QC","200 units passed inspection — density within spec"],["High temp at Curing Stage","Temperature at 94°C, above the 88°C process limit"]] },
+  pcb:           { imgSeeds:[201,202,203,204,205,206,207,208], locations:["SMT Line A","AOI Station","Reflow Oven","Wave Solder","X-Ray Station","Rework Bay","Electrical Test","Final QC"], cameras:["Line A · Cam 01","AOI Cam 02","Oven Cam 03","Solder Cam 04","X-Ray Cam 05","Rework Cam 06","Test Cam 07","QC Cam 08"], eventTitles:[["Solder bridge spike on SMT A","4.2% defect rate — 6 bridges detected in the last 4 min"],["Batch #PCB-88 failed AOI","Tombstone rate at 5.8%, above the 2% AOI limit"],["Reflow profile deviation","Peak temperature reached 248°C, spec is 245°C"],["Missing component: C204","3 boards missing 100nF cap — feeder issue on Line A"],["X-Ray camera offline","No frames for 2+ min — Station 3 coverage gap"],["Repeat cold joint — same board position","Same pad R112 flagged 4 times this shift"],["Batch #PCB-85 released","140 boards passed — defect rate 0.8%, all clear"],["Flux residue above threshold","Ionic contamination at 12µg/cm², limit is 10µg/cm²"]] },
   welding:       { imgSeeds:[301,302,303,304,305,306,307,308], locations:["Weld Bay A","Robotic Cell 2","Inspection Station","Post-Weld QC","Grinding Area","NDT Station","Assembly Fit-Up","Final Inspection"], cameras:["Bay A · Cam 01","Robot Cam 02","Insp Cam 03","QC Cam 04","Grind Cam 05","NDT Cam 06","Fit-Up Cam 07","Final Cam 08"], eventTitles:[["Porosity spike — Weld Bay A","8 porous welds in 5 min — rate 5.1%"],["Batch #W043 failed NDT","Crack detected — wall thickness 3.2mm"],["Undercut pattern on Robot Cell 2","3 consecutive joints — same program step"],["Spatter rate crossed RED threshold","Rate 4.8% — up 1.3% vs last shift"],["Camera offline — NDT Station","No frames for 3 min — coverage gap"],["Repeat incomplete fusion — Joint #7","5th occurrence this shift — root cause open"],["Batch #W040 released","80 joints passed — UT inspection clear"],["High interpass temp — Bay A","Interpass 280°C — above 250°C spec"]] },
   "car-damage":  { imgSeeds:[401,402,403,404,405,406,407,408], locations:["Exterior Scan Bay","Panel Assessment","Bumper Station","Undercarriage Zone","Paint Booth","Glass Inspection","Interior Check","Final Gate"], cameras:["Scan Bay · Cam 01","Panel Cam 02","Bumper Cam 03","Under Cam 04","Paint Cam 05","Glass Cam 06","Interior Cam 07","Gate Cam 08"], eventTitles:[["Dent detection spike — Scan Bay","8 dents in 5 min — severity HIGH"],["Vehicle #443 failed panel assessment","Scratch density 6.2% — limit 3.5%"],["3 vehicles with hood damage","Sequential arrival — same transport batch"],["Paint booth defect rate elevated","Rate 4.8% — up 1.3% vs last hour"],["Scan camera offline","No frames for 3 min — Bay 2 gap"],["Repeat bumper crack — same model","5th occurrence this shift — supplier issue"],["Vehicle #440 cleared assessment","Full scan passed — no damage detected"],["Lighting intensity low in Glass Zone","Lux 180 — below 220 threshold"]] },
   corrosion:     { imgSeeds:[501,502,503,504,505,506,507,508], locations:["Tank Farm A","Pipe Network B","Storage Vessel 3","Heat Exchanger","Cooling Tower","Pressure Vessel","Structural Bay","Coating Station"], cameras:["Tank Cam 01","Pipe Cam 02","Vessel Cam 03","HX Cam 04","Tower Cam 05","PV Cam 06","Struct Cam 07","Coat Cam 08"], eventTitles:[["Corrosion rate spike — Tank Farm A","Wall loss 0.8mm in 30 days — limit 0.5mm"],["Vessel #V043 flagged — pitting detected","Pit depth 4.2mm — structural limit 3mm"],["3 pipe sections with delamination","Same coating batch — supplier quality issue"],["Heat exchanger fouling elevated","Efficiency drop 12% — above 8% threshold"],["UT camera offline — Pipe Network B","No readings for 3 min — coverage gap"],["Repeat crevice corrosion — Flange F7","5th occurrence this quarter — root cause open"],["Vessel #V040 cleared inspection","Full UT scan passed — no active corrosion"],["Humidity spike in Coating Station","RH 82% — above 75% application limit"]] },
@@ -100,12 +100,12 @@ const BASE_EVENTS: Array<{
   id: string; severity: Severity; ageSeconds: number;
   actions: ActionDef[];
 }> = [
-  { id:"e1", severity:"CRITICAL", ageSeconds:18,  actions:[{ label:"Pause Line",      icon:Pause,         variant:"danger"  }, { label:"Alert Engineer",  icon:PhoneCall,    variant:"primary" }, { label:"Log Incident", icon:ClipboardList, variant:"default" }] },
+  { id:"e1", severity:"CRITICAL", ageSeconds:18,  actions:[{ label:"Alert Engineer",  icon:PhoneCall,    variant:"primary" }, { label:"Log Incident", icon:ClipboardList, variant:"default" }] },
   { id:"e2", severity:"CRITICAL", ageSeconds:47,  actions:[{ label:"Reject Batch",    icon:XCircle,       variant:"danger"  }, { label:"Inspect Now",     icon:Eye,          variant:"primary" }, { label:"File Report",  icon:ClipboardList, variant:"default" }] },
-  { id:"e3", severity:"HIGH",     ageSeconds:112, actions:[{ label:"Review Process",  icon:RefreshCw,     variant:"warning" }, { label:"Alert QE",        icon:PhoneCall,    variant:"default" }, { label:"Halt Line",    icon:Pause,         variant:"default" }] },
+  { id:"e3", severity:"HIGH",     ageSeconds:112, actions:[{ label:"Review Process",  icon:RefreshCw,     variant:"warning" }, { label:"Alert QE",        icon:PhoneCall,    variant:"default" }] },
   { id:"e4", severity:"HIGH",     ageSeconds:205, actions:[{ label:"Escalate",        icon:ShieldAlert,   variant:"warning" }, { label:"Inspect Station", icon:Wrench,       variant:"primary" }] },
   { id:"e5", severity:"MEDIUM",   ageSeconds:310, actions:[{ label:"Notify Tech",     icon:PhoneCall,    variant:"default"  }, { label:"Switch Feed",     icon:Radio,        variant:"default" }] },
-  { id:"e6", severity:"MEDIUM",   ageSeconds:480, actions:[{ label:"Flag for Review", icon:ClipboardList, variant:"warning" }, { label:"Halt Line",       icon:Pause,        variant:"default" }] },
+  { id:"e6", severity:"MEDIUM",   ageSeconds:480, actions:[{ label:"Flag for Review", icon:ClipboardList, variant:"warning" }] },
   { id:"e7", severity:"INFO",     ageSeconds:620, actions:[{ label:"Release Batch",   icon:CheckCircle2, variant:"default"  }] },
   { id:"e8", severity:"MEDIUM",   ageSeconds:790, actions:[{ label:"Adjust Process",  icon:Hammer,       variant:"warning"  }] },
 ];
@@ -404,10 +404,10 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
             <thead className="bg-[#001E18]">
               <tr className="border-b border-[#00775B]/20 text-[10px] uppercase tracking-wider font-bold text-white/90 h-10">
                 <th className="w-[3px] p-0" />
-                <th className="px-4 py-2 w-20 text-center">Severity</th>
                 <th className="px-4 py-2 w-20">ID</th>
                 <th className="px-4 py-2 w-28">Snapshot</th>
                 <th className="px-4 py-2">Event Details</th>
+                <th className="px-4 py-2 w-24 text-center">Severity</th>
                 <th className="px-4 py-2 w-36">Location</th>
                 <th className="px-4 py-2 w-36">Camera / Zone</th>
                 <th className="px-4 py-2 w-24 text-right">Age</th>
@@ -440,19 +440,6 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
                   {/* Severity left bar */}
                   <td className={cn("w-[3px] p-0", SEV_BAR[ev.severity])} />
 
-                  {/* Severity badge */}
-                  <td className="px-4 py-3 text-center">
-                    <div className={cn(
-                      "inline-flex items-center gap-1 text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide",
-                      SEV_BADGE_COLOR[ev.severity]
-                    )}>
-                      {ev.severity === "CRITICAL" && (
-                        <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                      )}
-                      {ev.severity}
-                    </div>
-                  </td>
-
                   {/* ID */}
                   <td className="px-4 py-3">
                     <span className="font-mono text-[11px] font-bold text-neutral-500">
@@ -475,6 +462,19 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
                   <td className="px-4 py-3 min-w-0">
                     <p className="text-[12px] font-bold text-neutral-900 leading-snug">{ev.title}</p>
                     <p className="text-[10px] text-neutral-400 mt-0.5 leading-snug">{ev.detail}</p>
+                  </td>
+
+                  {/* Severity badge */}
+                  <td className="px-4 py-3 text-center">
+                    <div className={cn(
+                      "inline-flex items-center gap-1 text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide",
+                      SEV_BADGE_COLOR[ev.severity]
+                    )}>
+                      {ev.severity === "CRITICAL" && (
+                        <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                      )}
+                      {ev.severity}
+                    </div>
                   </td>
 
                   {/* Location */}
@@ -519,11 +519,6 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
                 {ackedRows.map((ev) => (
                   <tr key={ev.id} className="hover:bg-neutral-50/50 transition-colors h-14">
                     <td className="w-[3px] p-0 bg-neutral-300" />
-                    <td className="px-4 py-2 text-center">
-                      <span className="inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-[2px] bg-neutral-100 text-neutral-500 uppercase">
-                        <RotateCcw className="w-2 h-2" /> ACKED
-                      </span>
-                    </td>
                     <td className="px-4 py-2">
                       <span className="font-mono text-[11px] font-bold text-neutral-400">#{ev.id.toUpperCase()}</span>
                     </td>
@@ -534,6 +529,11 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
                     </td>
                     <td className="px-4 py-2">
                       <p className="text-[11px] font-bold text-neutral-500">{ev.title}</p>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <span className="inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-[2px] bg-neutral-100 text-neutral-500 uppercase">
+                        <RotateCcw className="w-2 h-2" /> ACKED
+                      </span>
                     </td>
                     <td className="px-4 py-2">
                       <span className="text-[10px] text-neutral-400">{ev.location}</span>

@@ -4,7 +4,6 @@ import { ActiveIncidentPanel }     from "./components/monitoring/ActiveIncidentP
 import { ZoneCardsPanel }          from "./components/monitoring/ZoneCardsPanel";
 import { RepeatViolatorsTable }    from "./components/monitoring/RepeatViolatorsTable";
 import { BatchTickerPanel }        from "./components/monitoring/BatchTickerPanel";
-import { StageDefectPanel }        from "./components/monitoring/StageDefectPanel";
 import { DefectDensityChart }      from "./components/monitoring/DefectDensityChart";
 import type { QualityTerminology } from "./data/types";
 
@@ -22,25 +21,23 @@ export const MonitoringView = ({ terminology, timeRange: _timeRange, appId, grou
       {/* ── Row 1: 4 KPI tiles with sparklines ──────────────────────────────── */}
       <PrimaryKPIRow terminology={terminology} />
 
-      {/* ── Row 2: Instant Analytics — live actionable feed (all apps) ──────── */}
-      <InstantAnalyticsPanel terminology={terminology} appId={appId} groups={groups} />
-
       {terminology.isDefectApp ? (
-        <>
-          {/* ── Defect App: Stage breakdown + density ──────────────────────── */}
-          <StageDefectPanel terminology={terminology} appId={appId} />
-          <DefectDensityChart terminology={terminology} />
-          <BatchTickerPanel terminology={terminology} />
-        </>
+        /* ── Defect App: 70/30 layout — feed table + batch sidebar ─────────── */
+        <div className="grid grid-cols-[7fr_3fr] gap-3 items-start">
+          <InstantAnalyticsPanel terminology={terminology} appId={appId} groups={groups} />
+          <div className="flex flex-col gap-3">
+            <BatchTickerPanel terminology={terminology} />
+            <DefectDensityChart terminology={terminology} />
+          </div>
+        </div>
       ) : (
         <>
-          {/* ── Safety App: Active incidents + Repeat offenders ────────────── */}
+          {/* ── Safety App: live feed + active incidents + repeat offenders ──── */}
+          <InstantAnalyticsPanel terminology={terminology} appId={appId} groups={groups} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <ActiveIncidentPanel />
             <RepeatViolatorsTable terminology={terminology} />
           </div>
-
-          {/* ── Zone Overview ─────────────────────────────────────────────── */}
           <ZoneCardsPanel terminology={terminology} />
         </>
       )}
