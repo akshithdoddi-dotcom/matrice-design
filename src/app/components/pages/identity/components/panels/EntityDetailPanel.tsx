@@ -1085,6 +1085,17 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
                     <Star className="w-3 h-3" />Valet Protocol
                   </button>
                 )}
+                {isVehicleUnknown && !registerOpen && !registered && (
+                  <button onClick={() => setRegisterOpen(true)}
+                    className="shrink-0 h-7 px-2.5 rounded border border-[#00775B] text-[#00775B] text-[11px] font-bold hover:bg-[#E5FFF9] transition-colors flex items-center gap-1">
+                    <Car className="w-3 h-3" />Register Vehicle
+                  </button>
+                )}
+                {isVehicleUnknown && registered && (
+                  <span className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                    <CheckCircle2 className="w-3 h-3" />Registered
+                  </span>
+                )}
               </div>
 
               {/* Row 2: vehicle description + owner */}
@@ -1102,33 +1113,8 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
                 <span className="flex items-center gap-1 text-[11px] text-neutral-500">
                   <Camera className="w-3 h-3" />{vehicle.last_detection.camera_label}
                 </span>
-                {vehicle.last_detection.entry_status && (
-                  <>
-                    <span className="text-neutral-300 text-[10px]">·</span>
-                    <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border", entryStatusPill(vehicle.last_detection.entry_status))}>
-                      {vehicle.last_detection.entry_status}
-                    </span>
-                  </>
-                )}
               </div>
 
-              {/* UNREGISTERED actions (below meta) */}
-              {isVehicleUnknown && !registerOpen && !registered && (
-                <div className="flex gap-2 mt-2">
-                  <button className="h-7 px-2.5 rounded bg-amber-500 text-white text-[11px] font-bold hover:bg-amber-600 transition-colors flex items-center gap-1">
-                    <ShieldAlert className="w-3 h-3" />Block Entry
-                  </button>
-                  <button onClick={() => setRegisterOpen(true)}
-                    className="h-7 px-2.5 rounded border border-[#00775B] text-[#00775B] text-[11px] font-bold hover:bg-[#E5FFF9] transition-colors flex items-center gap-1">
-                    <Car className="w-3 h-3" />Register Vehicle
-                  </button>
-                </div>
-              )}
-              {isVehicleUnknown && registered && (
-                <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
-                  <CheckCircle2 className="w-3 h-3" />Registered and authorised
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1170,12 +1156,8 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
         )}
 
         {/* Notify */}
-        {!isVehicleUnknown && (
-          <>
-            <SectionLabel>Notify</SectionLabel>
-            <NotifySection groups={notifyGroups} accentColor={notifyAccent} />
-          </>
-        )}
+        <SectionLabel>Notify</SectionLabel>
+        <NotifySection groups={notifyGroups} accentColor={notifyAccent} />
 
         {/* Permit details (WHITELIST/VIP) */}
         {(isVehicleAuth || isVehicleVip) && vehicle.permit && (
