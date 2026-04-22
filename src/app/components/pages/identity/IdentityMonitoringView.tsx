@@ -75,9 +75,9 @@ const FR_PEOPLE: FeedPerson[] = [
   },
   {
     id: "f5", identType: "FACE", status: "WHITELIST",
-    displayName: "John Smith", subLabel: "Engineering · L3 Access · Authorised",
+    displayName: "John Smith", subLabel: "Engineering · L3 Access",
     camera: "CAM-LB-01", cameraId: "cam_main_lobby", zone: "Main Lobby",
-    time: "14:29:45", confidence: 96.1,
+    time: "14:29:45", confidence: 96.1, severity: "LOW",
     imageSrc: "https://i.pravatar.cc/160?u=john-smith-4821",
     department: "Engineering", employeeId: "EMP-4821",
     enrollDate: "2025-08-14", totalAppearances: 312,
@@ -86,7 +86,7 @@ const FR_PEOPLE: FeedPerson[] = [
     id: "f6", identType: "FACE", status: "WHITELIST",
     displayName: "Sarah Johnson", subLabel: "Human Resources · L2 Access",
     camera: "CAM-RC-01", cameraId: "cam_reception", zone: "Reception",
-    time: "14:27:14", confidence: 95.4,
+    time: "14:27:14", confidence: 95.4, severity: "LOW",
     imageSrc: "https://i.pravatar.cc/160?u=sarah-johnson-2198",
     department: "Human Resources", employeeId: "EMP-2198",
     enrollDate: "2024-03-20", totalAppearances: 187,
@@ -147,7 +147,7 @@ const LPR_PEOPLE: FeedPerson[] = [
 const FR_JOURNEY: Record<string, JourneyStop[]> = {
   f1: [
     { camera: "CAM-PG-01", zone: "Parking Garage",  time: "08:52", dwellText: "4s",   linkedPlate: "KA05MJ4421" },
-    { camera: "CAM-SE-01", zone: "South Entrance",  time: "08:58", dwellText: "42s",  alertNote: "Unknown alert (resolved)" },
+    { camera: "CAM-SE-01", zone: "South Entrance",  time: "08:58", dwellText: "42s",  alertNote: "Entered via side door" },
     { camera: "CAM-NE-01", zone: "North Entrance",  time: "14:11", dwellText: "2s" },
     { camera: "CAM-LB-01", zone: "Main Lobby",      time: "14:31", dwellText: "active", isCurrent: true, alertNote: "BLACKLIST ACTIVE" },
   ],
@@ -1688,12 +1688,12 @@ export const IdentityMonitoringView = ({
               {IDENTITY_ZONES.slice(0, 8).map(zone => {
                 const color = zone.status === "CRITICAL" ? "bg-red-50 border-red-300 text-red-700"
                   : zone.status === "WATCH" ? "bg-amber-50 border-amber-300 text-amber-700"
-                  : zone.status === "AMBER" ? "bg-orange-50 border-orange-200 text-orange-700"
-                  : "bg-emerald-50/30 border-neutral-200 text-neutral-600";
-                const dot = zone.status === "CRITICAL" ? "bg-red-500 animate-pulse"
-                  : zone.status === "WATCH" ? "bg-amber-400"
-                  : zone.status === "AMBER" ? "bg-orange-400"
-                  : "bg-emerald-400";
+                  : zone.status === "ELEVATED" ? "bg-orange-50 border-orange-200 text-orange-700"
+                  : "bg-emerald-50 border-emerald-200 text-emerald-700";
+                const dot = zone.status === "CRITICAL" ? "bg-red-600 animate-pulse"
+                  : zone.status === "WATCH" ? "bg-amber-500"
+                  : zone.status === "ELEVATED" ? "bg-orange-500"
+                  : "bg-emerald-600";
                 return (
                   <button
                     key={zone.zone_id}
@@ -1740,13 +1740,16 @@ export const IdentityMonitoringView = ({
       >
         {selectedZone && (() => {
           const isCritical = selectedZone.status === "CRITICAL";
-          const isWatch = selectedZone.status === "WATCH" || selectedZone.status === "AMBER";
+          const isWatch = selectedZone.status === "WATCH";
+          const isElevated = selectedZone.status === "ELEVATED";
           const statusColor = isCritical ? "text-red-700 bg-red-50 border-red-200"
             : isWatch ? "text-amber-700 bg-amber-50 border-amber-200"
+            : isElevated ? "text-orange-700 bg-orange-50 border-orange-200"
             : "text-emerald-700 bg-emerald-50 border-emerald-200";
-          const dotColor = isCritical ? "bg-red-500 animate-pulse"
-            : isWatch ? "bg-amber-400"
-            : "bg-emerald-400";
+          const dotColor = isCritical ? "bg-red-600 animate-pulse"
+            : isWatch ? "bg-amber-500"
+            : isElevated ? "bg-orange-500"
+            : "bg-emerald-600";
 
           const zonePeople = people.filter(p => p.zone === selectedZone.zone_name);
 

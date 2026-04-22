@@ -206,7 +206,7 @@ export const PANEL_ENTITIES: Record<string, PanelEntity> = {
     enrollment: { enrolled_date: "2025-08-14", enrolled_by: "hr@hq.com", last_seen_before: "2026-04-05 · 17:41 · North Entrance", total_appearances: 312, monthly_appearances: 22 },
     sighting_history: {
       today: [
-        { timestamp: "14:29", camera_label: "Main Lobby",     camera_id: "CAM-LB-01", confidence: 96.1, duration_sec: 8.3,  alerts: ["RESTRICTED_ZONE_ACCESS"], is_current: true,  seed: "js-lb-curr" },
+        { timestamp: "14:29", camera_label: "Main Lobby",     camera_id: "CAM-LB-01", confidence: 96.1, duration_sec: 8.3,  alerts: [], is_current: true,  seed: "js-lb-curr" },
         { timestamp: "14:11", camera_label: "North Entrance", camera_id: "CAM-NE-01", confidence: 95.8, duration_sec: 2.1,  alerts: [],                         seed: "js-ne-am" },
         { timestamp: "08:58", camera_label: "South Entrance", camera_id: "CAM-SE-01", confidence: 93.2, duration_sec: 42.0, alerts: ["TAILGATE_DETECTED"],       seed: "js-se-am" },
         { timestamp: "08:52", camera_label: "Parking Garage", camera_id: "CAM-PG-01", confidence: 91.8, duration_sec: 4.2,  alerts: [], linked_lpr: "KA05MJ4421", seed: "js-pg-am" },
@@ -221,7 +221,7 @@ export const PANEL_ENTITIES: Record<string, PanelEntity> = {
       { seq: 1, camera: "Parking Garage", camera_id: "CAM-PG-01", time: "08:52", confidence: 91.8, duration: 4.2,  direction: "Entering from street level", alerts: [],                        lpr: "KA05MJ4421" },
       { seq: 2, camera: "South Entrance", camera_id: "CAM-SE-01", time: "08:58", confidence: 93.2, duration: 42.0, direction: "Entering building",          alerts: ["TAILGATE DETECTED"] },
       { seq: 3, camera: "North Entrance", camera_id: "CAM-NE-01", time: "14:11", confidence: 95.8, duration: 2.1,  direction: "Moving toward lobby",         alerts: [] },
-      { seq: 4, camera: "Main Lobby",     camera_id: "CAM-LB-01", time: "14:29", confidence: 96.1, duration: 8.3,  direction: "Entering main lobby",         alerts: ["RESTRICTED ZONE ACCESS"] },
+      { seq: 4, camera: "Main Lobby",     camera_id: "CAM-LB-01", time: "14:29", confidence: 96.1, duration: 8.3,  direction: "Entering main lobby",         alerts: [] },
     ],
     journey_transit: ["6 min", "5h 13 min", "18 min"],
     journey_summary: { start_time: "08:52", end_time: "14:29", total_duration_min: 337 },
@@ -289,7 +289,7 @@ export const VEHICLE_PANEL_ENTITIES: Record<string, VehiclePanelEntity> = {
 
   // p2 — UP80MN1123 · UNREGISTERED (UNKNOWN, repeat attempts)
   p2: {
-    id: "p2", plate: "UP80MN1123", vehicleDesc: "Silver Maruti Swift · Unknown Year",
+    id: "p2", plate: "UP80MN1123", vehicleDesc: "Silver Maruti Swift · 2022",
     list_membership: "UNKNOWN",
     last_detection: {
       timestamp: "2026-04-06 · 14:31:06 IST", camera_id: "CAM-GA-01",
@@ -1389,12 +1389,8 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
       )}
 
       {/* Notify */}
-      {!isUnknown && (
-        <>
-          <SectionLabel>Notify</SectionLabel>
-          <NotifySection groups={notifyGroups} accentColor={notifyAccent} />
-        </>
-      )}
+      <SectionLabel>Notify</SectionLabel>
+      <NotifySection groups={notifyGroups} accentColor={notifyAccent} />
 
       {/* Detection Event */}
       <SectionLabel>Detection Event</SectionLabel>

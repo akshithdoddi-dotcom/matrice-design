@@ -68,7 +68,7 @@ export interface IdentityZone {
   denied: number;
   unknown: number;
   blacklist_hits: number;
-  status: "GREEN" | "AMBER" | "WATCH" | "CRITICAL";
+  status: "CLEAR" | "ELEVATED" | "WATCH" | "CRITICAL";
   peak_hour: number;
 }
 

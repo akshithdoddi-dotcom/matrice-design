@@ -100,17 +100,17 @@ export const HOURLY_IDENT_DATA: HourlyIdentPoint[] = [
 // ─── Identity Zones ──────────────────────────────────────────────────────────
 export const IDENTITY_ZONES: IdentityZone[] = [
   { zone_id: "z1", zone_name: "Main Lobby",      identifications: 840, denied: 12, unknown: 28, blacklist_hits: 1, status: "CRITICAL", peak_hour: 8 },
-  { zone_id: "z2", zone_name: "North Entrance",  identifications: 420, denied: 5,  unknown: 14, blacklist_hits: 0, status: "GREEN",    peak_hour: 8 },
+  { zone_id: "z2", zone_name: "North Entrance",  identifications: 420, denied: 5,  unknown: 14, blacklist_hits: 0, status: "CLEAR",    peak_hour: 8 },
   { zone_id: "z3", zone_name: "South Entrance",  identifications: 310, denied: 8,  unknown: 22, blacklist_hits: 0, status: "WATCH",    peak_hour: 17 },
-  { zone_id: "z4", zone_name: "Executive Lift",  identifications: 85,  denied: 2,  unknown: 4,  blacklist_hits: 0, status: "GREEN",    peak_hour: 9 },
-  { zone_id: "z5", zone_name: "Garage Entry A",  identifications: 290, denied: 4,  unknown: 8,  blacklist_hits: 0, status: "GREEN",    peak_hour: 8 },
-  { zone_id: "z6", zone_name: "Garage Entry B",  identifications: 180, denied: 3,  unknown: 15, blacklist_hits: 0, status: "AMBER",    peak_hour: 8 },
-  { zone_id: "z7", zone_name: "Side Gate",       identifications: 210, denied: 6,  unknown: 11, blacklist_hits: 0, status: "AMBER",    peak_hour: 7 },
-  { zone_id: "z8", zone_name: "Service Ramp",    identifications: 95,  denied: 2,  unknown: 5,  blacklist_hits: 0, status: "GREEN",    peak_hour: 10 },
-  { zone_id: "z9", zone_name: "Rooftop Access",  identifications: 40,  denied: 1,  unknown: 3,  blacklist_hits: 0, status: "GREEN",    peak_hour: 12 },
-  { zone_id: "z10", zone_name: "Basement Store", identifications: 60,  denied: 2,  unknown: 6,  blacklist_hits: 0, status: "AMBER",    peak_hour: 14 },
-  { zone_id: "z11", zone_name: "Server Room",    identifications: 28,  denied: 1,  unknown: 2,  blacklist_hits: 0, status: "GREEN",    peak_hour: 10 },
-  { zone_id: "z12", zone_name: "Reception",      identifications: 380, denied: 7,  unknown: 16, blacklist_hits: 0, status: "GREEN",    peak_hour: 9 },
+  { zone_id: "z4", zone_name: "Executive Lift",  identifications: 85,  denied: 2,  unknown: 4,  blacklist_hits: 0, status: "CLEAR",    peak_hour: 9 },
+  { zone_id: "z5", zone_name: "Garage Entry A",  identifications: 290, denied: 4,  unknown: 8,  blacklist_hits: 0, status: "CLEAR",    peak_hour: 8 },
+  { zone_id: "z6", zone_name: "Garage Entry B",  identifications: 180, denied: 3,  unknown: 15, blacklist_hits: 0, status: "ELEVATED", peak_hour: 8 },
+  { zone_id: "z7", zone_name: "Side Gate",       identifications: 210, denied: 6,  unknown: 11, blacklist_hits: 0, status: "ELEVATED", peak_hour: 7 },
+  { zone_id: "z8", zone_name: "Service Ramp",    identifications: 95,  denied: 2,  unknown: 5,  blacklist_hits: 0, status: "CLEAR",    peak_hour: 10 },
+  { zone_id: "z9", zone_name: "Rooftop Access",  identifications: 40,  denied: 1,  unknown: 3,  blacklist_hits: 0, status: "CLEAR",    peak_hour: 12 },
+  { zone_id: "z10", zone_name: "Basement Store", identifications: 60,  denied: 2,  unknown: 6,  blacklist_hits: 0, status: "ELEVATED", peak_hour: 14 },
+  { zone_id: "z11", zone_name: "Server Room",    identifications: 28,  denied: 1,  unknown: 2,  blacklist_hits: 0, status: "CLEAR",    peak_hour: 10 },
+  { zone_id: "z12", zone_name: "Reception",      identifications: 380, denied: 7,  unknown: 16, blacklist_hits: 0, status: "CLEAR",    peak_hour: 9 },
 ];
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────
