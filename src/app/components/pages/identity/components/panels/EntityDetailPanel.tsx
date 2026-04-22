@@ -3,9 +3,10 @@ import { createPortal } from "react-dom";
 import { SlidePanel } from "./SlidePanel";
 import { cn } from "@/app/lib/utils";
 import {
-  ShieldAlert, Star, User, Camera, Clock, Car,
-  CheckCircle2, Download, AlertTriangle,
-  UserPlus, Eye, Mail, Shield, X,
+  ShieldAlert, Star, User, Camera, Car,
+  CheckCircle2, AlertTriangle,
+  UserPlus, Eye, Mail, X,
+  Navigation, ChevronDown,
 } from "lucide-react";
 
 // ─── Face entity types ────────────────────────────────────────────────────────
@@ -1002,6 +1003,49 @@ function VehicleSightingRows({ sightings, membership, showAll, onShowAll, label 
   );
 }
 
+// ─── Frames Carousel Modal ────────────────────────────────────────────────────
+function FramesCarouselModal({ images, title, onClose }: { images: string[]; title: string; onClose: () => void }) {
+  const [maximized, setMaximized] = useState<string | null>(null);
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#0F172A] rounded-xl shadow-2xl border border-slate-700 w-[580px] max-w-[95vw]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700">
+          <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">Detection Frames — {title}</p>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-700 transition-colors">
+            <X className="w-4 h-4 text-slate-400" />
+          </button>
+        </div>
+        {maximized ? (
+          <div className="relative">
+            <img src={maximized} alt="" className="w-full max-h-[70vh] object-contain rounded-b-xl" />
+            <button onClick={() => setMaximized(null)}
+              className="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded flex items-center justify-center hover:bg-black/80 transition-colors">
+              <X className="w-4 h-4 text-white" />
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 p-4">
+            {images.map((url, i) => (
+              <button key={i} onClick={() => setMaximized(url)} className="relative aspect-square overflow-hidden rounded group">
+                <img src={url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="absolute bottom-1 left-1 text-[9px] font-mono text-white bg-black/60 px-1.5 py-0.5 rounded">
+                  Frame {i + 1}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 interface Props {
   isOpen: boolean;
@@ -1027,6 +1071,9 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
   const [enrolled, setEnrolled]                     = useState(false);
   const [registerOpen, setRegisterOpen]             = useState(false);
   const [registered, setRegistered]                 = useState(false);
+  const [actionsOpen, setActionsOpen]               = useState(false);
+  const [framesOpen, setFramesOpen]                 = useState(false);
+  const [vehicleFramesOpen, setVehicleFramesOpen]   = useState(false);
 
   useEffect(() => {
     setShowOlderToday(false);
@@ -1036,6 +1083,9 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
     setEnrolled(false);
     setRegisterOpen(false);
     setRegistered(false);
+    setActionsOpen(false);
+    setFramesOpen(false);
+    setVehicleFramesOpen(false);
   }, [personId, mode]);
 
   // ── Vehicle mode ────────────────────────────────────────────────────────────
@@ -1049,8 +1099,47 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
     const notifyAccent = isVehicleBolo ? "#E7000B" : isVehicleVip ? "#7c3aed" : "#00775B";
     const notifyGroups = groups ?? DEFAULT_NOTIFY_GROUPS;
 
+    // ── Vehicle sticky footer ──────────────────────────────────────────────────
+    const StickyVehicleActions = () => {
+      const [selected, setSelected] = useState<string[]>([]);
+      const [dropOpen, setDropOpen] = useState(false);
+      const [sent, setSent]         = useState(false);
+      const toggle = (g: string) => setSelected(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+      const send   = () => { if (!selected.length) return; setSent(true); setTimeout(() => { setSent(false); setSelected([]); }, 3000); };
+      const accentBg = isVehicleBolo ? "bg-red-600 hover:bg-red-700" : isVehicleVip ? "bg-purple-600 hover:bg-purple-700" : "bg-[#00775B] hover:bg-[#006349]";
+      return (
+        <div className="px-4 py-3 bg-white flex items-center gap-2">
+          <button className={cn("shrink-0 h-9 px-3 rounded text-[12px] font-bold text-white flex items-center gap-1.5 transition-colors", accentBg)}>
+            <Mail className="w-3.5 h-3.5" />Notify
+          </button>
+          <div className="relative flex-1">
+            <button onClick={() => setDropOpen(v => !v)} className="w-full h-9 flex items-center justify-between px-3 rounded border border-neutral-200 text-[12px] text-neutral-600 hover:border-neutral-300 bg-white transition-colors">
+              <span className="truncate">{selected.length === 0 ? "Notify recipients…" : selected.length === 1 ? selected[0] : `${selected.length} recipients selected`}</span>
+              <ChevronDown className={cn("w-3.5 h-3.5 text-neutral-400 shrink-0 transition-transform", dropOpen && "rotate-180")} />
+            </button>
+            {dropOpen && (
+              <div className="absolute bottom-full mb-1 left-0 right-0 bg-white border border-neutral-200 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                {notifyGroups.map(g => (
+                  <label key={g} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-neutral-50 border-b border-neutral-50 last:border-0">
+                    <input type="checkbox" checked={selected.includes(g)} onChange={() => toggle(g)} className="w-3.5 h-3.5 cursor-pointer shrink-0" style={{ accentColor: notifyAccent }} />
+                    <span className="text-[12px] text-neutral-700 font-medium">{g}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <button onClick={send} disabled={!selected.length || sent}
+            className={cn("shrink-0 h-9 px-3 rounded text-[12px] font-bold flex items-center gap-1.5 transition-colors",
+              selected.length && !sent ? "bg-[#00775B] text-white hover:bg-[#006349]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed")}>
+            {sent ? <><CheckCircle2 className="w-3.5 h-3.5" />Sent</> : <><Mail className="w-3.5 h-3.5" />Send</>}
+          </button>
+        </div>
+      );
+    };
+
     return (
-      <SlidePanel isOpen={isOpen} onClose={onClose} title="Vehicle Detail" subtitle={vehicle.plate}>
+      <SlidePanel isOpen={isOpen} onClose={onClose} title={vehicle.plate} subtitle={vehicle.vehicleDesc}
+        footer={!isVehicleAuth ? <StickyVehicleActions /> : undefined}>
         {/* Banner */}
         {isVehicleBolo && (
           <div className="bg-red-600 px-6 py-2.5 flex items-center gap-2 shrink-0">
@@ -1061,6 +1150,19 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
 
         {/* Hero */}
         <div className="px-5 py-4 border-b border-neutral-100">
+          {/* Current Location pill */}
+          <div className="flex items-center gap-1.5 mb-3">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Current Location</span>
+            <span className={cn(
+              "inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full",
+              isVehicleBolo ? "bg-red-50 text-red-700 border border-red-200" :
+              isVehicleVip  ? "bg-purple-50 text-purple-700 border border-purple-200" :
+              "bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20"
+            )}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+              {vehicle.last_detection.camera_label}
+            </span>
+          </div>
           <div className="flex items-center gap-3">
             {/* Plate icon */}
             <div className={cn("w-12 h-12 rounded shrink-0 border-2 flex flex-col items-center justify-center gap-0.5",
@@ -1070,27 +1172,11 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              {/* Row 1: plate · [spacer] · badge · CTA */}
+              {/* Row 1: plate · [spacer] · badge */}
               <div className="flex items-center gap-2">
                 <h3 className="text-[13px] font-black text-neutral-900 font-mono tracking-wider leading-tight shrink-0">{vehicle.plate}</h3>
                 <div className="flex-1" />
                 <MembershipBadge membership={vehicle.list_membership} isVehicle />
-                {isVehicleBolo && (
-                  <button className="shrink-0 h-7 px-2.5 rounded bg-red-600 text-white text-[11px] font-bold hover:bg-red-700 transition-colors flex items-center gap-1">
-                    <Shield className="w-3 h-3" />Alert Police
-                  </button>
-                )}
-                {isVehicleVip && (
-                  <button className="shrink-0 h-7 px-2.5 rounded bg-purple-600 text-white text-[11px] font-bold hover:bg-purple-700 transition-colors flex items-center gap-1">
-                    <Star className="w-3 h-3" />Valet Protocol
-                  </button>
-                )}
-                {isVehicleUnknown && !registerOpen && !registered && (
-                  <button onClick={() => setRegisterOpen(true)}
-                    className="shrink-0 h-7 px-2.5 rounded border border-[#00775B] text-[#00775B] text-[11px] font-bold hover:bg-[#E5FFF9] transition-colors flex items-center gap-1">
-                    <Car className="w-3 h-3" />Register Vehicle
-                  </button>
-                )}
                 {isVehicleUnknown && registered && (
                   <span className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
                     <CheckCircle2 className="w-3 h-3" />Registered
@@ -1102,6 +1188,12 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
               <p className="text-[11px] text-neutral-500 mt-0.5 truncate">
                 {vehicle.vehicleDesc}{vehicle.owner ? ` · ${vehicle.owner.name}` : ""}
               </p>
+              {isVehicleUnknown && !registerOpen && !registered && (
+                <button onClick={() => setRegisterOpen(true)}
+                  className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#00775B] hover:underline">
+                  <Car className="w-3 h-3" />Register Vehicle
+                </button>
+              )}
 
               {/* Row 3: meta (confidence · camera · entry status) */}
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -1154,10 +1246,6 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
             </div>
           </>
         )}
-
-        {/* Notify */}
-        <SectionLabel>Notify</SectionLabel>
-        <NotifySection groups={notifyGroups} accentColor={notifyAccent} />
 
         {/* Permit details (WHITELIST/VIP) */}
         {(isVehicleAuth || isVehicleVip) && vehicle.permit && (
@@ -1214,11 +1302,23 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
             </div>
           ))}
           <div className="col-span-2 flex gap-2 pt-1">
-            <button className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-neutral-200 text-[11px] text-neutral-600 hover:border-neutral-300 transition-colors">
-              <Eye className="w-3 h-3" />View Footage
+            <button
+              onClick={() => setVehicleFramesOpen(true)}
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-[#00775B]/50 text-[#00775B] text-[11px] font-semibold hover:bg-[#E5FFF9] transition-colors"
+            >
+              <Eye className="w-3 h-3" />View Frames
             </button>
           </div>
         </div>
+
+        {/* Vehicle frames carousel */}
+        {vehicleFramesOpen && (
+          <FramesCarouselModal
+            images={Array.from({ length: 6 }, (_, i) => `https://i.pravatar.cc/400?u=${vehicle.id}-veh-frame-${i}`)}
+            title={vehicle.plate}
+            onClose={() => setVehicleFramesOpen(false)}
+          />
+        )}
 
         {/* Vehicle journey */}
         {vehicle.journey.length > 0 && (
@@ -1228,16 +1328,6 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
           </>
         )}
 
-        {/* Vehicle sightings */}
-        {vehicle.sighting_history.today.length > 0 && (
-          <VehicleSightingRows
-            sightings={vehicle.sighting_history.today}
-            membership={vehicle.list_membership}
-            showAll={showOlderToday}
-            onShowAll={() => setShowOlderToday(true)}
-            label="Detection Log — Today"
-          />
-        )}
         {vehicle.sighting_history.yesterday.length > 0 && (
           <div className="pb-6">
             <VehicleSightingRows
@@ -1258,6 +1348,7 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
   const entity = PANEL_ENTITIES[resolvedId] ?? PANEL_ENTITIES.f5;
 
   const isMatched   = entity.match_status === "MATCHED";
+  const isWhitelist = entity.list_membership === "WHITELIST";
   const isUnknown   = entity.list_membership === "UNKNOWN";
   const isBlacklist = entity.list_membership === "BLACKLIST";
   const isVIP       = entity.list_membership === "VIP";
@@ -1266,89 +1357,190 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
   const notifyGroups = groups ?? DEFAULT_NOTIFY_GROUPS;
   const displayConfidence = isMatched ? entity.last_detection.match_confidence : entity.last_detection.detection_confidence;
 
-  return (
-    <SlidePanel isOpen={isOpen} onClose={onClose} title="Entity Detail" subtitle={entity.display_name}>
+  // ── Sticky footer: notify dropdown + send ──────────────────────────────────
+  const StickyActions = () => {
+    const [selected, setSelected] = useState<string[]>([]);
+    const [dropOpen, setDropOpen] = useState(false);
+    const [sent, setSent]         = useState(false);
 
-      {/* Critical banner */}
-      {isBlacklist && (
-        <div className="bg-red-600 px-6 py-2.5 flex items-center gap-2 shrink-0">
-          <AlertTriangle className="w-4 h-4 text-white animate-pulse shrink-0" />
-          <p className="text-xs font-bold text-white uppercase tracking-wider">Critical — Blacklist Match Active</p>
+    const toggle = (g: string) => setSelected(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+    const send   = () => { if (!selected.length) return; setSent(true); setTimeout(() => { setSent(false); setSelected([]); }, 3000); };
+
+    const accentBg  = isBlacklist ? "bg-red-600 hover:bg-red-700" : isVIP ? "bg-purple-600 hover:bg-purple-700" : "bg-[#00775B] hover:bg-[#006349]";
+
+    return (
+      <div className="px-4 py-3 bg-white flex items-center gap-2">
+        {/* Primary: Notify */}
+        <button
+          className={cn("shrink-0 h-9 px-3 rounded text-[12px] font-bold text-white flex items-center gap-1.5 transition-colors", accentBg)}
+        >
+          <Mail className="w-3.5 h-3.5" />
+          Notify
+        </button>
+
+        {/* Notify dropdown — flex-1 */}
+        <div className="relative flex-1">
+          <button
+            onClick={() => setDropOpen(v => !v)}
+            className="w-full h-9 flex items-center justify-between px-3 rounded border border-neutral-200 text-[12px] text-neutral-600 hover:border-neutral-300 bg-white transition-colors"
+          >
+            <span className="truncate">
+              {selected.length === 0 ? "Notify recipients…" : selected.length === 1 ? selected[0] : `${selected.length} recipients selected`}
+            </span>
+            <ChevronDown className={cn("w-3.5 h-3.5 text-neutral-400 shrink-0 transition-transform", dropOpen && "rotate-180")} />
+          </button>
+          {dropOpen && (
+            <div className="absolute bottom-full mb-1 left-0 right-0 bg-white border border-neutral-200 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+              {notifyGroups.map(g => (
+                <label key={g} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-neutral-50 border-b border-neutral-50 last:border-0">
+                  <input type="checkbox" checked={selected.includes(g)} onChange={() => toggle(g)}
+                    className="w-3.5 h-3.5 cursor-pointer shrink-0" style={{ accentColor: notifyAccent }} />
+                  <span className="text-[12px] text-neutral-700 font-medium">{g}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Hero */}
-      <div className="px-5 py-4 border-b border-neutral-100">
-        <div className="flex items-center gap-3">
-          {/* Avatar */}
-          <div className={cn("w-14 h-14 rounded shrink-0 border-2 overflow-hidden",
-            AVATAR_BORDER[entity.list_membership] ?? AVATAR_BORDER.UNKNOWN)}>
-            {entity.photo_url && !avatarFailed ? (
-              <img src={entity.photo_url} alt={entity.display_name}
+        {/* Send button */}
+        <button
+          onClick={send}
+          disabled={!selected.length || sent}
+          className={cn(
+            "shrink-0 h-9 px-3 rounded text-[12px] font-bold flex items-center gap-1.5 transition-colors",
+            selected.length && !sent ? "bg-[#00775B] text-white hover:bg-[#006349]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+          )}
+        >
+          {sent ? <><CheckCircle2 className="w-3.5 h-3.5" />Sent</> : <><Mail className="w-3.5 h-3.5" />Send</>}
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <SlidePanel
+      isOpen={isOpen}
+      onClose={onClose}
+      title={entity.display_name}
+      subtitle={`${entity.last_detection.camera_label} · ${entity.last_detection.camera_id}`}
+      footer={!isWhitelist ? <StickyActions /> : undefined}
+    >
+
+      {/* ── Hero section ─────────────────────────────────────────────────────── */}
+      <div className="px-5 py-5 border-b border-neutral-100">
+        {/* Current Location pill */}
+        <div className="flex items-center gap-1.5 mb-3">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Current Location</span>
+          <span className={cn(
+            "inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full",
+            isBlacklist ? "bg-red-50 text-red-700 border border-red-200" :
+            isVIP ? "bg-purple-50 text-purple-700 border border-purple-200" :
+            "bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20"
+          )}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+            {entity.last_detection.camera_label}
+          </span>
+        </div>
+
+        <div className="flex gap-4">
+          {/* Face image */}
+          <div className="relative w-40 h-40 rounded shrink-0 overflow-hidden bg-neutral-100">
+            {(entity.photo_url && !avatarFailed) ? (
+              <img
+                src={entity.photo_url}
+                alt={entity.display_name}
                 className="w-full h-full object-cover"
-                onError={() => setAvatarFailed(true)} />
+                onError={() => setAvatarFailed(true)}
+              />
             ) : (
-              <div className={cn("w-full h-full flex items-center justify-center text-lg font-black",
+              <div className={cn("w-full h-full flex items-center justify-center text-4xl font-black",
                 AVATAR_TEXT[entity.list_membership] ?? AVATAR_TEXT.UNKNOWN)}>
                 {entity.initials}
               </div>
             )}
+            {/* Bottom: FACE confidence overlay */}
+            <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60">
+              <span className="text-[10px] font-bold text-emerald-400 font-mono">
+                FACE {displayConfidence}%
+              </span>
+            </div>
+            {/* Top-right: LIVE badge */}
+            {entity.sighting_history.today.some(s => s.is_current) && (
+              <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-red-600/90 rounded px-1.5 py-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                <span className="text-[9px] font-black text-white tracking-wide">LIVE</span>
+              </div>
+            )}
           </div>
 
-          {/* Identity info */}
-          <div className="flex-1 min-w-0">
-            {/* Row 1: name · [spacer] · badge · CTA */}
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-bold text-neutral-900 truncate">{entity.display_name}</span>
-              <div className="flex-1" />
-              <MembershipBadge membership={entity.list_membership} />
-              {isBlacklist && (
-                <button className="shrink-0 h-7 px-2.5 rounded bg-red-600 text-white text-[11px] font-bold hover:bg-red-700 transition-colors flex items-center gap-1">
-                  <Shield className="w-3 h-3" />Alert Security
-                </button>
-              )}
-              {isVIP && (
-                <button className="shrink-0 h-7 px-2.5 rounded bg-purple-600 text-white text-[11px] font-bold hover:bg-purple-700 transition-colors flex items-center gap-1">
-                  <Star className="w-3 h-3" />Confirm Escort
-                </button>
-              )}
-              {isUnknown && !enrollOpen && !enrolled && (
-                <button onClick={() => setEnrollOpen(true)}
-                  className="shrink-0 h-7 px-2.5 rounded border border-[#00775B] text-[#00775B] text-[11px] font-bold hover:bg-[#E5FFF9] transition-colors flex items-center gap-1">
-                  <UserPlus className="w-3 h-3" />Enroll Person
-                </button>
-              )}
-              {isUnknown && enrolled && (
-                <span className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                  <CheckCircle2 className="w-3 h-3" />Enrolled
+          {/* Right column */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              {/* Row 1: Name + badge */}
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="text-xl font-black text-neutral-900 leading-tight">
+                  {entity.display_name}
+                </h2>
+                <MembershipBadge membership={entity.list_membership} />
+              </div>
+
+              {/* Row 2: status + timestamp */}
+              <div className="flex items-center gap-2 mt-1">
+                {isBlacklist && (
+                  <span className="flex items-center gap-1 text-[12px] font-bold text-red-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                    ACTIVE THREAT
+                  </span>
+                )}
+                {isVIP && (
+                  <span className="flex items-center gap-1 text-[12px] font-bold text-purple-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                    VIP PROTOCOL
+                  </span>
+                )}
+                {!isBlacklist && !isVIP && entity.metadata && (
+                  <span className="text-[12px] text-neutral-500 font-medium">
+                    {entity.metadata.department} · {entity.metadata.access_level}
+                  </span>
+                )}
+                {isUnknown && !isBlacklist && !isVIP && (
+                  <span className="text-[12px] text-neutral-400 italic">Identity not established</span>
+                )}
+                <span className="font-mono text-[11px] text-neutral-400">
+                  {entity.last_detection.timestamp.split(" · ")[1]?.split(" ")[0] ?? ""}
                 </span>
-              )}
+              </div>
             </div>
 
-            {/* Row 2: subtitle */}
-            {entity.metadata && (
-              <p className="text-[11px] text-neutral-500 mt-0.5 truncate">
-                {entity.metadata.department} · {entity.metadata.access_level}
-              </p>
-            )}
-            {isVIP && entity.vip_info && (
-              <p className="text-[11px] text-purple-700 font-medium mt-0.5">{entity.vip_info.title}</p>
-            )}
+            {/* Divider */}
+            <div className="border-t border-neutral-100 my-3" />
 
-            {/* Row 3: meta — confidence · camera · time */}
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="flex items-center gap-1 text-[11px] text-neutral-500">
-                <ConfidenceDot value={displayConfidence} />
-                <span className="font-semibold text-neutral-700">{displayConfidence}%</span>
-              </span>
-              <span className="text-neutral-300 text-[10px]">·</span>
-              <span className="flex items-center gap-1 text-[11px] text-neutral-500">
-                <Camera className="w-3 h-3" />{entity.last_detection.camera_label}
-              </span>
-              <span className="text-neutral-300 text-[10px]">·</span>
-              <span className="flex items-center gap-1 text-[11px] text-neutral-500">
-                <Clock className="w-3 h-3" />{entity.last_detection.timestamp.split(" · ")[1] ?? entity.last_detection.timestamp}
-              </span>
+            {/* 3-col meta grid */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-1">Zone</p>
+                <p className="font-bold text-sm text-neutral-900 truncate">
+                  {entity.last_detection.camera_label}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-1">Camera</p>
+                <p className="font-bold text-sm text-neutral-900 font-mono truncate">
+                  {entity.last_detection.camera_id}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-1">
+                  {isUnknown ? "Detection Score" : "Face Similarity"}
+                </p>
+                <p className={cn("font-bold text-sm",
+                  displayConfidence >= 90 ? "text-emerald-600" :
+                  displayConfidence >= 75 ? "text-amber-500" :
+                  "text-red-600"
+                )}>
+                  {displayConfidence}%
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1388,9 +1580,103 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
         </>
       )}
 
-      {/* Notify */}
-      <SectionLabel>Notify</SectionLabel>
-      <NotifySection groups={notifyGroups} accentColor={notifyAccent} />
+      {/* ── Movement Path Tracking ───────────────────────────────────────────── */}
+      {entity.journey.length > 0 && (() => {
+        const { journey, journey_transit, journey_summary } = entity;
+        return (
+          <div className="border-b border-neutral-100">
+            {/* Section header */}
+            <div className="px-6 py-3 bg-neutral-50 border-b border-neutral-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Navigation className="w-3 h-3 text-neutral-400" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400">Movement Path Tracking</p>
+              </div>
+              <span className="text-[10px] text-neutral-400 font-mono">
+                {journey_summary.start_time} → {journey_summary.end_time} · {journey.length} checkpoints
+              </span>
+            </div>
+
+            {/* Vertical journey entries */}
+            <div className="divide-y divide-neutral-100">
+              {journey.map((stop, i) => {
+                const isLastStop = i === journey.length - 1;
+                const hasAlertStr = stop.alerts.join(" ").toUpperCase();
+                const isAlerted = hasAlertStr.includes("BLACKLIST") || hasAlertStr.includes("UNAUTHORISED") || hasAlertStr.includes("BOLO");
+                const rowBg = isLastStop
+                  ? (isBlacklist ? "bg-red-50/60" : isVIP ? "bg-purple-50/40" : "bg-[#E5FFF9]/50")
+                  : "bg-white";
+                const dotColor = isAlerted ? "bg-red-500" : isLastStop ? (isBlacklist ? "bg-red-500" : "bg-[#00775B]") : "bg-neutral-300";
+
+                return (
+                  <div key={stop.seq}>
+                    <div className={cn("flex gap-3 px-5 py-3.5", rowBg)}>
+                      {/* Left: dot + connector */}
+                      <div className="flex flex-col items-center shrink-0 pt-1">
+                        <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", dotColor,
+                          isLastStop && isBlacklist && "ring-2 ring-red-300")} />
+                        {!isLastStop && <div className="w-px flex-1 bg-neutral-200 mt-1" style={{ minHeight: 28 }} />}
+                      </div>
+
+                      {/* Thumbnail */}
+                      <div className="w-12 h-12 rounded-[3px] overflow-hidden bg-neutral-100 shrink-0">
+                        <img
+                          src={entity.photo_url ?? `https://i.pravatar.cc/96?u=${entity.id}-stop-${i}`}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        {/* Top row: location + time */}
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-bold text-[13px] text-neutral-900 truncate">{stop.camera}</p>
+                          <span className="font-mono text-[11px] text-neutral-500 shrink-0">{stop.time}</span>
+                        </div>
+                        {/* Sub-row: camera ID + dwell */}
+                        <p className="text-[10px] text-neutral-400 font-mono mt-0.5">{stop.camera_id}</p>
+                        {/* Direction / context line */}
+                        <p className="text-[11px] text-neutral-500 mt-1 leading-snug">{stop.direction}</p>
+                        {/* Transit to next */}
+                        {i < journey.length - 1 && journey_transit[i] && (
+                          <p className="text-[10px] text-neutral-300 font-mono mt-0.5">↓ {journey_transit[i]} to next</p>
+                        )}
+                        {/* Tags row */}
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          <span className="text-[9px] text-neutral-400 font-mono bg-neutral-100 px-1.5 py-0.5 rounded">
+                            {stop.duration}s in frame
+                          </span>
+                          {stop.alerts.map(alert => (
+                            <span key={alert} className={cn(
+                              "text-[9px] font-bold px-1.5 py-0.5 rounded-full border",
+                              alertBadgeStyle(alert)
+                            )}>
+                              {alert}
+                            </span>
+                          ))}
+                          {stop.lpr && (
+                            <span className="text-[9px] bg-blue-50 text-blue-600 border border-blue-200 rounded px-1.5 py-0.5 font-semibold font-mono">
+                              Linked: {stop.lpr}
+                            </span>
+                          )}
+                          {isLastStop && (
+                            <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border",
+                              isBlacklist ? "bg-red-50 text-red-700 border-red-200" : "bg-[#E5FFF9] text-[#00775B] border-[#00775B]/20"
+                            )}>
+                              {isBlacklist ? "ACTIVE NOW" : "CURRENT"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Detection Event */}
       <SectionLabel>Detection Event</SectionLabel>
@@ -1411,83 +1697,55 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
           </div>
         ))}
         <div className="col-span-2 flex gap-2 pt-1">
-          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-neutral-200 text-[11px] text-neutral-600 hover:border-neutral-300 transition-colors">
-            <Download className="w-3 h-3" />HD Crop
-          </button>
-          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-neutral-200 text-[11px] text-neutral-600 hover:border-neutral-300 transition-colors">
-            <Eye className="w-3 h-3" />Full Frame
+          <button
+            onClick={() => setFramesOpen(true)}
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-[#00775B]/50 text-[#00775B] text-[11px] font-semibold hover:bg-[#E5FFF9] transition-colors"
+          >
+            <Eye className="w-3 h-3" />View Frames
           </button>
         </div>
       </div>
 
-      {/* Recognition Result */}
-      <SectionLabel>
-        {isMatched
-          ? `Recognition Result — ${isBlacklist ? "Blacklist Match" : isVIP ? "VIP Identified" : "Matched"}`
-          : "Recognition Result — No Match"}
-      </SectionLabel>
-      <div className={cn("mx-6 my-4 rounded border p-4",
-        isBlacklist ? "bg-[#FFE5E7] border-[#E7000B]/20" :
-        isVIP ? "bg-purple-50 border-purple-200" :
-        isUnknown ? "bg-neutral-50 border-neutral-200" :
-        "bg-[#E5FFF9] border-[#00775B]/20"
-      )}>
-        {isMatched ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Name",             value: entity.display_name },
-              { label: "Employee ID",      value: entity.metadata?.employee_id ?? "—", mono: true },
-              { label: "Department",       value: entity.metadata?.department ?? entity.vip_info?.title ?? "—" },
-              { label: "Access Level",     value: entity.metadata?.access_level ?? "—" },
-              { label: "Match Score",      value: `${entity.last_detection.match_confidence}%`, mono: true },
-              { label: "Enrolled",         value: entity.enrollment?.enrolled_date ?? "—" },
-              { label: "Last Seen Before", value: entity.enrollment?.last_seen_before ?? "—" },
-              { label: "Appearances (MTD)", value: String(entity.enrollment?.monthly_appearances ?? "—"), mono: true },
-            ].map(item => (
-              <div key={item.label}>
-                <p className="text-[10px] text-neutral-400 uppercase tracking-wide">{item.label}</p>
-                <p className={cn("text-xs text-neutral-800 font-semibold mt-0.5", item.mono && "font-data tabular-nums")}>{item.value}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-neutral-700">Status</span>
-              <span className="text-xs font-bold text-neutral-500">Not enrolled — below threshold</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-neutral-500">Best attempt score</span>
-              <span className="font-data tabular-nums text-xs font-bold text-red-600">
-                {entity.recognition_attempt?.best_match_score}%
-                <span className="text-neutral-400 font-normal"> / threshold {entity.recognition_attempt?.threshold}%</span>
-              </span>
-            </div>
-            {entity.appearance_summary && (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-neutral-500">Total appearances</span>
-                  <span className="font-data tabular-nums text-xs font-bold text-neutral-700">{entity.appearance_summary.total_appearances}</span>
+      {/* Frames Carousel */}
+      {framesOpen && (() => {
+        const frameImages = entity.photo_url
+          ? [entity.photo_url, entity.photo_url, entity.photo_url, entity.photo_url, entity.photo_url, entity.photo_url]
+              .map((url, i) => i === 0 ? url : `https://i.pravatar.cc/400?u=${entity.id}-frame-${i}`)
+          : Array.from({ length: 6 }, (_, i) => `https://i.pravatar.cc/400?u=${entity.id}-frame-${i}`);
+        return <FramesCarouselModal images={frameImages} title={entity.display_name} onClose={() => setFramesOpen(false)} />;
+      })()}
+
+      {/* Recognition Result — matched entities only */}
+      {isMatched && (
+        <>
+          <SectionLabel>
+            {`Recognition Result — ${isBlacklist ? "Blacklist Match" : isVIP ? "VIP Identified" : "Matched"}`}
+          </SectionLabel>
+          <div className={cn("mx-6 my-4 rounded border p-4",
+            isBlacklist ? "bg-[#FFE5E7] border-[#E7000B]/20" :
+            isVIP ? "bg-purple-50 border-purple-200" :
+            "bg-[#E5FFF9] border-[#00775B]/20"
+          )}>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Name",              value: entity.display_name },
+                { label: "Employee ID",       value: entity.metadata?.employee_id ?? "—", mono: true },
+                { label: "Department",        value: entity.metadata?.department ?? entity.vip_info?.title ?? "—" },
+                { label: "Access Level",      value: entity.metadata?.access_level ?? "—" },
+                { label: "Match Score",       value: `${entity.last_detection.match_confidence}%`, mono: true },
+                { label: "Enrolled",          value: entity.enrollment?.enrolled_date ?? "—" },
+                { label: "Last Seen Before",  value: entity.enrollment?.last_seen_before ?? "—" },
+                { label: "Appearances (MTD)", value: String(entity.enrollment?.monthly_appearances ?? "—"), mono: true },
+              ].map(item => (
+                <div key={item.label}>
+                  <p className="text-[10px] text-neutral-400 uppercase tracking-wide">{item.label}</p>
+                  <p className={cn("text-xs text-neutral-800 font-semibold mt-0.5", item.mono && "font-data tabular-nums")}>{item.value}</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-neutral-500">Typical time window</span>
-                  <span className="text-xs text-neutral-700">{entity.appearance_summary.typical_time_window}</span>
-                </div>
-              </>
-            )}
-            <div className="pt-1 border-t border-neutral-200">
-              <p className="text-[10px] text-neutral-500 font-semibold mb-1.5">Possible reasons for no match:</p>
-              <ul className="space-y-0.5">
-                {entity.recognition_attempt?.possible_reasons.map((r, i) => (
-                  <li key={i} className="text-[11px] text-neutral-500 flex items-start gap-1.5">
-                    <span className="text-neutral-300 mt-0.5">•</span>{r}
-                  </li>
-                ))}
-              </ul>
+              ))}
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Appearance Pattern (UNKNOWN) */}
       {isUnknown && entity.appearance_summary && (
@@ -1519,24 +1777,6 @@ export const EntityDetailPanel = ({ isOpen, onClose, entityType = "matched", per
         </>
       )}
 
-      {/* Movement Path */}
-      {entity.journey.length > 0 && (
-        <>
-          <SectionLabel>Movement Path Tracking</SectionLabel>
-          <JourneyTimeline entity={entity} />
-        </>
-      )}
-
-      {/* Sighting history */}
-      {entity.sighting_history.today.length > 0 && (
-        <SightingRows
-          sightings={entity.sighting_history.today}
-          membership={entity.list_membership}
-          showAll={showOlderToday}
-          onShowAll={() => setShowOlderToday(true)}
-          label="Sighting History — Today"
-        />
-      )}
       {entity.sighting_history.yesterday.length > 0 && (
         <div className="pb-6">
           <SightingRows
