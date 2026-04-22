@@ -355,11 +355,13 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
   const [states, setStates]               = useState<Record<string, EvtState>>({});
   const [ticked, setTicked]               = useState(0);
   const [selectedEvent, setSelectedEvent] = useState<InstantEvent | null>(null);
+  const [sevFilter, setSevFilter]         = useState<Severity | "ALL">("ALL");
 
   // Reset state when app changes
   useEffect(() => {
     setStates({});
     setSelectedEvent(null);
+    setSevFilter("ALL");
   }, [appId]);
 
   useEffect(() => {
@@ -373,28 +375,59 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
   const liveRows  = events.filter(e => (states[e.id] ?? "LIVE") === "LIVE");
   const ackedRows = events.filter(e => states[e.id] === "ACKNOWLEDGED");
   const resolvedN = events.filter(e => states[e.id] === "RESOLVED").length;
-  const critN        = liveRows.filter(e => e.severity === "CRITICAL").length;
+  const critN     = liveRows.filter(e => e.severity === "CRITICAL").length;
+
+  // Severity counts (live only)
+  const sevCounts: Record<Severity, number> = {
+    CRITICAL: liveRows.filter(e => e.severity === "CRITICAL").length,
+    HIGH:     liveRows.filter(e => e.severity === "HIGH").length,
+    MEDIUM:   liveRows.filter(e => e.severity === "MEDIUM").length,
+    INFO:     liveRows.filter(e => e.severity === "INFO").length,
+  };
+
+  const filteredLive = sevFilter === "ALL"
+    ? liveRows
+    : liveRows.filter(e => e.severity === sevFilter);
+
+  const TAB_CFG: { key: Severity | "ALL"; label: string }[] = [
+    { key: "ALL",      label: `All (${liveRows.length})`         },
+    { key: "CRITICAL", label: `Critical (${sevCounts.CRITICAL})` },
+    { key: "HIGH",     label: `High (${sevCounts.HIGH})`         },
+    { key: "MEDIUM",   label: `Medium (${sevCounts.MEDIUM})`     },
+    { key: "INFO",     label: `Info (${sevCounts.INFO})`         },
+  ];
 
   return (
     <>
       <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-neutral-100">
+        <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-neutral-100">
           <Bell className="w-3.5 h-3.5 text-[#00775B]" />
           <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Live Feed</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#00775B] animate-pulse" />
-          <span className="text-[9px] font-bold uppercase tracking-wider text-[#00775B]">Live</span>
-
-          <div className="ml-auto flex items-center gap-1.5">
-            {critN > 0 && (
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-[2px] bg-red-600 text-white animate-pulse">
-                {critN} CRITICAL
-              </span>
-            )}
-            <span className="text-[9px] text-neutral-400">
-              {liveRows.length} active · {ackedRows.length} acked · {resolvedN} resolved
+          <span className="text-[10px] text-neutral-400">{liveRows.length} events</span>
+          {critN > 0 && (
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-[2px] bg-red-600 text-white animate-pulse">
+              {critN} CRITICAL
             </span>
+          )}
+
+          {/* Severity filter tabs */}
+          <div className="ml-auto flex items-center gap-1">
+            {TAB_CFG.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setSevFilter(tab.key)}
+                className={cn(
+                  "text-[10px] font-bold px-2.5 py-1 rounded-[3px] transition-colors",
+                  sevFilter === tab.key
+                    ? "bg-[#00775B] text-white"
+                    : "text-neutral-500 hover:bg-neutral-100"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -417,16 +450,18 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
 
             {/* Live rows */}
             <tbody className="divide-y divide-neutral-100">
-              {liveRows.length === 0 ? (
+              {filteredLive.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-12 text-center">
                     <div className="flex flex-col items-center gap-1.5 text-neutral-400">
                       <CheckCircle2 className="w-7 h-7 text-emerald-400" />
-                      <span className="text-[11px] font-semibold">All clear — no active events</span>
+                      <span className="text-[11px] font-semibold">
+                        {liveRows.length === 0 ? "All clear — no active events" : "No events match this filter"}
+                      </span>
                     </div>
                   </td>
                 </tr>
-              ) : liveRows.map((ev, idx) => (
+              ) : filteredLive.map((ev, idx) => (
                 <tr
                   key={ev.id}
                   onClick={() => setSelectedEvent(ev)}

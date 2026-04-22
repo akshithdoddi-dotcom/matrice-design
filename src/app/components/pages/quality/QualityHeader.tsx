@@ -194,34 +194,21 @@ export const QualityHeader = ({
   return (
     <>
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 bg-white border border-neutral-200 rounded-md px-4 py-3 shadow-sm">
-      {/* Left: Title */}
+      {/* Left: App Selector */}
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-[#E5FFF9] text-[#00775B] rounded-sm">
+        <div className="p-2 bg-[#E5FFF9] text-[#00775B] rounded-sm shrink-0">
           <ShieldCheck className="w-5 h-5" />
         </div>
-        <div>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-800">
-            Quality Analytics
-          </h2>
-          <p className="text-[10px] uppercase tracking-wider mt-0.5 text-[#00775B]">
-            {terminology.appLabel}
-          </p>
-        </div>
-      </div>
-
-      {/* Right: Controls */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* App Selector */}
         <div className="relative" ref={appRef}>
           <button
             onClick={() => setIsAppOpen(!isAppOpen)}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-sm border text-xs font-bold transition-all bg-white text-neutral-600 hover:border-neutral-300",
+              "flex items-center gap-2 px-3 py-2 rounded-sm border text-sm font-bold transition-all bg-white text-neutral-800 hover:border-neutral-300",
               isAppOpen ? "border-[#00775B]" : "border-neutral-200"
             )}
           >
             <span>{terminology.appLabel}</span>
-            <ChevronDown className={cn("w-3 h-3 transition-transform", isAppOpen && "rotate-180")} />
+            <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isAppOpen && "rotate-180")} />
           </button>
           {isAppOpen && (
             <div className="absolute top-full left-0 mt-1 w-56 rounded-sm border border-neutral-200 bg-white shadow-lg z-50 overflow-hidden max-h-[360px] overflow-y-auto">
@@ -243,7 +230,10 @@ export const QualityHeader = ({
             </div>
           )}
         </div>
+      </div>
 
+      {/* Right: Controls */}
+      <div className="flex flex-wrap items-center gap-2">
         {/* Time Range Pills */}
         <div className="flex items-center rounded-sm border border-neutral-200 bg-white p-0.5 shadow-sm">
           {ranges.map((r) => (
