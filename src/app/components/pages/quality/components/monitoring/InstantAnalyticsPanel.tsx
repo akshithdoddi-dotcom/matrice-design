@@ -461,7 +461,6 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
                   {/* Event details */}
                   <td className="px-4 py-3 min-w-0">
                     <p className="text-[12px] font-bold text-neutral-900 leading-snug">{ev.title}</p>
-                    <p className="text-[10px] text-neutral-400 mt-0.5 leading-snug">{ev.detail}</p>
                   </td>
 
                   {/* Severity badge */}
