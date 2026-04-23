@@ -402,6 +402,17 @@
   animation: heartbeat 2s ease-in-out infinite;
 }
 
+/* No-animate capture mode: zero durations, force opacity-0 states visible */
+.no-animate *,
+.no-animate *::before,
+.no-animate *::after {
+  animation-duration: 0ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0ms !important;
+  transition-delay: 0ms !important;
+  opacity: 1 !important;
+}
+
 /* Flash Animation for Action Confirmation */
 @keyframes flash {
   0%, 100% {

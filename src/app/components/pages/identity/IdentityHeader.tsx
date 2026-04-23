@@ -7,6 +7,7 @@ import {
   Rows3,
   Plus,
   Settings,
+  ScanLine,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
@@ -16,6 +17,7 @@ import {
   type IdentityTerminology,
   type IdentityType,
 } from "../IdentityAnalytics";
+import { FilterDropdown } from "../../ui/FilterDropdown";
 
 const TIME_RANGES: Record<Persona, string[]> = {
   monitoring: ["15m", "1h", "6h", "24h"],
@@ -50,12 +52,20 @@ export const IdentityHeader = ({
   onManage,
   onSettings,
 }: IdentityHeaderProps) => {
+<<<<<<< HEAD
   const [isAppOpen, setIsAppOpen] = useState(false);
+=======
+  const [isExportOpen, setIsExportOpen] = useState(false);
+>>>>>>> 1f0fc519 (your changes)
   const [isRefreshOpen, setIsRefreshOpen] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState("15s");
   const [secondsAgo, setSecondsAgo] = useState(12);
 
+<<<<<<< HEAD
   const appRef = useRef<HTMLDivElement>(null);
+=======
+  const exportRef = useRef<HTMLDivElement>(null);
+>>>>>>> 1f0fc519 (your changes)
   const refreshRef = useRef<HTMLDivElement>(null);
 
   const activeApps = useMemo(
@@ -75,7 +85,11 @@ export const IdentityHeader = ({
   useEffect(() => {
     const handler = (event: MouseEvent) => {
       const target = event.target as Node;
+<<<<<<< HEAD
       if (appRef.current && !appRef.current.contains(target)) setIsAppOpen(false);
+=======
+      if (exportRef.current && !exportRef.current.contains(target)) setIsExportOpen(false);
+>>>>>>> 1f0fc519 (your changes)
       if (refreshRef.current && !refreshRef.current.contains(target)) setIsRefreshOpen(false);
     };
 
@@ -112,6 +126,7 @@ export const IdentityHeader = ({
           </button>
         </div>
 
+<<<<<<< HEAD
         <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
           <div className="relative" ref={appRef}>
             <button
@@ -157,6 +172,21 @@ export const IdentityHeader = ({
               </div>
             )}
           </div>
+=======
+        <div className="flex flex-wrap items-center gap-2">
+          {/* App selector using shared FilterDropdown */}
+          <FilterDropdown
+            label="App"
+            options={activeApps.map((opt) => ({
+              value: opt.id,
+              label: opt.label,
+              sublabel: opt.siteLabel,
+            }))}
+            value={activeApp.id}
+            onValueChange={onAppChange}
+            className="w-[260px]"
+          />
+>>>>>>> 1f0fc519 (your changes)
 
           {persona === "monitoring" && (
             <div className="relative" ref={refreshRef}>

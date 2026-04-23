@@ -4,7 +4,6 @@ import { Sidebar, Page } from "@/app/components/layout/Sidebar";
 import { IncidentCard } from "@/app/components/dashboard/IncidentCard";
 import { IncidentDetailModal } from "@/app/components/dashboard/IncidentDetailModal";
 import { Button } from "@/app/components/ui/Button";
-import { GridBackground } from "@/app/components/layout/GridBackground";
 import { Bell, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Clock, Filter, LayoutGrid, List, Check, User, Video, MapPin, X, ChevronDown, Info, Trash2, Copy, ImageIcon, Activity, ExternalLink, Search, ShieldCheck, Hexagon, Zap, Shield, PanelLeft, Command } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { Checkbox } from "@/app/components/ui/Checkbox";
@@ -202,8 +201,16 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
 
 export default function App() {
   const [activePersona, setActivePersona] = useState<Persona>("monitoring");
-  const [activePage, setActivePage] = useState<Page>("dashboard");
+  const [activePage, setActivePage] = useState<Page>(
+    window.location.pathname === "/safety-analytics" ? "safety" : "dashboard"
+  );
   
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("no-animate") === "1") {
+      document.documentElement.classList.add("no-animate");
+    }
+  }, []);
+
   useEffect(() => {
     if (activePersona === "monitoring") {
       setViewMode("grid");
@@ -369,11 +376,11 @@ export default function App() {
 
   // ── Live clock ──────────────────────────────────────────────────────────────
   const [clockTime, setClockTime] = useState(() =>
-    new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   );
   useEffect(() => {
     const id = setInterval(() => {
-      setClockTime(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      setClockTime(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
     }, 1000);
     return () => clearInterval(id);
   }, []);
@@ -395,10 +402,10 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] font-sans text-neutral-900 relative overflow-hidden">
+    <div className="flex h-auto bg-[#F8FAFC] font-sans text-neutral-900 relative overflow-visible">
       <Sidebar activePage={activePage} onPageChange={setActivePage} collapsed={sidebarCollapsed} noTransition={!sidebarMounted.current} />
 
-      <div className={cn("flex-1 relative z-10 w-full min-w-0 h-full overflow-y-auto overflow-x-hidden", sidebarMounted.current && "transition-all duration-300", sidebarCollapsed ? "lg:pl-14" : "lg:pl-56", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
+      <div className={cn("flex-1 relative z-10 w-full min-w-0 h-full overflow-y-visible overflow-x-hidden", sidebarMounted.current && "transition-all duration-300", sidebarCollapsed ? "lg:pl-14" : "lg:pl-56", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
         <header className={cn("sticky top-0 z-30 flex h-12 items-center justify-between bg-[#0d1f1b] px-4 border-b border-white/8 text-white transition-all duration-300", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
           {/* ── Left: toggle + page title ── */}
           <div className="flex items-center gap-3">
@@ -532,7 +539,6 @@ export default function App() {
         </header>
 
         <div className="p-6 space-y-6 relative w-full overflow-x-hidden rounded-tl-lg">
-          <GridBackground className="fixed inset-0 z-[-1] pointer-events-none" />
           
           <section className="w-full">
             {activePage === "volume" && <VolumeAnalytics persona={activePersona} />}

@@ -1,9 +1,16 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Persona } from "../dashboard/PersonaSwitcher";
 import { AlertTriangle, Clock, Timer, TrendingDown, CheckCircle2, Video, ChevronDown, ChevronRight, Flame, Hand, Shield, AlertCircle, Play, Search, X, ChevronLeft } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from "recharts";
-import { AnalyticsHeader } from "./AnalyticsHeader";
+import { StatusBar } from "../ui/StatusBar";
+import { FilterDropdown } from "../ui/FilterDropdown";
+
+const INCIDENT_TIME_RANGES: Record<Persona, string[]> = {
+  monitoring: ["1H", "6H", "12H", "24H"],
+  manager:    ["Today", "This Week"],
+  director:   ["This Month", "This Quarter"],
+};
 
 // Mock data for incident analytics
 const PERFORMANCE_METRICS = {
@@ -771,10 +778,10 @@ const getAcknowledgeGapStatus = (gapSeconds: number | null) => {
 export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
   const [selectedZone, setSelectedZone] = useState<string>("all");
-  const [selectedApplication, setSelectedApplication] = useState<string>("all");
+  const [selectedApps, setSelectedApps] = useState<string[]>([]);
   const [selectedHour, setSelectedHour] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [timeRange, setTimeRange] = useState<string>("24H");
+  const [timeRange, setTimeRange] = useState<string>(INCIDENT_TIME_RANGES[persona][INCIDENT_TIME_RANGES[persona].length - 1]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortBy, setSortBy] = useState<string>("severity-latency");
   const [sideModalIncident, setSideModalIncident] = useState<IncidentTimeline | null>(null);
@@ -798,7 +805,7 @@ export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
   const filteredIncidents = INCIDENT_TIMELINES.filter(incident => {
     const matchesSeverity = selectedSeverity === "all" || incident.severity === selectedSeverity;
     const matchesZone = selectedZone === "all" || incident.zone === selectedZone;
-    const matchesApplication = selectedApplication === "all" || incident.application === selectedApplication;
+    const matchesApplication = selectedApps.length === 0 || selectedApps.includes(incident.application);
     const matchesHour = selectedHour === null || incident.startHour === selectedHour;
     const matchesSearch = searchQuery === "" ||
       incident.incidentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -843,21 +850,78 @@ export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
     setSelectedHour(selectedHour === hour ? null : hour);
   };
 
+  // Time-range label for StatusBar info chip
+  const getTimeRangeInfo = () => {
+    const now = new Date();
+    const fmt = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    if (timeRange === "1H") return `Since ${fmt(new Date(now.getTime() - 60 * 60 * 1000))} today`;
+    if (timeRange === "6H") return `Since ${fmt(new Date(now.getTime() - 6 * 60 * 60 * 1000))} today`;
+    if (timeRange === "12H") return `Since ${fmt(new Date(now.getTime() - 12 * 60 * 60 * 1000))} today`;
+    if (timeRange === "24H") return "Since 00:00 today";
+    if (timeRange === "Today") return "Since 00:00 today";
+    if (timeRange === "This Week") return "Past 7 days";
+    if (timeRange === "This Month") return "Past 30 days";
+    if (timeRange === "This Quarter") return "Past 90 days";
+    return timeRange;
+  };
+
   // Clear all filters
   const clearFilters = () => {
     setSelectedSeverity("all");
     setSelectedZone("all");
-    setSelectedApplication("all");
     setSelectedHour(null);
     setSearchQuery("");
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = selectedSeverity !== "all" || selectedZone !== "all" || selectedApplication !== "all" || selectedHour !== null || searchQuery !== "";
+  const hasActiveFilters = selectedSeverity !== "all" || selectedZone !== "all" || selectedHour !== null || searchQuery !== "";
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <AnalyticsHeader title="Incident Analytics" icon={AlertTriangle} />
+      {/* ── StatusBar ─────────────────────────────────────────────────────────── */}
+      <StatusBar
+        timeRanges={INCIDENT_TIME_RANGES[persona]}
+        timeRange={timeRange}
+        onTimeRangeChange={(r) => { setTimeRange(r); setCurrentPage(1); }}
+        appOptions={uniqueApplications.filter((a) => a !== "all")}
+        selectedApps={selectedApps}
+        onToggleApp={(app) =>
+          setSelectedApps((prev) =>
+            app === "all"
+              ? []
+              : prev.includes(app) ? prev.filter((a) => a !== app) : [...prev, app]
+          )
+        }
+        timeRangeInfo={getTimeRangeInfo()}
+        leftContent={
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Live indicator */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-neutral-200 bg-neutral-50 text-[11px] font-medium text-neutral-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00775B] animate-pulse" />
+              <span className="uppercase tracking-wide">Live</span>
+            </div>
+            {/* Total incidents */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-neutral-200 bg-neutral-50 text-[11px] font-medium text-neutral-600">
+              <AlertTriangle className="w-3 h-3 text-neutral-400" />
+              <span className="tabular-nums font-bold text-neutral-800">{PERFORMANCE_METRICS.totalIncidents}</span>
+              <span className="uppercase tracking-wide">Incidents</span>
+            </div>
+            {/* Critical count */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-[#FFB3B3] bg-[#FFE5E7] text-[11px] font-medium text-[#E7000B]">
+              <span className="tabular-nums font-bold">
+                {SEVERITY_DONUT_DATA.find((d) => d.name === "Critical")?.value ?? 0}
+              </span>
+              <span className="uppercase tracking-wide">Critical</span>
+            </div>
+            {/* MTTA */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-neutral-200 bg-neutral-50 text-[11px] font-medium text-neutral-600">
+              <Timer className="w-3 h-3 text-neutral-400" />
+              <span className="tabular-nums font-bold text-neutral-800">{PERFORMANCE_METRICS.mtta}s</span>
+              <span className="uppercase tracking-wide">MTTA</span>
+            </div>
+          </div>
+        }
+      />
 
       {/* Monitoring Staff Persona - Tactical Response */}
       {persona === "monitoring" && (
@@ -1353,130 +1417,92 @@ export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
         </>
       )}
 
+      {/* ── TableComponent ───────────────────────────────────────────────────── */}
       {/* Incident Table with Timeline - Shown for Monitoring Staff Only */}
       {persona === "monitoring" && (
       <div className="bg-white rounded-lg border border-neutral-200 shadow-sm overflow-hidden">
         {/* Filter Bar */}
         <div className="p-4 border-b border-neutral-200 space-y-3">
-          <div className="flex items-center justify-between">
+
+          {/* Title row: title left, sort + clear right */}
+          <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-700">
               Incident Deep Dive
             </h3>
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-[#E7000B] hover:bg-[#FFE5E7] rounded transition-colors"
-              >
-                <X className="w-3 h-3" />
-                Clear Filters
-              </button>
-            )}
-          </div>
-
-          {/* Time Range Lookback Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">
-              Lookback Window:
-            </span>
-            <div className="flex items-center gap-1">
-              {["1H", "6H", "12H", "24H", "Custom"].map((range) => (
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
                 <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-colors",
-                    timeRange === range
-                      ? "bg-[#00775B] text-white"
-                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                  )}
+                  onClick={clearFilters}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#E7000B] hover:bg-[#FFE5E7] rounded transition-colors"
                 >
-                  {range}
+                  <X className="w-3 h-3" />
+                  Clear
                 </button>
-              ))}
+              )}
+              <FilterDropdown
+                label="Sort"
+                placeholder="Sort By"
+                options={[{ value: "severity-latency", label: "Severity → Latency" }]}
+                value={sortBy}
+                onValueChange={setSortBy}
+                className="w-[180px]"
+              />
             </div>
           </div>
 
-          {/* Search and Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Search + Zone + Severity */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
               <input
                 type="text"
                 placeholder="Search ID, title, zone, notes..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="w-full h-8 pl-9 pr-3 text-[11px] font-medium border border-neutral-200 rounded-[4px] bg-white text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
               />
             </div>
 
             {/* Zone Filter */}
-            <select
+            <FilterDropdown
+              label="Zone"
+              options={uniqueZones}
               value={selectedZone}
-              onChange={(e) => setSelectedZone(e.target.value)}
-              className="px-3 py-2 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
-            >
-              {uniqueZones.map(zone => (
-                <option key={zone} value={zone}>
-                  {zone === "all" ? "All Zones" : zone}
-                </option>
-              ))}
-            </select>
-
-            {/* Application Filter */}
-            <select
-              value={selectedApplication}
-              onChange={(e) => setSelectedApplication(e.target.value)}
-              className="px-3 py-2 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
-            >
-              {uniqueApplications.map(app => (
-                <option key={app} value={app}>
-                  {app === "all" ? "All Applications" : app}
-                </option>
-              ))}
-            </select>
+              onValueChange={(v) => { setSelectedZone(v); setCurrentPage(1); }}
+            />
 
             {/* Severity Filter */}
-            <select
+            <FilterDropdown
+              label="Severity"
+              options={["all", "critical", "high", "medium", "low"]}
               value={selectedSeverity}
-              onChange={(e) => setSelectedSeverity(e.target.value)}
-              className="px-3 py-2 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
-            >
-              <option value="all">All Severity</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+              onValueChange={(v) => { setSelectedSeverity(v); setCurrentPage(1); }}
+            />
           </div>
 
           {/* Active Filter Chips */}
           {hasActiveFilters && (
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <span className="text-neutral-500 font-medium">Active Filters:</span>
+              <span className="text-neutral-500 font-medium">Active:</span>
               {selectedSeverity !== "all" && (
-                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
-                  Severity: {selectedSeverity}
+                <span className="px-2 py-0.5 bg-neutral-100 text-neutral-700 rounded font-medium capitalize">
+                  {selectedSeverity}
                 </span>
               )}
               {selectedZone !== "all" && (
-                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
-                  Zone: {selectedZone}
-                </span>
-              )}
-              {selectedApplication !== "all" && (
-                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
-                  App: {selectedApplication}
+                <span className="px-2 py-0.5 bg-neutral-100 text-neutral-700 rounded font-medium">
+                  {selectedZone}
                 </span>
               )}
               {selectedHour && (
-                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
-                  Hour: {selectedHour}
+                <span className="px-2 py-0.5 bg-neutral-100 text-neutral-700 rounded font-medium">
+                  {selectedHour}
                 </span>
               )}
               {searchQuery && (
-                <span className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded font-medium">
-                  Search: "{searchQuery}"
+                <span className="px-2 py-0.5 bg-neutral-100 text-neutral-700 rounded font-medium">
+                  "{searchQuery}"
                 </span>
               )}
             </div>
@@ -1485,21 +1511,6 @@ export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
 
         {/* Incident List */}
         <div className="divide-y divide-neutral-200">
-          {/* Pagination Header */}
-          <div className="px-4 py-3 bg-neutral-50 border-b border-neutral-200 flex items-center justify-between">
-            <div className="text-xs text-neutral-600">
-              Showing <span className="font-bold text-neutral-900 tabular-nums">{startIndex + 1}-{Math.min(endIndex, sortedIncidents.length)}</span> of <span className="font-bold text-neutral-900 tabular-nums">{sortedIncidents.length}</span> incidents
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-1.5 text-xs font-medium border border-neutral-200 rounded bg-white text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#00775B]/20"
-              >
-                <option value="severity-latency">Sort: Severity → Latency</option>
-              </select>
-            </div>
-          </div>
 
           {sortedIncidents.length === 0 ? (
             <div className="px-4 py-12 text-center">
@@ -1609,24 +1620,23 @@ export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
 
             {/* Pagination Footer */}
             {totalPages > 1 && (
-              <div className="px-4 py-4 bg-neutral-50 border-t border-neutral-200 flex items-center justify-between">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className={cn(
-                    "px-4 py-2 text-xs font-bold uppercase tracking-wider rounded transition-colors",
-                    currentPage === 1
-                      ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
-                      : "bg-[#00775B] text-white hover:bg-[#009e78]"
-                  )}
-                >
-                  Previous
-                </button>
-
-                <div className="flex items-center gap-2">
+              <div className="px-4 py-2.5 bg-neutral-50 border-t border-neutral-200 flex items-center justify-between">
+                {/* Compact Previous / pages / Next */}
+                <div className="flex items-center rounded-[4px] border border-neutral-200 bg-white overflow-hidden shadow-sm divide-x divide-neutral-200">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className={cn(
+                      "px-3 py-1.5 text-[11px] font-medium transition-colors",
+                      currentPage === 1
+                        ? "text-neutral-300 cursor-not-allowed"
+                        : "text-neutral-600 hover:bg-neutral-50"
+                    )}
+                  >
+                    Previous
+                  </button>
                   {Array.from({ length: totalPages }).map((_, idx) => {
                     const page = idx + 1;
-                    // Show first page, last page, current page, and pages around current
                     if (
                       page === 1 ||
                       page === totalPages ||
@@ -1637,10 +1647,10 @@ export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
                           key={page}
                           onClick={() => setCurrentPage(page)}
                           className={cn(
-                            "w-8 h-8 text-xs font-bold rounded transition-colors",
+                            "px-3 py-1.5 text-[11px] font-medium transition-colors min-w-[32px]",
                             currentPage === page
-                              ? "bg-[#00775B] text-white"
-                              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                              ? "bg-[#00775B] text-white font-bold"
+                              : "text-neutral-600 hover:bg-neutral-50"
                           )}
                         >
                           {page}
@@ -1648,27 +1658,35 @@ export const IncidentAnalytics = ({ persona }: { persona: Persona }) => {
                       );
                     } else if (page === currentPage - 2 || page === currentPage + 2) {
                       return (
-                        <span key={`ellipsis-${page}`} className="text-neutral-400">
-                          ...
+                        <span key={`ellipsis-${page}`} className="px-2 py-1.5 text-[11px] text-neutral-400 select-none">
+                          …
                         </span>
                       );
                     }
                     return null;
                   }).filter(Boolean)}
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className={cn(
+                      "px-3 py-1.5 text-[11px] font-medium transition-colors",
+                      currentPage === totalPages
+                        ? "text-neutral-300 cursor-not-allowed"
+                        : "text-neutral-600 hover:bg-neutral-50"
+                    )}
+                  >
+                    Next
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className={cn(
-                    "px-4 py-2 text-xs font-bold uppercase tracking-wider rounded transition-colors",
-                    currentPage === totalPages
-                      ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
-                      : "bg-[#00775B] text-white hover:bg-[#009e78]"
-                  )}
-                >
-                  Next
-                </button>
+                {/* Showing X-Y of Z */}
+                <span className="text-[11px] text-neutral-500 tabular-nums">
+                  Showing{" "}
+                  <span className="font-semibold text-neutral-700">{startIndex + 1}–{Math.min(endIndex, sortedIncidents.length)}</span>
+                  {" "}of{" "}
+                  <span className="font-semibold text-neutral-700">{sortedIncidents.length}</span>
+                  {" "}incidents
+                </span>
               </div>
             )}
         </div>
