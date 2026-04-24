@@ -3,11 +3,11 @@ import {
   Check,
   ChevronDown,
   Clock3,
-  RefreshCw,
-  Rows3,
+  Download,
   Plus,
-  Settings,
+  RefreshCw,
   ScanLine,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
@@ -52,25 +52,16 @@ export const IdentityHeader = ({
   onManage,
   onSettings,
 }: IdentityHeaderProps) => {
-<<<<<<< HEAD
-  const [isAppOpen, setIsAppOpen] = useState(false);
-=======
   const [isExportOpen, setIsExportOpen] = useState(false);
->>>>>>> 1f0fc519 (your changes)
   const [isRefreshOpen, setIsRefreshOpen] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState("15s");
   const [secondsAgo, setSecondsAgo] = useState(12);
 
-<<<<<<< HEAD
-  const appRef = useRef<HTMLDivElement>(null);
-=======
   const exportRef = useRef<HTMLDivElement>(null);
->>>>>>> 1f0fc519 (your changes)
   const refreshRef = useRef<HTMLDivElement>(null);
 
   const activeApps = useMemo(
-    () =>
-      IDENTITY_APP_OPTIONS.filter((option) => option.identityType === identityType),
+    () => IDENTITY_APP_OPTIONS.filter((option) => option.identityType === identityType),
     [identityType]
   );
 
@@ -85,14 +76,9 @@ export const IdentityHeader = ({
   useEffect(() => {
     const handler = (event: MouseEvent) => {
       const target = event.target as Node;
-<<<<<<< HEAD
-      if (appRef.current && !appRef.current.contains(target)) setIsAppOpen(false);
-=======
       if (exportRef.current && !exportRef.current.contains(target)) setIsExportOpen(false);
->>>>>>> 1f0fc519 (your changes)
       if (refreshRef.current && !refreshRef.current.contains(target)) setIsRefreshOpen(false);
     };
-
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
@@ -100,7 +86,8 @@ export const IdentityHeader = ({
   return (
     <div className="rounded-md border border-neutral-200 bg-white px-4 py-3 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
-        {/* FR / LP tabs — now leading element */}
+
+        {/* FR / LP type tabs — leading element */}
         <div className="rounded-sm border border-neutral-200 bg-neutral-50 p-0.5">
           <button
             onClick={() => onIdentityTypeChange("FACE")}
@@ -126,55 +113,10 @@ export const IdentityHeader = ({
           </button>
         </div>
 
-<<<<<<< HEAD
+        {/* Right-side controls */}
         <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
-          <div className="relative" ref={appRef}>
-            <button
-              onClick={() => setIsAppOpen((current) => !current)}
-              className={cn(
-                "flex max-w-[260px] items-center gap-2 rounded-sm border px-3 py-1.5 text-xs font-bold text-neutral-600 transition-all hover:border-neutral-300",
-                isAppOpen ? "border-[#00775B]" : "border-neutral-200"
-              )}
-            >
-              <Rows3 className="h-3.5 w-3.5 shrink-0 text-[#00775B]" />
-              <span className="truncate">{activeApp.label}</span>
-              <ChevronDown
-                className={cn(
-                  "h-3 w-3 shrink-0 transition-transform",
-                  isAppOpen && "rotate-180"
-                )}
-              />
-            </button>
 
-            {isAppOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-sm border border-neutral-200 bg-white shadow-lg">
-                {activeApps.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => {
-                      onAppChange(option.id);
-                      setIsAppOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center justify-between px-3 py-2 text-left text-xs font-medium text-neutral-600 hover:bg-neutral-50",
-                      activeApp.id === option.id && "text-[#00775B]"
-                    )}
-                  >
-                    <div>
-                      <div>{option.label}</div>
-                      <div className="text-[10px] uppercase tracking-wide text-neutral-400">
-                        {option.siteLabel}
-                      </div>
-                    </div>
-                    {activeApp.id === option.id && <Check className="h-3.5 w-3.5" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-=======
-        <div className="flex flex-wrap items-center gap-2">
-          {/* App selector using shared FilterDropdown */}
+          {/* App selector — shared FilterDropdown */}
           <FilterDropdown
             label="App"
             options={activeApps.map((opt) => ({
@@ -186,8 +128,8 @@ export const IdentityHeader = ({
             onValueChange={onAppChange}
             className="w-[260px]"
           />
->>>>>>> 1f0fc519 (your changes)
 
+          {/* Refresh interval (monitoring only) */}
           {persona === "monitoring" && (
             <div className="relative" ref={refreshRef}>
               <button
@@ -200,10 +142,7 @@ export const IdentityHeader = ({
                 <RefreshCw className="h-3.5 w-3.5 text-[#00775B]" />
                 <span>{refreshInterval}</span>
                 <ChevronDown
-                  className={cn(
-                    "h-3 w-3 transition-transform",
-                    isRefreshOpen && "rotate-180"
-                  )}
+                  className={cn("h-3 w-3 transition-transform", isRefreshOpen && "rotate-180")}
                 />
               </button>
 
@@ -212,10 +151,7 @@ export const IdentityHeader = ({
                   {REFRESH_INTERVALS.map((option) => (
                     <button
                       key={option}
-                      onClick={() => {
-                        setRefreshInterval(option);
-                        setIsRefreshOpen(false);
-                      }}
+                      onClick={() => { setRefreshInterval(option); setIsRefreshOpen(false); }}
                       className={cn(
                         "flex w-full items-center justify-between px-3 py-2 text-left text-xs font-medium text-neutral-600 hover:bg-neutral-50",
                         refreshInterval === option && "text-[#00775B]"
@@ -230,6 +166,53 @@ export const IdentityHeader = ({
             </div>
           )}
 
+          {/* Time range pills */}
+          <div className="flex items-center rounded-sm border border-neutral-200 bg-white p-0.5 shadow-sm">
+            {TIME_RANGES[persona].map((range) => (
+              <button
+                key={range}
+                onClick={() => onTimeRangeChange(range)}
+                className={cn(
+                  "rounded-sm px-3 py-1 text-[10px] font-bold uppercase tracking-wide transition-all",
+                  timeRange === range
+                    ? "bg-[#00775B] text-white shadow-sm"
+                    : "text-neutral-500 hover:bg-neutral-50"
+                )}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+
+          {/* Export dropdown */}
+          <div className="relative" ref={exportRef}>
+            <button
+              onClick={() => setIsExportOpen((current) => !current)}
+              className="flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 transition-all hover:border-neutral-300"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Export</span>
+              <ChevronDown
+                className={cn("h-3 w-3 transition-transform", isExportOpen && "rotate-180")}
+              />
+            </button>
+
+            {isExportOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-sm border border-neutral-200 bg-white shadow-lg">
+                {["CSV", "PDF", "Image"].map((format) => (
+                  <button
+                    key={format}
+                    onClick={() => setIsExportOpen(false)}
+                    className="w-full px-3 py-2 text-left text-xs font-medium text-neutral-600 hover:bg-neutral-50"
+                  >
+                    Export {format}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Data freshness / aggregate chip */}
           <div className="flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[10px] font-mono text-neutral-500">
             {persona === "monitoring" ? (
               <>
@@ -246,7 +229,7 @@ export const IdentityHeader = ({
             )}
           </div>
 
-          {/* Settings icon button */}
+          {/* Settings */}
           <button
             onClick={onSettings}
             title="Settings"
@@ -255,7 +238,7 @@ export const IdentityHeader = ({
             <Settings className="h-3.5 w-3.5" />
           </button>
 
-          {/* Manage People / Vehicle button */}
+          {/* Manage People / Vehicles */}
           <button
             onClick={onManage}
             className="flex items-center gap-1.5 rounded-sm border border-[#00775B]/30 bg-[#E5FFF9] px-3 py-1.5 text-[10px] font-bold text-[#00775B] hover:bg-[#00775B]/10 transition-colors"
@@ -268,4 +251,3 @@ export const IdentityHeader = ({
     </div>
   );
 };
-

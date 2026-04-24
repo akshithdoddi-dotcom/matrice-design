@@ -23,6 +23,7 @@ import { LicensePlates } from "@/app/components/pages/LicensePlates";
 import { Cameras } from "@/app/components/pages/Cameras";
 import { MetricsRules } from "@/app/components/pages/MetricsRules";
 import { Compliance } from "@/app/components/pages/Compliance";
+import { DesignSystem } from "@/app/components/pages/DesignSystem";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
 
 // Main App Component
@@ -399,6 +400,7 @@ export default function App() {
     cameras:              "Cameras",
     metrics:              "Metrics & Rules",
     compliance:           "Compliance",
+    "design-system":      "Component Library",
   };
 
   return (
@@ -552,6 +554,7 @@ export default function App() {
             {activePage === "cameras" && <Cameras />}
             {activePage === "metrics" && <MetricsRules />}
             {activePage === "compliance" && <Compliance />}
+            {activePage === "design-system" && <DesignSystem />}
             
             {activePage === "dashboard" && (
               <>
