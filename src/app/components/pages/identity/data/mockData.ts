@@ -24,8 +24,8 @@ export const IDENTITY_LIVE_STATUS: IdentityLiveStatus = {
   unknown_count: 4,
   blacklist_matches: 1,
   vip_matches: 1,
-  cameras_online: 14,
-  cameras_total: 16,
+  cameras_online: 28,
+  cameras_total: 32,
   open_alerts: { critical: 1, high: 1, medium: 2 },
   status: "AMBER",
 };
@@ -111,6 +111,17 @@ export const IDENTITY_ZONES: IdentityZone[] = [
   { zone_id: "z10", zone_name: "Basement Store", identifications: 60,  denied: 2,  unknown: 6,  blacklist_hits: 0, status: "ELEVATED", peak_hour: 14 },
   { zone_id: "z11", zone_name: "Server Room",    identifications: 28,  denied: 1,  unknown: 2,  blacklist_hits: 0, status: "CLEAR",    peak_hour: 10 },
   { zone_id: "z12", zone_name: "Reception",      identifications: 380, denied: 7,  unknown: 16, blacklist_hits: 0, status: "CLEAR",    peak_hour: 9 },
+];
+
+export const LPR_ZONES: IdentityZone[] = [
+  { zone_id: "lz1", zone_name: "Garage Entry A",  identifications: 142, denied: 8,  unknown: 5, blacklist_hits: 1, status: "CRITICAL", peak_hour: 8 },
+  { zone_id: "lz2", zone_name: "Garage Entry B",  identifications: 98,  denied: 3,  unknown: 4, blacklist_hits: 0, status: "CLEAR",    peak_hour: 8 },
+  { zone_id: "lz3", zone_name: "Main Entrance",   identifications: 74,  denied: 1,  unknown: 2, blacklist_hits: 0, status: "CLEAR",    peak_hour: 9 },
+  { zone_id: "lz4", zone_name: "Parking Lot A",   identifications: 88,  denied: 4,  unknown: 6, blacklist_hits: 0, status: "WATCH",    peak_hour: 8 },
+  { zone_id: "lz5", zone_name: "Parking Lot B",   identifications: 61,  denied: 1,  unknown: 2, blacklist_hits: 0, status: "CLEAR",    peak_hour: 9 },
+  { zone_id: "lz6", zone_name: "Loading Bay",     identifications: 34,  denied: 2,  unknown: 3, blacklist_hits: 0, status: "ELEVATED", peak_hour: 10 },
+  { zone_id: "lz7", zone_name: "Staff Car Park",  identifications: 55,  denied: 0,  unknown: 1, blacklist_hits: 0, status: "CLEAR",    peak_hour: 8 },
+  { zone_id: "lz8", zone_name: "Visitor Parking", identifications: 29,  denied: 1,  unknown: 4, blacklist_hits: 0, status: "ELEVATED", peak_hour: 11 },
 ];
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────

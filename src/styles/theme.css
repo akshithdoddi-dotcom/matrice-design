@@ -422,3 +422,73 @@
     background-color: rgba(0, 149, 109, 0.1);
   }
 }
+
+/* ─── Dark Mode — Global overrides for Tailwind utility classes ────────────────
+   Scoped under .dark so only active when the theme is switched.
+   Uses higher specificity (.dark .class) than plain utilities to avoid !important.
+   Intentionally dark components (Monitoring views, HiTechModal) use explicit hex
+   colors or inline styles so they are NOT affected by these overrides.
+   ─────────────────────────────────────────────────────────────────────────────*/
+
+/* ── Surfaces ── */
+.dark .bg-white          { background-color: #1E293B; }
+.dark .bg-neutral-50     { background-color: #0F172A; }
+.dark .bg-neutral-100    { background-color: #1E293B; }
+.dark .bg-neutral-200    { background-color: #334155; }
+
+/* ── Borders ── */
+.dark .border-neutral-100 { border-color: #1E293B; }
+.dark .border-neutral-200 { border-color: #334155; }
+.dark .border-neutral-300 { border-color: #475569; }
+
+/* ── Text ── */
+.dark .text-neutral-900  { color: #F1F5F9; }
+.dark .text-neutral-800  { color: #E2E8F0; }
+.dark .text-neutral-700  { color: #CBD5E1; }
+.dark .text-neutral-600  { color: #94A3B8; }
+.dark .text-neutral-500  { color: #64748B; }
+.dark .text-neutral-400  { color: #475569; }
+
+/* ── Shadows — soften on dark bg ── */
+.dark .shadow-sm         { box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.dark .shadow            { box-shadow: 0 1px 6px rgba(0,0,0,0.6); }
+
+/* ── Hover/interactive states ── */
+.dark .hover\:bg-neutral-50:hover   { background-color: #0F172A; }
+.dark .hover\:bg-neutral-100:hover  { background-color: #1E293B; }
+
+/* ── Tailwind's divide / ring colors ── */
+.dark .divide-neutral-100 > * + *   { border-color: #1E293B; }
+.dark .divide-neutral-200 > * + *   { border-color: #334155; }
+
+/* ── KPI / stat card subtle tinted backgrounds ── */
+.dark .bg-red-50         { background-color: rgba(239,68,68,0.10); }
+.dark .bg-orange-50      { background-color: rgba(249,115,22,0.10); }
+.dark .bg-green-50       { background-color: rgba(34,197,94,0.10); }
+.dark .bg-blue-50        { background-color: rgba(59,130,246,0.10); }
+.dark .bg-amber-50       { background-color: rgba(245,158,11,0.10); }
+.dark .bg-yellow-50      { background-color: rgba(234,179,8,0.10); }
+.dark .bg-emerald-50     { background-color: rgba(16,185,129,0.10); }
+.dark .bg-slate-50       { background-color: #0F172A; }
+
+/* ── Tables — only target neutral/white table rows, not hardcoded dark headers ── */
+.dark tbody tr.bg-white  { background-color: #1E293B; }
+.dark tbody tr:hover:not([class*="bg-["]) { background-color: #1E293B; }
+
+/* ── Inputs / selects ── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark textarea,
+.dark select {
+  background-color: #1E293B;
+  border-color: #334155;
+  color: #F1F5F9;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #475569;
+}
+
+/* ── Sticky table headers that use bg-[#001E18] — intentionally dark, leave as-is ── */
+
+/* ── Global filter dropdown (inside header) already dark bg-white fix ── */
+.dark .bg-neutral-50\/50 { background-color: rgba(15,23,42,0.5); }

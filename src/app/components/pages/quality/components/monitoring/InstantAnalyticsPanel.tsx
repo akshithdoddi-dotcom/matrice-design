@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import type { GroupConfig } from "@/app/components/pages/IdentityAnalytics";
 import {
   Radio, AlertTriangle, CheckCircle2, XCircle,
   RotateCcw, Wrench, UserPlus, Lock, ClipboardList,
@@ -134,14 +135,13 @@ const RESOLVE_LABELS = new Set(["Release Batch", "Mark Resolved", "Reject Batch"
 
 // ── Default groups (shared with Settings) ─────────────────────────────────────
 
-export const DEFAULT_QUALITY_GROUPS = [
-  "Quality Engineer",
-  "Line Supervisor",
-  "Shift Manager",
-  "Maintenance Team",
-  "Safety Officer",
-  "Operations Director",
-  "Dispatch Center",
+export const DEFAULT_QUALITY_GROUPS: GroupConfig[] = [
+  { name: "Quality Engineer",   emails: [] },
+  { name: "Line Supervisor",    emails: [] },
+  { name: "Shift Manager",      emails: [] },
+  { name: "Maintenance Team",   emails: [] },
+  { name: "Operations Director", emails: [] },
+  { name: "Dispatch Center",    emails: [] },
 ];
 
 // ── Event Detail Slide Panel ───────────────────────────────────────────────────
@@ -157,7 +157,7 @@ function EventDetailPanel({
   isOpen: boolean;
   onClose: () => void;
   onResolve: () => void;
-  groups: string[];
+  groups: GroupConfig[];
 }) {
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [notified, setNotified] = useState(false);
@@ -285,21 +285,21 @@ function EventDetailPanel({
             <div className="grid grid-cols-2 divide-x divide-neutral-100">
               {groups.map((g) => (
                 <label
-                  key={g}
+                  key={g.name}
                   className={cn(
                     "flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors text-[11px] font-medium text-neutral-700 hover:bg-neutral-50",
-                    selectedGroups.has(g) && "bg-[#E5FFF9] text-[#00775B]"
+                    selectedGroups.has(g.name) && "bg-[#E5FFF9] text-[#00775B]"
                   )}
                 >
                   <div className={cn(
                     "w-3.5 h-3.5 rounded-[3px] border-2 flex items-center justify-center shrink-0 transition-colors",
-                    selectedGroups.has(g) ? "border-[#00775B] bg-[#00775B]" : "border-neutral-300"
+                    selectedGroups.has(g.name) ? "border-[#00775B] bg-[#00775B]" : "border-neutral-300"
                   )}
-                    onClick={() => toggleGroup(g)}
+                    onClick={() => toggleGroup(g.name)}
                   >
-                    {selectedGroups.has(g) && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
+                    {selectedGroups.has(g.name) && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
                   </div>
-                  <span onClick={() => toggleGroup(g)}>{g}</span>
+                  <span onClick={() => toggleGroup(g.name)}>{g.name}</span>
                 </label>
               ))}
             </div>
@@ -346,7 +346,7 @@ function EventDetailPanel({
 interface Props {
   terminology: QualityTerminology;
   appId: string;
-  groups?: string[];
+  groups?: GroupConfig[];
 }
 
 export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups = DEFAULT_QUALITY_GROUPS }: Props) => {

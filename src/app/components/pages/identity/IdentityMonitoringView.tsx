@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useIsDark } from "@/app/hooks/useIsDark";
 import { cn } from "@/app/lib/utils";
 import {
   ShieldAlert, UserX, Eye, Clock, Radio, Lock, UserPlus,
   Shield, Ban, Navigation2, Fingerprint, ChevronDown,
   CheckCircle2, X, AlertTriangle, Star, Camera,
   Zap, BookmarkPlus, MapPin, Activity, Upload, Mail,
-  Users, Plus, ChevronRight,
+  Users, Plus, ChevronRight, ChevronLeft,
 } from "lucide-react";
 import { IdentityEvidenceMedia } from "./components/shared/IdentityEvidenceMedia";
 import { SlidePanel } from "./components/panels/SlidePanel";
-import { IDENTITY_LIVE_STATUS, IDENTITY_ZONES, UNKNOWN_TRACKERS } from "./data/mockData";
+import { IDENTITY_LIVE_STATUS, IDENTITY_ZONES, LPR_ZONES, UNKNOWN_TRACKERS } from "./data/mockData";
 import type { IdentityTerminology } from "./data/types";
 import type { IdentityAppOption } from "../IdentityAnalytics";
 
@@ -43,53 +44,185 @@ interface JourneyStop {
   linkedPlate?: string;
 }
 
+// ─── Camera node data ─────────────────────────────────────────────────────────
+interface CameraNode {
+  id: string;
+  name: string;
+  zone: string;
+  status: "online" | "degraded" | "offline";
+  fps: number;
+  resolution: string;
+  detections: number;
+  lastSeen: string;
+}
+
+const CAMERA_NODES: CameraNode[] = [
+  { id: "CAM-LB-01", name: "Lobby North Entry",      zone: "Main Lobby",        status: "online",   fps: 30, resolution: "4K",    detections: 312, lastSeen: "14:31:18" },
+  { id: "CAM-LB-02", name: "Lobby South Entry",      zone: "Main Lobby",        status: "online",   fps: 30, resolution: "1080p", detections: 287, lastSeen: "14:31:22" },
+  { id: "CAM-LB-03", name: "Lobby Reception Desk",   zone: "Main Lobby",        status: "online",   fps: 25, resolution: "1080p", detections: 198, lastSeen: "14:31:09" },
+  { id: "CAM-NE-01", name: "North Gate Left",        zone: "North Entrance",    status: "online",   fps: 30, resolution: "4K",    detections: 182, lastSeen: "14:31:15" },
+  { id: "CAM-NE-02", name: "North Gate Right",       zone: "North Entrance",    status: "online",   fps: 30, resolution: "1080p", detections: 164, lastSeen: "14:31:11" },
+  { id: "CAM-SE-01", name: "South Gate A",           zone: "South Entrance",    status: "online",   fps: 30, resolution: "1080p", detections: 143, lastSeen: "14:30:55" },
+  { id: "CAM-SE-02", name: "South Gate B",           zone: "South Entrance",    status: "online",   fps: 25, resolution: "720p",  detections: 121, lastSeen: "14:31:01" },
+  { id: "CAM-SE-03", name: "South Corridor",         zone: "South Entrance",    status: "degraded", fps: 12, resolution: "720p",  detections: 88,  lastSeen: "14:28:44" },
+  { id: "CAM-EL-01", name: "Executive Lift Bay",     zone: "Executive Lift",    status: "online",   fps: 30, resolution: "1080p", detections: 41,  lastSeen: "14:31:03" },
+  { id: "CAM-GA-01", name: "Garage A Inbound",       zone: "Garage Entry A",    status: "online",   fps: 30, resolution: "4K",    detections: 134, lastSeen: "14:31:17" },
+  { id: "CAM-GA-02", name: "Garage A Outbound",      zone: "Garage Entry A",    status: "online",   fps: 30, resolution: "1080p", detections: 128, lastSeen: "14:31:20" },
+  { id: "CAM-GA-03", name: "Garage A Ramp",          zone: "Garage Entry A",    status: "online",   fps: 25, resolution: "1080p", detections: 99,  lastSeen: "14:31:06" },
+  { id: "CAM-GB-01", name: "Garage B Inbound",       zone: "Garage Entry B",    status: "online",   fps: 30, resolution: "1080p", detections: 87,  lastSeen: "14:31:14" },
+  { id: "CAM-GB-02", name: "Garage B Outbound",      zone: "Garage Entry B",    status: "online",   fps: 25, resolution: "1080p", detections: 74,  lastSeen: "14:31:08" },
+  { id: "CAM-SG-01", name: "Side Gate Main",         zone: "Side Gate",         status: "online",   fps: 30, resolution: "4K",    detections: 97,  lastSeen: "14:31:19" },
+  { id: "CAM-SG-02", name: "Side Gate Rear",         zone: "Side Gate",         status: "online",   fps: 25, resolution: "1080p", detections: 82,  lastSeen: "14:31:12" },
+  { id: "CAM-SR-01", name: "Service Ramp Upper",     zone: "Service Ramp",      status: "online",   fps: 30, resolution: "1080p", detections: 44,  lastSeen: "14:31:05" },
+  { id: "CAM-SR-02", name: "Service Ramp Lower",     zone: "Service Ramp",      status: "offline",  fps: 0,  resolution: "1080p", detections: 0,   lastSeen: "13:45:22" },
+  { id: "CAM-RA-01", name: "Rooftop Door",           zone: "Rooftop Access",    status: "online",   fps: 25, resolution: "1080p", detections: 18,  lastSeen: "14:30:58" },
+  { id: "CAM-BS-01", name: "Basement North",         zone: "Basement Store",    status: "online",   fps: 30, resolution: "1080p", detections: 28,  lastSeen: "14:31:00" },
+  { id: "CAM-BS-02", name: "Basement South",         zone: "Basement Store",    status: "degraded", fps: 8,  resolution: "720p",  detections: 12,  lastSeen: "14:22:31" },
+  { id: "CAM-SV-01", name: "Server Room Entry",      zone: "Server Room",       status: "online",   fps: 30, resolution: "4K",    detections: 14,  lastSeen: "14:31:16" },
+  { id: "CAM-SV-02", name: "Server Room Interior",   zone: "Server Room",       status: "online",   fps: 30, resolution: "1080p", detections: 9,   lastSeen: "14:30:47" },
+  { id: "CAM-RC-01", name: "Reception Front Desk",   zone: "Reception",         status: "online",   fps: 30, resolution: "4K",    detections: 176, lastSeen: "14:31:21" },
+  { id: "CAM-RC-02", name: "Reception Waiting Area", zone: "Reception",         status: "online",   fps: 25, resolution: "1080p", detections: 142, lastSeen: "14:31:13" },
+  { id: "CAM-RC-03", name: "Reception Side Hall",    zone: "Reception",         status: "online",   fps: 25, resolution: "1080p", detections: 98,  lastSeen: "14:31:07" },
+  { id: "CAM-CO-01", name: "Main Corridor East",     zone: "Main Corridor",     status: "online",   fps: 30, resolution: "1080p", detections: 88,  lastSeen: "14:31:04" },
+  { id: "CAM-CO-02", name: "Main Corridor West",     zone: "Main Corridor",     status: "online",   fps: 25, resolution: "1080p", detections: 71,  lastSeen: "14:30:52" },
+  { id: "CAM-ST-01", name: "Stairwell B Level 1",    zone: "Stairwell B",       status: "online",   fps: 25, resolution: "720p",  detections: 34,  lastSeen: "14:30:43" },
+  { id: "CAM-EX-01", name: "Emergency Exit North",   zone: "Emergency Exits",   status: "online",   fps: 25, resolution: "720p",  detections: 22,  lastSeen: "14:31:02" },
+  { id: "CAM-EX-02", name: "Emergency Exit South",   zone: "Emergency Exits",   status: "offline",  fps: 0,  resolution: "720p",  detections: 0,   lastSeen: "09:14:08" },
+  { id: "CAM-EP-01", name: "Perimeter Fence East",   zone: "External Perimeter",status: "online",   fps: 30, resolution: "4K",    detections: 47,  lastSeen: "14:31:10" },
+];
+
 // ─── FR Feed data ─────────────────────────────────────────────────────────────
 const FR_PEOPLE: FeedPerson[] = [
   {
     id: "f1", identType: "FACE", status: "BLACKLIST",
-    displayName: "Subject BL-003", subLabel: "Confirmed blacklist — immediate action required",
+    displayName: "Marcus Webb", subLabel: "Theft & Assault · Repeat Offender",
     camera: "CAM-LB-01", cameraId: "cam_main_lobby", zone: "Main Lobby",
     time: "14:31:22", confidence: 94.7, severity: "CRITICAL",
-    imageSrc: "https://i.pravatar.cc/160?u=bl003-subjectx",
+    imageSrc: "/people/man1.avif",
   },
   {
     id: "f2", identType: "FACE", status: "UNKNOWN",
     displayName: "Unknown #88", subLabel: "Action required · High dwell",
     camera: "CAM-SE-01", cameraId: "cam_south_entrance", zone: "South Entrance",
     time: "14:30:55", dwell: 252, recurringDays: 4, severity: "HIGH",
-    imageSrc: "https://i.pravatar.cc/160?u=unk088-recurringz",
+    imageSrc: "/people/women2.avif",
   },
   {
-    id: "f3", identType: "FACE", status: "UNKNOWN",
-    displayName: "Unknown #134", subLabel: "Action required · Garage area",
-    camera: "CAM-GB-01", cameraId: "cam_garage_entry_b", zone: "Garage Entry B",
-    time: "14:28:45", dwell: 88, recurringDays: 2, severity: "MEDIUM",
-    imageSrc: "https://i.pravatar.cc/160?u=unk134-garagek",
-  },
-  {
-    id: "f4", identType: "FACE", status: "VIP",
-    displayName: "Executive VIP-007", subLabel: "C-Suite · Escort protocol suggested",
+    id: "f3", identType: "FACE", status: "VIP",
+    displayName: "Rajesh Mehta", subLabel: "CEO · Escort protocol active",
     camera: "CAM-NE-01", cameraId: "cam_north_entrance", zone: "North Entrance",
     time: "14:31:10", confidence: 97.3, severity: "LOW",
-    imageSrc: "https://i.pravatar.cc/160?u=vip007-exec99",
+    imageSrc: "/people/man3.jpg",
   },
   {
-    id: "f5", identType: "FACE", status: "WHITELIST",
+    id: "f4", identType: "FACE", status: "WHITELIST",
     displayName: "John Smith", subLabel: "Engineering · L3 Access",
     camera: "CAM-LB-01", cameraId: "cam_main_lobby", zone: "Main Lobby",
     time: "14:29:45", confidence: 96.1, severity: "LOW",
-    imageSrc: "https://i.pravatar.cc/160?u=john-smith-4821",
+    imageSrc: "/people/man2.webp",
     department: "Engineering", employeeId: "EMP-4821",
     enrollDate: "2025-08-14", totalAppearances: 312,
   },
   {
-    id: "f6", identType: "FACE", status: "WHITELIST",
+    id: "f5", identType: "FACE", status: "WHITELIST",
     displayName: "Sarah Johnson", subLabel: "Human Resources · L2 Access",
     camera: "CAM-RC-01", cameraId: "cam_reception", zone: "Reception",
     time: "14:27:14", confidence: 95.4, severity: "LOW",
-    imageSrc: "https://i.pravatar.cc/160?u=sarah-johnson-2198",
+    imageSrc: "/people/women1.avif",
     department: "Human Resources", employeeId: "EMP-2198",
     enrollDate: "2024-03-20", totalAppearances: 187,
+  },
+  {
+    id: "f6", identType: "FACE", status: "UNKNOWN",
+    displayName: "Unknown #42", subLabel: "High dwell · Loitering suspected",
+    camera: "CAM-LB-02", cameraId: "cam_main_lobby", zone: "Main Lobby",
+    time: "14:22:08", dwell: 410, recurringDays: 2, severity: "HIGH",
+    imageSrc: "/people/man1.avif",
+  },
+  {
+    id: "f7", identType: "FACE", status: "WHITELIST",
+    displayName: "Anjali Patel", subLabel: "Legal · L3 Access",
+    camera: "CAM-NE-02", cameraId: "cam_north_entrance", zone: "North Entrance",
+    time: "14:20:33", confidence: 93.8, severity: "LOW",
+    imageSrc: "/people/women2.avif",
+    department: "Legal", employeeId: "EMP-1145",
+    enrollDate: "2024-07-01", totalAppearances: 223,
+  },
+  {
+    id: "f8", identType: "FACE", status: "UNKNOWN",
+    displayName: "Unknown #15", subLabel: "Repeated access attempt · Server Room",
+    camera: "CAM-SR-01", cameraId: "cam_server_room", zone: "Server Room",
+    time: "14:18:45", dwell: 180, recurringDays: 6, severity: "HIGH",
+    imageSrc: "/people/man2.webp",
+  },
+  {
+    id: "f9", identType: "FACE", status: "WHITELIST",
+    displayName: "David Kim", subLabel: "IT · L2 Access",
+    camera: "CAM-SE-02", cameraId: "cam_south_entrance", zone: "South Entrance",
+    time: "14:15:19", confidence: 97.0, severity: "LOW",
+    imageSrc: "/people/man3.jpg",
+    department: "IT", employeeId: "EMP-3310",
+    enrollDate: "2025-01-15", totalAppearances: 95,
+  },
+  {
+    id: "f10", identType: "FACE", status: "BLACKLIST",
+    displayName: "James Carter", subLabel: "Armed Robbery · 2nd Sighting Today",
+    camera: "CAM-SE-01", cameraId: "cam_south_entrance", zone: "South Entrance",
+    time: "14:12:04", confidence: 88.6, severity: "CRITICAL",
+    imageSrc: "/people/man1.avif",
+  },
+  {
+    id: "f11", identType: "FACE", status: "VIP",
+    displayName: "Sunita Rao", subLabel: "CFO · Priority escort",
+    camera: "CAM-RC-01", cameraId: "cam_reception", zone: "Reception",
+    time: "14:09:50", confidence: 98.1, severity: "LOW",
+    imageSrc: "/people/women1.avif",
+  },
+  {
+    id: "f12", identType: "FACE", status: "WHITELIST",
+    displayName: "Tom Edwards", subLabel: "Facilities · L1 Access",
+    camera: "CAM-LB-01", cameraId: "cam_main_lobby", zone: "Main Lobby",
+    time: "14:07:22", confidence: 92.3, severity: "LOW",
+    imageSrc: "/people/man2.webp",
+    department: "Facilities", employeeId: "EMP-0812",
+    enrollDate: "2023-11-05", totalAppearances: 441,
+  },
+  {
+    id: "f13", identType: "FACE", status: "UNKNOWN",
+    displayName: "Unknown #61", subLabel: "Observed near loading bay",
+    camera: "CAM-LB-03", cameraId: "cam_loading_bay", zone: "Loading Bay",
+    time: "14:04:11", dwell: 95, severity: "MEDIUM",
+    imageSrc: "/people/women2.avif",
+  },
+  {
+    id: "f14", identType: "FACE", status: "WHITELIST",
+    displayName: "Maria Santos", subLabel: "Marketing · L2 Access",
+    camera: "CAM-RC-02", cameraId: "cam_reception", zone: "Reception",
+    time: "14:01:58", confidence: 94.9, severity: "LOW",
+    imageSrc: "/people/women1.avif",
+    department: "Marketing", employeeId: "EMP-2675",
+    enrollDate: "2025-02-10", totalAppearances: 68,
+  },
+  {
+    id: "f15", identType: "FACE", status: "UNKNOWN",
+    displayName: "Unknown #99", subLabel: "7-day recurring pattern",
+    camera: "CAM-SE-01", cameraId: "cam_south_entrance", zone: "South Entrance",
+    time: "13:58:30", dwell: 320, recurringDays: 7, severity: "HIGH",
+    imageSrc: "/people/man3.jpg",
+  },
+  {
+    id: "f16", identType: "FACE", status: "BLACKLIST",
+    displayName: "EthanRoss", subLabel: "Drug Trafficking · Outstanding Warrant",
+    camera: "CAM-NE-02", cameraId: "cam_north_entrance", zone: "North Entrance",
+    time: "13:54:17", confidence: 91.8, severity: "CRITICAL",
+    imageSrc: "/people/face_landmark.png",
+  },
+  {
+    id: "f17", identType: "FACE", status: "UNKNOWN",
+    displayName: "Unknown #37", subLabel: "Repeated entry attempts · No credential",
+    camera: "CAM-BS-01", cameraId: "cam_basement_store", zone: "Basement Store",
+    time: "13:49:03", dwell: 195, recurringDays: 3, severity: "HIGH",
+    imageSrc: "/people/AI-autism_900x600.jpg",
   },
 ];
 
@@ -97,10 +230,11 @@ const FR_PEOPLE: FeedPerson[] = [
 const LPR_PEOPLE: FeedPerson[] = [
   {
     id: "p1", identType: "PLATE", status: "BOLO",
-    displayName: "RJ-5588-BR", subLabel: "BOLO match — stolen vehicle, police notified",
+    displayName: "RJ-5588-BR", subLabel: "Stolen Vehicle · Police Notified",
     camera: "CAM-GA-02", cameraId: "cam_garage_entry_a", zone: "Garage Entry A",
     time: "14:28:30", confidence: 91.0, severity: "CRITICAL",
     plateText: "RJ-5588-BR", vehicleDesc: "Black Toyota Innova",
+    imageSrc: "/vehicle/1_qre-gAVNTuazaUPvNw2w-Q.jpg",
   },
   {
     id: "p2", identType: "PLATE", status: "UNREGISTERED",
@@ -108,6 +242,7 @@ const LPR_PEOPLE: FeedPerson[] = [
     camera: "CAM-GA-01", cameraId: "cam_garage_entry_a", zone: "Garage Entry A",
     time: "14:31:06", confidence: 91.0, recurringDays: 3, severity: "HIGH",
     plateText: "UP80MN1123", vehicleDesc: "Silver Maruti Swift",
+    imageSrc: "/vehicle/images (1).jpeg",
   },
   {
     id: "p3", identType: "PLATE", status: "UNREGISTERED",
@@ -115,6 +250,7 @@ const LPR_PEOPLE: FeedPerson[] = [
     camera: "CAM-PL-01", cameraId: "cam_parking_lot", zone: "Parking Lot A",
     time: "14:25:01", confidence: 89.0, severity: "MEDIUM",
     plateText: "KL-3312-MH", vehicleDesc: "Red Honda City",
+    imageSrc: "/vehicle/images (2).jpeg",
   },
   {
     id: "p4", identType: "PLATE", status: "VIP",
@@ -122,6 +258,7 @@ const LPR_PEOPLE: FeedPerson[] = [
     camera: "CAM-ME-01", cameraId: "cam_main_entrance", zone: "Main Entrance",
     time: "14:31:10", confidence: 98.5, severity: "LOW",
     plateText: "MH-0001-GJ", vehicleDesc: "Black Mercedes GLE",
+    imageSrc: "/vehicle/green-car-license-number-plate-2167603229-wj5z7ib5.avif",
   },
   {
     id: "p5", identType: "PLATE", status: "AUTHORIZED",
@@ -131,6 +268,7 @@ const LPR_PEOPLE: FeedPerson[] = [
     plateText: "KA05MJ4421", vehicleDesc: "White Honda City",
     department: "Finance", employeeId: "EMP-2231",
     enrollDate: "2024-11-02", totalAppearances: 88,
+    imageSrc: "/vehicle/images (3).jpeg",
   },
   {
     id: "p6", identType: "PLATE", status: "AUTHORIZED",
@@ -140,6 +278,85 @@ const LPR_PEOPLE: FeedPerson[] = [
     plateText: "DL-7723-UP", vehicleDesc: "Blue Toyota Camry",
     department: "Human Resources", employeeId: "EMP-3341",
     enrollDate: "2024-05-10", totalAppearances: 134,
+    imageSrc: "/vehicle/images.jpeg",
+  },
+  {
+    id: "p7", identType: "PLATE", status: "BOLO",
+    displayName: "TN-09-AB-1234", subLabel: "Outstanding Warrant · Traffic Authority",
+    camera: "CAM-ME-01", cameraId: "cam_main_entrance", zone: "Main Entrance",
+    time: "14:20:17", confidence: 93.4, severity: "CRITICAL",
+    plateText: "TN09AB1234", vehicleDesc: "White Hyundai i20",
+    imageSrc: "/vehicle/images (1).jpeg",
+  },
+  {
+    id: "p8", identType: "PLATE", status: "UNREGISTERED",
+    displayName: "MH12DE4321", subLabel: "Action required · No visitor pass",
+    camera: "CAM-PL-01", cameraId: "cam_parking_lot", zone: "Parking Lot A",
+    time: "14:17:52", confidence: 87.5, recurringDays: 2, severity: "MEDIUM",
+    plateText: "MH12DE4321", vehicleDesc: "Grey Volkswagen Polo",
+    imageSrc: "/vehicle/images (2).jpeg",
+  },
+  {
+    id: "p9", identType: "PLATE", status: "AUTHORIZED",
+    displayName: "GJ01RR5566", subLabel: "Silver Tata Nexon · Arun Verma · Ops",
+    camera: "CAM-GA-02", cameraId: "cam_garage_entry_a", zone: "Garage Entry A",
+    time: "14:14:40", confidence: 97.8,
+    plateText: "GJ01RR5566", vehicleDesc: "Silver Tata Nexon",
+    department: "Operations", employeeId: "EMP-5512",
+    enrollDate: "2024-09-18", totalAppearances: 201,
+    imageSrc: "/vehicle/images (3).jpeg",
+  },
+  {
+    id: "p10", identType: "PLATE", status: "UNREGISTERED",
+    displayName: "RJ14UA9988", subLabel: "Action required · 2nd attempt today",
+    camera: "CAM-GA-01", cameraId: "cam_garage_entry_a", zone: "Garage Entry A",
+    time: "14:11:05", confidence: 85.2, recurringDays: 1, severity: "HIGH",
+    plateText: "RJ14UA9988", vehicleDesc: "Orange Maruti Brezza",
+    imageSrc: "/vehicle/images.jpeg",
+  },
+  {
+    id: "p11", identType: "PLATE", status: "AUTHORIZED",
+    displayName: "AP28CX7712", subLabel: "Red Kia Seltos · Deepa Krishnan · Legal",
+    camera: "CAM-SC-01", cameraId: "cam_staff_car_park", zone: "Staff Car Park",
+    time: "14:08:30", confidence: 95.6,
+    plateText: "AP28CX7712", vehicleDesc: "Red Kia Seltos",
+    department: "Legal", employeeId: "EMP-1872",
+    enrollDate: "2025-03-01", totalAppearances: 47,
+    imageSrc: "/vehicle/1_qre-gAVNTuazaUPvNw2w-Q.jpg",
+  },
+  {
+    id: "p12", identType: "PLATE", status: "UNREGISTERED",
+    displayName: "UP32KA0055", subLabel: "No permit · Parked in restricted zone",
+    camera: "CAM-LB-01", cameraId: "cam_loading_bay", zone: "Loading Bay",
+    time: "14:05:14", confidence: 90.1, severity: "MEDIUM",
+    plateText: "UP32KA0055", vehicleDesc: "Black Mahindra Thar",
+    imageSrc: "/vehicle/green-car-license-number-plate-2167603229-wj5z7ib5.avif",
+  },
+  {
+    id: "p13", identType: "PLATE", status: "AUTHORIZED",
+    displayName: "KA01MN3344", subLabel: "White Suzuki Baleno · Vikram Iyer · IT",
+    camera: "CAM-VP-01", cameraId: "cam_visitor_parking", zone: "Visitor Parking",
+    time: "14:02:59", confidence: 94.3,
+    plateText: "KA01MN3344", vehicleDesc: "White Suzuki Baleno",
+    department: "IT", employeeId: "EMP-4490",
+    enrollDate: "2024-12-12", totalAppearances: 156,
+    imageSrc: "/vehicle/images (1).jpeg",
+  },
+  {
+    id: "p14", identType: "PLATE", status: "VIP",
+    displayName: "DL01AA0007", subLabel: "Director · Reserved bay allocated",
+    camera: "CAM-ME-01", cameraId: "cam_main_entrance", zone: "Main Entrance",
+    time: "13:59:22", confidence: 99.0, severity: "LOW",
+    plateText: "DL01AA0007", vehicleDesc: "Black BMW 7 Series",
+    imageSrc: "/vehicle/images (2).jpeg",
+  },
+  {
+    id: "p15", identType: "PLATE", status: "UNREGISTERED",
+    displayName: "HR26BG6601", subLabel: "Action required · Unknown visitor",
+    camera: "CAM-GA-02", cameraId: "cam_garage_entry_a", zone: "Garage Entry A",
+    time: "13:56:40", confidence: 88.0, severity: "MEDIUM",
+    plateText: "HR26BG6601", vehicleDesc: "Green Hyundai Creta",
+    imageSrc: "/vehicle/images (3).jpeg",
   },
 ];
 
@@ -157,20 +374,42 @@ const FR_JOURNEY: Record<string, JourneyStop[]> = {
     { camera: "CAM-SE-01", zone: "South Entrance",  time: "14:30", dwellText: "4m 12s+", isCurrent: true, alertNote: "Dwell time growing" },
   ],
   f3: [
-    { camera: "CAM-GB-01", zone: "Garage Entry B",  time: "09:08", dwellText: "22s" },
-    { camera: "CAM-GB-01", zone: "Garage Entry B",  time: "14:28", dwellText: "1m 28s", isCurrent: true, alertNote: "Recurring unknown" },
-  ],
-  f4: [
     { camera: "CAM-NE-01", zone: "North Entrance",  time: "14:31", dwellText: "active", isCurrent: true, alertNote: "VIP — escort recommended" },
   ],
-  f5: [
+  f4: [
     { camera: "CAM-PG-01", zone: "Parking Garage",  time: "08:52", dwellText: "3s",   linkedPlate: "KA05MJ4421" },
     { camera: "CAM-NE-01", zone: "North Entrance",  time: "14:11", dwellText: "2s" },
     { camera: "CAM-LB-01", zone: "Main Lobby",      time: "14:29", dwellText: "active", isCurrent: true },
   ],
-  f6: [
+  f5: [
     { camera: "CAM-NE-01", zone: "North Entrance",  time: "14:06", dwellText: "2s" },
     { camera: "CAM-RC-01", zone: "Reception",       time: "14:27", dwellText: "active", isCurrent: true },
+  ],
+  f6:  [{ camera: "CAM-LB-02", zone: "Main Lobby",      time: "14:22", dwellText: "6m 50s+", isCurrent: true, alertNote: "Loitering — dwell growing" }],
+  f7:  [{ camera: "CAM-NE-02", zone: "North Entrance",  time: "14:20", dwellText: "active",  isCurrent: true }],
+  f8:  [{ camera: "CAM-SR-01", zone: "Server Room",     time: "14:18", dwellText: "3m+",     isCurrent: true, alertNote: "Repeated access attempt" }],
+  f9:  [{ camera: "CAM-SE-02", zone: "South Entrance",  time: "14:15", dwellText: "active",  isCurrent: true }],
+  f10: [
+    { camera: "CAM-NE-01", zone: "North Entrance",  time: "09:14", dwellText: "8s" },
+    { camera: "CAM-SE-01", zone: "South Entrance",  time: "14:12", dwellText: "active", isCurrent: true, alertNote: "BLACKLIST — 2nd sighting" },
+  ],
+  f11: [{ camera: "CAM-RC-01", zone: "Reception",       time: "14:09", dwellText: "active",  isCurrent: true, alertNote: "CFO — priority escort" }],
+  f12: [{ camera: "CAM-LB-01", zone: "Main Lobby",      time: "14:07", dwellText: "active",  isCurrent: true }],
+  f13: [{ camera: "CAM-LB-03", zone: "Loading Bay",     time: "14:04", dwellText: "1m 35s+", isCurrent: true, alertNote: "Observed near loading bay" }],
+  f14: [{ camera: "CAM-RC-02", zone: "Reception",       time: "14:01", dwellText: "active",  isCurrent: true }],
+  f15: [
+    { camera: "CAM-SE-01", zone: "South Entrance",  time: "08:30", dwellText: "4m 10s" },
+    { camera: "CAM-SE-01", zone: "South Entrance",  time: "13:58", dwellText: "5m 20s+", isCurrent: true, alertNote: "7-day recurring pattern" },
+  ],
+  f16: [
+    { camera: "CAM-EX-01", zone: "Emergency Exits",  time: "12:20", dwellText: "7s",    alertNote: "Unusual entry point" },
+    { camera: "CAM-CO-01", zone: "Main Corridor",    time: "13:41", dwellText: "22s" },
+    { camera: "CAM-NE-02", zone: "North Entrance",   time: "13:54", dwellText: "active", isCurrent: true, alertNote: "BLACKLIST ACTIVE" },
+  ],
+  f17: [
+    { camera: "CAM-BS-01", zone: "Basement Store",   time: "10:15", dwellText: "1m 48s", alertNote: "1st attempt — access denied" },
+    { camera: "CAM-SR-01", zone: "Service Ramp",     time: "12:03", dwellText: "55s",    alertNote: "2nd attempt via ramp" },
+    { camera: "CAM-BS-01", zone: "Basement Store",   time: "13:49", dwellText: "3m 15s+", isCurrent: true, alertNote: "3rd attempt — dwell growing" },
   ],
 };
 
@@ -193,9 +432,22 @@ const LPR_JOURNEY: Record<string, JourneyStop[]> = {
   p5: [
     { camera: "CAM-GA-01", zone: "Garage Entry A",  time: "14:26", dwellText: "authorised", isCurrent: true, alertNote: "Entry authorised" },
   ],
-  p6: [
-    { camera: "CAM-PL-02", zone: "Parking Lot B",   time: "14:22", dwellText: "parked", isCurrent: true, alertNote: "Registered permit" },
+  p6:  [{ camera: "CAM-PL-02", zone: "Parking Lot B",   time: "14:22", dwellText: "parked",  isCurrent: true, alertNote: "Registered permit" }],
+  p7:  [
+    { camera: "CAM-GA-01", zone: "Garage Entry A",  time: "14:08", dwellText: "circling", alertNote: "1st sighting" },
+    { camera: "CAM-ME-01", zone: "Main Entrance",   time: "14:20", dwellText: "blocked",  isCurrent: true, alertNote: "BOLO — entry denied" },
   ],
+  p8:  [{ camera: "CAM-PL-01", zone: "Parking Lot A",   time: "14:17", dwellText: "parked",  isCurrent: true, alertNote: "No visitor pass" }],
+  p9:  [{ camera: "CAM-GA-02", zone: "Garage Entry A",  time: "14:14", dwellText: "authorised", isCurrent: true }],
+  p10: [
+    { camera: "CAM-ME-01", zone: "Main Entrance",   time: "10:45", dwellText: "blocked", alertNote: "1st attempt" },
+    { camera: "CAM-GA-01", zone: "Garage Entry A",  time: "14:11", dwellText: "blocked",  isCurrent: true, alertNote: "2nd attempt — escalate" },
+  ],
+  p11: [{ camera: "CAM-SC-01", zone: "Staff Car Park",  time: "14:08", dwellText: "parked",  isCurrent: true }],
+  p12: [{ camera: "CAM-LB-01", zone: "Loading Bay",     time: "14:05", dwellText: "parked",  isCurrent: true, alertNote: "Restricted zone — no permit" }],
+  p13: [{ camera: "CAM-VP-01", zone: "Visitor Parking", time: "14:02", dwellText: "parked",  isCurrent: true }],
+  p14: [{ camera: "CAM-ME-01", zone: "Main Entrance",   time: "13:59", dwellText: "active",  isCurrent: true, alertNote: "Director — reserved bay" }],
+  p15: [{ camera: "CAM-GA-02", zone: "Garage Entry A",  time: "13:56", dwellText: "blocked",  isCurrent: true, alertNote: "Unknown visitor — entry denied" }],
 };
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -212,6 +464,17 @@ const STATUS_CFG: Record<MatchStatus, {
   WHITELIST:    { label: "Authorised",  bg: "bg-emerald-600", text: "text-white",      borderL: "border-l-emerald-400",rowBg: "bg-white",        dotColor: "bg-emerald-500",priority: 3, headerBg: "bg-emerald-700", headerBorder: "border-emerald-800" },
   AUTHORIZED:   { label: "Authorised",  bg: "bg-emerald-600", text: "text-white",      borderL: "border-l-emerald-400",rowBg: "bg-white",        dotColor: "bg-emerald-500",priority: 3, headerBg: "bg-emerald-700", headerBorder: "border-emerald-800" },
 };
+
+/** Returns an array of page indices (0-based) and "…" separators for rendering. */
+function getPaginationItems(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+  const items: (number | "…")[] = [0];
+  if (current > 2)           items.push("…");
+  for (let i = Math.max(1, current - 1); i <= Math.min(total - 2, current + 1); i++) items.push(i);
+  if (current < total - 3)   items.push("…");
+  items.push(total - 1);
+  return items;
+}
 
 function fmtDwell(sec: number) {
   if (sec < 60) return `${sec}s`;
@@ -895,6 +1158,29 @@ function ActionsSection({ groups }: { groups: string[] }) {
   );
 }
 
+// ─── Alert stamp helper ────────────────────────────────────────────────────────
+// Returns a "wanted poster" style stamp for high-priority threats.
+// Shown on the snapshot thumbnail (small strip) and in the modal image frame.
+interface AlertStamp { headline: string; reason: string; color: string; }
+
+function getAlertStamp(person: FeedPerson): AlertStamp | null {
+  if (person.status === "BLACKLIST") {
+    return {
+      headline: "BLACKLIST HIT",
+      reason:   person.subLabel ?? "Blacklisted Individual",
+      color:    "#DC2626",  // red-600
+    };
+  }
+  if (person.status === "BOLO") {
+    return {
+      headline: "BOLO ALERT",
+      reason:   person.subLabel ?? "Flagged Vehicle",
+      color:    "#D97706",  // amber-600
+    };
+  }
+  return null;
+}
+
 // Feed table row
 function FeedTableRow({
   person, rowIndex, onClick, isLPR,
@@ -908,43 +1194,68 @@ function FeedTableRow({
   const isBlacklist = person.status === "BLACKLIST" || person.status === "BOLO";
   const isPlate = isLPR || person.identType === "PLATE";
   const id = `${isLPR ? "LP" : "FR"}-${String(rowIndex + 1).padStart(3, "0")}`;
+  const stamp = getAlertStamp(person);
 
   return (
     <tr
       onClick={onClick}
       className={cn(
-        "group cursor-pointer transition-colors border-b border-neutral-100 last:border-b-0",
-        "hover:bg-[#E5FFF9]",
-        isBlacklist && rowIndex === 0 && "bg-red-50/40",
+        "group cursor-pointer transition-colors",
+        "border-b border-neutral-100 dark:border-[#1E293B] last:border-b-0",
+        "hover:bg-[#E5FFF9] dark:hover:bg-[#1E293B]",
+        isBlacklist && rowIndex === 0
+          ? "bg-red-50/40 dark:bg-red-900/20"
+          : "dark:bg-[#0F172A]",
       )}
     >
       {/* ID */}
       <td className="px-3 py-2">
-        <span className="text-[10px] font-mono font-bold text-neutral-500">{id}</span>
+        <span className="text-[10px] font-mono font-bold text-neutral-500 dark:text-slate-500">{id}</span>
       </td>
 
       {/* Snapshot */}
       <td className="px-3 py-2">
-        <div className="h-10 w-[60px] rounded-[2px] overflow-hidden border border-neutral-200 group-hover:border-[#00775B]/30 transition-colors bg-neutral-100 relative shrink-0">
+        <div className={cn(
+          "h-10 w-[60px] rounded-[2px] overflow-hidden transition-colors relative shrink-0",
+          "border border-neutral-200 dark:border-[#334155]",
+          "bg-neutral-100 dark:bg-[#1E293B]",
+          "group-hover:border-[#00775B]/40 dark:group-hover:border-[#00775B]/50",
+        )}>
           {isPlate ? (
-            <IdentityEvidenceMedia kind="PLATE" seed={person.id} plateText={person.plateText} className="h-full w-full" />
+            <IdentityEvidenceMedia kind="PLATE" seed={person.id} plateText={person.plateText} imageSrc={person.imageSrc} className="h-full w-full" />
           ) : (
             <IdentityEvidenceMedia kind="FACE" seed={person.id} imageSrc={person.imageSrc} live={isActive} className="h-full w-full" />
+          )}
+          {/* Alert stamp strip — "wanted poster" label on the snapshot */}
+          {stamp && (
+            <div
+              className="absolute bottom-0 left-0 right-0 flex items-center justify-center"
+              style={{ background: stamp.color, paddingTop: 2, paddingBottom: 2 }}
+            >
+              <span className="text-[5.5px] font-black uppercase tracking-[0.12em] text-white leading-none">
+                {stamp.headline}
+              </span>
+            </div>
           )}
         </div>
       </td>
 
       {/* Identity details */}
       <td className="px-3 py-2 max-w-[180px]">
-        <p className="text-[11px] font-bold text-neutral-900 truncate leading-tight">{person.displayName}</p>
-        {person.subLabel && (
+        <p className="text-[11px] font-bold text-neutral-900 dark:text-slate-100 truncate leading-tight">{person.displayName}</p>
+        {stamp ? (
+          /* Crime reason as the primary action-context — more useful than a % */
+          <p className="text-[9px] font-bold truncate mt-0.5 leading-snug" style={{ color: stamp.color }}>
+            {stamp.reason}
+          </p>
+        ) : person.subLabel ? (
           <p className={cn("text-[9px] truncate mt-0.5 leading-snug",
-            isThreat ? "text-red-600 font-semibold" : "text-neutral-400"
+            isThreat ? "text-red-500 font-semibold" : "text-neutral-400 dark:text-slate-500"
           )}>{person.subLabel}</p>
-        )}
+        ) : null}
       </td>
 
-      {/* Status */}
+      {/* Status badge — colours are already vivid, no dark override needed */}
       <td className="px-3 py-2">
         <span className={cn(
           "text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide whitespace-nowrap",
@@ -955,14 +1266,14 @@ function FeedTableRow({
         </span>
       </td>
 
-      {/* Zone — name only */}
+      {/* Zone */}
       <td className="px-3 py-2">
-        <p className="text-[11px] font-semibold text-neutral-700 truncate">{person.zone}</p>
+        <p className="text-[11px] font-semibold text-neutral-700 dark:text-slate-300 truncate">{person.zone}</p>
       </td>
 
       {/* Camera */}
       <td className="px-3 py-2">
-        <p className="text-[11px] font-mono text-neutral-600">{person.camera}</p>
+        <p className="text-[11px] font-mono text-neutral-500 dark:text-slate-400">{person.camera}</p>
       </td>
 
       {/* Match % */}
@@ -970,12 +1281,12 @@ function FeedTableRow({
         {person.confidence != null ? (
           <span className={cn(
             "text-[11px] font-mono font-bold tabular-nums",
-            person.confidence >= 90 ? "text-emerald-600" : "text-amber-500"
+            person.confidence >= 90 ? "text-emerald-500 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"
           )}>
             {person.confidence.toFixed(1)}%
           </span>
         ) : (
-          <span className="text-[11px] text-neutral-300 font-mono">—</span>
+          <span className="text-[11px] text-neutral-300 dark:text-slate-600 font-mono">—</span>
         )}
       </td>
 
@@ -984,18 +1295,18 @@ function FeedTableRow({
         {person.dwell != null ? (
           <span className={cn(
             "text-[11px] font-mono font-bold tabular-nums",
-            person.dwell > 180 ? "text-amber-500" : "text-neutral-500"
+            person.dwell > 180 ? "text-amber-500 dark:text-amber-400" : "text-neutral-500 dark:text-slate-400"
           )}>
             {fmtDwell(person.dwell)}
           </span>
         ) : (
-          <span className="text-[11px] text-neutral-300 font-mono">—</span>
+          <span className="text-[11px] text-neutral-300 dark:text-slate-600 font-mono">—</span>
         )}
       </td>
 
       {/* Time */}
       <td className="px-3 py-2 text-right">
-        <span className="text-[10px] font-mono text-neutral-500">{person.time}</span>
+        <span className="text-[10px] font-mono text-neutral-500 dark:text-slate-400">{person.time}</span>
       </td>
 
     </tr>
@@ -1104,6 +1415,7 @@ function EntityModal({
               <IdentityEvidenceMedia
                 kind="PLATE" seed={person.id}
                 plateText={person.plateText}
+                imageSrc={person.imageSrc}
                 confidence={person.confidence}
                 size="lg" live={isThreat}
                 className="w-48 h-32"
@@ -1241,7 +1553,7 @@ function EntityModal({
                     ) : (
                       <>
                         <img
-                          src={`https://i.pravatar.cc/112?u=${person.id}-stop${i}-cam`}
+                          src={person.imageSrc ?? `https://i.pravatar.cc/112?u=${person.id}-stop${i}-cam`}
                           alt=""
                           className="w-full h-full object-cover opacity-80"
                           style={{ filter: "contrast(1.1) saturate(0.7) brightness(0.85)" }}
@@ -1302,48 +1614,997 @@ function EntityModal({
   );
 }
 
+// ─── Hi-Tech Entity Modal ──────────────────────────────────────────────────────
+// Cyberpunk / HUD-style 2-column popup — alternate view to EntityModal (SlidePanel).
+// Both implementations are kept; HiTechEntityModal is used by default.
+
+// Face landmark mesh nodes: [x%, y%] in a 0–100 × 0–100 viewBox coordinate space.
+// Approximate facial regions for a decorative overlay.
+const HT_FACE_NODES: [number, number][] = [
+  [50, 11],  // 0  forehead top
+  [28, 22],  // 1  temple-L
+  [72, 22],  // 2  temple-R
+  [21, 38],  // 3  outer-L
+  [79, 38],  // 4  outer-R
+  [32, 44],  // 5  eye-L outer
+  [38, 40],  // 6  eye-L top
+  [44, 44],  // 7  eye-L inner
+  [38, 48],  // 8  eye-L bottom
+  [56, 44],  // 9  eye-R inner
+  [62, 40],  // 10 eye-R top
+  [68, 44],  // 11 eye-R outer
+  [62, 48],  // 12 eye-R bottom
+  [50, 43],  // 13 nose bridge
+  [50, 62],  // 14 nose tip
+  [44, 62],  // 15 nose-L
+  [56, 62],  // 16 nose-R
+  [38, 74],  // 17 mouth-L
+  [44, 70],  // 18 mouth top-L
+  [50, 68],  // 19 mouth top-C
+  [56, 70],  // 20 mouth top-R
+  [62, 74],  // 21 mouth-R
+  [50, 78],  // 22 mouth bottom-C
+  [25, 58],  // 23 cheek-L
+  [75, 58],  // 24 cheek-R
+  [28, 80],  // 25 jaw-L
+  [72, 80],  // 26 jaw-R
+  [50, 92],  // 27 chin
+];
+
+const HT_FACE_EDGES: [number, number][] = [
+  [0, 1], [0, 2], [1, 3], [2, 4],
+  [5, 6], [6, 7], [7, 8], [8, 5],
+  [9, 10], [10, 11], [11, 12], [12, 9],
+  [13, 14], [14, 15], [14, 16],
+  [7, 13], [9, 13],
+  [17, 18], [18, 19], [19, 20], [20, 21], [17, 22], [21, 22],
+  [3, 23], [4, 24], [23, 17], [24, 21],
+  [23, 25], [24, 26], [25, 27], [27, 26],
+  [1, 5], [2, 11],
+];
+
+function deriveDetectionEvents(person: FeedPerson): {
+  time: string; event: string; detail: string; kind: "critical" | "warn" | "ok" | "info";
+}[] {
+  const t = person.time;
+  const result: { time: string; event: string; detail: string; kind: "critical" | "warn" | "ok" | "info" }[] = [];
+  result.push({ time: t, event: "Entity Detected", detail: `Camera: ${person.camera}`, kind: "info" });
+  if (person.confidence != null) {
+    result.push({
+      time: t, event: "Identity Matched",
+      detail: `Confidence: ${person.confidence.toFixed(1)}%`,
+      kind: person.confidence >= 90 ? "ok" : "warn",
+    });
+  }
+  const isThreat  = person.status === "BLACKLIST" || person.status === "BOLO";
+  const isUnknown = person.status === "UNKNOWN"   || person.status === "UNREGISTERED";
+  if (isThreat) {
+    result.push({ time: t, event: "THREAT CONFIRMED", detail: `Status: ${person.status} — immediate action required`, kind: "critical" });
+    result.push({ time: t, event: "Security Alert Triggered", detail: "All operators notified", kind: "warn" });
+  } else if (isUnknown) {
+    result.push({ time: t, event: "Identity Unknown", detail: "No match found in database", kind: "warn" });
+    if (person.dwell != null && person.dwell > 180)
+      result.push({ time: t, event: "Dwell Alert", detail: `Dwell: ${fmtDwell(person.dwell)} — above threshold`, kind: "warn" });
+  } else if (person.status === "VIP") {
+    result.push({ time: t, event: "VIP Recognised", detail: "Priority escort protocol advised", kind: "ok" });
+  } else {
+    result.push({ time: t, event: "Access Authorised", detail: "Cleared entry — logged to register", kind: "ok" });
+  }
+  return result;
+}
+
+function deriveAppearancePattern(person: FeedPerson): number[] {
+  const hour = parseInt(person.time?.split(":")[0] ?? "14", 10);
+  const days = person.recurringDays ?? 1;
+  return Array.from({ length: 12 }, (_, i) => {
+    const t = i * 2;
+    const dist = Math.min(Math.abs(t - hour), Math.abs(t + 24 - hour), Math.abs(t - 24 - hour));
+    const seed = (person.id.charCodeAt(i % person.id.length) * 7 + i * 13) % 31;
+    return Math.round(Math.max(0, (9 - dist * 1.3) * days * 0.3 + (seed / 31) * 1.5));
+  });
+}
+
+function HiTechEntityModal({
+  isOpen, person, journey, isLPR, terminology, groups, onClose,
+}: {
+  isOpen: boolean; person: FeedPerson | null; journey: JourneyStop[];
+  isLPR: boolean; terminology: IdentityTerminology;
+  groups: string[]; onClose: () => void;
+}) {
+  const isDark = useIsDark();
+  const [notifySelected, setNotifySelected] = useState<string[]>([]);
+  const [notified, setNotified]             = useState(false);
+  const [notifyOpen, setNotifyOpen]         = useState(false);
+  const notifyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) { setNotifySelected([]); setNotified(false); setNotifyOpen(false); }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  // Close notify dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifyRef.current && !notifyRef.current.contains(e.target as Node)) {
+        setNotifyOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  if (!isOpen || !person) return null;
+
+  const cfg        = STATUS_CFG[person.status];
+  const isThreat   = person.status === "BLACKLIST" || person.status === "BOLO";
+  const isUnknown  = person.status === "UNKNOWN"   || person.status === "UNREGISTERED";
+  const modalStamp = getAlertStamp(person);
+
+  // Dynamic accent driven by threat level (same in both modes)
+  const rawRgb = isThreat ? "239,68,68" : isUnknown ? "245,158,11" : person.status === "VIP" ? "234,179,8" : "0,212,170";
+  const accent = isThreat ? "#ef4444"  : isUnknown  ? "#f59e0b"    : person.status === "VIP" ? "#eab308"   : "#00D4AA";
+  const a = (op: number) => `rgba(${rawRgb},${op})`;
+
+  // ── Theme token object ──────────────────────────────────────────────────────
+  // All surface / text / border colors resolve to either dark-mode darks or
+  // light-mode neutrals. Accent colours (red/amber/gold/teal) stay unchanged.
+  const T = isDark
+    ? {
+        // ── Slate-blue dark palette — matches the rest of the app ──────────
+        backdrop:     "rgba(2,6,23,0.75)",
+        shell:        "#0F172A",           // slate-900 — app surface colour
+        shellBorder:  "#334155",           // slate-700
+        shellShadow:  "0 24px 80px rgba(0,0,0,0.55), 0 4px 32px rgba(0,0,0,0.35)",
+        gridLine:     "rgba(255,255,255,0.022)",
+        headerBg:     "#1E293B",           // slate-800 — card header
+        headerBorder: "#334155",           // slate-700
+        labelColor:   "#0F172A",           // text on coloured badge chip (dark for contrast)
+        textPrimary:  "#F1F5F9",           // slate-100
+        textSub:      "#E2E8F0",           // slate-200
+        textMono:     "#64748B",           // slate-500
+        textMuted:    "#475569",           // slate-600
+        closeBtn:     "#64748B",           // slate-500
+        colDivider:   "#1E293B",           // slate-800
+        frameBg:      "#020617",           // near-black for camera frame depth
+        frameInset:   "inset 0 0 20px rgba(0,0,0,0.5)",
+        vignetteTop:  "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 35%, transparent 58%, rgba(0,0,0,0.6) 100%)",
+        camOverlay:   "linear-gradient(to bottom, rgba(0,0,0,0.75), transparent)",
+        confOverlay:  "linear-gradient(to top, rgba(0,0,0,0.85), transparent)",
+        thumbBg:      "#0F172A",           // slate-900
+        thumbOverlay: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.72))",
+        thumbHeader:  "rgba(0,0,0,0.75)",
+        thumbTime:    "rgba(255,255,255,0.5)",
+        emptyThumb:   "#1E293B",           // slate-800
+        sectionBorder:"1px solid #1E293B", // slate-800
+        secHeadColor: "#64748B",           // slate-500
+        divider:      "#1E293B",           // slate-800
+        checkpointCnt:"1px solid #475569", // slate-600
+        journeyLine:  "#334155",           // slate-700
+        stopBgActive: a(0.08),
+        stopBgIdle:   "transparent",
+        stopInset:    `inset 0 0 0 1px ${a(0.18)}`,
+        stopInnerDot: "#0F172A",           // slate-900
+        stopZoneText: "#E2E8F0",           // slate-200
+        evRowBg:      "#1E293B",           // slate-800
+        evRowBorder:  "1px solid #334155", // slate-700
+        evTitleColor: "#E2E8F0",           // slate-200
+        evInfoColor:  "#64748B",           // slate-500
+        barZero:      "#1E293B",
+        barNormal:    a(0.35),
+        dayInactive:  "#1E293B",
+        dayLabel:     "#475569",
+        hrLabel:      "#475569",
+        dropBg:       "#1E293B",           // slate-800
+        dropBorder:   "1px solid #334155", // slate-700
+        dropRowBorder:"1px solid #0F172A", // slate-900
+        dropItemColor:"#CBD5E1",           // slate-300
+        inputBg:      "#1E293B",           // slate-800
+        inputBorder:  "1px solid #334155", // slate-700
+        inputPlaceholder: "#475569",       // slate-600
+        inputSelected:"#E2E8F0",           // slate-200
+        btnDisabledBg:"#1E293B",           // slate-800
+        btnDisabledTx:"#475569",           // slate-600
+        btnDisabledBd:"1px solid #334155", // slate-700
+        successBg:    a(0.08),
+        successBorder:`1px solid ${a(0.25)}`,
+        scrollbar:    "#334155 transparent",
+        otherCamsLabel: "#64748B",         // slate-500
+        confLabel:    "rgba(255,255,255,0.75)",
+        plateLabel:   "rgba(255,255,255,0.65)",
+        journeyCount: "#64748B",           // slate-500
+        noJourney:    "#475569",           // slate-600
+        liveTagColor: "#0F172A",           // slate-900 (on vivid accent bg)
+        sectionCountColor: "#64748B",      // slate-500
+      }
+    : {
+        backdrop:     "rgba(15,23,42,0.55)",
+        shell:        "#FFFFFF",
+        shellBorder:  "#E2E8F0",
+        shellShadow:  "0 20px 60px rgba(0,0,0,0.18), 0 4px 24px rgba(0,0,0,0.10)",
+        gridLine:     "rgba(0,0,0,0.025)",
+        headerBg:     "#FFFFFF",
+        headerBorder: "#E2E8F0",
+        labelColor:   "#FFFFFF",       // text on coloured badge chip
+        textPrimary:  "#0F172A",
+        textSub:      "#1E293B",
+        textMono:     "#64748B",
+        textMuted:    "#94A3B8",
+        closeBtn:     "#94A3B8",
+        colDivider:   "#E2E8F0",
+        frameBg:      "#F1F5F9",
+        frameInset:   "inset 0 0 0 1px rgba(0,0,0,0.06)",
+        vignetteTop:  "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.35) 100%)",
+        camOverlay:   "linear-gradient(to bottom, rgba(0,0,0,0.60), transparent)",
+        confOverlay:  "linear-gradient(to top, rgba(0,0,0,0.65), transparent)",
+        thumbBg:      "#E2E8F0",
+        thumbOverlay: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.52))",
+        thumbHeader:  "rgba(0,0,0,0.55)",
+        thumbTime:    "rgba(255,255,255,0.75)",
+        emptyThumb:   "#F1F5F9",
+        sectionBorder:"1px solid #E2E8F0",
+        secHeadColor: "#475569",
+        divider:      "#E2E8F0",
+        checkpointCnt:"1px solid #CBD5E1",
+        journeyLine:  "#CBD5E1",
+        stopBgActive: a(0.07),
+        stopBgIdle:   "#F8FAFC",
+        stopInset:    `inset 0 0 0 1px ${a(0.22)}`,
+        stopInnerDot: "#FFFFFF",
+        stopZoneText: "#1E293B",
+        evRowBg:      "#F8FAFC",
+        evRowBorder:  "1px solid #E2E8F0",
+        evTitleColor: "#1E293B",
+        evInfoColor:  "#64748B",
+        barZero:      "#E2E8F0",
+        barNormal:    a(0.3),
+        dayInactive:  "#E2E8F0",
+        dayLabel:     "#94A3B8",
+        hrLabel:      "#94A3B8",
+        dropBg:       "#FFFFFF",
+        dropBorder:   "1px solid #E2E8F0",
+        dropRowBorder:"1px solid #F1F5F9",
+        dropItemColor:"#334155",
+        inputBg:      "#F8FAFC",
+        inputBorder:  "1px solid #CBD5E1",
+        inputPlaceholder: "#94A3B8",
+        inputSelected:"#1E293B",
+        btnDisabledBg:"#F1F5F9",
+        btnDisabledTx:"#94A3B8",
+        btnDisabledBd:"1px solid #E2E8F0",
+        successBg:    a(0.06),
+        successBorder:`1px solid ${a(0.22)}`,
+        scrollbar:    "#CBD5E1 transparent",
+        otherCamsLabel: "#64748B",
+        confLabel:    "rgba(255,255,255,0.75)",
+        plateLabel:   "rgba(255,255,255,0.65)",
+        journeyCount: "#64748B",
+        noJourney:    "#94A3B8",
+        liveTagColor: "#FFFFFF",
+        sectionCountColor: "#64748B",
+      };
+
+  const allRecipients = ["Admin", ...groups];
+
+  // ── Right-column derived data ──────────────────────────────────────────────
+  const calcTimeDiff = (t1: string, t2: string): string => {
+    const [h1, m1] = t1.split(":").map(Number);
+    const [h2, m2] = t2.split(":").map(Number);
+    const diffMin = Math.abs((h2 * 60 + m2) - (h1 * 60 + m1));
+    if (!diffMin) return "";
+    const h = Math.floor(diffMin / 60);
+    const m = diffMin % 60;
+    return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m}min`;
+  };
+
+  // Detection Event grid values
+  const frameNum   = (person.id.charCodeAt(0) * 1337 + (person.id.charCodeAt(1) || 1) * 43 + (person.id.charCodeAt(2) || 7) * 7) % 90000 + 10000;
+  const durInFrame = journey[0]?.dwellText ?? (person.dwell != null ? `${person.dwell}s` : "6.1s");
+  const detConf    = person.confidence != null ? `${Math.min(100, Math.floor(person.confidence + 1.5))}%` : "96%";
+  const matchConf  = person.confidence != null ? `${person.confidence.toFixed(1)}%` : "N/A";
+
+  // Appearance Pattern grid values
+  const totalAppearances = person.totalAppearances ?? ((person.recurringDays ?? 3) * 2 + 1);
+  const thisMonth        = Math.max(1, Math.round(totalAppearances * 0.38));
+  const prevStop         = journey.find(j => !j.isCurrent);
+  const lastSeenBefore   = prevStop
+    ? `2026-03-12 · ${prevStop.time} · ${prevStop.zone}`
+    : null;
+
+  const handleNotify = () => {
+    if (!notifySelected.length) return;
+    setNotified(true);
+    setNotifySelected([]);
+    setTimeout(() => setNotified(false), 3000);
+  };
+
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[1000] backdrop-blur-[3px]"
+        style={{ background: T.backdrop }}
+        onClick={onClose}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* Modal shell — wider at 1140 px                                     */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <div
+        className="fixed z-[1001] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                   w-[1140px] max-w-[96vw] max-h-[90vh] flex flex-col rounded-[8px] overflow-hidden"
+        style={{
+          background: T.shell,
+          border: `1px solid ${T.shellBorder}`,
+          boxShadow: T.shellShadow,
+          backgroundImage: `linear-gradient(${T.gridLine} 1px, transparent 1px),
+                            linear-gradient(90deg, ${T.gridLine} 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+
+        {/* ── Header ───────────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-3 px-5 py-3 shrink-0"
+             style={{ borderBottom: `1px solid ${T.headerBorder}`, background: T.headerBg }}>
+          <span className="text-[9px] font-black px-2 py-[5px] rounded-[3px] uppercase tracking-[0.12em]"
+                style={{ background: accent, color: T.labelColor }}>
+            {cfg.label}
+          </span>
+          <div className="flex items-baseline gap-2 min-w-0">
+            <h2 className="text-[15px] font-black leading-none truncate"
+                style={{ color: T.textPrimary }}>{person.displayName}</h2>
+            <span className="text-[11px] font-mono shrink-0" style={{ color: T.textMono }}>
+              {person.zone} · {person.camera}
+            </span>
+          </div>
+          <div className="ml-auto flex items-center gap-4 shrink-0">
+            {isThreat && (
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">Active Threat</span>
+              </div>
+            )}
+            <span className="text-[10px] font-mono" style={{ color: T.textMuted }}>{person.time}</span>
+            <button onClick={onClose}
+              className="w-7 h-7 flex items-center justify-center rounded transition-colors"
+              style={{ color: T.closeBtn }}
+              onMouseEnter={e => (e.currentTarget.style.background = isDark ? "#1E293B" : "#F1F5F9")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Main body: left image col + right data col ───────────────────── */}
+        <div className="flex flex-1 overflow-hidden min-h-0">
+
+          {/* ── LEFT COLUMN: 44% — landscape frame + thumbnails ──────────────── */}
+          <div className="w-[44%] shrink-0 flex flex-col p-4 gap-3"
+               style={{ borderRight: `1px solid ${T.colDivider}` }}>
+
+            {/* ── Primary camera frame — HORIZONTAL / LANDSCAPE ── */}
+            <div className="relative rounded-[5px] overflow-hidden shrink-0"
+                 style={{
+                   aspectRatio: "16 / 10",
+                   background: T.frameBg,
+                   border: `1px solid ${isDark ? a(0.2) : "#CBD5E1"}`,
+                   boxShadow: T.frameInset,
+                 }}>
+              {person.imageSrc ? (
+                <img src={person.imageSrc} alt=""
+                     className="absolute inset-0 w-full h-full object-cover"
+                     style={{ filter: isDark ? "contrast(1.05) saturate(0.85)" : "contrast(1.02) saturate(0.90)" }}
+                     onError={e => { (e.target as HTMLImageElement).style.opacity = "0"; }} />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Fingerprint className="w-16 h-16" style={{ color: isDark ? a(0.15) : "#CBD5E1" }} />
+                </div>
+              )}
+
+              {/* Vignette */}
+              <div className="absolute inset-0 pointer-events-none"
+                   style={{ background: T.vignetteTop }} />
+
+              {/* SVG HUD mesh overlay */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none"
+                   viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+                {Array.from({ length: 20 }, (_, i) => (
+                  <line key={i} x1="0" y1={i * 5} x2="100" y2={i * 5}
+                    stroke={accent} strokeOpacity="0.035" strokeWidth="0.3" />
+                ))}
+                {!isLPR ? (
+                  <>
+                    {/* Corner bracket markers only — face landmark mesh removed */}
+                    <path d="M 17 7 L 17 15 M 17 7 L 25 7"    stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
+                    <path d="M 83 7 L 83 15 M 83 7 L 75 7"    stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
+                    <path d="M 17 93 L 17 85 M 17 93 L 25 93" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
+                    <path d="M 83 93 L 83 85 M 83 93 L 75 93" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
+                  </>
+                ) : (
+                  <>
+                    <path d="M 10 10 L 10 20 M 10 10 L 20 10" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
+                    <path d="M 90 10 L 90 20 M 90 10 L 80 10" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
+                    <path d="M 10 90 L 10 80 M 10 90 L 20 90" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
+                    <path d="M 90 90 L 90 80 M 90 90 L 80 90" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
+                    <rect x="20" y="62" width="60" height="16" fill="none" stroke={accent} strokeWidth="0.8" strokeOpacity="0.7" />
+                    <path d="M 20 62 L 24 62 M 20 62 L 20 66" stroke={accent} strokeWidth="1" fill="none" strokeOpacity="0.9" />
+                    <path d="M 80 62 L 76 62 M 80 62 L 80 66" stroke={accent} strokeWidth="1" fill="none" strokeOpacity="0.9" />
+                    <path d="M 20 78 L 24 78 M 20 78 L 20 74" stroke={accent} strokeWidth="1" fill="none" strokeOpacity="0.9" />
+                    <path d="M 80 78 L 76 78 M 80 78 L 80 74" stroke={accent} strokeWidth="1" fill="none" strokeOpacity="0.9" />
+                  </>
+                )}
+              </svg>
+
+              {/* Camera ID / LIVE tag — top bar */}
+              <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-3 py-2 pointer-events-none"
+                   style={{ background: T.camOverlay }}>
+                <span className="text-[9px] font-mono tracking-wider" style={{ color: accent }}>{person.camera}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
+                  <span className="text-[8px] font-black tracking-widest" style={{ color: accent }}>LIVE</span>
+                </div>
+              </div>
+
+              {/* Bottom overlay — "wanted poster" stamp for threats, minimal badge otherwise */}
+              {modalStamp ? (
+                /* ── BLACKLIST / BOLO — bold stamp overlay ── */
+                <div className="absolute bottom-0 left-0 right-0 pointer-events-none"
+                     style={{ background: "linear-gradient(to top, rgba(0,0,0,0.93) 0%, rgba(0,0,0,0.65) 65%, transparent 100%)" }}>
+                  <div className="px-3.5 pt-2 pb-3">
+                    {/* Headline — large bold type, like a printed stamp */}
+                    <p className="text-[21px] font-black uppercase leading-none mb-1"
+                       style={{
+                         color: modalStamp.color,
+                         letterSpacing: "0.14em",
+                         textShadow: `0 0 24px ${modalStamp.color}70`,
+                       }}>
+                      {modalStamp.headline}
+                    </p>
+                    {/* Crime / alert reason — the actionable context */}
+                    <p className="text-[12px] font-bold text-white/90 leading-snug mb-2.5">
+                      {modalStamp.reason}
+                    </p>
+                    {/* Match confidence + plate as secondary info */}
+                    <div className="flex items-center gap-2">
+                      {person.confidence != null && (
+                        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+                              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)" }}>
+                          <span className="text-[8px] font-mono uppercase tracking-widest text-white/50">
+                            {terminology.matchScoreLabel ?? "Match"}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-white/75">
+                            {person.confidence.toFixed(1)}%
+                          </span>
+                        </span>
+                      )}
+                      {isLPR && person.plateText && (
+                        <span className="ml-auto text-[15px] font-black font-mono tracking-widest text-white/90">
+                          {person.plateText}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ── Non-threat — compact confidence / plate badge ── */
+                <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 pointer-events-none"
+                     style={{ background: T.confOverlay }}>
+                  <div className="flex items-end justify-between">
+                    {person.confidence != null && (
+                      <div>
+                        <p className="text-[8px] font-mono uppercase tracking-widest mb-0.5" style={{ color: T.confLabel }}>
+                          {terminology.matchScoreLabel ?? "Match Conf."}
+                        </p>
+                        <p className="text-[20px] font-black font-mono tabular-nums leading-none" style={{ color: accent }}>
+                          {person.confidence.toFixed(1)}<span className="text-[11px]">%</span>
+                        </p>
+                      </div>
+                    )}
+                    {isLPR && person.plateText && (
+                      <div className="text-right">
+                        <p className="text-[7px] font-mono uppercase tracking-widest mb-0.5" style={{ color: T.plateLabel }}>Plate</p>
+                        <p className="text-[16px] font-black font-mono tracking-widest text-white">{person.plateText}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Person detail strip (below frame) ── */}
+            <div className="shrink-0 grid grid-cols-2 gap-x-4 gap-y-1.5 px-1">
+              {person.subLabel && (
+                <div className="col-span-2">
+                  <p className="text-[11px] leading-snug"
+                     style={{ color: isThreat ? "#ef4444" : isUnknown ? "#f59e0b" : T.textMono }}>
+                    {person.subLabel}
+                  </p>
+                </div>
+              )}
+              {person.department && (
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Dept.</p>
+                  <p className="text-[11px] font-semibold" style={{ color: T.textSub }}>{person.department}</p>
+                </div>
+              )}
+              {person.employeeId && (
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>ID</p>
+                  <p className="text-[11px] font-mono" style={{ color: T.textSub }}>{person.employeeId}</p>
+                </div>
+              )}
+              {person.dwell != null && (
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Dwell</p>
+                  <p className="text-[11px] font-mono font-bold"
+                     style={{ color: person.dwell > 180 ? "#f59e0b" : T.textSub }}>{fmtDwell(person.dwell)}</p>
+                </div>
+              )}
+              {person.totalAppearances != null && (
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Visits</p>
+                  <p className="text-[11px] font-mono" style={{ color: T.textSub }}>{person.totalAppearances}</p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Additional camera thumbnails ── */}
+            <div className="shrink-0">
+              <p className="text-[8px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: T.otherCamsLabel }}>
+                Other Sightings
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 3 }, (_, i) => {
+                  const stop = journey[i];
+                  return stop ? (
+                    <div key={i} className="relative aspect-video rounded-[4px] overflow-hidden"
+                         style={{
+                           background: T.thumbBg,
+                           border: `1px solid ${isDark ? a(0.12) : "#CBD5E1"}`,
+                         }}>
+                      {person.imageSrc && (
+                        <img src={person.imageSrc} alt="" className="w-full h-full object-cover"
+                             style={{ opacity: 0.55, filter: "saturate(0.4) contrast(1.1)" }} />
+                      )}
+                      <div className="absolute inset-0" style={{ background: T.thumbOverlay }} />
+                      <div className="absolute top-0 left-0 right-0 px-1.5 py-1"
+                           style={{ background: T.thumbHeader }}>
+                        <span className="text-[7px] font-mono" style={{ color: accent }}>{stop.camera}</span>
+                      </div>
+                      <div className="absolute bottom-1 left-1.5">
+                        <span className="text-[7px] font-mono" style={{ color: T.thumbTime }}>{stop.time}</span>
+                      </div>
+                      {stop.isCurrent && (
+                        <div className="absolute top-1 right-1 flex items-center gap-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-red-500" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div key={i} className="aspect-video rounded-[4px] flex items-center justify-center"
+                         style={{
+                           background: T.emptyThumb,
+                           border: `1px solid ${isDark ? a(0.07) : "#E2E8F0"}`,
+                         }}>
+                      <Camera className="w-5 h-5" style={{ color: isDark ? a(0.15) : "#CBD5E1" }} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ── RIGHT COLUMN: scrollable data panels ─────────────────────────── */}
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+
+            {/* Scrollable section */}
+            <div className="flex-1 overflow-y-auto min-h-0"
+                 style={{ scrollbarWidth: "thin", scrollbarColor: T.scrollbar }}>
+
+              {/* ═══════════════════════════════════════════════════════════ */}
+              {/* MOVEMENT PATH                                               */}
+              {/* ═══════════════════════════════════════════════════════════ */}
+              <div className="pt-5 pb-2">
+                {/* Section header */}
+                <div className="flex items-center gap-3 px-5 mb-5">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.18em]" style={{ color: T.secHeadColor }}>
+                    {isLPR ? "Gate History" : "Movement Path"}
+                  </span>
+                  <div className="flex-1 h-px" style={{ background: T.divider }} />
+                  <span className="text-[9px] font-mono" style={{ color: T.journeyCount }}>
+                    {journey.length} checkpoint{journey.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {journey.length === 0 ? (
+                  <p className="px-5 text-[11px]" style={{ color: T.noJourney }}>No movement recorded</p>
+                ) : (
+                  <div className="relative px-3">
+                    {/* Vertical connector line — sits behind the dots */}
+                    {journey.length > 1 && (
+                      <div className="absolute left-[24px] w-[2px] rounded-full"
+                           style={{ top: 20, bottom: 20, background: T.journeyLine }} />
+                    )}
+
+                    {journey.map((stop, idx) => {
+                      const nextStop = journey[idx + 1];
+                      const timeDiff = nextStop ? calcTimeDiff(stop.time, nextStop.time) : "";
+                      const isCurrentStop = stop.isCurrent;
+
+                      // Derive a narrative description for this stop
+                      const stopDesc = stop.alertNote
+                        ? stop.alertNote
+                        : isCurrentStop
+                          ? `Currently active in ${stop.zone.toLowerCase()}`
+                          : idx === 0
+                            ? `First detected at ${stop.zone.toLowerCase()}`
+                            : `Transited through ${stop.zone.toLowerCase()}`;
+
+                      return (
+                        <div key={idx}>
+                          {/* ── Stop card ── */}
+                          <div className="flex items-start gap-3 px-2 py-3 rounded-[8px]"
+                               style={{
+                                 background: isCurrentStop
+                                   ? (isThreat
+                                       ? (isDark ? "rgba(239,68,68,0.06)" : "#FFF5F5")
+                                       : (isDark ? "rgba(0,212,170,0.04)" : "#F0FDFB"))
+                                   : "transparent",
+                               }}>
+
+                            {/* Status dot (sits on the connector line) */}
+                            <div className="shrink-0 flex items-start justify-center pt-[5px]" style={{ width: 14 }}>
+                              <div className="w-3.5 h-3.5 rounded-full z-10"
+                                   style={{
+                                     background: isCurrentStop
+                                       ? (isThreat ? "#EF4444" : "#00775B")
+                                       : (idx === 0
+                                           ? (isDark ? "#475569" : "#94A3B8")
+                                           : "#00775B"),
+                                     boxShadow: isCurrentStop
+                                       ? `0 0 0 3px ${isThreat ? "rgba(239,68,68,0.22)" : "rgba(0,119,91,0.22)"}`
+                                       : "none",
+                                   }} />
+                            </div>
+
+                            {/* Square person thumbnail */}
+                            <div className="shrink-0 w-[60px] h-[60px] rounded-[7px] overflow-hidden relative"
+                                 style={{
+                                   background: isDark ? "#0F172A" : "#1E293B",
+                                   border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "#CBD5E1"}`,
+                                 }}>
+                              {isLPR ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                                  <Camera className="w-5 h-5 text-neutral-500" />
+                                  <span className="text-[7px] font-mono text-amber-300 font-bold">
+                                    {person.plateText ?? "──"}
+                                  </span>
+                                </div>
+                              ) : (
+                                <>
+                                  <img
+                                    src={person.imageSrc ?? `https://i.pravatar.cc/112?u=${person.id}-stop${idx}`}
+                                    alt=""
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    style={{ opacity: 0.88, filter: "contrast(1.04) saturate(0.82)" }}
+                                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                  />
+                                  <div className="absolute inset-0"
+                                       style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.36))" }} />
+                                </>
+                              )}
+                              {/* Camera ID chip */}
+                              <div className="absolute top-0 left-0 right-0 px-1.5 py-[3px]"
+                                   style={{ background: "rgba(0,0,0,0.72)" }}>
+                                <span className="text-[6px] font-mono text-[#00FF84] tracking-wide leading-none">
+                                  {stop.camera}
+                                </span>
+                              </div>
+                              {isCurrentStop && (
+                                <div className="absolute bottom-1 right-1 flex items-center gap-0.5 rounded-[3px] px-[3px] py-[2px]"
+                                     style={{ background: "rgba(0,0,0,0.8)" }}>
+                                  <span className="w-[5px] h-[5px] rounded-full bg-red-500 animate-pulse" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Text content */}
+                            <div className="flex-1 min-w-0">
+                              {/* Row 1: Zone name left, Time right */}
+                              <div className="flex items-start justify-between gap-2 mb-0.5">
+                                <span className="text-[15px] font-bold leading-tight" style={{ color: T.textPrimary }}>
+                                  {stop.zone}
+                                </span>
+                                <span className="text-[15px] font-bold font-mono tabular-nums shrink-0" style={{ color: T.textPrimary }}>
+                                  {stop.time}
+                                </span>
+                              </div>
+
+                              {/* Row 2: camera · conf · dwell + status badges right */}
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[10px] font-mono truncate" style={{ color: T.textMono }}>
+                                  {stop.camera}
+                                  {person.confidence != null ? ` · ${person.confidence.toFixed(1)}%` : ""}
+                                  {stop.dwellText ? ` · ${stop.dwellText}` : ""}
+                                </span>
+                                {/* Badges — pushed to right */}
+                                <div className="ml-auto flex items-center gap-1 shrink-0">
+                                  {stop.alertNote && (
+                                    <span className="text-[8px] font-bold px-2 py-[3px] rounded-full border leading-none"
+                                          style={{
+                                            color: isThreat ? "#EF4444" : "#D97706",
+                                            borderColor: isThreat ? "#EF4444" : "#D97706",
+                                            background: isThreat
+                                              ? (isDark ? "rgba(239,68,68,0.1)" : "#FEF2F2")
+                                              : (isDark ? "rgba(217,119,6,0.1)" : "#FFFBEB"),
+                                          }}>
+                                      {stop.alertNote.toUpperCase()}
+                                    </span>
+                                  )}
+                                  {isCurrentStop && (
+                                    <span className="text-[8px] font-bold px-2 py-[3px] rounded-full border leading-none"
+                                          style={{
+                                            color: accent,
+                                            borderColor: accent,
+                                            background: isDark ? a(0.08) : "#F0FDFB",
+                                          }}>
+                                      CURRENT
+                                    </span>
+                                  )}
+                                  {stop.linkedPlate && (
+                                    <span className="text-[8px] font-mono font-bold px-2 py-[3px] rounded-full border leading-none"
+                                          style={{
+                                            color: "#00775B",
+                                            borderColor: "#00775B",
+                                            background: isDark ? "rgba(0,119,91,0.12)" : "#E5FFF9",
+                                          }}>
+                                      {stop.linkedPlate}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Row 3: narrative description (italic) */}
+                              <p className="text-[10px] italic leading-snug" style={{ color: T.textMono }}>
+                                {stopDesc}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Time-gap connector between stops */}
+                          {timeDiff && (
+                            <div className="flex items-center gap-1.5 py-0.5" style={{ paddingLeft: 55 }}>
+                              <span className="text-[11px]" style={{ color: T.textMuted }}>↓</span>
+                              <span className="text-[10px] font-mono" style={{ color: T.textMuted }}>{timeDiff}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ═══════════════════════════════════════════════════════════ */}
+              {/* DETECTION EVENT — label / value data grid                  */}
+              {/* ═══════════════════════════════════════════════════════════ */}
+              <div className="px-5 pt-5 pb-6" style={{ borderTop: T.sectionBorder }}>
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-5" style={{ color: T.secHeadColor }}>
+                  Detection Event
+                </p>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+                  {([
+                    { label: "Timestamp",            value: `2026-04-06 · ${person.time} IST` },
+                    { label: "Camera",               value: `${person.zone} · ${person.camera}` },
+                    { label: "Frame #",              value: frameNum.toLocaleString() },
+                    { label: "Duration in Frame",    value: durInFrame },
+                    { label: "Detection Confidence", value: detConf },
+                    person.confidence != null
+                      ? { label: "Match Confidence", value: matchConf }
+                      : null,
+                  ] as ({ label: string; value: string } | null)[])
+                    .filter((x): x is { label: string; value: string } => x !== null)
+                    .map(item => (
+                      <div key={item.label}>
+                        <p className="text-[8px] font-bold uppercase tracking-[0.15em] mb-1.5"
+                           style={{ color: T.textMuted }}>
+                          {item.label}
+                        </p>
+                        <p className="text-[13px] font-semibold" style={{ color: T.textPrimary }}>
+                          {item.value}
+                        </p>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+
+              {/* ═══════════════════════════════════════════════════════════ */}
+              {/* APPEARANCE PATTERN — label / value data grid               */}
+              {/* ═══════════════════════════════════════════════════════════ */}
+              <div className="px-5 pt-5 pb-8" style={{ borderTop: T.sectionBorder }}>
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-5" style={{ color: T.secHeadColor }}>
+                  Appearance Pattern
+                </p>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+                  <div>
+                    <p className="text-[8px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: T.textMuted }}>
+                      Total Appearances
+                    </p>
+                    <p className="text-[13px] font-semibold" style={{ color: T.textPrimary }}>{totalAppearances}</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: T.textMuted }}>
+                      This Month
+                    </p>
+                    <p className="text-[13px] font-semibold" style={{ color: T.textPrimary }}>{thisMonth}</p>
+                  </div>
+                  {lastSeenBefore && (
+                    <div className="col-span-2">
+                      <p className="text-[8px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: T.textMuted }}>
+                        Last Seen Before
+                      </p>
+                      <p className="text-[13px] font-semibold" style={{ color: T.textPrimary }}>{lastSeenBefore}</p>
+                    </div>
+                  )}
+                  {person.enrollDate && (
+                    <div className="col-span-2">
+                      <p className="text-[8px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: T.textMuted }}>
+                        Enrolled
+                      </p>
+                      <p className="text-[13px] font-semibold" style={{ color: T.textPrimary }}>{person.enrollDate}</p>
+                    </div>
+                  )}
+                  {person.recurringDays != null && (
+                    <div>
+                      <p className="text-[8px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: T.textMuted }}>
+                        Active Days
+                      </p>
+                      <p className="text-[13px] font-semibold" style={{ color: T.textPrimary }}>{person.recurringDays} days</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>{/* end scrollable */}
+
+            {/* ── NOTIFY — sticky footer pinned at bottom of right col ── */}
+            <div className="shrink-0 px-5 py-4"
+                 ref={notifyRef}
+                 style={{ borderTop: T.sectionBorder, background: T.headerBg }}>
+              <div className="flex items-center gap-2 mb-3">
+                <Mail className="w-3.5 h-3.5 shrink-0" style={{ color: accent }} />
+                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: T.secHeadColor }}>Notify</span>
+                <div className="flex-1 h-px mx-1" style={{ background: T.divider }} />
+              </div>
+
+              <div className="flex gap-2">
+                {/* Recipient dropdown */}
+                <div className="relative flex-1">
+                  <button
+                    onClick={() => setNotifyOpen(v => !v)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-[5px] text-[11px] transition-colors"
+                    style={{ background: T.inputBg, border: T.inputBorder }}>
+                    <span style={{ color: notifySelected.length ? T.inputSelected : T.inputPlaceholder }}>
+                      {notifySelected.length === 0
+                        ? "Select recipients…"
+                        : `${notifySelected.length} selected: ${notifySelected.slice(0, 2).join(", ")}${notifySelected.length > 2 ? "…" : ""}`}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 shrink-0 ml-2 transition-transform"
+                      style={{ color: T.textMuted, transform: notifyOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
+                  </button>
+                  {notifyOpen && (
+                    <div className="absolute left-0 bottom-full z-50 mb-1 w-full rounded-[5px] overflow-hidden shadow-2xl"
+                         style={{ background: T.dropBg, border: T.dropBorder }}>
+                      {allRecipients.map(r => (
+                        <label key={r} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors"
+                               style={{ borderBottom: T.dropRowBorder }}
+                               onMouseEnter={e => (e.currentTarget.style.background = isDark ? a(0.07) : "#F1F5F9")}
+                               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                          <input type="checkbox" checked={notifySelected.includes(r)}
+                            onChange={() => setNotifySelected(prev =>
+                              prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]
+                            )}
+                            className="w-3.5 h-3.5 rounded accent-[#00775B] cursor-pointer" />
+                          <span className="text-[11px]" style={{ color: T.dropItemColor }}>{r}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Send button */}
+                <button
+                  onClick={handleNotify}
+                  disabled={!notifySelected.length}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-[5px] text-[11px] font-bold transition-all shrink-0"
+                  style={{
+                    background: notifySelected.length ? accent : T.btnDisabledBg,
+                    color: notifySelected.length ? (isDark ? "#030d0a" : "#FFFFFF") : T.btnDisabledTx,
+                    border: notifySelected.length ? `1px solid ${accent}` : T.btnDisabledBd,
+                    cursor: notifySelected.length ? "pointer" : "not-allowed",
+                  }}>
+                  <Mail className="w-3.5 h-3.5" />
+                  {notifySelected.length
+                    ? `Send to ${notifySelected.length}`
+                    : "Send Alert"}
+                </button>
+              </div>
+
+              {notified && (
+                <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-[4px]"
+                     style={{ background: T.successBg, border: T.successBorder }}>
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: accent }} />
+                  <p className="text-[11px] font-semibold" style={{ color: accent }}>
+                    Notification sent successfully
+                  </p>
+                </div>
+              )}
+            </div>
+
+          </div>{/* end right column */}
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
 // ─── Priority Watchlist (always-visible center panel — horizontal grid) ────────
+const WL_PAGE_SIZE = 3;
+
 function WatchlistPanel({
   people, onOpenModal, isLPR,
 }: {
   people: FeedPerson[]; onOpenModal: (id: string) => void; isLPR: boolean;
 }) {
+  const [wlPage, setWlPage] = useState(0);
+
   const threats = people
     .filter(p => p.status === "BLACKLIST" || p.status === "BOLO" || p.status === "UNKNOWN" || p.status === "UNREGISTERED")
-    .sort((a, b) => STATUS_CFG[a.status].priority - STATUS_CFG[b.status].priority)
-    .slice(0, 6);
+    .sort((a, b) => STATUS_CFG[a.status].priority - STATUS_CFG[b.status].priority);
 
-  const criticalCount = threats.filter(p => p.status === "BLACKLIST" || p.status === "BOLO").length;
+  const criticalCount  = threats.filter(p => p.status === "BLACKLIST" || p.status === "BOLO").length;
+  const wlTotalPages   = Math.max(1, Math.ceil(threats.length / WL_PAGE_SIZE));
+  const wlSafePage     = Math.min(wlPage, wlTotalPages - 1);
+  const wlPaged        = threats.slice(wlSafePage * WL_PAGE_SIZE, (wlSafePage + 1) * WL_PAGE_SIZE);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-neutral-50 border-b border-neutral-100 shrink-0">
         <Activity className="w-3.5 h-3.5 text-[#00775B]" />
         <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Priority Watchlist</span>
-        {criticalCount > 0 && (
-          <span className="ml-auto flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-[2px] bg-red-600 text-white animate-pulse">
-            <span className="w-1 h-1 rounded-full bg-white" />
-            {criticalCount} CRITICAL
-          </span>
-        )}
-        {criticalCount === 0 && threats.length > 0 && (
-          <span className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded-[2px] bg-amber-100 text-amber-700">
-            {threats.length} ALERTS
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-1.5">
+          {criticalCount > 0 && (
+            <span className="flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-[2px] bg-red-600 text-white animate-pulse">
+              <span className="w-1 h-1 rounded-full bg-white" />
+              {criticalCount} CRITICAL
+            </span>
+          )}
+          {criticalCount === 0 && threats.length > 0 && (
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-[2px] bg-amber-100 text-amber-700">
+              {threats.length} ALERTS
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="p-3">
         {threats.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+          <div className="flex flex-col items-center justify-center py-8 text-neutral-400">
             <CheckCircle2 className="w-10 h-10 mb-2 text-emerald-400" />
             <p className="text-[12px] font-semibold">No active threats</p>
             <p className="text-[10px]">All clear</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 xl:grid-cols-4 gap-2.5">
-            {threats.map(p => {
+          <div className="grid grid-cols-3 gap-2.5">
+            {wlPaged.map(p => {
               const cfg = STATUS_CFG[p.status];
               const isCritical = p.status === "BLACKLIST" || p.status === "BOLO";
               const isPlate = isLPR || p.identType === "PLATE";
@@ -1353,119 +2614,91 @@ function WatchlistPanel({
                   key={p.id}
                   onClick={() => onOpenModal(p.id)}
                   className={cn(
-                    "group relative rounded-[6px] overflow-hidden cursor-pointer transition-all select-none flex flex-col",
-                    "hover:shadow-md hover:-translate-y-[1px] active:translate-y-0",
+                    "group rounded-[4px] overflow-hidden cursor-pointer select-none flex flex-col",
+                    "transition-all hover:-translate-y-[1px] active:scale-[0.99]",
                     isCritical
-                      ? "bg-white border border-red-200 shadow-[0_1px_6px_rgba(220,38,38,0.10)]"
-                      : "bg-white border border-amber-200/70 shadow-[0_1px_6px_rgba(217,119,6,0.08)]",
+                      ? "border border-red-900/30 shadow-[0_0_0_1px_rgba(220,38,38,0.08),0_2px_8px_rgba(220,38,38,0.12)]"
+                      : "border border-amber-900/20 shadow-[0_0_0_1px_rgba(217,119,6,0.06),0_2px_8px_rgba(217,119,6,0.10)]",
                   )}
                 >
-                  {/* Left accent bar */}
+                  {/* ── Alert-tinted header ─────────────────────────────────── */}
                   <div className={cn(
-                    "absolute left-0 top-0 bottom-0 w-[3px]",
-                    isCritical ? "bg-red-600" : "bg-amber-500"
-                  )} />
-
-                  {/* ── Top: badge row ─────────────────────────────────────── */}
-                  <div className="flex items-center gap-1.5 pl-3.5 pr-2.5 pt-2.5 pb-2">
+                    "flex items-center gap-2 px-2.5 py-[7px] border-b",
+                    isCritical ? "bg-red-50 border-red-100" : "bg-amber-50 border-amber-100"
+                  )}>
                     <span className={cn(
-                      "text-[8px] font-black uppercase tracking-[0.1em] px-1.5 py-[3px] rounded-[3px]",
-                      isCritical
-                        ? "bg-red-600 text-white animate-pulse"
-                        : "bg-amber-100 text-amber-800",
-                      p.severity === "HIGH" && !isCritical && "animate-pulse"
+                      "text-[8px] font-black uppercase tracking-[0.12em] px-1.5 py-[2px] rounded-[2px]",
+                      isCritical ? "bg-red-600 text-white" : "bg-amber-500 text-black"
                     )}>
                       {cfg.label}
                     </span>
                     {p.severity && (
-                      <span className={cn(
-                        "flex items-center gap-[3px] text-[8px] font-bold uppercase tracking-wide px-1.5 py-[3px] rounded-[3px]",
-                        isCritical ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"
-                      )}>
-                        <span className={cn("w-1 h-1 rounded-full", isCritical ? "bg-red-500 animate-pulse" : "bg-amber-400")} />
-                        {p.severity}
-                      </span>
+                      <div className="flex items-center gap-[3px]">
+                        <span className={cn(
+                          "w-[5px] h-[5px] rounded-full",
+                          isCritical ? "bg-red-500 animate-pulse" : "bg-amber-500"
+                        )} />
+                        <span className={cn(
+                          "text-[8px] font-bold uppercase tracking-wide",
+                          isCritical ? "text-red-700" : "text-amber-700"
+                        )}>
+                          {p.severity}
+                        </span>
+                      </div>
                     )}
-                    <span className="ml-auto text-[9px] font-mono text-neutral-400">{p.time.slice(0, 5)}</span>
+                    <span className={cn(
+                      "ml-auto text-[8px] font-mono tabular-nums",
+                      isCritical ? "text-red-400" : "text-amber-500"
+                    )}>{p.time.slice(0, 5)}</span>
                   </div>
 
-                  {/* ── Body: image left, info right ───────────────────────── */}
-                  <div className="flex gap-2.5 pl-3.5 pr-2.5 pb-2.5 flex-1">
-
-                    {/* Image — taller portrait crop */}
-                    <div className={cn(
-                      "shrink-0 rounded-[4px] overflow-hidden border",
-                      isCritical ? "border-red-200" : "border-amber-200/80"
-                    )}>
+                  {/* ── Body ──────────────────────────────────────────────── */}
+                  <div className="bg-white flex gap-2.5 px-2.5 pt-2.5 pb-2">
+                    {/* Image */}
+                    <div className="shrink-0 rounded-[2px] overflow-hidden">
                       {isPlate ? (
                         <IdentityEvidenceMedia
-                          kind="PLATE" seed={p.id} plateText={p.plateText}
-                          className="h-[72px] w-[90px]"
+                          kind="PLATE" seed={p.id} plateText={p.plateText} imageSrc={p.imageSrc}
+                          className="h-[68px] w-[86px]"
                         />
                       ) : (
                         <IdentityEvidenceMedia
                           kind="FACE" seed={p.id} imageSrc={p.imageSrc}
                           live={isCritical}
-                          className="h-[72px] w-[56px]"
+                          className="h-[68px] w-[52px]"
                         />
                       )}
                     </div>
 
                     {/* Info */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                      <div>
-                        <p className="text-[13px] font-black text-neutral-900 truncate leading-tight">{p.displayName}</p>
-                        <div className="flex items-center gap-1 mt-0.5 mb-1.5">
-                          <MapPin className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
-                          <p className="text-[10px] text-neutral-500 truncate">{p.zone}</p>
-                        </div>
-                        {p.subLabel && (
-                          <p className={cn(
-                            "text-[9px] leading-snug line-clamp-2",
-                            isCritical ? "text-red-600 font-semibold" : "text-amber-700 font-medium"
-                          )}>
-                            {p.subLabel}
-                          </p>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-black text-neutral-900 truncate leading-tight">{p.displayName}</p>
+                      <div className="flex items-center gap-1 mt-[3px] mb-2">
+                        <MapPin className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                        <p className="text-[9px] font-mono text-neutral-400 truncate">{p.zone}</p>
                       </div>
-
-                      {/* Confidence bar */}
-                      {p.confidence != null && (
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-[8px] text-neutral-400 uppercase tracking-wide">Match</span>
-                            <span className={cn(
-                              "text-[9px] font-black font-mono tabular-nums",
-                              p.confidence >= 90 ? "text-emerald-600" : "text-amber-600"
-                            )}>
-                              {p.confidence.toFixed(1)}%
-                            </span>
-                          </div>
-                          <div className="h-[3px] bg-neutral-100 rounded-full overflow-hidden">
-                            <div
-                              className={cn("h-full rounded-full transition-all", p.confidence >= 90 ? "bg-emerald-500" : "bg-amber-400")}
-                              style={{ width: `${p.confidence}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
+                      <p className={cn(
+                        "text-[9px] font-semibold mb-1",
+                        isCritical ? "text-red-600" : "text-amber-700"
+                      )}>
+                        {p.status === "BLACKLIST" ? "Confirmed Blacklist"
+                          : p.status === "BOLO"         ? "BOLO Match"
+                          : p.status === "UNKNOWN"      ? "Unknown Individual"
+                          : "Unregistered Plate"}
+                      </p>
                     </div>
                   </div>
 
-                  {/* ── Footer: camera + act button ─────────────────────────── */}
-                  <div className={cn(
-                    "flex items-center justify-between pl-3.5 pr-2.5 py-2 border-t mt-auto",
-                    isCritical ? "border-red-100 bg-red-50/50" : "border-amber-100/80 bg-amber-50/30"
-                  )}>
-                    <span className="text-[9px] font-mono text-neutral-400">{p.camera}</span>
+                  {/* ── Footer ────────────────────────────────────────────── */}
+                  <div className="mt-auto bg-neutral-50 border-t border-neutral-100 flex items-center justify-between px-2.5 py-1.5">
+                    <span className="text-[8px] font-mono text-neutral-400 tracking-wide">{p.camera}</span>
                     <button className={cn(
-                      "h-6 px-2.5 rounded-[4px] text-[9px] font-bold flex items-center gap-1 transition-colors",
+                      "h-5 px-2 rounded-[2px] text-[8px] font-black uppercase tracking-wide flex items-center gap-0.5 transition-colors",
                       isCritical
-                        ? "bg-red-600 text-white hover:bg-red-700 group-hover:bg-red-700"
-                        : "bg-amber-500 text-white hover:bg-amber-600 group-hover:bg-amber-600"
+                        ? "bg-red-600 text-white hover:bg-red-700"
+                        : "bg-amber-500 text-white hover:bg-amber-600"
                     )}>
-                      Act
-                      <ChevronRight className="w-2.5 h-2.5" />
+                      Act <ChevronRight className="w-2 h-2" />
                     </button>
                   </div>
                 </div>
@@ -1474,11 +2707,59 @@ function WatchlistPanel({
           </div>
         )}
       </div>
+
+      {/* ── Watchlist Pagination footer ── */}
+      {wlTotalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-neutral-100 bg-neutral-50 relative">
+          {/* PREV */}
+          <button
+            onClick={() => setWlPage(p => Math.max(0, p - 1))}
+            disabled={wlSafePage === 0}
+            className="flex items-center gap-1 h-6 px-2.5 rounded border border-neutral-200 bg-white text-[10px] font-bold text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-3 h-3" /> PREV
+          </button>
+
+          {/* Smart page numbers */}
+          <div className="flex items-center gap-0.5">
+            {getPaginationItems(wlSafePage, wlTotalPages).map((item, idx) =>
+              item === "…" ? (
+                <span key={`ellipsis-${idx}`} className="h-6 w-6 flex items-center justify-center text-[10px] text-neutral-400 select-none">…</span>
+              ) : (
+                <button
+                  key={item}
+                  onClick={() => setWlPage(item)}
+                  className={cn(
+                    "h-6 w-6 rounded text-[10px] font-bold transition-colors",
+                    item === wlSafePage ? "bg-[#00775B] text-white shadow-sm" : "text-neutral-500 hover:bg-neutral-100"
+                  )}
+                >
+                  {item + 1}
+                </button>
+              )
+            )}
+          </div>
+
+          {/* NEXT */}
+          <button
+            onClick={() => setWlPage(p => Math.min(wlTotalPages - 1, p + 1))}
+            disabled={wlSafePage === wlTotalPages - 1}
+            className="flex items-center gap-1 h-6 px-2.5 rounded bg-[#00775B] text-[10px] font-bold text-white hover:bg-[#006349] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-sm"
+          >
+            NEXT <ChevronRight className="w-3 h-3" />
+          </button>
+
+          {/* Count — absolute right */}
+          <span className="absolute right-4 text-[10px] text-neutral-400">
+            Showing <strong className="text-neutral-700">{wlSafePage * WL_PAGE_SIZE + 1}–{Math.min((wlSafePage + 1) * WL_PAGE_SIZE, threats.length)}</strong> of <strong className="text-neutral-700">{threats.length}</strong> alerts
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 interface Props {
   terminology: IdentityTerminology;
   timeRange: string;
@@ -1500,22 +2781,25 @@ export const IdentityMonitoringView = ({
   const [modalPersonId, setModalPersonId] = useState<string | null>(null);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
 
+  // Always open the HiTechEntityModal on row click.
+  // onEntityClick is kept for external callers (camera panels etc.) but
+  // table / watchlist clicks go directly to the modal.
   const openEntity = (person: FeedPerson) => {
-    if (onEntityClick) {
-      const type = (person.status === "BLACKLIST" || person.status === "BOLO") ? "blacklist"
-        : (person.status === "UNKNOWN" || person.status === "UNREGISTERED") ? "unknown"
-        : "matched";
-      onEntityClick(type, person.id);
-    } else {
-      setModalPersonId(person.id);
-    }
+    setModalPersonId(person.id);
   };
 
   const status = IDENTITY_LIVE_STATUS;
 
+  const PAGE_SIZE = 8;
+  const [page, setPage] = useState(0);
+
+  const ZONE_PAGE_SIZE = 8;
+  const [zonePage, setZonePage] = useState(0);
+  const [selectedCamera, setSelectedCamera] = useState<string | null>(null);
+
   const filtered = people
     .filter(p => {
-      if (feedFilter === "threats")    return p.status === "BLACKLIST" || p.status === "BOLO" || p.status === "UNKNOWN" || p.status === "UNREGISTERED";
+      if (feedFilter === "threats")    return p.status === "BLACKLIST" || p.status === "BOLO";
       if (feedFilter === "unknowns")   return p.status === "UNKNOWN" || p.status === "UNREGISTERED";
       if (feedFilter === "vip")        return p.status === "VIP";
       if (feedFilter === "authorized") return p.status === "WHITELIST" || p.status === "AUTHORIZED";
@@ -1523,20 +2807,28 @@ export const IdentityMonitoringView = ({
     })
     .sort((a, b) => STATUS_CFG[a.status].priority - STATUS_CFG[b.status].priority);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage   = Math.min(page, totalPages - 1);
+  const paged      = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
   const modalPerson = modalPersonId ? people.find(p => p.id === modalPersonId) ?? null : null;
   const modalJourney = modalPersonId ? (journeyMap[modalPersonId] ?? []) : [];
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
-  const selectedZone = selectedZoneId ? IDENTITY_ZONES.find(z => z.zone_id === selectedZoneId) ?? null : null;
+  const activeZones  = isLPR ? LPR_ZONES : IDENTITY_ZONES;
+
+  // Reset camera selection whenever the zone panel opens/changes
+  useEffect(() => { setSelectedCamera(null); }, [selectedZoneId]);
+  const selectedZone = selectedZoneId ? activeZones.find(z => z.zone_id === selectedZoneId) ?? null : null;
 
   const threatCount = people.filter(p => p.status === "BLACKLIST" || p.status === "BOLO").length;
   const unknownCount = people.filter(p => p.status === "UNKNOWN" || p.status === "UNREGISTERED").length;
 
-  const systemColor = threatCount > 0 ? "text-red-400" : unknownCount > 0 ? "text-amber-400" : "text-emerald-400";
+  const systemColor = threatCount > 0 ? "text-red-600" : unknownCount > 0 ? "text-amber-600" : "text-emerald-700";
   const systemLabel = threatCount > 0 ? "CRITICAL" : unknownCount > 0 ? "AMBER" : "GREEN";
 
   const FEED_FILTERS: { key: FeedFilter; label: string; count?: number }[] = [
     { key: "all",        label: "All",                                            count: people.length },
-    { key: "threats",    label: isLPR ? "BOLO / Unreg" : "Threats",              count: people.filter(p => p.status === "BLACKLIST" || p.status === "BOLO" || p.status === "UNKNOWN" || p.status === "UNREGISTERED").length },
+    { key: "threats",    label: isLPR ? "BOLO" : "Blacklist",                    count: people.filter(p => p.status === "BLACKLIST" || p.status === "BOLO").length },
     { key: "unknowns",   label: isLPR ? "Unregistered" : "Unknowns",             count: people.filter(p => p.status === "UNKNOWN" || p.status === "UNREGISTERED").length },
     { key: "vip",        label: "VIP",                                            count: people.filter(p => p.status === "VIP").length },
     { key: "authorized", label: "Authorised",                                     count: people.filter(p => p.status === "WHITELIST" || p.status === "AUTHORIZED").length },
@@ -1546,160 +2838,66 @@ export const IdentityMonitoringView = ({
     <div className="flex flex-col gap-3">
 
       {/* ── System Status Bar ─────────────────────────────────────────────── */}
-      <div className="bg-[#021d18] rounded-[4px] px-4 py-2.5 flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className={cn("w-2 h-2 rounded-full animate-pulse", threatCount > 0 ? "bg-red-500" : unknownCount > 0 ? "bg-amber-400" : "bg-emerald-400")} />
-          <span className={cn("text-[10px] font-black uppercase tracking-widest", systemColor)}>{systemLabel}</span>
-        </div>
-        <div className="w-px h-4 bg-white/10" />
+      <div className="bg-[#e5f5ef] rounded-[4px] px-4 py-2.5 flex items-center gap-4 flex-wrap border border-[#00775B]/15">
         {[
-          { label: isLPR ? "Plates/min" : "IDs/min", value: `${status.identifications_last_min}`, color: "text-white" },
-          { label: "Active Threats", value: `${threatCount}`, color: threatCount > 0 ? "text-red-400 font-black" : "text-white" },
-          { label: isLPR ? "Unregistered" : "Unknowns", value: `${unknownCount}`, color: unknownCount > 0 ? "text-amber-400" : "text-white" },
-          { label: "Cameras", value: `${status.cameras_online}/${status.cameras_total}`, color: "text-white" },
-          { label: "Open Alerts", value: `${status.open_alerts.critical}C · ${status.open_alerts.high}H · ${status.open_alerts.medium}M`, color: "text-neutral-300" },
+          { label: isLPR ? "Plates/min" : "IDs/min", value: `${status.identifications_last_min}`, color: "text-neutral-800" },
+          { label: "Active Threats", value: `${threatCount}`, color: threatCount > 0 ? "text-red-600 font-black" : "text-neutral-800" },
+          { label: isLPR ? "Unregistered" : "Unknowns", value: `${unknownCount}`, color: unknownCount > 0 ? "text-amber-600" : "text-neutral-800" },
+          { label: "Cameras", value: `${status.cameras_online}/${status.cameras_total}`, color: "text-neutral-800" },
         ].map(s => (
           <div key={s.label} className="flex items-center gap-1.5">
-            <span className="text-[9px] text-white/40 uppercase tracking-wider">{s.label}</span>
+            <span className="text-[9px] text-neutral-500 uppercase tracking-wider">{s.label}</span>
             <span className={cn("text-[11px] font-mono font-bold", s.color)}>{s.value}</span>
           </div>
         ))}
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[9px] text-emerald-400 font-bold">LIVE</span>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="w-px h-4 bg-[#00775B]/20" />
+          <span className={cn("w-2 h-2 rounded-full animate-pulse", threatCount > 0 ? "bg-red-500" : unknownCount > 0 ? "bg-amber-500" : "bg-emerald-500")} />
+          <span className={cn("text-[10px] font-black uppercase tracking-widest", systemColor)}>{systemLabel}</span>
         </div>
       </div>
 
-      {/* ── Priority Watchlist — full width row ──────────────────────────── */}
-      <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden">
-        <WatchlistPanel people={people} onOpenModal={(id) => { const p = people.find(x => x.id === id); if (p) openEntity(p); }} isLPR={isLPR} />
-      </div>
+      {/* ── Row 1: Watchlist (70%) + Sidebar (30%) ──────────────────────── */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: "70% 1fr", minWidth: 640 }}>
 
-      {/* ── Live Feed + Right sidebar ─────────────────────────────────────── */}
-      <div className="overflow-x-auto -mx-0">
-      <div className="grid gap-3" style={{ gridTemplateColumns: "minmax(0, 3fr) 252px", minHeight: 480, minWidth: 640 }}>
-
-        {/* ── Live Feed (~75%) ─────────────────────────────────────────────── */}
-        <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden flex flex-col">
-          {/* Header + filters */}
-          <div className="px-4 py-2.5 border-b border-neutral-100 shrink-0 flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <ShieldAlert className="w-3.5 h-3.5 text-[#00775B]" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-600">Live Feed</span>
-              <span className="text-[10px] font-mono text-neutral-400 ml-1">{filtered.length} events</span>
-            </div>
-            {threatCount > 0 && (
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-[2px] bg-red-600 text-white animate-pulse">
-                {threatCount} THREAT{threatCount > 1 ? "S" : ""}
-              </span>
-            )}
-            <div className="flex items-center gap-1 ml-auto flex-wrap">
-              {FEED_FILTERS.map(f => (
-                <button
-                  key={f.key}
-                  onClick={() => setFeedFilter(f.key)}
-                  className={cn(
-                    "h-6 px-2 rounded-[3px] text-[9px] font-bold transition-colors whitespace-nowrap",
-                    feedFilter === f.key
-                      ? f.key === "threats" && threatCount > 0
-                        ? "bg-red-600 text-white"
-                        : "bg-[#00775B] text-white"
-                      : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
-                  )}
-                >
-                  {f.label}{f.count != null && f.count > 0 ? ` (${f.count})` : ""}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="flex-1 overflow-auto">
-            {filtered.length === 0 ? (
-              <div className="py-12 text-center text-[11px] text-neutral-400">No events</div>
-            ) : (
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-[#001E18] sticky top-0 z-10">
-                  <tr className="text-[9px] uppercase tracking-widest font-bold text-white/80 h-8">
-                    <th className="px-3 py-2 w-16">ID</th>
-                    <th className="px-3 py-2 w-16">Snapshot</th>
-                    <th className="px-3 py-2">Identity</th>
-                    <th className="px-3 py-2 w-28">Status</th>
-                    <th className="px-3 py-2">Zone</th>
-                    <th className="px-3 py-2 w-28">Camera</th>
-                    <th className="px-3 py-2 w-20 text-right">Match %</th>
-                    <th className="px-3 py-2 w-20 text-right">Dwell</th>
-                    <th className="px-3 py-2 w-24 text-right">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((p, i) => (
-                    <FeedTableRow
-                      key={p.id}
-                      person={p}
-                      rowIndex={i}
-                      onClick={() => openEntity(p)}
-                      isLPR={isLPR}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+        {/* Priority Watchlist */}
+        <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden">
+          <WatchlistPanel people={people} onOpenModal={(id) => { const p = people.find(x => x.id === id); if (p) openEntity(p); }} isLPR={isLPR} />
         </div>
 
-        {/* ── RIGHT: Zone Command ──────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3">
+        {/* ── RIGHT: Zone Status — full height ─────────────────────────── */}
+        <div className="flex flex-col h-full">
 
-          {/* Camera status strip — moved above zone status */}
-          <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <Camera className="w-3 h-3 text-[#00775B]" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Cameras</span>
-              </div>
-              <span className="text-[10px] font-mono font-bold text-neutral-700">{status.cameras_online}/{status.cameras_total}</span>
-            </div>
-            <div className="flex gap-1 flex-wrap">
-              {Array.from({ length: status.cameras_total }, (_, i) => {
-                const online = i < status.cameras_online;
-                return (
-                  <div
-                    key={i}
-                    title={`CAM-${String(i + 1).padStart(2, "0")}`}
-                    className={cn("w-4 h-4 rounded-[2px]", online ? "bg-emerald-400" : "bg-red-400/60")}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-3 mt-2 text-[9px]">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[1px] bg-emerald-400" />Online</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[1px] bg-red-400/60" />Offline</span>
-            </div>
-          </div>
-
-          {/* Zone status grid — clickable cards */}
-          <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden flex-1">
-            <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-neutral-50">
+          {/* Zone status grid — paginated with chevrons */}
+          {(() => {
+            const ZONE_STATUS_ORDER: Record<string, number> = { CRITICAL: 0, WATCH: 1, ELEVATED: 2, CLEAR: 3 };
+            const sortedZones  = [...activeZones].sort((a, b) =>
+              (ZONE_STATUS_ORDER[a.status] ?? 9) - (ZONE_STATUS_ORDER[b.status] ?? 9)
+            );
+            const totalZones   = sortedZones.length;
+            const zonePages    = Math.max(1, Math.ceil(totalZones / ZONE_PAGE_SIZE));
+            const safeZonePage = Math.min(zonePage, zonePages - 1);
+            const pagedZones   = sortedZones.slice(safeZonePage * ZONE_PAGE_SIZE, (safeZonePage + 1) * ZONE_PAGE_SIZE);
+            return (
+          <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden flex flex-col flex-1">
+            <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-neutral-50 shrink-0">
               <MapPin className="w-3.5 h-3.5 text-[#00775B]" />
               <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">Zone Status</span>
+              <span className="ml-auto text-[9px] font-mono text-neutral-400">{totalZones} zones</span>
             </div>
-            <div className="p-2 grid grid-cols-2 gap-1.5">
-              {IDENTITY_ZONES.slice(0, 8).map(zone => {
+            <div className="flex-1 overflow-y-auto p-2 grid grid-cols-2 gap-1.5 content-start">
+              {pagedZones.map(zone => {
                 const color = zone.status === "CRITICAL" ? "bg-red-50 border-red-300 text-red-700"
-                  : zone.status === "WATCH" ? "bg-amber-50 border-amber-300 text-amber-700"
+                  : zone.status === "WATCH"    ? "bg-amber-50 border-amber-300 text-amber-700"
                   : zone.status === "ELEVATED" ? "bg-orange-50 border-orange-200 text-orange-700"
                   : "bg-emerald-50 border-emerald-200 text-emerald-700";
                 const dot = zone.status === "CRITICAL" ? "bg-red-600 animate-pulse"
-                  : zone.status === "WATCH" ? "bg-amber-500"
+                  : zone.status === "WATCH"    ? "bg-amber-500"
                   : zone.status === "ELEVATED" ? "bg-orange-500"
                   : "bg-emerald-600";
                 return (
-                  <button
-                    key={zone.zone_id}
-                    onClick={() => setSelectedZoneId(zone.zone_id)}
-                    className={cn("rounded-[3px] border px-2 py-1.5 text-left transition-all hover:ring-1 hover:ring-[#00775B]/30 hover:shadow-sm", color)}
-                  >
+                  <button key={zone.zone_id} onClick={() => setSelectedZoneId(zone.zone_id)}
+                    className={cn("rounded-[3px] border px-2 py-1.5 text-left transition-all hover:ring-1 hover:ring-[#00775B]/30 hover:shadow-sm", color)}>
                     <div className="flex items-center gap-1 mb-0.5">
                       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dot)} />
                       <span className="text-[9px] font-bold truncate">{zone.zone_name}</span>
@@ -1713,14 +2911,164 @@ export const IdentityMonitoringView = ({
                 );
               })}
             </div>
+            {/* Dot pagination with chevrons */}
+            {zonePages > 1 && (
+              <div className="flex items-center justify-center gap-2 py-2.5 border-t border-neutral-50 shrink-0">
+                <button
+                  onClick={() => setZonePage(p => Math.max(0, p - 1))}
+                  disabled={safeZonePage === 0}
+                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-3 h-3 text-neutral-500" />
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: zonePages }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setZonePage(i)}
+                      className={cn(
+                        "rounded-full transition-all duration-200",
+                        i === safeZonePage
+                          ? "w-4 h-[6px] bg-[#00775B]"
+                          : "w-[6px] h-[6px] bg-neutral-200 hover:bg-neutral-400"
+                      )}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={() => setZonePage(p => Math.min(zonePages - 1, p + 1))}
+                  disabled={safeZonePage === zonePages - 1}
+                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-3 h-3 text-neutral-500" />
+                </button>
+              </div>
+            )}
           </div>
+            );
+          })()}
 
         </div>
       </div>
+
+      {/* ── Row 2: Live Feed — full width ────────────────────────────────── */}
+      <div className="bg-white dark:bg-[#0F172A] rounded-[4px] border border-neutral-100 dark:border-[#1E293B] shadow-sm overflow-hidden flex flex-col">
+        {/* Header + filters */}
+        <div className="px-4 py-2.5 border-b border-neutral-100 dark:border-[#1E293B] bg-neutral-50 dark:bg-[#0F172A] shrink-0 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <ShieldAlert className="w-3.5 h-3.5 text-[#00775B] dark:text-[#00D4AA]" />
+            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-600 dark:text-slate-400">Live Feed</span>
+          </div>
+          <div className="flex items-center gap-1 ml-auto flex-wrap">
+            {FEED_FILTERS.map(f => (
+              <button
+                key={f.key}
+                onClick={() => { setFeedFilter(f.key); setPage(0); }}
+                className={cn(
+                  "h-6 px-2 rounded-[3px] text-[9px] font-bold transition-colors whitespace-nowrap",
+                  feedFilter === f.key
+                    ? f.key === "threats" && threatCount > 0
+                      ? "bg-red-600 text-white"
+                      : "bg-[#00775B] text-white"
+                    : "bg-neutral-100 dark:bg-[#1E293B] text-neutral-500 dark:text-slate-400 hover:bg-neutral-200 dark:hover:bg-[#334155]"
+                )}
+              >
+                {f.label}{f.count != null && f.count > 0 ? ` (${f.count})` : ""}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-auto">
+          {filtered.length === 0 ? (
+            <div className="py-12 text-center text-[11px] text-neutral-400 dark:text-slate-500">No events</div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-neutral-100 sticky top-0 z-10 border-b border-neutral-200">
+                <tr className="text-[9px] uppercase tracking-widest font-bold text-neutral-500 h-8">
+                  <th className="px-3 py-2 w-16">ID</th>
+                  <th className="px-3 py-2 w-16">Snapshot</th>
+                  <th className="px-3 py-2">Identity</th>
+                  <th className="px-3 py-2 w-28">Status</th>
+                  <th className="px-3 py-2">Zone</th>
+                  <th className="px-3 py-2 w-28">Camera</th>
+                  <th className="px-3 py-2 w-20 text-right">Match %</th>
+                  <th className="px-3 py-2 w-20 text-right">Dwell</th>
+                  <th className="px-3 py-2 w-24 text-right">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((p, i) => (
+                  <FeedTableRow
+                    key={p.id}
+                    person={p}
+                    rowIndex={safePage * PAGE_SIZE + i}
+                    onClick={() => openEntity(p)}
+                    isLPR={isLPR}
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* ── Pagination footer ── */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-neutral-100 dark:border-[#1E293B] bg-neutral-50 dark:bg-[#0F172A] shrink-0 relative">
+            {/* PREV */}
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={safePage === 0}
+              className="flex items-center gap-1 h-6 px-2.5 rounded border border-neutral-200 dark:border-[#334155] bg-white dark:bg-[#1E293B] text-[10px] font-bold text-neutral-500 dark:text-slate-400 hover:bg-neutral-100 dark:hover:bg-[#334155] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" /> PREV
+            </button>
+
+            {/* Smart page numbers */}
+            <div className="flex items-center gap-0.5">
+              {getPaginationItems(safePage, totalPages).map((item, idx) =>
+                item === "…" ? (
+                  <span key={`ellipsis-${idx}`} className="h-6 w-6 flex items-center justify-center text-[10px] text-neutral-400 dark:text-slate-500 select-none">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setPage(item)}
+                    className={cn(
+                      "h-6 w-6 rounded text-[10px] font-bold transition-colors",
+                      item === safePage
+                        ? "bg-[#00775B] text-white shadow-sm"
+                        : "text-neutral-500 dark:text-slate-400 hover:bg-neutral-100 dark:hover:bg-[#1E293B]"
+                    )}
+                  >
+                    {item + 1}
+                  </button>
+                )
+              )}
+            </div>
+
+            {/* NEXT */}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={safePage === totalPages - 1}
+              className="flex items-center gap-1 h-6 px-2.5 rounded bg-[#00775B] text-[10px] font-bold text-white hover:bg-[#006349] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              NEXT <ChevronRight className="w-3 h-3" />
+            </button>
+
+            {/* Count — absolute right */}
+            <span className="absolute right-4 text-[10px] text-neutral-400 dark:text-slate-500">
+              Showing <strong className="text-neutral-700 dark:text-slate-300">{safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)}</strong> of <strong className="text-neutral-700 dark:text-slate-300">{filtered.length}</strong> events
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ── Entity Detail Slide Panel ─────────────────────────────────────── */}
-      <EntityModal
+      {/* ── Entity Detail — Hi-Tech Modal (cyberpunk/HUD style) ───────────── */}
+      {/* EntityModal (SlidePanel version) is preserved above for reference.   */}
+      <HiTechEntityModal
         isOpen={!!modalPerson}
         person={modalPerson}
         journey={modalJourney}
@@ -1751,7 +3099,11 @@ export const IdentityMonitoringView = ({
             : isElevated ? "bg-orange-500"
             : "bg-emerald-600";
 
-          const zonePeople = people.filter(p => p.zone === selectedZone.zone_name);
+          const zoneCameras = CAMERA_NODES.filter(c => c.zone === selectedZone.zone_name);
+          const zonePeopleAll = people.filter(p => p.zone === selectedZone.zone_name);
+          const zonePeople = zonePeopleAll.filter(p =>
+            selectedCamera === null || p.camera === selectedCamera
+          );
 
           return (
             <div className="flex flex-col gap-0">
@@ -1778,34 +3130,89 @@ export const IdentityMonitoringView = ({
                 ))}
               </div>
 
-              {/* Camera list */}
-              <div className="px-5 py-4 border-b border-neutral-100">
-                <div className="flex items-center gap-1.5 mb-3">
-                  <Camera className="w-3.5 h-3.5 text-[#00775B]" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Active Cameras</span>
+              {/* Camera list — selectable, from real CAMERA_NODES */}
+              {zoneCameras.length > 0 && (
+                <div className="px-5 py-4 border-b border-neutral-100">
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <Camera className="w-3.5 h-3.5 text-[#00775B]" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Cameras</span>
+                    <span className="ml-auto text-[9px] text-neutral-400 font-mono">
+                      {zoneCameras.filter(c => c.status === "online").length}/{zoneCameras.length} online
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {/* All Cameras option */}
+                    <button
+                      onClick={() => setSelectedCamera(null)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2.5 py-2 rounded-[4px] border transition-colors text-left",
+                        selectedCamera === null
+                          ? "border-[#00775B]/40 bg-[#E5FFF9]"
+                          : "border-neutral-100 bg-neutral-50 hover:bg-neutral-100"
+                      )}
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0 bg-[#00775B]" />
+                      <span className={cn(
+                        "text-[10px] font-bold flex-1",
+                        selectedCamera === null ? "text-[#00775B]" : "text-neutral-700"
+                      )}>All Cameras</span>
+                      <span className="text-[9px] text-neutral-400 font-mono">{zonePeopleAll.length} events</span>
+                    </button>
+                    {/* Individual cameras */}
+                    {zoneCameras.map(cam => {
+                      const camEvents = people.filter(p => p.camera === cam.id);
+                      const isSelected = selectedCamera === cam.id;
+                      return (
+                        <button
+                          key={cam.id}
+                          onClick={() => setSelectedCamera(isSelected ? null : cam.id)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-2.5 py-2 rounded-[4px] border transition-colors text-left",
+                            isSelected
+                              ? "border-[#00775B]/40 bg-[#E5FFF9]"
+                              : "border-neutral-100 bg-neutral-50 hover:bg-neutral-100"
+                          )}
+                        >
+                          <span className={cn(
+                            "w-2 h-2 rounded-full shrink-0",
+                            cam.status === "online"   ? "bg-emerald-400"
+                            : cam.status === "degraded" ? "bg-amber-400"
+                            : "bg-red-400"
+                          )} />
+                          <div className="flex-1 min-w-0">
+                            <p className={cn(
+                              "text-[10px] font-mono truncate",
+                              isSelected ? "text-[#00775B] font-bold" : "text-neutral-700"
+                            )}>{cam.id}</p>
+                            <p className="text-[8px] text-neutral-400 truncate">{cam.name}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className={cn(
+                              "text-[8px] font-bold uppercase",
+                              cam.status === "online"   ? "text-emerald-600"
+                              : cam.status === "degraded" ? "text-amber-600"
+                              : "text-red-500"
+                            )}>
+                              {cam.status === "online" ? `${cam.fps} fps` : cam.status}
+                            </p>
+                            {camEvents.length > 0 && (
+                              <p className="text-[8px] text-neutral-400 font-mono">{camEvents.length} events</p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {[1, 2, 3, 4].map(i => {
-                    const camId = `CAM-${selectedZone.zone_id.toUpperCase()}-0${i}`;
-                    const isOnline = i <= 3;
-                    return (
-                      <div key={camId} className="flex items-center gap-2 px-2.5 py-2 rounded-[4px] border border-neutral-100 bg-neutral-50">
-                        <span className={cn("w-2 h-2 rounded-full shrink-0", isOnline ? "bg-emerald-400" : "bg-red-400")} />
-                        <span className="text-[10px] font-mono text-neutral-700 truncate">{camId}</span>
-                        <span className={cn("ml-auto text-[8px] font-bold uppercase", isOnline ? "text-emerald-600" : "text-red-500")}>
-                          {isOnline ? "Online" : "Offline"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              )}
 
-              {/* Live detections in this zone */}
+              {/* Live detections in this zone (filtered by selected camera) */}
               <div className="px-5 py-4">
                 <div className="flex items-center gap-1.5 mb-3">
                   <Activity className="w-3.5 h-3.5 text-[#00775B]" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Recent Detections</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                    {selectedCamera ? `${selectedCamera} Events` : "Recent Detections"}
+                  </span>
                   {zonePeople.length > 0 && (
                     <span className="ml-auto text-[9px] font-bold text-neutral-400">{zonePeople.length} found</span>
                   )}
@@ -1829,7 +3236,7 @@ export const IdentityMonitoringView = ({
                         >
                           <div className="w-10 h-10 rounded-[3px] overflow-hidden border border-neutral-200 shrink-0 bg-neutral-100">
                             {isPlate ? (
-                              <IdentityEvidenceMedia kind="PLATE" seed={p.id} plateText={p.plateText} className="w-full h-full" />
+                              <IdentityEvidenceMedia kind="PLATE" seed={p.id} plateText={p.plateText} imageSrc={p.imageSrc} className="w-full h-full" />
                             ) : (
                               <IdentityEvidenceMedia kind="FACE" seed={p.id} imageSrc={p.imageSrc} className="w-full h-full" />
                             )}
@@ -1855,6 +3262,7 @@ export const IdentityMonitoringView = ({
           );
         })()}
       </SlidePanel>
+
     </div>
   );
 };

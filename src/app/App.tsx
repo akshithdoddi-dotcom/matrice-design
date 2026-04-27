@@ -4,7 +4,8 @@ import { Sidebar, Page } from "@/app/components/layout/Sidebar";
 import { IncidentCard } from "@/app/components/dashboard/IncidentCard";
 import { IncidentDetailModal } from "@/app/components/dashboard/IncidentDetailModal";
 import { Button } from "@/app/components/ui/Button";
-import { Bell, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Clock, Filter, LayoutGrid, List, Check, User, Video, MapPin, X, ChevronDown, Info, Trash2, Copy, ImageIcon, Activity, ExternalLink, Search, ShieldCheck, Hexagon, Zap, Shield, PanelLeft, Command } from "lucide-react";
+import { GridBackground } from "@/app/components/layout/GridBackground";
+import { Bell, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Clock, Filter, LayoutGrid, List, Check, User, Video, MapPin, X, ChevronDown, Info, Trash2, Copy, ImageIcon, Activity, ExternalLink, Search, ShieldCheck, Hexagon, Zap, Shield, PanelLeft, Command, Sun, Moon, LogOut, Settings } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { Checkbox } from "@/app/components/ui/Checkbox";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
@@ -202,9 +203,33 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
 
 export default function App() {
   const [activePersona, setActivePersona] = useState<Persona>("monitoring");
-  const [activePage, setActivePage] = useState<Page>(
-    window.location.pathname === "/safety-analytics" ? "safety" : "dashboard"
-  );
+  const [activePage, setActivePage] = useState<Page>("dashboard");
+
+  // ── Theme ────────────────────────────────────────────────────────────────────
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    try { return localStorage.getItem("matrice-theme") === "dark"; } catch { return false; }
+  });
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    try { localStorage.setItem("matrice-theme", isDark ? "dark" : "light"); } catch {}
+  }, [isDark]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
+        setIsAvatarMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("no-animate") === "1") {
@@ -404,7 +429,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-auto bg-[#F8FAFC] font-sans text-neutral-900 relative overflow-visible">
+    <div className="flex h-screen bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 relative overflow-hidden">
       <Sidebar activePage={activePage} onPageChange={setActivePage} collapsed={sidebarCollapsed} noTransition={!sidebarMounted.current} />
 
       <div className={cn("flex-1 relative z-10 w-full min-w-0 h-full overflow-y-visible overflow-x-hidden", sidebarMounted.current && "transition-all duration-300", sidebarCollapsed ? "lg:pl-14" : "lg:pl-56", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
@@ -533,10 +558,87 @@ export default function App() {
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-[#021d18]" />
             </button>
 
-            {/* User avatar */}
-            <button className="h-8 w-8 rounded-full bg-[#00775B] flex items-center justify-center text-white text-xs font-bold shadow-md hover:bg-[#006649] transition-colors">
-              AU
-            </button>
+            {/* User avatar + dropdown */}
+            <div className="relative" ref={avatarRef}>
+              <button
+                onClick={() => setIsAvatarMenuOpen(v => !v)}
+                className="h-8 w-8 rounded-full bg-[#00775B] flex items-center justify-center text-white text-xs font-bold shadow-md hover:bg-[#006649] transition-colors ring-2 ring-transparent hover:ring-[#00775B]/40"
+              >
+                AU
+              </button>
+
+              {isAvatarMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl shadow-2xl z-[200] overflow-hidden border"
+                     style={{ background: isDark ? "#0F172A" : "#ffffff", borderColor: isDark ? "#1E293B" : "#e5e7eb" }}>
+                  {/* User info */}
+                  <div className="flex items-center gap-3 px-4 py-3.5"
+                       style={{ borderBottom: isDark ? "1px solid #1E293B" : "1px solid #f1f5f9" }}>
+                    <div className="w-9 h-9 rounded-full bg-[#00775B] flex items-center justify-center text-white text-sm font-black shrink-0">
+                      AU
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold truncate" style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>Admin User</p>
+                      <p className="text-[10px] truncate" style={{ color: isDark ? "#64748b" : "#94a3b8" }}>admin@matrice.ai</p>
+                    </div>
+                  </div>
+
+                  {/* Theme toggle row */}
+                  <div className="px-2 py-2"
+                       style={{ borderBottom: isDark ? "1px solid #1E293B" : "1px solid #f1f5f9" }}>
+                    <button
+                      onClick={() => { setIsDark(d => !d); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group"
+                      style={{
+                        background: "transparent",
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? "#1E293B" : "#f8fafc")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                           style={{ background: isDark ? "#00D4AA22" : "#00775B15" }}>
+                        {isDark
+                          ? <Sun  className="w-3.5 h-3.5" style={{ color: "#00D4AA" }} />
+                          : <Moon className="w-3.5 h-3.5" style={{ color: "#00775B" }} />}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-[11px] font-semibold" style={{ color: isDark ? "#e2e8f0" : "#374151" }}>
+                          {isDark ? "Switch to Light" : "Switch to Dark"}
+                        </p>
+                        <p className="text-[9px]" style={{ color: isDark ? "#64748b" : "#9ca3af" }}>
+                          {isDark ? "Light mode" : "Dark mode"}
+                        </p>
+                      </div>
+                      {/* Toggle pill */}
+                      <div className="relative w-9 h-5 rounded-full transition-colors shrink-0"
+                           style={{ background: isDark ? "#00D4AA" : "#d1d5db" }}>
+                        <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200"
+                             style={{ left: isDark ? "calc(100% - 18px)" : "2px" }} />
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Other menu items */}
+                  <div className="px-2 py-2">
+                    {[
+                      { icon: Settings, label: "Profile Settings" },
+                      { icon: LogOut,   label: "Sign Out",         danger: true },
+                    ].map(item => (
+                      <button key={item.label}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors"
+                        style={{ color: item.danger ? "#ef4444" : isDark ? "#cbd5e1" : "#374151" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = item.danger
+                          ? isDark ? "#450a0a" : "#fef2f2"
+                          : isDark ? "#1E293B" : "#f8fafc")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <item.icon className="w-3.5 h-3.5 shrink-0" />
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

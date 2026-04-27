@@ -9,6 +9,8 @@ interface Props {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  footer?: ReactNode;
+  headerRight?: ReactNode;
   width?: string;
 }
 
@@ -18,6 +20,8 @@ export const QualitySlidePanel = ({
   title,
   subtitle,
   children,
+  footer,
+  headerRight,
   width = "w-[640px]",
 }: Props) => {
   useEffect(() => {
@@ -45,30 +49,40 @@ export const QualitySlidePanel = ({
       />
       <div
         className={cn(
-          "fixed right-0 top-0 bottom-0 z-[999] flex flex-col bg-neutral-50 shadow-2xl border-l border-neutral-200",
+          "fixed right-0 top-0 bottom-0 z-[999] flex flex-col bg-white shadow-2xl border-l border-neutral-200",
           "transition-transform duration-300 ease-out",
           width, "max-w-[95vw]",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        <div className="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-neutral-200 bg-white shrink-0">
-          <div className="min-w-0 flex items-center gap-3">
-            <div className="w-0.5 h-7 bg-[#00775B] rounded-full shrink-0" />
-            <div>
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.1em] text-neutral-400 leading-none">{title}</h3>
-              {subtitle && <p className="text-[15px] font-bold text-neutral-900 mt-0.5 leading-tight">{subtitle}</p>}
-            </div>
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-neutral-100 bg-white shrink-0">
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-neutral-900 leading-tight">{title}</h3>
+            {subtitle && <p className="text-xs text-neutral-500 mt-0.5 leading-tight">{subtitle}</p>}
           </div>
-          <button
-            onClick={onClose}
-            className="flex items-center justify-center w-8 h-8 rounded-[4px] hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors border border-transparent hover:border-neutral-200"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {headerRight}
+            <button
+              onClick={onClose}
+              className="flex items-center justify-center w-8 h-8 rounded hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Body — scrollable */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {children}
         </div>
+
+        {/* Sticky footer */}
+        {footer && (
+          <div className="shrink-0 border-t border-neutral-100">
+            {footer}
+          </div>
+        )}
       </div>
     </>,
     document.body
