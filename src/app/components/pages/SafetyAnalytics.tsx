@@ -70,58 +70,75 @@ const FloatingHUD = ({
     <div
       style={{
         position: "fixed",
-        // Header h-12 = 48px. Gap = 2 × 8px grid tokens = 16px → top: 64px
+        // Header h-12 = 48px + 2 × 8px grid tokens = top: 64px
         top: 64,
         left: sidebarW + OUTER_PAD,
         right: OUTER_PAD,
-        // ── Precision sizing (8px grid) ───────────────────────────────────
         minHeight: 52,
         padding: "0 24px",
         zIndex: 20,
         display: "flex",
         alignItems: "center",
         gap: 0,
-        // ── Surface Physics (Light Mode) ──────────────────────────────────
-        // 85% opaque white base ensures text is always readable — dark cards
-        // behind it bleed through the blur as subtle tinted texture, not noise.
-        backgroundColor: "rgba(255, 255, 255, 0.85)",
-        backdropFilter: "blur(28px) saturate(160%)",
-        WebkitBackdropFilter: "blur(28px) saturate(160%)",
-        // Multi-layer border: top light-catch + teal energy on sides/bottom
-        borderTop: "1.5px solid rgba(255, 255, 255, 0.2)",
-        borderLeft: "1px solid rgba(0, 119, 91, 0.4)",
-        borderRight: "1px solid rgba(0, 119, 91, 0.4)",
-        borderBottom: "1px solid rgba(0, 119, 91, 0.4)",
-        // Deep elevation shadow + inner light-catch ring
-        boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.1)",
-        borderRadius: 8,
+
+        // ── Surface: Frosted Heavy Glass ──────────────────────────────────
+        // 88% opaque white + 32px blur = content behind reads as soft tinted
+        // texture rather than competing signal. Text stays fully legible over
+        // any card color — dark #021D18, amber, red gradient, white alike.
+        backgroundColor: "rgba(255, 255, 255, 0.88)",
+        backdropFilter: "blur(32px) saturate(160%)",
+        WebkitBackdropFilter: "blur(32px) saturate(160%)",
+
+        // ── Edge Definition ───────────────────────────────────────────────
+        // Top: bright white rim-light simulates ambient light striking the
+        //   upper bevel — separates the HUD from the background at all times.
+        // Sides/bottom: neutral-200 @ 0.4 keeps the border visible without
+        //   adding colour energy that would compete with teal accents.
+        borderTop: "1px solid rgba(255, 255, 255, 0.6)",
+        borderLeft: "1px solid rgba(226, 232, 240, 0.4)",
+        borderRight: "1px solid rgba(226, 232, 240, 0.4)",
+        borderBottom: "1px solid rgba(226, 232, 240, 0.4)",
+
+        // ── Shadow: centred spread defines all edges equally ──────────────
+        // 0 0 0 1px ring → sharpens every edge including the top.
+        // 0 8px 32px → soft lift that keeps the bar floating above cards.
+        boxShadow: "0 0 0 1px rgba(0,0,0,0.05), 0 8px 32px rgba(0,0,0,0.2)",
+
+        // ── Shape: machined 6px radius ────────────────────────────────────
+        borderRadius: 6,
         transition: "left 300ms cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      {/* ── Left: Breadcrumb + live sync ────────────────────────────────── */}
+      {/* ── Left: Project / Pipeline breadcrumb + live sync ─────────────── */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
 
-        {/* Project label + value */}
+        {/* Project */}
         <span style={{ fontSize: 12, color: "#64748B", letterSpacing: "0.01em" }}>
           Project:
         </span>
         <span
           style={{
             fontSize: 12,
-            color: "#0F172A",        // --neutral-900: maximum contrast on light surface
+            color: "#0F172A",
             fontWeight: 500,
-            textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+            textShadow: "0 1px 2px rgba(0,0,0,0.08)",
           }}
         >
           Matrice AI
         </span>
 
-        {/* Breadcrumb chevron */}
+        {/* Chevron separator */}
         <ChevronDown
-          style={{ width: 10, height: 10, color: "#CBD5E1", flexShrink: 0, transform: "rotate(-90deg)" }}
+          style={{
+            width: 10,
+            height: 10,
+            color: "#CBD5E1",
+            flexShrink: 0,
+            transform: "rotate(-90deg)",
+          }}
         />
 
-        {/* Pipeline label + value — Mono signals technical identity */}
+        {/* Pipeline — JetBrains Mono signals machine/technical identity */}
         <span style={{ fontSize: 12, color: "#64748B", letterSpacing: "0.01em" }}>
           Pipeline:
         </span>
@@ -129,19 +146,17 @@ const FloatingHUD = ({
           className="font-mono"
           style={{
             fontSize: 12,
-            color: "#0F172A",        // --neutral-900
+            color: "#0F172A",
             fontWeight: 500,
-            letterSpacing: "0.01em",
-            textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+            textShadow: "0 1px 2px rgba(0,0,0,0.08)",
           }}
         >
           {pipelineName}
         </span>
 
-        {/* Live sync indicator — monitoring persona only */}
+        {/* Live sync indicator (monitoring persona only) */}
         {persona === "monitoring" && (
           <>
-            {/* Hairline separator */}
             <span
               style={{
                 display: "block",
@@ -186,10 +201,8 @@ const FloatingHUD = ({
               />
             </span>
 
-            {/* Sync label */}
-            <span
-              style={{ fontSize: 11, color: "#64748B", lineHeight: 1 }}
-            >
+            {/* Sync text — time value in JetBrains Mono */}
+            <span style={{ fontSize: 11, color: "#64748B", lineHeight: 1 }}>
               Updated{" "}
               <span
                 className="font-mono tabular-nums"
@@ -203,13 +216,13 @@ const FloatingHUD = ({
         )}
       </div>
 
-      {/* ── Flex spacer ─────────────────────────────────────────────────── */}
+      {/* ── Spacer ──────────────────────────────────────────────────────── */}
       <div style={{ flex: 1 }} />
 
-      {/* ── Right: App filter + Time Range pills + Info chip ─────────────── */}
+      {/* ── Right: App filter ╱ Time Range selector ╱ Time info chip ─────── */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
 
-        {/* App multi-select dropdown — functionality & element unchanged */}
+        {/* App multi-select — unchanged functionality */}
         <FilterDropdown
           label="Apps"
           options={["all", "PPE", "Intrusion", "Crowd", "LPR", "Face Recog"]}
@@ -218,15 +231,15 @@ const FloatingHUD = ({
           className="w-[140px]"
         />
 
-        {/* ── Time range pill group ── 1px border, 12px radius */}
+        {/* ── Time Range selector — sharp 2px corners: technical / high-tech */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             border: "1px solid rgba(0, 119, 91, 0.2)",
-            borderRadius: 12,
-            backgroundColor: "rgba(0, 0, 0, 0.03)",
-            padding: "2px 3px",
+            borderRadius: 2,                // sharp = machined aesthetic
+            backgroundColor: "rgba(0,0,0,0.03)",
+            padding: "2px",
             gap: 1,
           }}
         >
@@ -240,14 +253,14 @@ const FloatingHUD = ({
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
-                borderRadius: 9,           // inner = container(12) – padding(3)
+                borderRadius: 1,            // near-flush with container
                 border: "none",
                 cursor: "pointer",
                 lineHeight: 1,
-                transition: "background-color 150ms ease, color 150ms ease, box-shadow 150ms ease",
+                transition: "background-color 120ms ease, color 120ms ease, box-shadow 120ms ease",
                 backgroundColor: timeRange === r ? "#00775B" : "transparent",
                 color: timeRange === r ? "#ffffff" : "#64748B",
-                boxShadow: timeRange === r ? "0 1px 6px rgba(0,119,91,0.35)" : "none",
+                boxShadow: timeRange === r ? "0 1px 4px rgba(0,119,91,0.3)" : "none",
               } as React.CSSProperties}
             >
               {r}
@@ -255,28 +268,35 @@ const FloatingHUD = ({
           ))}
         </div>
 
-        {/* ── Time-range info chip ── 1px border, 12px radius */}
+        {/* ── Time info container — #F0F2F4 fill, 4px corners, Mono text
+             Exactly 12px gap from the Time Range selector (8px row gap + 4px margin). */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 6,
             height: 30,
-            padding: "0 11px",
-            backgroundColor: "rgba(0, 0, 0, 0.03)",
-            border: "1px solid rgba(0, 0, 0, 0.08)",
-            borderRadius: 12,
-            fontSize: 11,
-            color: "#64748B",
-            fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
-            width: 164,
-            overflow: "hidden",
+            padding: "0 10px",
+            backgroundColor: "#F0F2F4",
+            border: "1px solid rgba(0,0,0,0.06)",
+            borderRadius: 4,               // matches KPI card corners
             flexShrink: 0,
-            whiteSpace: "nowrap",
+            marginLeft: 4,                 // 8px (row gap) + 4px = 12px from selector
           }}
         >
           <Clock style={{ width: 11, height: 11, color: "#94A3B8", flexShrink: 0 }} />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {/* All text in JetBrains Mono for technical clarity */}
+          <span
+            className="font-mono"
+            style={{
+              fontSize: 11,
+              color: "#475569",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: 152,
+            }}
+          >
             {timeRangeInfo}
           </span>
         </div>
