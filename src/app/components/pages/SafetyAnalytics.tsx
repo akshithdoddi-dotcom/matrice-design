@@ -31,11 +31,11 @@ const SafetySparkline = ({
 };
 
 // ─── Floating HUD ────────────────────────────────────────────────────────────
-// position: fixed (not sticky) — parent overflow-x:hidden breaks sticky.
-// Left edge tracks the fixed sidebar width + matching p-6 (24px) content padding.
-const SB_EXPANDED_W = 224;  // Sidebar w-56 = 14rem = 224px
-const SB_COLLAPSED_W = 56;  // Sidebar w-14 = 3.5rem = 56px
-const CONTENT_PAD = 24;     // App.tsx p-6 = 1.5rem = 24px
+// position: fixed — parent overflow-x:hidden breaks sticky.
+// Tracks sidebar width + 24px outer pad. Transitions with sidebar collapse.
+const SB_EXPANDED_W = 224;   // w-56 = 14rem = 224px
+const SB_COLLAPSED_W = 56;   // w-14 = 3.5rem = 56px
+const OUTER_PAD = 24;        // App.tsx p-6 = 1.5rem = 24px
 
 const FloatingHUD = ({
   timeRange,
@@ -64,72 +64,109 @@ const FloatingHUD = ({
       : "PPE Detection";
 
   const sidebarW = sidebarCollapsed ? SB_COLLAPSED_W : SB_EXPANDED_W;
+  const isFresh = dataFreshnessSeconds < 60;
 
   return (
     <div
       style={{
         position: "fixed",
-        // header h-12 = 48px, then match the p-6 = 24px horizontal gap
-        top: 48 + CONTENT_PAD,
-        left: sidebarW + CONTENT_PAD,
-        right: CONTENT_PAD,
-        height: 40,
+        // header h-12 = 48px. Gap = 2 × 8px grid tokens = 16px
+        top: 64,
+        left: sidebarW + OUTER_PAD,
+        right: OUTER_PAD,
+        minHeight: 48,
         zIndex: 20,
-        backgroundColor: "rgba(241, 245, 249, 0.88)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        border: "1px solid rgba(0, 119, 91, 0.2)",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)",
-        borderRadius: 6,
+        // ── Surface Physics ──────────────────────────────────────────────
+        // Near-transparent white layer — dark KPI cards bleed through the blur,
+        // making the HUD feel like a stable lens over the data.
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+        backdropFilter: "blur(24px) saturate(180%)",
+        WebkitBackdropFilter: "blur(24px) saturate(180%)",
+        // Multi-layer border: bright top light-catch + teal energy on sides/bottom
+        borderTop: "1.5px solid rgba(255, 255, 255, 0.2)",
+        borderLeft: "1px solid rgba(0, 119, 91, 0.3)",
+        borderRight: "1px solid rgba(0, 119, 91, 0.3)",
+        borderBottom: "1px solid rgba(0, 119, 91, 0.3)",
+        boxShadow: "0 12px 32px -4px rgba(0, 0, 0, 0.4)",
+        borderRadius: 8,
         display: "flex",
         alignItems: "center",
-        paddingLeft: 14,
-        paddingRight: 10,
-        transition: "left 300ms cubic-bezier(0.4,0,0.2,1)",
+        padding: "8px 24px",
+        gap: 0,
+        transition: "left 300ms cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
       {/* ── Left: Breadcrumb + live sync ────────────────────────────────── */}
-      <div className="flex items-center gap-[6px] flex-shrink-0 min-w-0">
-        <span className="text-[12px] text-[rgba(13,31,27,0.42)]">Project:</span>
-        <span className="font-mono text-[12px] font-medium text-[#0d1f1b]">Matrice AI</span>
-        <ChevronDown className="w-[11px] h-[11px] text-[rgba(13,31,27,0.25)] -rotate-90 flex-shrink-0" />
-        <span className="text-[12px] text-[rgba(13,31,27,0.42)]">Pipeline:</span>
-        <span className="font-mono text-[12px] font-medium text-[#0d1f1b]">{pipelineName}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
 
+        {/* Project */}
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", letterSpacing: "0.01em" }}>
+          Project:
+        </span>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.88)", fontWeight: 500 }}>
+          Matrice AI
+        </span>
+
+        {/* Breadcrumb chevron */}
+        <ChevronDown
+          style={{ width: 10, height: 10, color: "rgba(255,255,255,0.22)", flexShrink: 0, transform: "rotate(-90deg)" }}
+        />
+
+        {/* Pipeline — Mono for technical identity */}
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", letterSpacing: "0.01em" }}>
+          Pipeline:
+        </span>
+        <span
+          className="font-mono"
+          style={{ fontSize: 12, color: "rgba(255,255,255,0.90)", fontWeight: 500, letterSpacing: "0.01em" }}
+        >
+          {pipelineName}
+        </span>
+
+        {/* Live sync indicator — monitoring persona only */}
         {persona === "monitoring" && (
           <>
-            <div className="h-3.5 w-px bg-[rgba(0,119,91,0.2)] flex-shrink-0 mx-0.5" />
-            {/* Pulsing live dot */}
-            <span className="relative flex-shrink-0 w-[6px] h-[6px]">
+            {/* Hairline separator */}
+            <span
+              style={{ display: "block", width: 1, height: 14, backgroundColor: "rgba(255,255,255,0.14)", flexShrink: 0, margin: "0 4px" }}
+            />
+            {/* Pulsing dot */}
+            <span style={{ position: "relative", flexShrink: 0, width: 6, height: 6, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
               <span
-                className="absolute inset-0 rounded-full animate-ping"
+                className="animate-ping"
                 style={{
-                  backgroundColor: dataFreshnessSeconds < 60 ? "rgba(0,119,91,0.5)" : "rgba(234,179,8,0.5)",
+                  position: "absolute", inset: 0, borderRadius: "50%",
+                  backgroundColor: isFresh ? "rgba(0,166,62,0.55)" : "rgba(234,179,8,0.55)",
                 }}
               />
               <span
-                className="relative block w-full h-full rounded-full"
-                style={{ backgroundColor: dataFreshnessSeconds < 60 ? "#00775B" : "#EAB308" }}
+                style={{
+                  position: "relative", width: "100%", height: "100%", borderRadius: "50%", display: "block",
+                  backgroundColor: isFresh ? "#00A63E" : "#EAB308",
+                }}
               />
             </span>
-            <span className="text-[11px] text-[#64748B] leading-none">
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.48)", lineHeight: 1 }}>
               Updated{" "}
-              <span className="font-mono font-medium text-[#334155] tabular-nums">
+              <span
+                className="font-mono tabular-nums"
+                style={{ fontWeight: 600, color: "rgba(255,255,255,0.82)" }}
+              >
                 {dataFreshnessSeconds}s
-              </span>{" "}
-              ago
+              </span>
+              {" "}ago
             </span>
           </>
         )}
       </div>
 
       {/* ── Flex spacer ─────────────────────────────────────────────────── */}
-      <div className="flex-1" />
+      <div style={{ flex: 1 }} />
 
-      {/* ── Right: App filter + Time Range pills + Info chip ─────────────── */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      {/* ── Right: App filter + Time Range + Info chip ───────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
 
-        {/* App multi-select dropdown — unchanged functionality */}
+        {/* App multi-select dropdown — functionality unchanged */}
         <FilterDropdown
           label="Apps"
           options={["all", "PPE", "Intrusion", "Crowd", "LPR", "Face Recog"]}
@@ -138,28 +175,67 @@ const FloatingHUD = ({
           className="w-[140px]"
         />
 
-        {/* Time range pill group */}
-        <div className="flex items-center rounded-[4px] border border-[rgba(0,119,91,0.2)] bg-white/50 p-[2px] gap-[1px]">
+        {/* ── Time range pill group ── 1px border, 12px radius per spec */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            border: "1px solid rgba(255,255,255,0.16)",
+            borderRadius: 12,
+            backgroundColor: "rgba(255,255,255,0.06)",
+            padding: "2px 3px",
+            gap: 1,
+          }}
+        >
           {(["5M", "1H", "1D", "1W"] as const).map((r) => (
             <button
               key={r}
               onClick={() => onTimeRangeChange(r)}
-              className={cn(
-                "px-[10px] py-[3px] text-[10px] font-bold uppercase tracking-wide rounded-[3px] transition-all leading-none",
-                timeRange === r
-                  ? "bg-[#00775B] text-white shadow-sm"
-                  : "text-neutral-500 hover:bg-[rgba(0,119,91,0.08)] hover:text-[#00775B]"
-              )}
+              style={{
+                padding: "4px 12px",
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                borderRadius: 9,
+                border: "none",
+                cursor: "pointer",
+                lineHeight: 1,
+                transition: "background-color 150ms ease, color 150ms ease, box-shadow 150ms ease",
+                backgroundColor: timeRange === r ? "#00775B" : "transparent",
+                color: timeRange === r ? "#ffffff" : "rgba(255,255,255,0.48)",
+                boxShadow: timeRange === r ? "0 1px 6px rgba(0,119,91,0.5)" : "none",
+              } as React.CSSProperties}
             >
               {r}
             </button>
           ))}
         </div>
 
-        {/* Time-range info chip */}
-        <div className="flex items-center gap-1.5 h-[28px] px-2.5 bg-white/50 border border-[rgba(0,119,91,0.15)] rounded-[4px] text-[11px] text-neutral-500 font-mono w-44 overflow-hidden flex-shrink-0">
-          <Clock className="w-3 h-3 text-neutral-400 shrink-0" />
-          <span className="truncate">{timeRangeInfo}</span>
+        {/* ── Time-range info chip — 1px border, 12px radius per spec */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            height: 28,
+            padding: "0 10px",
+            backgroundColor: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.13)",
+            borderRadius: 12,
+            fontSize: 11,
+            color: "rgba(255,255,255,0.48)",
+            fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
+            width: 160,
+            overflow: "hidden",
+            flexShrink: 0,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <Clock style={{ width: 11, height: 11, color: "rgba(255,255,255,0.32)", flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {timeRangeInfo}
+          </span>
         </div>
       </div>
     </div>
@@ -781,7 +857,8 @@ export const SafetyAnalytics = ({ persona, sidebarCollapsed = false }: { persona
         sidebarCollapsed={sidebarCollapsed}
         timeRangeInfo={getTimeRangeInfo()}
       />
-      {/* Spacer so content starts below the fixed HUD (40px HUD + 24px gap = 64px) */}
+      {/* Spacer: HUD is fixed at top:64px, min-height:48px → bottom at 112px.
+          Content starts at 72px (header 48 + p-6 24). Push = 112-72+16gap = 56px. */}
       <div style={{ height: 56 }} />
 
       {/* ══════════════════════════════════════════════════════════════════════
