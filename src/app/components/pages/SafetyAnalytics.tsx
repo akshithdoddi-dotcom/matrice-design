@@ -3,7 +3,6 @@ import { Persona } from "../dashboard/PersonaSwitcher";
 import { AlertTriangle, TrendingDown, TrendingUp, X, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Dot, Cell, PieChart, Pie } from "recharts";
-import { StatusBar } from "@/app/components/ui/StatusBar";
 import { FilterDropdown } from "@/app/components/ui/FilterDropdown";
 
 // ─── Sparkline component ──────────────────────────────────────────────────────
@@ -28,6 +27,158 @@ const SafetySparkline = ({
       </circle>
       <circle cx={nx} cy={ny} r="2.5" fill={color} />
     </svg>
+  );
+};
+
+// ─── Floating HUD component ──────────────────────────────────────────────────
+const SAFETY_HUD_TIME_RANGES = ["5M", "1H", "1D", "1W"] as const;
+const SAFETY_HUD_APP_OPTIONS = ["PPE", "Intrusion", "Crowd", "LPR", "Face Recog"];
+
+const FloatingHUD = ({
+  timeRange,
+  onTimeRangeChange,
+  selectedApps,
+  onToggleApp,
+  dataFreshnessSeconds,
+  persona,
+}: {
+  timeRange: "5M" | "1H" | "1D" | "1W";
+  onTimeRangeChange: (r: string) => void;
+  selectedApps: string[];
+  onToggleApp: (app: string) => void;
+  dataFreshnessSeconds: number;
+  persona: Persona;
+}) => {
+  const pipelineName =
+    selectedApps.length === 1
+      ? selectedApps[0]
+      : selectedApps.length > 1
+      ? `${selectedApps.length} Pipelines`
+      : "PPE Detection";
+
+  return (
+    <div
+      style={{
+        position: "sticky",
+        top: 56,
+        zIndex: 20,
+        height: 40,
+        width: "100%",
+        backgroundColor: "rgba(241, 245, 249, 0.80)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        border: "1px solid rgba(0, 119, 91, 0.2)",
+        boxShadow: "0 8px 20px rgba(0, 0, 0, 0.10)",
+        borderRadius: 6,
+        display: "flex",
+        alignItems: "center",
+        paddingLeft: 14,
+        paddingRight: 14,
+        gap: 0,
+      }}
+    >
+      {/* ── Left: Project / Pipeline breadcrumb ─────────────────────────── */}
+      <div className="flex items-center gap-[6px] flex-shrink-0">
+        {/* Project */}
+        <span className="text-[12px] text-[rgba(13,31,27,0.45)]" style={{ fontFamily: "Inter, sans-serif" }}>
+          Project:
+        </span>
+        <span className="font-mono text-[12px] font-medium text-[#0d1f1b]">Matrice AI</span>
+
+        {/* Chevron separator */}
+        <ChevronDown className="w-3 h-3 text-[rgba(13,31,27,0.3)] -rotate-90 flex-shrink-0 mx-0.5" />
+
+        {/* Pipeline */}
+        <span className="text-[12px] text-[rgba(13,31,27,0.45)]" style={{ fontFamily: "Inter, sans-serif" }}>
+          Pipeline:
+        </span>
+        <span className="font-mono text-[12px] font-medium text-[#0d1f1b]">{pipelineName}</span>
+      </div>
+
+      {/* ── Divider ─────────────────────────────────────────────────────────── */}
+      <div className="h-4 w-px bg-[rgba(0,119,91,0.2)] flex-shrink-0 mx-3" />
+
+      {/* ── Center: Sync status (stretches) ──────────────────────────────── */}
+      <div className="flex items-center justify-center gap-[6px] flex-1 min-w-0">
+        {persona === "monitoring" ? (
+          <>
+            {/* Pulsing dot */}
+            <span className="relative flex-shrink-0 w-[7px] h-[7px]">
+              <span
+                className="absolute inset-0 rounded-full animate-ping"
+                style={{
+                  backgroundColor:
+                    dataFreshnessSeconds < 60
+                      ? "rgba(0, 119, 91, 0.45)"
+                      : "rgba(234, 179, 8, 0.45)",
+                }}
+              />
+              <span
+                className="relative block w-full h-full rounded-full"
+                style={{
+                  backgroundColor:
+                    dataFreshnessSeconds < 60 ? "#00775B" : "#EAB308",
+                }}
+              />
+            </span>
+            <span className="text-[11px] text-[#64748B] leading-none">
+              Updated{" "}
+              <span className="font-mono font-medium text-[#334155] tabular-nums">
+                {dataFreshnessSeconds}s
+              </span>{" "}
+              ago
+            </span>
+          </>
+        ) : (
+          <span className="text-[11px] text-[#94A3B8] leading-none">Safety Analytics</span>
+        )}
+      </div>
+
+      {/* ── Divider ─────────────────────────────────────────────────────────── */}
+      <div className="h-4 w-px bg-[rgba(0,119,91,0.2)] flex-shrink-0 mx-3" />
+
+      {/* ── Right: Time Range + App Filter ───────────────────────────────── */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Time Range pills */}
+        <div className="flex items-center gap-[2px]">
+          {SAFETY_HUD_TIME_RANGES.map((r) => (
+            <button
+              key={r}
+              onClick={() => onTimeRangeChange(r)}
+              className={cn(
+                "h-[26px] px-[9px] rounded-[4px] text-[10px] font-bold uppercase tracking-wider transition-all leading-none",
+                timeRange === r
+                  ? "bg-[#00775B] text-white shadow-sm"
+                  : "text-[#64748B] hover:bg-[rgba(0,119,91,0.08)] hover:text-[#00775B]"
+              )}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+
+        {/* App Filter ghost pills */}
+        <div className="flex items-center gap-[3px]">
+          {SAFETY_HUD_APP_OPTIONS.map((app) => {
+            const isActive = selectedApps.includes(app);
+            return (
+              <button
+                key={app}
+                onClick={() => onToggleApp(app)}
+                className={cn(
+                  "h-[26px] px-[9px] rounded-[4px] text-[10px] font-medium transition-all border leading-none",
+                  isActive
+                    ? "bg-[rgba(0,119,91,0.1)] border-[rgba(0,119,91,0.35)] text-[#00775B] font-bold"
+                    : "border-[rgba(0,119,91,0.18)] text-[#64748B] hover:border-[rgba(0,119,91,0.32)] hover:text-[#475569] bg-transparent"
+                )}
+              >
+                {app}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -214,8 +365,6 @@ const ZONE_OVERVIEW: ZoneOverviewRow[] = [
 ];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const SAFETY_APP_OPTIONS = ["PPE", "Intrusion", "Crowd", "LPR", "Face Recog"];
-const SAFETY_TIME_RANGES: Array<"5M" | "1H" | "1D" | "1W"> = ["5M", "1H", "1D", "1W"];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export const SafetyAnalytics = ({ persona }: { persona: Persona }) => {
@@ -227,7 +376,7 @@ export const SafetyAnalytics = ({ persona }: { persona: Persona }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  // ── App filter (passed to StatusBar) ────────────────────────────────────────
+  // ── App filter ──────────────────────────────────────────────────────────────
   const [selectedApps, setSelectedApps] = useState<string[]>([]);
 
   // ── Data freshness counter ───────────────────────────────────────────────────
@@ -637,58 +786,14 @@ export const SafetyAnalytics = ({ persona }: { persona: Persona }) => {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      {/* ── StatusBar ─────────────────────────────────────────────────────────── */}
-      <StatusBar
-        timeRanges={SAFETY_TIME_RANGES}
+      {/* ── Floating HUD ──────────────────────────────────────────────────────── */}
+      <FloatingHUD
         timeRange={timeRange}
         onTimeRangeChange={(r) => { setTimeRange(r as typeof timeRange); setCurrentPage(1); }}
-        appOptions={SAFETY_APP_OPTIONS}
         selectedApps={selectedApps}
         onToggleApp={toggleAppFilter}
-        timeRangeInfo={getTimeRangeInfo()}
-        leftContent={
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Project pill */}
-            <div className="flex items-center gap-[5px] h-8 px-[13px] rounded-[2px] border border-[rgba(13,31,27,0.15)] bg-[rgba(0,119,91,0.1)]">
-              <span className="text-[12px] font-medium text-[rgba(13,31,27,0.5)]">Project:</span>
-              <span className="text-[12px] font-semibold text-[#0d1f1b]">Matrice AI</span>
-            </div>
-
-            {/* Separator chevron */}
-            <ChevronDown className="w-3 h-3 text-[rgba(13,31,27,0.3)] -rotate-90 flex-shrink-0" />
-
-            {/* Pipeline pill */}
-            <div className="flex items-center gap-[5px] h-8 px-[13px] rounded-[2px] border border-[rgba(13,31,27,0.15)] bg-[rgba(0,119,91,0.1)]">
-              <span className="text-[12px] font-medium text-[rgba(13,31,27,0.5)]">Pipeline:</span>
-              <span className="text-[12px] font-semibold text-[#0d1f1b]">
-                {selectedApps.length === 1
-                  ? selectedApps[0]
-                  : selectedApps.length > 1
-                  ? `${selectedApps.length} Pipelines`
-                  : "PPE Detection"}
-              </span>
-            </div>
-
-            {/* Data freshness */}
-            {persona === "monitoring" && (
-              <div className="flex items-center gap-1.5 ml-1">
-                <span
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full flex-shrink-0",
-                    dataFreshnessSeconds < 60 ? "bg-[#00775b]" : "bg-amber-400"
-                  )}
-                />
-                <span className="text-[11px] text-[#64748b]">
-                  Updated{" "}
-                  <span className="font-medium text-[#334155] tabular-nums">
-                    {dataFreshnessSeconds}s
-                  </span>{" "}
-                  ago
-                </span>
-              </div>
-            )}
-          </div>
-        }
+        dataFreshnessSeconds={dataFreshnessSeconds}
+        persona={persona}
       />
 
       {/* ══════════════════════════════════════════════════════════════════════
