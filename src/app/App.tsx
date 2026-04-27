@@ -649,7 +649,7 @@ export default function App() {
             {activePage === "incident" && <IncidentAnalytics persona={activePersona} />}
             {activePage === "zone" && <ZoneAnalytics persona={activePersona} />}
             {activePage === "quality" && <QualityAnalytics persona={activePersona} />}
-            {activePage === "safety" && <SafetyAnalytics persona={activePersona} />}
+            {activePage === "safety" && <SafetyAnalytics persona={activePersona} sidebarCollapsed={sidebarCollapsed} />}
             {activePage === "identity" && <IdentityAnalytics persona={activePersona} />}
             {activePage === "facial-recognition" && <FacialRecognition />}
             {activePage === "license-plates" && <LicensePlates />}

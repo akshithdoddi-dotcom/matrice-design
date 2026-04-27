@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Persona } from "../dashboard/PersonaSwitcher";
-import { AlertTriangle, TrendingDown, TrendingUp, X, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { AlertTriangle, TrendingDown, TrendingUp, X, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, Clock } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Dot, Cell, PieChart, Pie } from "recharts";
 import { FilterDropdown } from "@/app/components/ui/FilterDropdown";
@@ -30,9 +30,12 @@ const SafetySparkline = ({
   );
 };
 
-// ─── Floating HUD component ──────────────────────────────────────────────────
-const SAFETY_HUD_TIME_RANGES = ["5M", "1H", "1D", "1W"] as const;
-const SAFETY_HUD_APP_OPTIONS = ["PPE", "Intrusion", "Crowd", "LPR", "Face Recog"];
+// ─── Floating HUD ────────────────────────────────────────────────────────────
+// position: fixed (not sticky) — parent overflow-x:hidden breaks sticky.
+// Left edge tracks the fixed sidebar width + matching p-6 (24px) content padding.
+const SB_EXPANDED_W = 224;  // Sidebar w-56 = 14rem = 224px
+const SB_COLLAPSED_W = 56;  // Sidebar w-14 = 3.5rem = 56px
+const CONTENT_PAD = 24;     // App.tsx p-6 = 1.5rem = 24px
 
 const FloatingHUD = ({
   timeRange,
@@ -41,6 +44,8 @@ const FloatingHUD = ({
   onToggleApp,
   dataFreshnessSeconds,
   persona,
+  sidebarCollapsed,
+  timeRangeInfo,
 }: {
   timeRange: "5M" | "1H" | "1D" | "1W";
   onTimeRangeChange: (r: string) => void;
@@ -48,6 +53,8 @@ const FloatingHUD = ({
   onToggleApp: (app: string) => void;
   dataFreshnessSeconds: number;
   persona: Persona;
+  sidebarCollapsed: boolean;
+  timeRangeInfo: string;
 }) => {
   const pipelineName =
     selectedApps.length === 1
@@ -56,69 +63,53 @@ const FloatingHUD = ({
       ? `${selectedApps.length} Pipelines`
       : "PPE Detection";
 
+  const sidebarW = sidebarCollapsed ? SB_COLLAPSED_W : SB_EXPANDED_W;
+
   return (
     <div
       style={{
-        position: "sticky",
-        top: 56,
-        zIndex: 20,
+        position: "fixed",
+        // header h-12 = 48px, then match the p-6 = 24px horizontal gap
+        top: 48 + CONTENT_PAD,
+        left: sidebarW + CONTENT_PAD,
+        right: CONTENT_PAD,
         height: 40,
-        width: "100%",
-        backgroundColor: "rgba(241, 245, 249, 0.80)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        zIndex: 20,
+        backgroundColor: "rgba(241, 245, 249, 0.88)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
         border: "1px solid rgba(0, 119, 91, 0.2)",
-        boxShadow: "0 8px 20px rgba(0, 0, 0, 0.10)",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)",
         borderRadius: 6,
         display: "flex",
         alignItems: "center",
         paddingLeft: 14,
-        paddingRight: 14,
-        gap: 0,
+        paddingRight: 10,
+        transition: "left 300ms cubic-bezier(0.4,0,0.2,1)",
       }}
     >
-      {/* ── Left: Project / Pipeline breadcrumb ─────────────────────────── */}
-      <div className="flex items-center gap-[6px] flex-shrink-0">
-        {/* Project */}
-        <span className="text-[12px] text-[rgba(13,31,27,0.45)]" style={{ fontFamily: "Inter, sans-serif" }}>
-          Project:
-        </span>
+      {/* ── Left: Breadcrumb + live sync ────────────────────────────────── */}
+      <div className="flex items-center gap-[6px] flex-shrink-0 min-w-0">
+        <span className="text-[12px] text-[rgba(13,31,27,0.42)]">Project:</span>
         <span className="font-mono text-[12px] font-medium text-[#0d1f1b]">Matrice AI</span>
-
-        {/* Chevron separator */}
-        <ChevronDown className="w-3 h-3 text-[rgba(13,31,27,0.3)] -rotate-90 flex-shrink-0 mx-0.5" />
-
-        {/* Pipeline */}
-        <span className="text-[12px] text-[rgba(13,31,27,0.45)]" style={{ fontFamily: "Inter, sans-serif" }}>
-          Pipeline:
-        </span>
+        <ChevronDown className="w-[11px] h-[11px] text-[rgba(13,31,27,0.25)] -rotate-90 flex-shrink-0" />
+        <span className="text-[12px] text-[rgba(13,31,27,0.42)]">Pipeline:</span>
         <span className="font-mono text-[12px] font-medium text-[#0d1f1b]">{pipelineName}</span>
-      </div>
 
-      {/* ── Divider ─────────────────────────────────────────────────────────── */}
-      <div className="h-4 w-px bg-[rgba(0,119,91,0.2)] flex-shrink-0 mx-3" />
-
-      {/* ── Center: Sync status (stretches) ──────────────────────────────── */}
-      <div className="flex items-center justify-center gap-[6px] flex-1 min-w-0">
-        {persona === "monitoring" ? (
+        {persona === "monitoring" && (
           <>
-            {/* Pulsing dot */}
-            <span className="relative flex-shrink-0 w-[7px] h-[7px]">
+            <div className="h-3.5 w-px bg-[rgba(0,119,91,0.2)] flex-shrink-0 mx-0.5" />
+            {/* Pulsing live dot */}
+            <span className="relative flex-shrink-0 w-[6px] h-[6px]">
               <span
                 className="absolute inset-0 rounded-full animate-ping"
                 style={{
-                  backgroundColor:
-                    dataFreshnessSeconds < 60
-                      ? "rgba(0, 119, 91, 0.45)"
-                      : "rgba(234, 179, 8, 0.45)",
+                  backgroundColor: dataFreshnessSeconds < 60 ? "rgba(0,119,91,0.5)" : "rgba(234,179,8,0.5)",
                 }}
               />
               <span
                 className="relative block w-full h-full rounded-full"
-                style={{
-                  backgroundColor:
-                    dataFreshnessSeconds < 60 ? "#00775B" : "#EAB308",
-                }}
+                style={{ backgroundColor: dataFreshnessSeconds < 60 ? "#00775B" : "#EAB308" }}
               />
             </span>
             <span className="text-[11px] text-[#64748B] leading-none">
@@ -129,27 +120,35 @@ const FloatingHUD = ({
               ago
             </span>
           </>
-        ) : (
-          <span className="text-[11px] text-[#94A3B8] leading-none">Safety Analytics</span>
         )}
       </div>
 
-      {/* ── Divider ─────────────────────────────────────────────────────────── */}
-      <div className="h-4 w-px bg-[rgba(0,119,91,0.2)] flex-shrink-0 mx-3" />
+      {/* ── Flex spacer ─────────────────────────────────────────────────── */}
+      <div className="flex-1" />
 
-      {/* ── Right: Time Range + App Filter ───────────────────────────────── */}
+      {/* ── Right: App filter + Time Range pills + Info chip ─────────────── */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        {/* Time Range pills */}
-        <div className="flex items-center gap-[2px]">
-          {SAFETY_HUD_TIME_RANGES.map((r) => (
+
+        {/* App multi-select dropdown — unchanged functionality */}
+        <FilterDropdown
+          label="Apps"
+          options={["all", "PPE", "Intrusion", "Crowd", "LPR", "Face Recog"]}
+          selectedItems={selectedApps}
+          onToggleItem={onToggleApp}
+          className="w-[140px]"
+        />
+
+        {/* Time range pill group */}
+        <div className="flex items-center rounded-[4px] border border-[rgba(0,119,91,0.2)] bg-white/50 p-[2px] gap-[1px]">
+          {(["5M", "1H", "1D", "1W"] as const).map((r) => (
             <button
               key={r}
               onClick={() => onTimeRangeChange(r)}
               className={cn(
-                "h-[26px] px-[9px] rounded-[4px] text-[10px] font-bold uppercase tracking-wider transition-all leading-none",
+                "px-[10px] py-[3px] text-[10px] font-bold uppercase tracking-wide rounded-[3px] transition-all leading-none",
                 timeRange === r
                   ? "bg-[#00775B] text-white shadow-sm"
-                  : "text-[#64748B] hover:bg-[rgba(0,119,91,0.08)] hover:text-[#00775B]"
+                  : "text-neutral-500 hover:bg-[rgba(0,119,91,0.08)] hover:text-[#00775B]"
               )}
             >
               {r}
@@ -157,25 +156,10 @@ const FloatingHUD = ({
           ))}
         </div>
 
-        {/* App Filter ghost pills */}
-        <div className="flex items-center gap-[3px]">
-          {SAFETY_HUD_APP_OPTIONS.map((app) => {
-            const isActive = selectedApps.includes(app);
-            return (
-              <button
-                key={app}
-                onClick={() => onToggleApp(app)}
-                className={cn(
-                  "h-[26px] px-[9px] rounded-[4px] text-[10px] font-medium transition-all border leading-none",
-                  isActive
-                    ? "bg-[rgba(0,119,91,0.1)] border-[rgba(0,119,91,0.35)] text-[#00775B] font-bold"
-                    : "border-[rgba(0,119,91,0.18)] text-[#64748B] hover:border-[rgba(0,119,91,0.32)] hover:text-[#475569] bg-transparent"
-                )}
-              >
-                {app}
-              </button>
-            );
-          })}
+        {/* Time-range info chip */}
+        <div className="flex items-center gap-1.5 h-[28px] px-2.5 bg-white/50 border border-[rgba(0,119,91,0.15)] rounded-[4px] text-[11px] text-neutral-500 font-mono w-44 overflow-hidden flex-shrink-0">
+          <Clock className="w-3 h-3 text-neutral-400 shrink-0" />
+          <span className="truncate">{timeRangeInfo}</span>
         </div>
       </div>
     </div>
@@ -367,7 +351,7 @@ const ZONE_OVERVIEW: ZoneOverviewRow[] = [
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export const SafetyAnalytics = ({ persona }: { persona: Persona }) => {
+export const SafetyAnalytics = ({ persona, sidebarCollapsed = false }: { persona: Persona; sidebarCollapsed?: boolean }) => {
   const [chartView, setChartView] = useState<"trend" | "zone" | "type">("trend");
   const [modal, setModal] = useState<ModalPayload | null>(null);
   const [timeRange, setTimeRange] = useState<"5M" | "1H" | "1D" | "1W">("1D");
@@ -786,7 +770,7 @@ export const SafetyAnalytics = ({ persona }: { persona: Persona }) => {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      {/* ── Floating HUD ──────────────────────────────────────────────────────── */}
+      {/* ── Floating HUD (fixed, floats over scrolling content) ──────────────── */}
       <FloatingHUD
         timeRange={timeRange}
         onTimeRangeChange={(r) => { setTimeRange(r as typeof timeRange); setCurrentPage(1); }}
@@ -794,7 +778,11 @@ export const SafetyAnalytics = ({ persona }: { persona: Persona }) => {
         onToggleApp={toggleAppFilter}
         dataFreshnessSeconds={dataFreshnessSeconds}
         persona={persona}
+        sidebarCollapsed={sidebarCollapsed}
+        timeRangeInfo={getTimeRangeInfo()}
       />
+      {/* Spacer so content starts below the fixed HUD (40px HUD + 24px gap = 64px) */}
+      <div style={{ height: 56 }} />
 
       {/* ══════════════════════════════════════════════════════════════════════
           MONITORING PERSONA
