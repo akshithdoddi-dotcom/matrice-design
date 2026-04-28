@@ -25,6 +25,7 @@ import { Cameras } from "@/app/components/pages/Cameras";
 import { MetricsRules } from "@/app/components/pages/MetricsRules";
 import { Compliance } from "@/app/components/pages/Compliance";
 import { DesignSystem } from "@/app/components/pages/DesignSystem";
+import { SettingsPage } from "@/app/components/pages/Settings";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
 
 // Main App Component
@@ -628,22 +629,25 @@ export default function App() {
 
                   {/* Other menu items */}
                   <div className="px-2 py-2">
-                    {[
-                      { icon: Settings, label: "Profile Settings" },
-                      { icon: LogOut,   label: "Sign Out",         danger: true },
-                    ].map(item => (
-                      <button key={item.label}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors"
-                        style={{ color: item.danger ? "#ef4444" : isDark ? "#cbd5e1" : "#374151" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = item.danger
-                          ? isDark ? "#450a0a" : "#fef2f2"
-                          : isDark ? "#1E293B" : "#f8fafc")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                      >
-                        <item.icon className="w-3.5 h-3.5 shrink-0" />
-                        {item.label}
-                      </button>
-                    ))}
+                    <button
+                      onClick={() => { setActivePage("settings"); setIsAvatarMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors"
+                      style={{ color: isDark ? "#cbd5e1" : "#374151" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? "#1E293B" : "#f8fafc")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <Settings className="w-3.5 h-3.5 shrink-0" />
+                      Profile Settings
+                    </button>
+                    <button
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors"
+                      style={{ color: "#ef4444" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? "#450a0a" : "#fef2f2")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <LogOut className="w-3.5 h-3.5 shrink-0" />
+                      Sign Out
+                    </button>
                   </div>
                 </div>
               )}
@@ -651,11 +655,19 @@ export default function App() {
           </div>
         </header>
 
+        {/* Settings page — full-bleed, no padding */}
+        {activePage === "settings" && (
+          <div className="flex-1 overflow-hidden">
+            <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
+          </div>
+        )}
+
+        {activePage !== "settings" && (
+        <>
         {/* Spacer: compensates for the fixed header (h-12 = 48px) so content starts below it */}
         <div className="h-12 flex-shrink-0" />
-
         <div className="p-6 space-y-6 relative w-full overflow-x-hidden rounded-tl-lg">
-          
+
           <section className="w-full">
             {activePage === "volume" && <VolumeAnalytics persona={activePersona} />}
             {activePage === "incident" && <IncidentAnalytics persona={activePersona} />}
@@ -809,10 +821,12 @@ export default function App() {
           )}
           </section>
         </div>
+        </>
+        )} {/* end activePage !== "settings" */}
       </div>
 
       {/* Incident Detail Modal */}
-      <IncidentDetailModal 
+      <IncidentDetailModal
         incident={currentIncident}
         open={detailModalOpen}
         onOpenChange={(open) => {
@@ -828,6 +842,7 @@ export default function App() {
           setAssignModalOpen(true);
         }}
       />
+
     </div>
   );
 }

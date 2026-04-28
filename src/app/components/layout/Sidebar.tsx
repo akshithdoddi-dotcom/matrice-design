@@ -10,7 +10,7 @@ import {
 export type Page =
   | "dashboard" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
   | "facial-recognition" | "license-plates" | "cameras" | "metrics" | "compliance"
-  | "design-system";
+  | "design-system" | "settings";
 
 interface SidebarProps {
   activePage: Page;
@@ -226,18 +226,23 @@ export const Sidebar = ({ activePage, onPageChange, collapsed = false, noTransit
       {/* ── Footer ── */}
       <div className={cn("pb-4 pt-2 border-t border-white/5 space-y-0.5 shrink-0", collapsed ? "px-1.5" : "px-3")}>
         {[
-          { icon: HelpCircle, label: "Help & Support" },
-          { icon: Settings,   label: "Settings" },
-        ].map(({ icon: Icon, label }) => {
+          { icon: HelpCircle, label: "Help & Support", page: undefined as Page | undefined },
+          { icon: Settings,   label: "Settings",       page: "settings" as Page },
+        ].map(({ icon: Icon, label, page }) => {
+          const isActive = page && activePage === page;
           const btn = (
             <button
               key={label}
+              onClick={() => page && onPageChange(page)}
               className={cn(
-                "w-full flex items-center rounded-lg text-sm font-medium text-white/50 hover:text-white/80 hover:bg-white/5 transition-all",
+                "w-full flex items-center rounded-lg text-sm font-medium transition-all",
+                isActive
+                  ? "bg-[#00775B] text-white"
+                  : "text-white/50 hover:text-white/80 hover:bg-white/5",
                 collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
               )}
             >
-              <Icon className={cn("shrink-0 text-white/40", collapsed ? "h-5 w-5" : "h-4 w-4")} />
+              <Icon className={cn("shrink-0", isActive ? "text-white" : "text-white/40", collapsed ? "h-5 w-5" : "h-4 w-4")} />
               {!collapsed && <span>{label}</span>}
             </button>
           );
