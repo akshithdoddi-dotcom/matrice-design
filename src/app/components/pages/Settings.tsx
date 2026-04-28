@@ -112,7 +112,7 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
 );
 
 const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("rounded-lg border border-gray-200 bg-white p-5", className)}>{children}</div>
+  <div className={cn("rounded-lg border border-gray-200 bg-white p-4", className)}>{children}</div>
 );
 
 const Label = ({ children }: { children: React.ReactNode }) => (
@@ -181,114 +181,115 @@ function ProfileSection() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">My Profile</h2>
-        <p className="text-sm text-gray-500 mt-1">Manage your personal information and preferences.</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-[17px] font-semibold text-gray-900">My Profile</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Manage your personal information and preferences.</p>
+        </div>
+        <PrimaryBtn>Save Changes</PrimaryBtn>
       </div>
 
-      {/* Avatar card */}
-      <Card>
-        <div className="flex items-center gap-5">
-          <div
-            className="relative shrink-0 cursor-pointer"
-            onMouseEnter={() => setHoverAvatar(true)}
-            onMouseLeave={() => setHoverAvatar(false)}
-          >
-            <div className="w-16 h-16 rounded-full bg-[#00775B] flex items-center justify-center text-white text-xl font-black select-none">
-              MU
-            </div>
-            {hoverAvatar && (
-              <div className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-0.5">
-                <Upload className="w-3.5 h-3.5 text-white" />
-                <span className="text-[8px] text-white font-bold">Change</span>
+      {/* Two-column layout: avatar/identity left, account info right */}
+      <div className="grid grid-cols-[260px_1fr] gap-4">
+
+        {/* Left: Avatar + identity */}
+        <div className="space-y-4">
+          <Card className="flex flex-col items-center text-center gap-3">
+            <div
+              className="relative cursor-pointer"
+              onMouseEnter={() => setHoverAvatar(true)}
+              onMouseLeave={() => setHoverAvatar(false)}
+            >
+              <div className="w-20 h-20 rounded-full bg-[#00775B] flex items-center justify-center text-white text-2xl font-black select-none">
+                MU
               </div>
-            )}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">{firstName} {lastName}</p>
-            <p className="text-sm text-gray-500">Director</p>
-            <button className="mt-1.5 text-[12px] text-[#00775B] hover:underline font-medium flex items-center gap-1">
+              {hoverAvatar && (
+                <div className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-0.5">
+                  <Upload className="w-4 h-4 text-white" />
+                  <span className="text-[9px] text-white font-bold">Change</span>
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{firstName} {lastName}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Director</p>
+            </div>
+            <button className="text-[12px] text-[#00775B] hover:underline font-medium flex items-center gap-1">
               <Upload className="w-3 h-3" /> Change photo
             </button>
-          </div>
-        </div>
-      </Card>
+          </Card>
 
-      {/* Account Information */}
-      <Card>
-        <SectionHeader>Account Information</SectionHeader>
-        <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-          <div>
-            <Label>First Name</Label>
-            <Input value={firstName} onChange={e => setFirstName(e.target.value)} />
-          </div>
-          <div>
-            <Label>Last Name</Label>
-            <Input value={lastName} onChange={e => setLastName(e.target.value)} />
-          </div>
-          <div>
-            <Label>Job Title</Label>
-            <Input value={jobTitle} onChange={e => setJobTitle(e.target.value)} placeholder="N/A" />
-          </div>
-          <div>
-            <Label>Company</Label>
-            <Input value={company} onChange={e => setCompany(e.target.value)} placeholder="N/A" />
-          </div>
-          <div>
-            <Label>Account Number</Label>
-            <div className="relative">
-              <Input
-                value={ACCOUNT_NUMBER}
-                readOnly
-                className="bg-gray-50 font-mono text-[12px] tracking-tight pr-9"
-              />
-              <button
-                onClick={handleCopy}
-                title="Copy account number"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
+          <Card>
+            <SectionHeader>Account Details</SectionHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Account Type</Label>
+                <div className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 flex items-center gap-2">
+                  <span className="text-sm text-gray-800 font-medium">Enterprise</span>
+                  <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">Active</span>
+                </div>
+              </div>
+              <div>
+                <Label>Account Number</Label>
+                <div className="relative">
+                  <Input value={ACCOUNT_NUMBER} readOnly className="bg-gray-50 font-mono text-[11px] tracking-tight pr-9" />
+                  <button onClick={handleCopy} title="Copy" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors">
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            <Label>Account Type</Label>
-            <div className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 flex items-center gap-2">
-              <span className="text-sm text-gray-800 font-medium">Enterprise</span>
-              <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">Active</span>
-            </div>
-          </div>
+          </Card>
         </div>
-        <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
-          <PrimaryBtn>Save Changes</PrimaryBtn>
-        </div>
-      </Card>
 
-      {/* Personal Information */}
-      <Card>
-        <SectionHeader>Personal Information</SectionHeader>
-        <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-          <div>
-            <Label>Email</Label>
-            <div className="relative">
-              <Input value="mohammed.usman@matrice.ai" readOnly className="pr-20 bg-gray-50 text-gray-500" />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">Verified</span>
+        {/* Right: Account information + Personal */}
+        <div className="space-y-4">
+          <Card>
+            <SectionHeader>Account Information</SectionHeader>
+            <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+              <div>
+                <Label>First Name</Label>
+                <Input value={firstName} onChange={e => setFirstName(e.target.value)} />
+              </div>
+              <div>
+                <Label>Last Name</Label>
+                <Input value={lastName} onChange={e => setLastName(e.target.value)} />
+              </div>
+              <div>
+                <Label>Job Title</Label>
+                <Input value={jobTitle} onChange={e => setJobTitle(e.target.value)} placeholder="N/A" />
+              </div>
+              <div className="col-span-2">
+                <Label>Company</Label>
+                <Input value={company} onChange={e => setCompany(e.target.value)} placeholder="N/A" />
+              </div>
             </div>
-          </div>
-          <div>
-            <Label>Phone Number</Label>
-            <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="N/A" />
-          </div>
-          <div>
-            <Label>Country</Label>
-            <Input value={country} onChange={e => setCountry(e.target.value)} placeholder="N/A" />
-          </div>
+          </Card>
+
+          <Card>
+            <SectionHeader>Personal Information</SectionHeader>
+            <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+              <div className="col-span-2">
+                <Label>Email</Label>
+                <div className="relative">
+                  <Input value="mohammed.usman@matrice.ai" readOnly className="pr-20 bg-gray-50 text-gray-500" />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">Verified</span>
+                </div>
+              </div>
+              <div>
+                <Label>Phone Number</Label>
+                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="N/A" />
+              </div>
+              <div>
+                <Label>Country</Label>
+                <Input value={country} onChange={e => setCountry(e.target.value)} placeholder="N/A" />
+              </div>
+            </div>
+          </Card>
         </div>
-        <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
-          <PrimaryBtn>Save Changes</PrimaryBtn>
-        </div>
-      </Card>
+
+      </div>
     </div>
   );
 }
@@ -319,140 +320,118 @@ function SecuritySection() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <h2 className="text-[17px] font-semibold text-gray-900">Password & Security</h2>
-        <p className="text-sm text-gray-500 mt-1">Manage your password and account security settings.</p>
+        <p className="text-sm text-gray-500 mt-0.5">Manage your password and account security settings.</p>
       </div>
 
-      <Card>
-        <SectionHeader>Change Password</SectionHeader>
-        <div className="space-y-4 max-w-md">
-          <div>
-            <Label>Current Password</Label>
-            <div className="relative">
-              <Input
-                type={showCurrent ? "text" : "password"}
-                value={current}
-                onChange={e => setCurrent(e.target.value)}
-                placeholder="Enter current password"
-                className="pr-10"
-              />
-              <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                onClick={() => setShowCurrent(v => !v)}
-              >
-                {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-          <div>
-            <Label>New Password</Label>
-            <div className="relative">
-              <Input
-                type={showNew ? "text" : "password"}
-                value={newPw}
-                onChange={e => setNewPw(e.target.value)}
-                placeholder="Enter new password"
-                className="pr-10"
-              />
-              <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                onClick={() => setShowNew(v => !v)}
-              >
-                {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            {newPw.length > 0 && (
-              <div className="mt-2 space-y-1">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map(i => (
-                    <div key={i} className={cn("h-1 flex-1 rounded-full transition-colors", i <= strength ? strengthColor : "bg-neutral-200")} />
-                  ))}
-                </div>
-                <p className="text-[11px] text-gray-500">Strength: <span className="font-bold">{strengthLabel}</span></p>
-                <div className="grid grid-cols-2 gap-1 mt-1">
-                  {[
-                    { key: "length", label: "8+ characters" },
-                    { key: "upper", label: "Uppercase letter" },
-                    { key: "number", label: "Number" },
-                    { key: "special", label: "Special character" },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="flex items-center gap-1.5">
-                      <div className={cn("w-3 h-3 rounded-full flex items-center justify-center", checks[key as keyof typeof checks] ? "bg-emerald-500" : "bg-neutral-200")}>
-                        {checks[key as keyof typeof checks] && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
-                      </div>
-                      <span className="text-[10px] text-gray-500">{label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          <div>
-            <Label>Confirm New Password</Label>
-            <Input
-              type="password"
-              value={confirm}
-              onChange={e => setConfirm(e.target.value)}
-              placeholder="Confirm new password"
-              className={confirm.length > 0 && confirm !== newPw ? "border-red-400" : ""}
-            />
-            {confirm.length > 0 && confirm !== newPw && (
-              <p className="text-[11px] text-red-500 mt-1">Passwords do not match</p>
-            )}
-          </div>
-          <PrimaryBtn>Update Password</PrimaryBtn>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[13px] font-bold text-gray-900 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[#00775B]" />
-              Two-Factor Authentication
-            </p>
-            <p className="text-[12px] text-gray-500 mt-0.5">Adds a second layer of security to your account on every sign-in.</p>
-          </div>
-          <Toggle on={twoFactor} onToggle={() => setTwoFactor(v => !v)} />
-        </div>
-        {twoFactor && (
-          <div className="mt-4 p-3 rounded-lg bg-[#E5FFF9] border border-[#00775B]/20 text-[12px] text-[#00775B] font-medium">
-            2FA is enabled. You will be prompted for a verification code on each login.
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <SectionHeader>Active Sessions</SectionHeader>
-        <div className="space-y-3">
-          {SESSIONS.map((s, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Monitor className="w-4 h-4 text-gray-500" />
-                </div>
-                <div>
-                  <p className="text-[12px] font-semibold text-gray-800">{s.device} · {s.browser}</p>
-                  <p className="text-[11px] text-gray-400">{s.location} · {s.lastActive}</p>
-                </div>
-              </div>
-              {i > 0 && (
-                <button className="text-[11px] font-bold text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors">
-                  Revoke
+      <div className="grid grid-cols-2 gap-4">
+        {/* Left: Change Password */}
+        <Card>
+          <SectionHeader>Change Password</SectionHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Current Password</Label>
+              <div className="relative">
+                <Input type={showCurrent ? "text" : "password"} value={current} onChange={e => setCurrent(e.target.value)} placeholder="Enter current password" className="pr-10" />
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowCurrent(v => !v)}>
+                  {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              )}
-              {i === 0 && (
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Current</span>
+              </div>
+            </div>
+            <div>
+              <Label>New Password</Label>
+              <div className="relative">
+                <Input type={showNew ? "text" : "password"} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Enter new password" className="pr-10" />
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowNew(v => !v)}>
+                  {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {newPw.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className={cn("h-1 flex-1 rounded-full transition-colors", i <= strength ? strengthColor : "bg-gray-200")} />
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-gray-500">Strength: <span className="font-bold">{strengthLabel}</span></p>
+                  <div className="grid grid-cols-2 gap-1 mt-1">
+                    {[
+                      { key: "length", label: "8+ characters" },
+                      { key: "upper", label: "Uppercase letter" },
+                      { key: "number", label: "Number" },
+                      { key: "special", label: "Special character" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center gap-1.5">
+                        <div className={cn("w-3 h-3 rounded-full flex items-center justify-center", checks[key as keyof typeof checks] ? "bg-emerald-500" : "bg-gray-200")}>
+                          {checks[key as keyof typeof checks] && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
+                        </div>
+                        <span className="text-[10px] text-gray-500">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-          ))}
+            <div>
+              <Label>Confirm New Password</Label>
+              <Input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirm new password" className={confirm.length > 0 && confirm !== newPw ? "border-red-400" : ""} />
+              {confirm.length > 0 && confirm !== newPw && (
+                <p className="text-[11px] text-red-500 mt-1">Passwords do not match</p>
+              )}
+            </div>
+            <PrimaryBtn>Update Password</PrimaryBtn>
+          </div>
+        </Card>
+
+        {/* Right: 2FA + Sessions */}
+        <div className="space-y-4">
+          <Card>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-[#00775B]" />
+                  Two-Factor Authentication
+                </p>
+                <p className="text-[12px] text-gray-500 mt-0.5">Adds a second layer of security to your account.</p>
+              </div>
+              <Toggle on={twoFactor} onToggle={() => setTwoFactor(v => !v)} />
+            </div>
+            {twoFactor && (
+              <div className="mt-3 p-3 rounded-lg bg-[#E5FFF9] border border-[#00775B]/20 text-[12px] text-[#00775B] font-medium">
+                2FA is enabled. You will be prompted for a verification code on each login.
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <SectionHeader>Active Sessions</SectionHeader>
+            <div className="space-y-2">
+              {SESSIONS.map((s, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                      <Monitor className="w-3.5 h-3.5 text-gray-500" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-semibold text-gray-800">{s.device} · {s.browser}</p>
+                      <p className="text-[10px] text-gray-400">{s.location} · {s.lastActive}</p>
+                    </div>
+                  </div>
+                  {i > 0
+                    ? <button className="text-[11px] font-bold text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors">Revoke</button>
+                    : <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Current</span>
+                  }
+                </div>
+              ))}
+            </div>
+            <button className="mt-2 text-[12px] font-medium text-[#00775B] hover:underline flex items-center gap-1">
+              <LogOut className="w-3 h-3" /> Sign out all other sessions
+            </button>
+          </Card>
         </div>
-        <button className="mt-3 text-[12px] font-medium text-[#00775B] hover:underline flex items-center gap-1">
-          <LogOut className="w-3 h-3" /> Sign out all other sessions
-        </button>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -488,10 +467,10 @@ function MembersSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <h2 className="text-[17px] font-semibold text-gray-900">Members</h2>
-        <p className="text-sm text-gray-500 mt-1">Manage who has access to this workspace.</p>
+        <p className="text-sm text-gray-500 mt-0.5">Manage who has access to this workspace.</p>
       </div>
 
       {/* Stats */}
@@ -665,7 +644,7 @@ function GroupsSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-[17px] font-semibold text-gray-900">User Groups</h2>
@@ -734,7 +713,7 @@ function GroupsSection() {
         </Card>
       )}
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
         {groups.map(g => {
           const groupMembers = MOCK_MEMBERS.filter(m => g.members.includes(m.id));
           return (
@@ -815,14 +794,14 @@ function ChannelsSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <h2 className="text-[17px] font-semibold text-gray-900">Alert Channels</h2>
         <p className="text-sm text-gray-500 mt-1">Configure how and where alerts are delivered.</p>
       </div>
 
       {/* Channel toggles */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
         {/* Email */}
         <Card>
           <div className="flex items-center justify-between">
@@ -962,90 +941,98 @@ function RulesSection() {
   const [bolo, setBolo] = useState(true);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <h2 className="text-[17px] font-semibold text-gray-900">Alert Rules</h2>
         <p className="text-sm text-gray-500 mt-1">Configure alert triggering behavior and thresholds.</p>
       </div>
 
-      <Card>
-        <div className="space-y-6">
-          {/* Confidence threshold */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <Label>Confidence Threshold</Label>
-              <span className="text-[20px] font-black text-[#00775B]">{threshold}%</span>
-            </div>
-            <input
-              type="range"
-              min={70}
-              max={99}
-              value={threshold}
-              onChange={e => setThreshold(Number(e.target.value))}
-              className="w-full accent-[#00775B]"
-            />
-            <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-              <span>70%</span><span>99%</span>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-2">Only trigger alerts when match confidence exceeds this value.</p>
-          </div>
-
-          <div className="h-px bg-gray-100" />
-
-          {/* Detection cooldown */}
-          <div>
-            <Label>Detection Cooldown (minutes)</Label>
-            <div className="flex items-center gap-3">
-              <Input
-                type="number"
-                min={1}
-                max={120}
-                value={cooldown}
-                onChange={e => setCooldown(Number(e.target.value))}
-                className="w-32"
-              />
-              <p className="text-[11px] text-gray-400">Minimum time between repeat alerts for the same identity.</p>
-            </div>
-          </div>
-
-          <div className="h-px bg-gray-100" />
-
-          {/* Auto-escalation */}
-          <div>
-            <div className="flex items-start justify-between">
-              <div>
-                <Label>Auto-Escalation</Label>
-                <p className="text-[11px] text-gray-400 mt-0.5">Escalate unacknowledged CRITICAL alerts after this period.</p>
+      <div className="grid grid-cols-2 gap-4">
+        {/* Left: Detection settings */}
+        <Card>
+          <SectionHeader>Detection Settings</SectionHeader>
+          <div className="space-y-4">
+            {/* Confidence threshold */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <Label>Confidence Threshold</Label>
+                <span className="text-[20px] font-black text-[#00775B]">{threshold}%</span>
               </div>
-              <Toggle on={escalation} onToggle={() => setEscalation(v => !v)} />
+              <input
+                type="range"
+                min={70}
+                max={99}
+                value={threshold}
+                onChange={e => setThreshold(Number(e.target.value))}
+                className="w-full accent-[#00775B]"
+              />
+              <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                <span>70%</span><span>99%</span>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-2">Only trigger alerts when match confidence exceeds this value.</p>
             </div>
-            {escalation && (
-              <div className="mt-3 flex items-center gap-3">
+
+            <div className="h-px bg-gray-100" />
+
+            {/* Detection cooldown */}
+            <div>
+              <Label>Detection Cooldown (minutes)</Label>
+              <div className="flex items-center gap-3 mt-1">
                 <Input
                   type="number"
-                  min={5}
-                  max={180}
-                  value={escalationMinutes}
-                  onChange={e => setEscalationMinutes(Number(e.target.value))}
+                  min={1}
+                  max={120}
+                  value={cooldown}
+                  onChange={e => setCooldown(Number(e.target.value))}
                   className="w-32"
                 />
-                <span className="text-[12px] text-gray-500">minutes</span>
+                <p className="text-[11px] text-gray-400">Minimum time between repeat alerts for the same identity.</p>
               </div>
-            )}
-          </div>
-
-          <div className="h-px bg-gray-100" />
-
-          {/* BOLO priority */}
-          <div className="flex items-start justify-between">
-            <div>
-              <Label>BOLO Priority</Label>
-              <p className="text-[11px] text-gray-400 mt-0.5">Always notify all channels for BOLO hits regardless of threshold.</p>
             </div>
-            <Toggle on={bolo} onToggle={() => setBolo(v => !v)} />
           </div>
-        </div>
-      </Card>
+        </Card>
+
+        {/* Right: Escalation & Priority */}
+        <Card>
+          <SectionHeader>Escalation & Priority</SectionHeader>
+          <div className="space-y-4">
+            {/* Auto-escalation */}
+            <div>
+              <div className="flex items-start justify-between">
+                <div>
+                  <Label>Auto-Escalation</Label>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Escalate unacknowledged CRITICAL alerts after this period.</p>
+                </div>
+                <Toggle on={escalation} onToggle={() => setEscalation(v => !v)} />
+              </div>
+              {escalation && (
+                <div className="mt-3 flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={5}
+                    max={180}
+                    value={escalationMinutes}
+                    onChange={e => setEscalationMinutes(Number(e.target.value))}
+                    className="w-32"
+                  />
+                  <span className="text-[12px] text-gray-500">minutes</span>
+                </div>
+              )}
+            </div>
+
+            <div className="h-px bg-gray-100" />
+
+            {/* BOLO priority */}
+            <div className="flex items-start justify-between">
+              <div>
+                <Label>BOLO Priority</Label>
+                <p className="text-[11px] text-gray-400 mt-0.5">Always notify all channels for BOLO hits regardless of threshold.</p>
+              </div>
+              <Toggle on={bolo} onToggle={() => setBolo(v => !v)} />
+            </div>
+          </div>
+        </Card>
+      </div>
 
       <div className="flex justify-end">
         <PrimaryBtn>Save Rules</PrimaryBtn>
@@ -1080,86 +1067,91 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <h2 className="text-[17px] font-semibold text-gray-900">Appearance</h2>
         <p className="text-sm text-gray-500 mt-1">Customize how the platform looks and feels.</p>
       </div>
 
-      <Card>
-        <SectionHeader>Theme</SectionHeader>
-        <div className="grid grid-cols-3 gap-3">
-          {THEMES.map(t => (
-            <button
-              key={t.key}
-              onClick={() => handleTheme(t.key)}
-              className={cn(
-                "relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
-                theme === t.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-gray-200 hover:border-gray-300"
-              )}
-            >
-              {/* Preview */}
-              <div className={cn(
-                "w-full h-16 rounded-lg overflow-hidden border",
-                t.key === "dark" ? "bg-[#0d1f1b] border-[#1a3830]" : "bg-white border-gray-200"
-              )}>
-                <div className={cn("h-4 w-full flex items-center px-2 gap-1", t.key === "dark" ? "bg-[#021d18]" : "bg-[#0d1f1b]")}>
-                  <div className="w-2 h-2 rounded-full bg-[#00775B]" />
-                  <div className={cn("h-1.5 w-10 rounded-full", t.key === "dark" ? "bg-white/20" : "bg-white/50")} />
-                </div>
-                <div className="p-2 flex gap-1">
-                  <div className={cn("h-6 w-6 rounded", t.key === "dark" ? "bg-white/10" : "bg-gray-100")} />
-                  <div className="flex-1 space-y-1">
-                    <div className={cn("h-1.5 w-full rounded-full", t.key === "dark" ? "bg-white/20" : "bg-neutral-200")} />
-                    <div className={cn("h-1.5 w-3/4 rounded-full", t.key === "dark" ? "bg-white/10" : "bg-gray-100")} />
+      {/* Theme + Default Persona side by side */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <SectionHeader>Theme</SectionHeader>
+          <div className="grid grid-cols-3 gap-3">
+            {THEMES.map(t => (
+              <button
+                key={t.key}
+                onClick={() => handleTheme(t.key)}
+                className={cn(
+                  "relative flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all",
+                  theme === t.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-gray-200 hover:border-gray-300"
+                )}
+              >
+                {/* Preview */}
+                <div className={cn(
+                  "w-full h-14 rounded-lg overflow-hidden border",
+                  t.key === "dark" ? "bg-[#0d1f1b] border-[#1a3830]" : "bg-white border-gray-200"
+                )}>
+                  <div className={cn("h-3.5 w-full flex items-center px-2 gap-1", t.key === "dark" ? "bg-[#021d18]" : "bg-[#0d1f1b]")}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#00775B]" />
+                    <div className={cn("h-1 w-8 rounded-full", t.key === "dark" ? "bg-white/20" : "bg-white/50")} />
+                  </div>
+                  <div className="p-1.5 flex gap-1">
+                    <div className={cn("h-5 w-5 rounded", t.key === "dark" ? "bg-white/10" : "bg-gray-100")} />
+                    <div className="flex-1 space-y-1">
+                      <div className={cn("h-1 w-full rounded-full", t.key === "dark" ? "bg-white/20" : "bg-gray-200")} />
+                      <div className={cn("h-1 w-3/4 rounded-full", t.key === "dark" ? "bg-white/10" : "bg-gray-100")} />
+                    </div>
                   </div>
                 </div>
-              </div>
-              {t.icon}
-              <div className="text-center">
-                <p className="text-[12px] font-bold text-gray-800">{t.label}</p>
-                <p className="text-[10px] text-gray-400">{t.desc}</p>
-              </div>
-              {theme === t.key && (
-                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#00775B] flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                {t.icon}
+                <div className="text-center">
+                  <p className="text-[12px] font-bold text-gray-800">{t.label}</p>
+                  <p className="text-[10px] text-gray-400">{t.desc}</p>
                 </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </Card>
+                {theme === t.key && (
+                  <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#00775B] flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </Card>
 
-      <Card>
-        <SectionHeader>Default Persona</SectionHeader>
-        <div className="space-y-2">
-          {PERSONAS.map(p => (
-            <label
-              key={p.key}
-              className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
-                persona === p.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-gray-200 hover:border-gray-300"
-              )}
-            >
-              <input
-                type="radio"
-                name="persona"
-                value={p.key}
-                checked={persona === p.key}
-                onChange={() => setPersona(p.key)}
-                className="accent-[#00775B] mt-0.5"
-              />
-              <div>
-                <p className="text-[12px] font-bold text-gray-800">{p.label}</p>
-                <p className="text-[11px] text-gray-400">{p.desc}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-      </Card>
+        <Card>
+          <SectionHeader>Default Persona</SectionHeader>
+          <div className="space-y-2">
+            {PERSONAS.map(p => (
+              <label
+                key={p.key}
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                  persona === p.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-gray-200 hover:border-gray-300"
+                )}
+              >
+                <input
+                  type="radio"
+                  name="persona"
+                  value={p.key}
+                  checked={persona === p.key}
+                  onChange={() => setPersona(p.key)}
+                  className="accent-[#00775B] mt-0.5"
+                />
+                <div>
+                  <p className="text-[12px] font-bold text-gray-800">{p.label}</p>
+                  <p className="text-[11px] text-gray-400">{p.desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </Card>
+      </div>
 
+      {/* Display Preferences full width */}
       <Card>
-        <div className="space-y-5">
+        <SectionHeader>Display Preferences</SectionHeader>
+        <div className="grid grid-cols-3 gap-x-8 gap-y-4">
           {/* Time format */}
           <div>
             <Label>Time Format</Label>
@@ -1195,7 +1187,7 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
           {/* Timezone */}
           <div>
             <Label>Timezone</Label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-1.5">
               <span className="text-[13px] text-gray-700">Asia/Kolkata (IST)</span>
               <button className="text-[12px] text-[#00775B] hover:underline font-medium">Change</button>
             </div>
@@ -1305,7 +1297,7 @@ export function SettingsPage({ isDark, onToggleDark }: SettingsPageProps) {
 
       {/* Section content — full width, scrollable */}
       <main className="flex-1 overflow-y-auto bg-white">
-        <div className="px-8 py-7 max-w-3xl">
+        <div className="px-6 py-6">
           {renderContent()}
         </div>
       </main>
