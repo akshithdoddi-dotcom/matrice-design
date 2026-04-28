@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   User, Lock, Users, Bell, Zap, Sun, Moon, Monitor, Mail, Phone, Key,
   Eye, EyeOff, Plus, Trash2, Edit2, Check, Shield, Info, Upload,
@@ -13,8 +13,7 @@ type NavSection =
   | "profile" | "security"
   | "members" | "groups"
   | "channels" | "rules"
-  | "appearance" | "api"
-  | "audit" | "about";
+  | "appearance";
 
 type Role = "director" | "manager" | "monitoring";
 type Status = "active" | "invited";
@@ -165,10 +164,21 @@ const SecondaryBtn = ({ children, onClick, className }: { children: React.ReactN
 // ─── Section: My Profile ──────────────────────────────────────────────────────
 function ProfileSection() {
   const [hoverAvatar, setHoverAvatar] = useState(false);
-  const [name, setName] = useState("Mohammed Usman");
-  const [phone, setPhone] = useState("+91 98765 43210");
-  const [department, setDepartment] = useState("Security Operations");
-  const [bio, setBio] = useState("Leading AI-powered surveillance and analytics for enterprise security operations.");
+  const [firstName, setFirstName]     = useState("Mohammed Usman");
+  const [lastName,  setLastName]      = useState("F");
+  const [jobTitle,  setJobTitle]      = useState("");
+  const [company,   setCompany]       = useState("");
+  const [phone,     setPhone]         = useState("");
+  const [country,   setCountry]       = useState("");
+  const [copied,    setCopied]        = useState(false);
+
+  const ACCOUNT_NUMBER = "9782886768719887307619115";
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(ACCOUNT_NUMBER).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
     <div className="space-y-6">
@@ -177,61 +187,105 @@ function ProfileSection() {
         <p className="text-sm text-gray-500 mt-1">Manage your personal information and preferences.</p>
       </div>
 
+      {/* Avatar card */}
       <Card>
-        <div className="flex items-start gap-6">
-          {/* Avatar */}
+        <div className="flex items-center gap-5">
           <div
             className="relative shrink-0 cursor-pointer"
             onMouseEnter={() => setHoverAvatar(true)}
             onMouseLeave={() => setHoverAvatar(false)}
           >
-            <div className="w-20 h-20 rounded-full bg-[#00775B] flex items-center justify-center text-white text-2xl font-black select-none">
+            <div className="w-16 h-16 rounded-full bg-[#00775B] flex items-center justify-center text-white text-xl font-black select-none">
               MU
             </div>
             {hoverAvatar && (
-              <div className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-1">
-                <Upload className="w-4 h-4 text-white" />
-                <span className="text-[9px] text-white font-bold">Change</span>
+              <div className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-0.5">
+                <Upload className="w-3.5 h-3.5 text-white" />
+                <span className="text-[8px] text-white font-bold">Change</span>
               </div>
             )}
           </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-900">{firstName} {lastName}</p>
+            <p className="text-sm text-gray-500">Director</p>
+            <button className="mt-1.5 text-[12px] text-[#00775B] hover:underline font-medium flex items-center gap-1">
+              <Upload className="w-3 h-3" /> Change photo
+            </button>
+          </div>
+        </div>
+      </Card>
 
-          {/* Fields */}
-          <div className="flex-1 grid grid-cols-2 gap-4">
-            <div>
-              <Label>Full Name</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} />
+      {/* Account Information */}
+      <Card>
+        <SectionHeader>Account Information</SectionHeader>
+        <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+          <div>
+            <Label>First Name</Label>
+            <Input value={firstName} onChange={e => setFirstName(e.target.value)} />
+          </div>
+          <div>
+            <Label>Last Name</Label>
+            <Input value={lastName} onChange={e => setLastName(e.target.value)} />
+          </div>
+          <div>
+            <Label>Job Title</Label>
+            <Input value={jobTitle} onChange={e => setJobTitle(e.target.value)} placeholder="N/A" />
+          </div>
+          <div>
+            <Label>Company</Label>
+            <Input value={company} onChange={e => setCompany(e.target.value)} placeholder="N/A" />
+          </div>
+          <div>
+            <Label>Account Number</Label>
+            <div className="relative">
+              <Input
+                value={ACCOUNT_NUMBER}
+                readOnly
+                className="bg-gray-50 font-mono text-[12px] tracking-tight pr-9"
+              />
+              <button
+                onClick={handleCopy}
+                title="Copy account number"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
             </div>
-            <div>
-              <Label>Email Address</Label>
-              <div className="relative">
-                <Input value="mohammed.usman@matrice.ai" readOnly className="pr-20 bg-gray-50 text-gray-500" />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">Verified</span>
-              </div>
-            </div>
-            <div>
-              <Label>Phone</Label>
-              <Input value={phone} onChange={e => setPhone(e.target.value)} />
-            </div>
-            <div>
-              <Label>Department</Label>
-              <Input value={department} onChange={e => setDepartment(e.target.value)} />
-            </div>
-            <div>
-              <Label>Role</Label>
-              <div className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 flex items-center">
-                <span className={roleBadge("director")}>Director</span>
-              </div>
+          </div>
+          <div>
+            <Label>Account Type</Label>
+            <div className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 flex items-center gap-2">
+              <span className="text-sm text-gray-800 font-medium">Enterprise</span>
+              <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">Active</span>
             </div>
           </div>
         </div>
-
-        <div className="mt-5">
-          <Label>Bio</Label>
-          <Textarea rows={3} value={bio} onChange={e => setBio(e.target.value)} />
+        <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
+          <PrimaryBtn>Save Changes</PrimaryBtn>
         </div>
+      </Card>
 
-        <div className="mt-5 flex justify-end">
+      {/* Personal Information */}
+      <Card>
+        <SectionHeader>Personal Information</SectionHeader>
+        <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+          <div>
+            <Label>Email</Label>
+            <div className="relative">
+              <Input value="mohammed.usman@matrice.ai" readOnly className="pr-20 bg-gray-50 text-gray-500" />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">Verified</span>
+            </div>
+          </div>
+          <div>
+            <Label>Phone Number</Label>
+            <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="N/A" />
+          </div>
+          <div>
+            <Label>Country</Label>
+            <Input value={country} onChange={e => setCountry(e.target.value)} placeholder="N/A" />
+          </div>
+        </div>
+        <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
           <PrimaryBtn>Save Changes</PrimaryBtn>
         </div>
       </Card>
@@ -1156,305 +1210,6 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
   );
 }
 
-// ─── Section: API & Integrations ─────────────────────────────────────────────
-function ApiSection() {
-  const [copied, setCopied] = useState<string | null>(null);
-
-  const API_KEYS = [
-    { name: "Production Key",    created: "2026-01-15", lastUsed: "2026-04-28", masked: "sk-mat-••••••••1a2b" },
-    { name: "Development Key",   created: "2026-03-01", lastUsed: "2026-04-27", masked: "sk-mat-••••••••3c4d" },
-  ];
-
-  const WEBHOOKS = [
-    { url: "https://ingest.monitoring.io/webhook", events: "alert.created, alert.resolved", status: "active" },
-    { url: "https://api.company.com/matrice-hook",  events: "member.invited",               status: "inactive" },
-  ];
-
-  const CONNECTED_SYSTEMS = [
-    { name: "VMS Integration",   desc: "Video Management System connection", status: "connected" },
-    { name: "Access Control",    desc: "Door & perimeter access system",     status: "not_configured" },
-  ];
-
-  const handleCopy = (key: string) => {
-    setCopied(key);
-    setTimeout(() => setCopied(null), 1500);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">API & Integrations</h2>
-        <p className="text-sm text-gray-500 mt-1">Manage API keys and external system connections.</p>
-      </div>
-
-      {/* API Keys */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <SectionHeader>API Keys</SectionHeader>
-          <PrimaryBtn className="flex items-center gap-2 h-8 text-[11px]">
-            <Plus className="w-3.5 h-3.5" /> Generate New Key
-          </PrimaryBtn>
-        </div>
-        <Card className="p-0 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100 text-[10px] uppercase tracking-wider font-bold text-gray-400">
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Created</th>
-                <th className="px-4 py-3 text-left">Last Used</th>
-                <th className="px-4 py-3 text-left">Key</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {API_KEYS.map(k => (
-                <tr key={k.name} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-[12px] font-semibold text-gray-800">{k.name}</td>
-                  <td className="px-4 py-3 text-[11px] text-gray-500">{k.created}</td>
-                  <td className="px-4 py-3 text-[11px] text-gray-500">{k.lastUsed}</td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-gray-600">{k.masked}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 justify-end">
-                      <button
-                        onClick={() => handleCopy(k.name)}
-                        className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-gray-300 text-[11px] text-gray-600 hover:bg-gray-50 transition-colors"
-                      >
-                        {copied === k.name ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copied === k.name ? "Copied" : "Copy"}
-                      </button>
-                      <button className="h-7 px-2.5 rounded-lg text-[11px] text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors">
-                        Revoke
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      </div>
-
-      {/* Webhooks */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <SectionHeader>Webhooks</SectionHeader>
-          <PrimaryBtn className="flex items-center gap-2 h-8 text-[11px]">
-            <Plus className="w-3.5 h-3.5" /> Add Webhook
-          </PrimaryBtn>
-        </div>
-        <div className="space-y-2">
-          {WEBHOOKS.map(w => (
-            <Card key={w.url} className="flex items-center justify-between gap-4 py-3">
-              <div className="min-w-0">
-                <p className="text-[12px] font-mono text-gray-700 truncate">{w.url}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Events: {w.events}</p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className={cn(
-                  "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                  w.status === "active" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"
-                )}>
-                  {w.status}
-                </span>
-                <button className="text-gray-400 hover:text-gray-600 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-                <button className="text-gray-400 hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Connected Systems */}
-      <div>
-        <SectionHeader>Connected Systems</SectionHeader>
-        <div className="grid grid-cols-2 gap-3">
-          {CONNECTED_SYSTEMS.map(s => (
-            <Card key={s.name} className="flex flex-col gap-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[13px] font-bold text-gray-800">{s.name}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">{s.desc}</p>
-                </div>
-                <span className={cn(
-                  "text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-2",
-                  s.status === "connected" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"
-                )}>
-                  {s.status === "connected" ? "Connected" : "Not Configured"}
-                </span>
-              </div>
-              {s.status !== "connected" && (
-                <PrimaryBtn className="self-start flex items-center gap-2 h-8 text-[11px]">
-                  <ExternalLink className="w-3.5 h-3.5" /> Connect
-                </PrimaryBtn>
-              )}
-            </Card>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Section: Audit Log ───────────────────────────────────────────────────────
-function AuditSection() {
-  const [search, setSearch] = useState("");
-
-  const filtered = MOCK_AUDIT.filter(a =>
-    !search || [a.user, a.action, a.resource, a.ip].some(v => v.toLowerCase().includes(search.toLowerCase()))
-  );
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">Audit Log</h2>
-        <p className="text-sm text-gray-500 mt-1">Track all actions taken within the platform.</p>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <input
-            type="text"
-            placeholder="Search log..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="h-9 pl-9 pr-3 rounded-md border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] w-full bg-white"
-          />
-          <Clipboard className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        </div>
-        <input
-          type="date"
-          className="h-9 px-3 rounded-md border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] bg-white"
-        />
-        <input
-          type="date"
-          className="h-9 px-3 rounded-md border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] bg-white"
-        />
-        <SecondaryBtn className="flex items-center gap-2 shrink-0">
-          <RefreshCw className="w-3.5 h-3.5" /> Export CSV
-        </SecondaryBtn>
-      </div>
-
-      <Card className="p-0 overflow-hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100 text-[10px] uppercase tracking-wider font-bold text-gray-400">
-              <th className="px-4 py-3">Timestamp</th>
-              <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3">Action</th>
-              <th className="px-4 py-3">Resource</th>
-              <th className="px-4 py-3">IP Address</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map((a, i) => (
-              <tr key={i} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 font-mono text-[11px] text-gray-400 whitespace-nowrap">{a.ts}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[8px] font-bold shrink-0">
-                      {initials(a.user)}
-                    </div>
-                    <span className="text-[12px] font-medium text-gray-700">{a.user}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-[12px] text-gray-700">{a.action}</td>
-                <td className="px-4 py-3 text-[12px] text-gray-500">{a.resource}</td>
-                <td className="px-4 py-3 font-mono text-[11px] text-gray-400">{a.ip}</td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-[12px] text-gray-400">No matching entries found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </Card>
-    </div>
-  );
-}
-
-// ─── Section: About ───────────────────────────────────────────────────────────
-function AboutSection() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">About</h2>
-        <p className="text-sm text-gray-500 mt-1">Platform information and system status.</p>
-      </div>
-
-      <Card>
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#00775B] flex items-center justify-center shadow-lg">
-            <Shield className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <p className="text-[20px] font-black text-gray-900">Matrice AI</p>
-            <p className="text-[12px] text-gray-500">Analytics Platform · v2.4.1 · Build 2026-04-15</p>
-          </div>
-        </div>
-        <p className="mt-4 text-[13px] text-gray-600 leading-relaxed">
-          Matrice AI is an enterprise-grade AI analytics platform providing real-time surveillance intelligence across Identity, Quality, and Safety domains. Designed for multi-persona operations from monitoring staff to executive directors.
-        </p>
-
-        {/* Stat pills */}
-        <div className="flex gap-3 mt-5">
-          {[
-            { label: "Uptime",          value: "99.8%",  color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-            { label: "Cameras Active",  value: "24",     color: "text-blue-600 bg-blue-50 border-blue-200" },
-            { label: "Events Today",    value: "1,284",  color: "text-purple-600 bg-purple-50 border-purple-200" },
-          ].map(s => (
-            <div key={s.label} className={cn("flex flex-col items-center px-5 py-3 rounded-lg border", s.color)}>
-              <span className="text-[22px] font-black">{s.value}</span>
-              <span className="text-[10px] font-bold uppercase tracking-wide mt-0.5 opacity-70">{s.label}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <SectionHeader>System Information</SectionHeader>
-        <div className="space-y-2">
-          {[
-            { label: "API Version",   value: "v3.1.0" },
-            { label: "Node Version",  value: "v20.11.0 LTS" },
-            { label: "Last Sync",     value: "2026-04-28 14:35:02 IST" },
-            { label: "Environment",   value: "Production" },
-          ].map(item => (
-            <div key={item.label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
-              <span className="text-[12px] text-gray-500">{item.label}</span>
-              <span className="text-[12px] font-mono font-semibold text-gray-700">{item.value}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <SectionHeader>Resources</SectionHeader>
-        <div className="space-y-2">
-          {[
-            { label: "Documentation",  icon: <Clipboard className="w-4 h-4" /> },
-            { label: "Support",        icon: <AlertCircle className="w-4 h-4" /> },
-            { label: "Release Notes",  icon: <Activity className="w-4 h-4" /> },
-          ].map(r => (
-            <button
-              key={r.label}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
-            >
-              <div className="flex items-center gap-3 text-gray-600 group-hover:text-[#00775B]">
-                {r.icon}
-                <span className="text-[13px] font-medium">{r.label}</span>
-              </div>
-              <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#00775B]" />
-            </button>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
 // ─── Nav config ───────────────────────────────────────────────────────────────
 const NAV_GROUPS = [
   {
@@ -1481,15 +1236,7 @@ const NAV_GROUPS = [
   {
     label: "Platform",
     items: [
-      { key: "appearance" as NavSection, label: "Appearance",       icon: Palette },
-      { key: "api"        as NavSection, label: "API & Integrations", icon: Key },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { key: "audit" as NavSection, label: "Audit Log", icon: Clipboard },
-      { key: "about" as NavSection, label: "About",     icon: Info },
+      { key: "appearance" as NavSection, label: "Appearance", icon: Palette },
     ],
   },
 ];
@@ -1512,26 +1259,21 @@ export function SettingsPage({ isDark, onToggleDark }: SettingsPageProps) {
       case "channels":   return <ChannelsSection />;
       case "rules":      return <RulesSection />;
       case "appearance": return <AppearanceSection isDark={isDark} onToggleDark={onToggleDark} />;
-      case "api":        return <ApiSection />;
-      case "audit":      return <AuditSection />;
-      case "about":      return <AboutSection />;
     }
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-white overflow-hidden">
+    <div className="flex h-full w-full bg-white overflow-hidden">
 
-      {/* Page header */}
-      <div className="shrink-0 px-10 pt-8 pb-6 border-b border-gray-200">
-        <h1 className="text-[22px] font-bold tracking-tight text-gray-900">Settings</h1>
-        <p className="text-[13px] text-gray-500 mt-1">Manage your workspace settings and preferences.</p>
-      </div>
+      {/* Left nav */}
+      <aside className="w-52 shrink-0 border-r border-gray-200 overflow-y-auto bg-white">
+        {/* Nav header */}
+        <div className="px-5 pt-6 pb-4 border-b border-gray-100">
+          <h1 className="text-[15px] font-semibold text-gray-900">Settings</h1>
+          <p className="text-[11px] text-gray-400 mt-0.5">Workspace preferences</p>
+        </div>
 
-      {/* Body: nav + content */}
-      <div className="flex flex-1 overflow-hidden">
-
-        {/* Left nav */}
-        <aside className="w-56 shrink-0 border-r border-gray-200 overflow-y-auto py-5 px-3 bg-white">
+        <nav className="py-4 px-3">
           {NAV_GROUPS.map(group => (
             <div key={group.label} className="mb-5">
               <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
@@ -1548,26 +1290,26 @@ export function SettingsPage({ isDark, onToggleDark }: SettingsPageProps) {
                       "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                       active
                         ? "bg-gray-100 text-gray-900"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                     )}
                   >
-                    <Icon className="w-4 h-4 shrink-0" />
+                    <Icon className="w-[15px] h-[15px] shrink-0" />
                     {item.label}
                   </button>
                 );
               })}
             </div>
           ))}
-        </aside>
+        </nav>
+      </aside>
 
-        {/* Section content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50/50">
-          <div className="max-w-2xl px-10 py-8">
-            {renderContent()}
-          </div>
-        </main>
+      {/* Section content — full width, scrollable */}
+      <main className="flex-1 overflow-y-auto bg-white">
+        <div className="px-8 py-7 max-w-3xl">
+          {renderContent()}
+        </div>
+      </main>
 
-      </div>
     </div>
   );
 }

@@ -656,7 +656,10 @@ export default function App() {
           </div>
         </header>
 
-        {/* Settings page — full-bleed, no padding */}
+        {/* Spacer: compensates for the fixed header (h-12 = 48px) */}
+        <div className="h-12 flex-shrink-0" />
+
+        {/* Settings page */}
         {activePage === "settings" && (
           <div className="flex-1 overflow-hidden">
             <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
@@ -665,8 +668,6 @@ export default function App() {
 
         {activePage !== "settings" && (
         <>
-        {/* Spacer: compensates for the fixed header (h-12 = 48px) so content starts below it */}
-        <div className="h-12 flex-shrink-0" />
         <div className="p-6 space-y-6 relative w-full overflow-x-hidden rounded-tl-lg">
 
           <section className="w-full">
