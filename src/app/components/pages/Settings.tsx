@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import {
   User, Lock, Users, Bell, Zap, Sun, Moon, Monitor, Mail, Phone, Key,
   Eye, EyeOff, Plus, Trash2, Edit2, Check, Shield, Info, Upload,
-  Globe, AlertCircle, Hash, UserPlus, Building, Settings, RefreshCw,
+  Globe, AlertCircle, Hash, UserPlus, Building, RefreshCw,
   LogOut, Copy, ExternalLink, Clipboard, MoreVertical, Palette, Layers,
   Clock, ChevronRight, Activity
 } from "lucide-react";
@@ -83,7 +83,7 @@ function roleBadge(role: Role | "invited") {
     director:   "bg-purple-100 text-purple-700 border border-purple-200",
     manager:    "bg-blue-100 text-blue-700 border border-blue-200",
     monitoring: "bg-teal-100 text-teal-700 border border-teal-200",
-    invited:    "bg-neutral-100 text-neutral-500 border border-neutral-200",
+    invited:    "bg-gray-100 text-gray-500 border border-gray-200",
   };
   return cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide", map[role] ?? map.invited);
 }
@@ -94,7 +94,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       onClick={onToggle}
       className={cn(
         "relative w-10 h-5 rounded-full transition-colors shrink-0",
-        on ? "bg-[#00775B]" : "bg-neutral-300"
+        on ? "bg-[#00775B]" : "bg-gray-300"
       )}
     >
       <span
@@ -109,21 +109,23 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-400 mb-3">{children}</p>
+  <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-3">{children}</p>
 );
 
 const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("rounded-xl border border-neutral-200 bg-white p-5", className)}>{children}</div>
+  <div className={cn("rounded-lg border border-gray-200 bg-white p-5", className)}>{children}</div>
 );
 
 const Label = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[11px] font-semibold text-neutral-500 mb-1">{children}</p>
+  <label className="block text-sm font-medium text-gray-700 mb-1.5">{children}</label>
 );
 
 const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input
     className={cn(
-      "h-9 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-800 focus:outline-none focus:border-[#00775B] w-full bg-white",
+      "h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400",
+      "focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B]",
+      "disabled:bg-gray-50 disabled:text-gray-500",
       className
     )}
     {...props}
@@ -133,7 +135,8 @@ const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputEleme
 const Textarea = ({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
   <textarea
     className={cn(
-      "px-3 py-2 rounded-lg border border-neutral-200 text-[13px] text-neutral-800 focus:outline-none focus:border-[#00775B] w-full bg-white resize-none",
+      "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400",
+      "focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] resize-none",
       className
     )}
     {...props}
@@ -144,7 +147,7 @@ const PrimaryBtn = ({ children, onClick, className, type = "button" }: { childre
   <button
     type={type}
     onClick={onClick}
-    className={cn("h-9 px-4 rounded-lg bg-[#00775B] text-white text-[12px] font-bold hover:bg-[#006649] transition-colors", className)}
+    className={cn("h-9 px-4 rounded-md bg-[#00775B] text-white text-sm font-medium hover:bg-[#006649] transition-colors", className)}
   >
     {children}
   </button>
@@ -153,7 +156,7 @@ const PrimaryBtn = ({ children, onClick, className, type = "button" }: { childre
 const SecondaryBtn = ({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) => (
   <button
     onClick={onClick}
-    className={cn("h-9 px-4 rounded-lg border border-neutral-200 text-[12px] font-medium text-neutral-600 hover:bg-neutral-50 transition-colors", className)}
+    className={cn("h-9 px-4 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors", className)}
   >
     {children}
   </button>
@@ -170,8 +173,8 @@ function ProfileSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">My Profile</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Manage your personal information and preferences.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">My Profile</h2>
+        <p className="text-sm text-gray-500 mt-1">Manage your personal information and preferences.</p>
       </div>
 
       <Card>
@@ -202,7 +205,7 @@ function ProfileSection() {
             <div>
               <Label>Email Address</Label>
               <div className="relative">
-                <Input value="mohammed.usman@matrice.ai" readOnly className="pr-20 bg-neutral-50 text-neutral-500" />
+                <Input value="mohammed.usman@matrice.ai" readOnly className="pr-20 bg-gray-50 text-gray-500" />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">Verified</span>
               </div>
             </div>
@@ -216,7 +219,7 @@ function ProfileSection() {
             </div>
             <div>
               <Label>Role</Label>
-              <div className="h-9 px-3 rounded-lg border border-neutral-200 bg-neutral-50 flex items-center">
+              <div className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 flex items-center">
                 <span className={roleBadge("director")}>Director</span>
               </div>
             </div>
@@ -264,8 +267,8 @@ function SecuritySection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">Password & Security</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Manage your password and account security settings.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">Password & Security</h2>
+        <p className="text-sm text-gray-500 mt-1">Manage your password and account security settings.</p>
       </div>
 
       <Card>
@@ -282,7 +285,7 @@ function SecuritySection() {
                 className="pr-10"
               />
               <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 onClick={() => setShowCurrent(v => !v)}
               >
                 {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -300,7 +303,7 @@ function SecuritySection() {
                 className="pr-10"
               />
               <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 onClick={() => setShowNew(v => !v)}
               >
                 {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -313,7 +316,7 @@ function SecuritySection() {
                     <div key={i} className={cn("h-1 flex-1 rounded-full transition-colors", i <= strength ? strengthColor : "bg-neutral-200")} />
                   ))}
                 </div>
-                <p className="text-[11px] text-neutral-500">Strength: <span className="font-bold">{strengthLabel}</span></p>
+                <p className="text-[11px] text-gray-500">Strength: <span className="font-bold">{strengthLabel}</span></p>
                 <div className="grid grid-cols-2 gap-1 mt-1">
                   {[
                     { key: "length", label: "8+ characters" },
@@ -325,7 +328,7 @@ function SecuritySection() {
                       <div className={cn("w-3 h-3 rounded-full flex items-center justify-center", checks[key as keyof typeof checks] ? "bg-emerald-500" : "bg-neutral-200")}>
                         {checks[key as keyof typeof checks] && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
                       </div>
-                      <span className="text-[10px] text-neutral-500">{label}</span>
+                      <span className="text-[10px] text-gray-500">{label}</span>
                     </div>
                   ))}
                 </div>
@@ -352,11 +355,11 @@ function SecuritySection() {
       <Card>
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[13px] font-bold text-neutral-900 flex items-center gap-2">
+            <p className="text-[13px] font-bold text-gray-900 flex items-center gap-2">
               <Shield className="w-4 h-4 text-[#00775B]" />
               Two-Factor Authentication
             </p>
-            <p className="text-[12px] text-neutral-500 mt-0.5">Adds a second layer of security to your account on every sign-in.</p>
+            <p className="text-[12px] text-gray-500 mt-0.5">Adds a second layer of security to your account on every sign-in.</p>
           </div>
           <Toggle on={twoFactor} onToggle={() => setTwoFactor(v => !v)} />
         </div>
@@ -371,14 +374,14 @@ function SecuritySection() {
         <SectionHeader>Active Sessions</SectionHeader>
         <div className="space-y-3">
           {SESSIONS.map((s, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
+            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
-                  <Monitor className="w-4 h-4 text-neutral-500" />
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Monitor className="w-4 h-4 text-gray-500" />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold text-neutral-800">{s.device} · {s.browser}</p>
-                  <p className="text-[11px] text-neutral-400">{s.location} · {s.lastActive}</p>
+                  <p className="text-[12px] font-semibold text-gray-800">{s.device} · {s.browser}</p>
+                  <p className="text-[11px] text-gray-400">{s.location} · {s.lastActive}</p>
                 </div>
               </div>
               {i > 0 && (
@@ -433,8 +436,8 @@ function MembersSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">Members</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Manage who has access to this workspace.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">Members</h2>
+        <p className="text-sm text-gray-500 mt-1">Manage who has access to this workspace.</p>
       </div>
 
       {/* Stats */}
@@ -444,9 +447,9 @@ function MembersSection() {
           { label: "Monitoring Staff", value: monitoringCount },
           { label: "Managers", value: managerCount },
         ].map(s => (
-          <div key={s.label} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-neutral-200 shadow-sm">
+          <div key={s.label} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 shadow-sm">
             <span className="text-[18px] font-black text-[#00775B]">{s.value}</span>
-            <span className="text-[11px] text-neutral-500 font-medium">{s.label}</span>
+            <span className="text-[11px] text-gray-500 font-medium">{s.label}</span>
           </div>
         ))}
       </div>
@@ -469,7 +472,7 @@ function MembersSection() {
             <select
               value={inviteRole}
               onChange={e => setInviteRole(e.target.value as Role)}
-              className="h-9 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-800 focus:outline-none focus:border-[#00775B] w-full bg-white"
+              className="h-9 px-3 rounded-md border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] w-full bg-white"
             >
               <option value="monitoring">Monitoring Staff</option>
               <option value="manager">Manager</option>
@@ -487,10 +490,10 @@ function MembersSection() {
         <SectionHeader>Pending Invitations ({PENDING.length})</SectionHeader>
         <div className="space-y-2">
           {PENDING.map((p, i) => (
-            <div key={i} className="flex items-center justify-between py-2.5 px-3 bg-neutral-50 rounded-lg border border-neutral-100">
+            <div key={i} className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-md border border-gray-200">
               <div>
-                <p className="text-[12px] font-semibold text-neutral-800">{p.email}</p>
-                <p className="text-[11px] text-neutral-400">{p.role} · Expires in {p.expires}</p>
+                <p className="text-[12px] font-semibold text-gray-800">{p.email}</p>
+                <p className="text-[11px] text-gray-400">{p.role} · Expires in {p.expires}</p>
               </div>
               <div className="flex gap-2">
                 <SecondaryBtn className="h-7 text-[11px] px-3">Resend</SecondaryBtn>
@@ -505,7 +508,7 @@ function MembersSection() {
       <Card className="p-0 overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-200 text-[10px] uppercase tracking-wider font-bold text-neutral-400">
+            <tr className="bg-gray-50 border-b border-gray-200 text-[10px] uppercase tracking-wider font-semibold text-gray-400">
               <th className="px-4 py-3">Member</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Status</th>
@@ -513,17 +516,17 @@ function MembersSection() {
               <th className="px-4 py-3 w-10" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-gray-100">
             {members.map(m => (
-              <tr key={m.id} className="hover:bg-neutral-50 transition-colors">
+              <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[11px] font-bold shrink-0">
                       {initials(m.name)}
                     </div>
                     <div>
-                      <p className="text-[12px] font-semibold text-neutral-800">{m.name}</p>
-                      <p className="text-[11px] text-neutral-400">{m.email}</p>
+                      <p className="text-[12px] font-semibold text-gray-800">{m.name}</p>
+                      <p className="text-[11px] text-gray-400">{m.email}</p>
                     </div>
                   </div>
                 </td>
@@ -532,21 +535,21 @@ function MembersSection() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    <span className={cn("w-2 h-2 rounded-full", m.status === "active" ? "bg-emerald-500" : "bg-neutral-300")} />
-                    <span className="text-[11px] text-neutral-600 capitalize">{m.status}</span>
+                    <span className={cn("w-2 h-2 rounded-full", m.status === "active" ? "bg-emerald-500" : "bg-gray-300")} />
+                    <span className="text-[11px] text-gray-600 capitalize">{m.status}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[11px] text-neutral-500">{m.lastActive}</td>
+                <td className="px-4 py-3 text-[11px] text-gray-500">{m.lastActive}</td>
                 <td className="px-4 py-3 relative" ref={m.id === openMenu ? menuRef : null}>
                   <button
                     onClick={() => setOpenMenu(openMenu === m.id ? null : m.id)}
-                    className="p-1 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600"
+                    className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                   >
                     <MoreVertical className="w-4 h-4" />
                   </button>
                   {openMenu === m.id && (
-                    <div className="absolute right-4 top-8 z-50 w-36 bg-white rounded-lg shadow-xl border border-neutral-200 py-1">
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-neutral-700 hover:bg-neutral-50">
+                    <div className="absolute right-4 top-8 z-50 w-36 bg-white rounded-lg shadow-xl border border-gray-200 py-1">
+                      <button className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-gray-700 hover:bg-gray-50">
                         <Edit2 className="w-3.5 h-3.5" /> Change Role
                       </button>
                       <button
@@ -611,8 +614,8 @@ function GroupsSection() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-[18px] font-bold text-neutral-900">User Groups</h2>
-          <p className="text-[13px] text-neutral-500 mt-0.5">Route alerts to specific teams.</p>
+          <h2 className="text-[17px] font-semibold text-gray-900">User Groups</h2>
+          <p className="text-sm text-gray-500 mt-1">Route alerts to specific teams.</p>
         </div>
         <PrimaryBtn onClick={() => setShowForm(v => !v)} className="flex items-center gap-2">
           <Plus className="w-3.5 h-3.5" /> New Group
@@ -647,8 +650,8 @@ function GroupsSection() {
                       onChange={() => setFormMembers(s => toggleSet(s, m.id))}
                       className="accent-[#00775B]"
                     />
-                    <span className="text-[12px] text-neutral-700">{m.name}</span>
-                    <span className="text-[11px] text-neutral-400">{m.email}</span>
+                    <span className="text-[12px] text-gray-700">{m.name}</span>
+                    <span className="text-[11px] text-gray-400">{m.email}</span>
                   </label>
                 ))}
               </div>
@@ -664,7 +667,7 @@ function GroupsSection() {
                       onChange={() => setFormChannels(s => toggleSet(s, c))}
                       className="accent-[#00775B]"
                     />
-                    <span className="text-[12px] text-neutral-700 capitalize">{c}</span>
+                    <span className="text-[12px] text-gray-700 capitalize">{c}</span>
                   </label>
                 ))}
               </div>
@@ -683,8 +686,8 @@ function GroupsSection() {
           return (
             <Card key={g.id} className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-neutral-800">{g.name}</p>
-                <p className="text-[12px] text-neutral-400 mt-0.5">{g.description}</p>
+                <p className="text-[13px] font-bold text-gray-800">{g.name}</p>
+                <p className="text-[12px] text-gray-400 mt-0.5">{g.description}</p>
                 <div className="flex items-center gap-3 mt-3">
                   {/* Member avatars */}
                   <div className="flex -space-x-1">
@@ -694,10 +697,10 @@ function GroupsSection() {
                       </div>
                     ))}
                   </div>
-                  <span className="text-[11px] text-neutral-400">{groupMembers.length} member{groupMembers.length !== 1 ? "s" : ""}</span>
+                  <span className="text-[11px] text-gray-400">{groupMembers.length} member{groupMembers.length !== 1 ? "s" : ""}</span>
                   <div className="flex gap-1">
                     {g.channels.map(c => (
-                      <span key={c} className="flex items-center gap-1 text-[10px] font-medium text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+                      <span key={c} className="flex items-center gap-1 text-[10px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                         {CHANNEL_ICONS[c]} {c}
                       </span>
                     ))}
@@ -760,8 +763,8 @@ function ChannelsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">Alert Channels</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Configure how and where alerts are delivered.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">Alert Channels</h2>
+        <p className="text-sm text-gray-500 mt-1">Configure how and where alerts are delivered.</p>
       </div>
 
       {/* Channel toggles */}
@@ -774,20 +777,20 @@ function ChannelsSection() {
                 <Mail className="w-4.5 h-4.5 text-blue-600" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-neutral-800">Email</p>
-                <p className="text-[11px] text-neutral-400">Send alert notifications via email</p>
+                <p className="text-[13px] font-bold text-gray-800">Email</p>
+                <p className="text-[11px] text-gray-400">Send alert notifications via email</p>
               </div>
             </div>
             <Toggle on={email} onToggle={() => setEmail(v => !v)} />
           </div>
           {email && (
-            <div className="mt-4 pt-4 border-t border-neutral-100">
+            <div className="mt-4 pt-4 border-t border-gray-100">
               <Label>Email Recipients</Label>
               <div className="space-y-2">
                 {emailList.map((e, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <Input value={e} readOnly className="bg-neutral-50" />
-                    <button onClick={() => setEmailList(l => l.filter((_, j) => j !== i))} className="text-neutral-400 hover:text-red-500 p-1 shrink-0">
+                    <Input value={e} readOnly className="bg-gray-50" />
+                    <button onClick={() => setEmailList(l => l.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500 p-1 shrink-0">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -811,8 +814,8 @@ function ChannelsSection() {
                 <Phone className="w-4.5 h-4.5 text-green-600" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-neutral-800">SMS</p>
-                <p className="text-[11px] text-neutral-400">Send alert notifications via SMS</p>
+                <p className="text-[13px] font-bold text-gray-800">SMS</p>
+                <p className="text-[11px] text-gray-400">Send alert notifications via SMS</p>
               </div>
             </div>
             <Toggle on={sms} onToggle={() => setSms(v => !v)} />
@@ -827,14 +830,14 @@ function ChannelsSection() {
                 <Hash className="w-4.5 h-4.5 text-purple-600" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-neutral-800">Slack</p>
-                <p className="text-[11px] text-neutral-400">Post alerts to a Slack channel</p>
+                <p className="text-[13px] font-bold text-gray-800">Slack</p>
+                <p className="text-[11px] text-gray-400">Post alerts to a Slack channel</p>
               </div>
             </div>
             <Toggle on={slack} onToggle={() => setSlack(v => !v)} />
           </div>
           {slack && (
-            <div className="mt-4 pt-4 border-t border-neutral-100">
+            <div className="mt-4 pt-4 border-t border-gray-100">
               <Label>Webhook URL</Label>
               <Input placeholder="https://hooks.slack.com/services/..." value={slackWebhook} onChange={e => setSlackWebhook(e.target.value)} />
             </div>
@@ -849,8 +852,8 @@ function ChannelsSection() {
                 <Globe className="w-4.5 h-4.5 text-indigo-600" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-neutral-800">Microsoft Teams</p>
-                <p className="text-[11px] text-neutral-400">Post alerts to a Teams channel</p>
+                <p className="text-[13px] font-bold text-gray-800">Microsoft Teams</p>
+                <p className="text-[11px] text-gray-400">Post alerts to a Teams channel</p>
               </div>
             </div>
             <Toggle on={teams} onToggle={() => setTeams(v => !v)} />
@@ -862,18 +865,18 @@ function ChannelsSection() {
       <Card className="p-0 overflow-hidden">
         <div className="px-5 pt-5 pb-3">
           <SectionHeader>Severity Routing Matrix</SectionHeader>
-          <p className="text-[12px] text-neutral-500">Choose which channels receive alerts by severity level.</p>
+          <p className="text-[12px] text-gray-500">Choose which channels receive alerts by severity level.</p>
         </div>
-        <table className="w-full border-t border-neutral-100">
+        <table className="w-full border-t border-gray-100">
           <thead>
-            <tr className="bg-neutral-50 text-[10px] uppercase tracking-wider font-bold text-neutral-400">
+            <tr className="bg-gray-50 text-[10px] uppercase tracking-wider font-bold text-gray-400">
               <th className="px-5 py-3 text-left">Severity</th>
               {channels.map(c => <th key={c} className="px-4 py-3 text-center">{c}</th>)}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-gray-100">
             {severities.map(sev => (
-              <tr key={sev} className="hover:bg-neutral-50">
+              <tr key={sev} className="hover:bg-gray-50">
                 <td className="px-5 py-3">
                   <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full", severityColor[sev])}>{sev}</span>
                 </td>
@@ -907,8 +910,8 @@ function RulesSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">Alert Rules</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Configure alert triggering behavior and thresholds.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">Alert Rules</h2>
+        <p className="text-sm text-gray-500 mt-1">Configure alert triggering behavior and thresholds.</p>
       </div>
 
       <Card>
@@ -927,13 +930,13 @@ function RulesSection() {
               onChange={e => setThreshold(Number(e.target.value))}
               className="w-full accent-[#00775B]"
             />
-            <div className="flex justify-between text-[10px] text-neutral-400 mt-1">
+            <div className="flex justify-between text-[10px] text-gray-400 mt-1">
               <span>70%</span><span>99%</span>
             </div>
-            <p className="text-[11px] text-neutral-400 mt-2">Only trigger alerts when match confidence exceeds this value.</p>
+            <p className="text-[11px] text-gray-400 mt-2">Only trigger alerts when match confidence exceeds this value.</p>
           </div>
 
-          <div className="h-px bg-neutral-100" />
+          <div className="h-px bg-gray-100" />
 
           {/* Detection cooldown */}
           <div>
@@ -947,18 +950,18 @@ function RulesSection() {
                 onChange={e => setCooldown(Number(e.target.value))}
                 className="w-32"
               />
-              <p className="text-[11px] text-neutral-400">Minimum time between repeat alerts for the same identity.</p>
+              <p className="text-[11px] text-gray-400">Minimum time between repeat alerts for the same identity.</p>
             </div>
           </div>
 
-          <div className="h-px bg-neutral-100" />
+          <div className="h-px bg-gray-100" />
 
           {/* Auto-escalation */}
           <div>
             <div className="flex items-start justify-between">
               <div>
                 <Label>Auto-Escalation</Label>
-                <p className="text-[11px] text-neutral-400 mt-0.5">Escalate unacknowledged CRITICAL alerts after this period.</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Escalate unacknowledged CRITICAL alerts after this period.</p>
               </div>
               <Toggle on={escalation} onToggle={() => setEscalation(v => !v)} />
             </div>
@@ -972,18 +975,18 @@ function RulesSection() {
                   onChange={e => setEscalationMinutes(Number(e.target.value))}
                   className="w-32"
                 />
-                <span className="text-[12px] text-neutral-500">minutes</span>
+                <span className="text-[12px] text-gray-500">minutes</span>
               </div>
             )}
           </div>
 
-          <div className="h-px bg-neutral-100" />
+          <div className="h-px bg-gray-100" />
 
           {/* BOLO priority */}
           <div className="flex items-start justify-between">
             <div>
               <Label>BOLO Priority</Label>
-              <p className="text-[11px] text-neutral-400 mt-0.5">Always notify all channels for BOLO hits regardless of threshold.</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">Always notify all channels for BOLO hits regardless of threshold.</p>
             </div>
             <Toggle on={bolo} onToggle={() => setBolo(v => !v)} />
           </div>
@@ -1013,7 +1016,7 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
   const THEMES: { key: "light" | "dark" | "system"; label: string; desc: string; icon: React.ReactNode }[] = [
     { key: "light",  label: "Light",  desc: "Clean white interface", icon: <Sun className="w-5 h-5 text-yellow-500" /> },
     { key: "dark",   label: "Dark",   desc: "Easy on the eyes",      icon: <Moon className="w-5 h-5 text-indigo-400" /> },
-    { key: "system", label: "System", desc: "Follows OS preference", icon: <Monitor className="w-5 h-5 text-neutral-500" /> },
+    { key: "system", label: "System", desc: "Follows OS preference", icon: <Monitor className="w-5 h-5 text-gray-500" /> },
   ];
 
   const PERSONAS: { key: "monitoring" | "manager" | "director"; label: string; desc: string }[] = [
@@ -1025,8 +1028,8 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">Appearance</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Customize how the platform looks and feels.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">Appearance</h2>
+        <p className="text-sm text-gray-500 mt-1">Customize how the platform looks and feels.</p>
       </div>
 
       <Card>
@@ -1037,31 +1040,31 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
               key={t.key}
               onClick={() => handleTheme(t.key)}
               className={cn(
-                "relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
-                theme === t.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-neutral-200 hover:border-neutral-300"
+                "relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
+                theme === t.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-gray-200 hover:border-gray-300"
               )}
             >
               {/* Preview */}
               <div className={cn(
                 "w-full h-16 rounded-lg overflow-hidden border",
-                t.key === "dark" ? "bg-[#0d1f1b] border-[#1a3830]" : "bg-white border-neutral-200"
+                t.key === "dark" ? "bg-[#0d1f1b] border-[#1a3830]" : "bg-white border-gray-200"
               )}>
                 <div className={cn("h-4 w-full flex items-center px-2 gap-1", t.key === "dark" ? "bg-[#021d18]" : "bg-[#0d1f1b]")}>
                   <div className="w-2 h-2 rounded-full bg-[#00775B]" />
                   <div className={cn("h-1.5 w-10 rounded-full", t.key === "dark" ? "bg-white/20" : "bg-white/50")} />
                 </div>
                 <div className="p-2 flex gap-1">
-                  <div className={cn("h-6 w-6 rounded", t.key === "dark" ? "bg-white/10" : "bg-neutral-100")} />
+                  <div className={cn("h-6 w-6 rounded", t.key === "dark" ? "bg-white/10" : "bg-gray-100")} />
                   <div className="flex-1 space-y-1">
                     <div className={cn("h-1.5 w-full rounded-full", t.key === "dark" ? "bg-white/20" : "bg-neutral-200")} />
-                    <div className={cn("h-1.5 w-3/4 rounded-full", t.key === "dark" ? "bg-white/10" : "bg-neutral-100")} />
+                    <div className={cn("h-1.5 w-3/4 rounded-full", t.key === "dark" ? "bg-white/10" : "bg-gray-100")} />
                   </div>
                 </div>
               </div>
               {t.icon}
               <div className="text-center">
-                <p className="text-[12px] font-bold text-neutral-800">{t.label}</p>
-                <p className="text-[10px] text-neutral-400">{t.desc}</p>
+                <p className="text-[12px] font-bold text-gray-800">{t.label}</p>
+                <p className="text-[10px] text-gray-400">{t.desc}</p>
               </div>
               {theme === t.key && (
                 <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#00775B] flex items-center justify-center">
@@ -1080,8 +1083,8 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
             <label
               key={p.key}
               className={cn(
-                "flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all",
-                persona === p.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-neutral-200 hover:border-neutral-300"
+                "flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                persona === p.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-gray-200 hover:border-gray-300"
               )}
             >
               <input
@@ -1093,8 +1096,8 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
                 className="accent-[#00775B] mt-0.5"
               />
               <div>
-                <p className="text-[12px] font-bold text-neutral-800">{p.label}</p>
-                <p className="text-[11px] text-neutral-400">{p.desc}</p>
+                <p className="text-[12px] font-bold text-gray-800">{p.label}</p>
+                <p className="text-[11px] text-gray-400">{p.desc}</p>
               </div>
             </label>
           ))}
@@ -1106,12 +1109,12 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
           {/* Time format */}
           <div>
             <Label>Time Format</Label>
-            <div className="flex mt-1 bg-neutral-100 rounded-lg p-0.5 w-fit">
+            <div className="flex mt-1 bg-gray-100 rounded-lg p-0.5 w-fit">
               {(["12h", "24h"] as const).map(f => (
                 <button
                   key={f}
                   onClick={() => setTimeFormat(f)}
-                  className={cn("px-4 py-1.5 rounded-md text-[12px] font-semibold transition-all", timeFormat === f ? "bg-white text-[#00775B] shadow-sm" : "text-neutral-500")}
+                  className={cn("px-4 py-1.5 rounded-md text-[12px] font-semibold transition-all", timeFormat === f ? "bg-white text-[#00775B] shadow-sm" : "text-gray-500")}
                 >
                   {f}
                 </button>
@@ -1122,12 +1125,12 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
           {/* Density */}
           <div>
             <Label>Dashboard Density</Label>
-            <div className="flex mt-1 bg-neutral-100 rounded-lg p-0.5 w-fit">
+            <div className="flex mt-1 bg-gray-100 rounded-lg p-0.5 w-fit">
               {(["compact", "comfortable"] as const).map(d => (
                 <button
                   key={d}
                   onClick={() => setDensity(d)}
-                  className={cn("px-4 py-1.5 rounded-md text-[12px] font-semibold transition-all capitalize", density === d ? "bg-white text-[#00775B] shadow-sm" : "text-neutral-500")}
+                  className={cn("px-4 py-1.5 rounded-md text-[12px] font-semibold transition-all capitalize", density === d ? "bg-white text-[#00775B] shadow-sm" : "text-gray-500")}
                 >
                   {d}
                 </button>
@@ -1139,7 +1142,7 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
           <div>
             <Label>Timezone</Label>
             <div className="flex items-center gap-2">
-              <span className="text-[13px] text-neutral-700">Asia/Kolkata (IST)</span>
+              <span className="text-[13px] text-gray-700">Asia/Kolkata (IST)</span>
               <button className="text-[12px] text-[#00775B] hover:underline font-medium">Change</button>
             </div>
           </div>
@@ -1180,8 +1183,8 @@ function ApiSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">API & Integrations</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Manage API keys and external system connections.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">API & Integrations</h2>
+        <p className="text-sm text-gray-500 mt-1">Manage API keys and external system connections.</p>
       </div>
 
       {/* API Keys */}
@@ -1195,7 +1198,7 @@ function ApiSection() {
         <Card className="p-0 overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="bg-neutral-50 border-b border-neutral-100 text-[10px] uppercase tracking-wider font-bold text-neutral-400">
+              <tr className="bg-gray-50 border-b border-gray-100 text-[10px] uppercase tracking-wider font-bold text-gray-400">
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">Created</th>
                 <th className="px-4 py-3 text-left">Last Used</th>
@@ -1203,18 +1206,18 @@ function ApiSection() {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-gray-100">
               {API_KEYS.map(k => (
-                <tr key={k.name} className="hover:bg-neutral-50">
-                  <td className="px-4 py-3 text-[12px] font-semibold text-neutral-800">{k.name}</td>
-                  <td className="px-4 py-3 text-[11px] text-neutral-500">{k.created}</td>
-                  <td className="px-4 py-3 text-[11px] text-neutral-500">{k.lastUsed}</td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-neutral-600">{k.masked}</td>
+                <tr key={k.name} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-[12px] font-semibold text-gray-800">{k.name}</td>
+                  <td className="px-4 py-3 text-[11px] text-gray-500">{k.created}</td>
+                  <td className="px-4 py-3 text-[11px] text-gray-500">{k.lastUsed}</td>
+                  <td className="px-4 py-3 font-mono text-[11px] text-gray-600">{k.masked}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 justify-end">
                       <button
                         onClick={() => handleCopy(k.name)}
-                        className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-neutral-200 text-[11px] text-neutral-600 hover:bg-neutral-50 transition-colors"
+                        className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-gray-300 text-[11px] text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         {copied === k.name ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                         {copied === k.name ? "Copied" : "Copy"}
@@ -1243,18 +1246,18 @@ function ApiSection() {
           {WEBHOOKS.map(w => (
             <Card key={w.url} className="flex items-center justify-between gap-4 py-3">
               <div className="min-w-0">
-                <p className="text-[12px] font-mono text-neutral-700 truncate">{w.url}</p>
-                <p className="text-[11px] text-neutral-400 mt-0.5">Events: {w.events}</p>
+                <p className="text-[12px] font-mono text-gray-700 truncate">{w.url}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Events: {w.events}</p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <span className={cn(
                   "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                  w.status === "active" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-neutral-100 text-neutral-500 border border-neutral-200"
+                  w.status === "active" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"
                 )}>
                   {w.status}
                 </span>
-                <button className="text-neutral-400 hover:text-neutral-600 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-                <button className="text-neutral-400 hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button className="text-gray-400 hover:text-gray-600 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
+                <button className="text-gray-400 hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </Card>
           ))}
@@ -1269,12 +1272,12 @@ function ApiSection() {
             <Card key={s.name} className="flex flex-col gap-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[13px] font-bold text-neutral-800">{s.name}</p>
-                  <p className="text-[11px] text-neutral-400 mt-0.5">{s.desc}</p>
+                  <p className="text-[13px] font-bold text-gray-800">{s.name}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{s.desc}</p>
                 </div>
                 <span className={cn(
                   "text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-2",
-                  s.status === "connected" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-neutral-100 text-neutral-500 border border-neutral-200"
+                  s.status === "connected" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"
                 )}>
                   {s.status === "connected" ? "Connected" : "Not Configured"}
                 </span>
@@ -1303,8 +1306,8 @@ function AuditSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">Audit Log</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Track all actions taken within the platform.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">Audit Log</h2>
+        <p className="text-sm text-gray-500 mt-1">Track all actions taken within the platform.</p>
       </div>
 
       {/* Toolbar */}
@@ -1315,17 +1318,17 @@ function AuditSection() {
             placeholder="Search log..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="h-9 pl-9 pr-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-800 focus:outline-none focus:border-[#00775B] w-full bg-white"
+            className="h-9 pl-9 pr-3 rounded-md border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] w-full bg-white"
           />
-          <Clipboard className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+          <Clipboard className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         </div>
         <input
           type="date"
-          className="h-9 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-600 focus:outline-none focus:border-[#00775B] bg-white"
+          className="h-9 px-3 rounded-md border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] bg-white"
         />
         <input
           type="date"
-          className="h-9 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-600 focus:outline-none focus:border-[#00775B] bg-white"
+          className="h-9 px-3 rounded-md border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] bg-white"
         />
         <SecondaryBtn className="flex items-center gap-2 shrink-0">
           <RefreshCw className="w-3.5 h-3.5" /> Export CSV
@@ -1335,7 +1338,7 @@ function AuditSection() {
       <Card className="p-0 overflow-hidden">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-100 text-[10px] uppercase tracking-wider font-bold text-neutral-400">
+            <tr className="bg-gray-50 border-b border-gray-100 text-[10px] uppercase tracking-wider font-bold text-gray-400">
               <th className="px-4 py-3">Timestamp</th>
               <th className="px-4 py-3">User</th>
               <th className="px-4 py-3">Action</th>
@@ -1343,26 +1346,26 @@ function AuditSection() {
               <th className="px-4 py-3">IP Address</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-gray-100">
             {filtered.map((a, i) => (
-              <tr key={i} className="hover:bg-neutral-50 transition-colors">
-                <td className="px-4 py-3 font-mono text-[11px] text-neutral-400 whitespace-nowrap">{a.ts}</td>
+              <tr key={i} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 font-mono text-[11px] text-gray-400 whitespace-nowrap">{a.ts}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[8px] font-bold shrink-0">
                       {initials(a.user)}
                     </div>
-                    <span className="text-[12px] font-medium text-neutral-700">{a.user}</span>
+                    <span className="text-[12px] font-medium text-gray-700">{a.user}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[12px] text-neutral-700">{a.action}</td>
-                <td className="px-4 py-3 text-[12px] text-neutral-500">{a.resource}</td>
-                <td className="px-4 py-3 font-mono text-[11px] text-neutral-400">{a.ip}</td>
+                <td className="px-4 py-3 text-[12px] text-gray-700">{a.action}</td>
+                <td className="px-4 py-3 text-[12px] text-gray-500">{a.resource}</td>
+                <td className="px-4 py-3 font-mono text-[11px] text-gray-400">{a.ip}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-[12px] text-neutral-400">No matching entries found.</td>
+                <td colSpan={5} className="px-4 py-8 text-center text-[12px] text-gray-400">No matching entries found.</td>
               </tr>
             )}
           </tbody>
@@ -1377,8 +1380,8 @@ function AboutSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[18px] font-bold text-neutral-900">About</h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">Platform information and system status.</p>
+        <h2 className="text-[17px] font-semibold text-gray-900">About</h2>
+        <p className="text-sm text-gray-500 mt-1">Platform information and system status.</p>
       </div>
 
       <Card>
@@ -1387,11 +1390,11 @@ function AboutSection() {
             <Shield className="w-7 h-7 text-white" />
           </div>
           <div>
-            <p className="text-[20px] font-black text-neutral-900">Matrice AI</p>
-            <p className="text-[12px] text-neutral-500">Analytics Platform · v2.4.1 · Build 2026-04-15</p>
+            <p className="text-[20px] font-black text-gray-900">Matrice AI</p>
+            <p className="text-[12px] text-gray-500">Analytics Platform · v2.4.1 · Build 2026-04-15</p>
           </div>
         </div>
-        <p className="mt-4 text-[13px] text-neutral-600 leading-relaxed">
+        <p className="mt-4 text-[13px] text-gray-600 leading-relaxed">
           Matrice AI is an enterprise-grade AI analytics platform providing real-time surveillance intelligence across Identity, Quality, and Safety domains. Designed for multi-persona operations from monitoring staff to executive directors.
         </p>
 
@@ -1402,7 +1405,7 @@ function AboutSection() {
             { label: "Cameras Active",  value: "24",     color: "text-blue-600 bg-blue-50 border-blue-200" },
             { label: "Events Today",    value: "1,284",  color: "text-purple-600 bg-purple-50 border-purple-200" },
           ].map(s => (
-            <div key={s.label} className={cn("flex flex-col items-center px-5 py-3 rounded-xl border", s.color)}>
+            <div key={s.label} className={cn("flex flex-col items-center px-5 py-3 rounded-lg border", s.color)}>
               <span className="text-[22px] font-black">{s.value}</span>
               <span className="text-[10px] font-bold uppercase tracking-wide mt-0.5 opacity-70">{s.label}</span>
             </div>
@@ -1419,9 +1422,9 @@ function AboutSection() {
             { label: "Last Sync",     value: "2026-04-28 14:35:02 IST" },
             { label: "Environment",   value: "Production" },
           ].map(item => (
-            <div key={item.label} className="flex items-center justify-between py-1.5 border-b border-neutral-100 last:border-0">
-              <span className="text-[12px] text-neutral-500">{item.label}</span>
-              <span className="text-[12px] font-mono font-semibold text-neutral-700">{item.value}</span>
+            <div key={item.label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+              <span className="text-[12px] text-gray-500">{item.label}</span>
+              <span className="text-[12px] font-mono font-semibold text-gray-700">{item.value}</span>
             </div>
           ))}
         </div>
@@ -1437,13 +1440,13 @@ function AboutSection() {
           ].map(r => (
             <button
               key={r.label}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-neutral-50 transition-colors group"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
             >
-              <div className="flex items-center gap-3 text-neutral-600 group-hover:text-[#00775B]">
+              <div className="flex items-center gap-3 text-gray-600 group-hover:text-[#00775B]">
                 {r.icon}
                 <span className="text-[13px] font-medium">{r.label}</span>
               </div>
-              <ExternalLink className="w-3.5 h-3.5 text-neutral-300 group-hover:text-[#00775B]" />
+              <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#00775B]" />
             </button>
           ))}
         </div>
@@ -1516,66 +1519,55 @@ export function SettingsPage({ isDark, onToggleDark }: SettingsPageProps) {
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="flex h-full w-full flex-col bg-white overflow-hidden">
 
-        {/* Sidebar */}
-        <div className="w-60 shrink-0 flex flex-col bg-[#0d1f1b] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-4 border-b border-white/8">
-            <div className="w-7 h-7 rounded-lg bg-[#00775B] flex items-center justify-center">
-              <Settings className="w-4 h-4 text-white" />
+      {/* Page header */}
+      <div className="shrink-0 px-10 pt-8 pb-6 border-b border-gray-200">
+        <h1 className="text-[22px] font-bold tracking-tight text-gray-900">Settings</h1>
+        <p className="text-[13px] text-gray-500 mt-1">Manage your workspace settings and preferences.</p>
+      </div>
+
+      {/* Body: nav + content */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* Left nav */}
+        <aside className="w-56 shrink-0 border-r border-gray-200 overflow-y-auto py-5 px-3 bg-white">
+          {NAV_GROUPS.map(group => (
+            <div key={group.label} className="mb-5">
+              <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                {group.label}
+              </p>
+              {group.items.map(item => {
+                const Icon = item.icon;
+                const active = activeSection === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => setActiveSection(item.key)}
+                    className={cn(
+                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      active
+                        ? "bg-gray-100 text-gray-900"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
-            <span className="text-[14px] font-bold text-white">Settings</span>
-          </div>
+          ))}
+        </aside>
 
-          {/* Nav */}
-          <nav className="flex-1 py-3 px-2 space-y-5">
-            {NAV_GROUPS.map(group => (
-              <div key={group.label}>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 px-3 mb-1">{group.label}</p>
-                {group.items.map(item => {
-                  const Icon = item.icon;
-                  const active = activeSection === item.key;
-                  return (
-                    <button
-                      key={item.key}
-                      onClick={() => setActiveSection(item.key)}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all",
-                        active
-                          ? "bg-[#00775B] text-white"
-                          : "text-white/60 hover:text-white hover:bg-white/8"
-                      )}
-                    >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </nav>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-white/8">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[10px] font-black">
-                MU
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold text-white/80 truncate">Mohammed Usman</p>
-                <p className="text-[10px] text-white/40 truncate">Director</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 flex flex-col bg-[#F8FAFC] overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-8 py-7">
+        {/* Section content */}
+        <main className="flex-1 overflow-y-auto bg-gray-50/50">
+          <div className="max-w-2xl px-10 py-8">
             {renderContent()}
           </div>
-        </div>
+        </main>
+
+      </div>
     </div>
   );
 }
