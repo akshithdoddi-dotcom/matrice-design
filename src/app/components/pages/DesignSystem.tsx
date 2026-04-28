@@ -1962,7 +1962,7 @@ const V2BaseContent = () => {
 //  2px teal selection bar · JetBrains Mono data · bottom pagination
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Extended 14-row dataset for pagination demo (5 rows/page = 3 pages)
+// 25-row dataset — 10 rows/page = 3 pages (10 + 10 + 5)
 const V21_GRID_DATA: GridRow[] = [
   { id: "INC-004821", status: "critical",  event: "Hardhat Missing",           zone: "Loading Dock A",  camera: "CAM-14", confidence: 97.3,  timestamp: "2026-04-28 16:05" },
   { id: "INC-004820", status: "warning",   event: "Safety Zone Breach",         zone: "Assembly Line 2", camera: "CAM-07", confidence: 84.1,  timestamp: "2026-04-28 15:58" },
@@ -1978,6 +1978,17 @@ const V21_GRID_DATA: GridRow[] = [
   { id: "INC-004810", status: "info",      event: "Visitor Badge Missing",      zone: "Reception",       camera: "CAM-02", confidence: 68.9,  timestamp: "2026-04-28 12:44" },
   { id: "INC-004809", status: "resolved",  event: "Equipment Obstruction",      zone: "Loading Bay",     camera: "CAM-17", confidence: 91.3,  timestamp: "2026-04-28 12:18" },
   { id: "INC-004808", status: "critical",  event: "No Safety Harness",          zone: "Roof Access",     camera: "CAM-28", confidence: 96.7,  timestamp: "2026-04-28 11:52" },
+  { id: "INC-004807", status: "warning",   event: "Unauthorised Vehicle Entry", zone: "Parking Zone B",  camera: "CAM-04", confidence: 77.6,  timestamp: "2026-04-28 11:30" },
+  { id: "INC-004806", status: "info",      event: "Loitering Detected",         zone: "Main Entrance",   camera: "CAM-01", confidence: 65.3,  timestamp: "2026-04-28 11:08" },
+  { id: "INC-004805", status: "stable",    event: "PPE Compliant Handover",     zone: "Shift Handover",  camera: "CAM-06", confidence: 99.1,  timestamp: "2026-04-28 10:44" },
+  { id: "INC-004804", status: "critical",  event: "Chemical Leak Proximity",    zone: "Hazmat Zone",     camera: "CAM-33", confidence: 94.5,  timestamp: "2026-04-28 10:22" },
+  { id: "INC-004803", status: "resolved",  event: "Blocked Emergency Exit",     zone: "Exit Corridor A", camera: "CAM-19", confidence: 86.7,  timestamp: "2026-04-28 10:01" },
+  { id: "INC-004802", status: "warning",   event: "Excessive Speed Detected",   zone: "Loading Bay",     camera: "CAM-12", confidence: 81.2,  timestamp: "2026-04-28 09:38" },
+  { id: "INC-004801", status: "info",      event: "Tailgating Incident",        zone: "Access Gate 1",   camera: "CAM-08", confidence: 72.4,  timestamp: "2026-04-28 09:15" },
+  { id: "INC-004800", status: "stable",    event: "Daily Safety Check Pass",    zone: "Control Room",    camera: "CAM-10", confidence: 100.0, timestamp: "2026-04-28 08:52" },
+  { id: "INC-004799", status: "critical",  event: "Unattended Equipment",       zone: "Production Floor", camera: "CAM-16", confidence: 93.8, timestamp: "2026-04-28 08:29" },
+  { id: "INC-004798", status: "warning",   event: "Manual Handling Risk",       zone: "Warehouse C",     camera: "CAM-23", confidence: 83.5,  timestamp: "2026-04-28 08:07" },
+  { id: "INC-004797", status: "resolved",  event: "Near-Miss Logged",           zone: "Assembly Line 3", camera: "CAM-25", confidence: 90.0,  timestamp: "2026-04-28 07:44" },
 ];
 
 // Bright-fill severity pill — solid bg, white text, JetBrains Mono 10px Bold, 4px radius
@@ -2029,7 +2040,7 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
           gridTemplateColumns: V21_COLS,
           alignItems: "center",
           height: 38,
-          backgroundColor: isDark ? "#1E293B" : "#F8FAFC",
+          backgroundColor: isDark ? "#1E293B" : "#E2E8F0",
           borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0"}`,
           borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0"}`,
           paddingLeft: 8,
@@ -2196,7 +2207,7 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
   );
 };
 
-const ROWS_PER_PAGE_V21 = 5;
+const ROWS_PER_PAGE_V21 = 10;
 
 const V2_1Content = () => {
   const [searchQ, setSearchQ] = useState("");
@@ -2253,7 +2264,7 @@ const V2_1Content = () => {
       {/* Spec chips */}
       <div className="flex flex-wrap gap-2">
         {[
-          ["Header BG",     "#F8FAFC (neutral-50)"],
+          ["Header BG",     "#E2E8F0 (neutral-200)"],
           ["Header Border", "top + bottom 1px"],
           ["Hover BG",      "rgba(0,119,91,0.05)"],
           ["Selection Bar", "2px #00775B"],
@@ -2598,7 +2609,7 @@ const V2_1Content = () => {
 
       {/* Annotations */}
       <div className="grid grid-cols-2 gap-2">
-        <Annotation>Header: solid <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">#F8FAFC</code> · 1px border top+bottom · Inter Bold 11px #64748B</Annotation>
+        <Annotation>Header: solid <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">#E2E8F0</code> · 1px border top+bottom · Inter Bold 11px #64748B</Annotation>
         <Annotation>Severity pills: bright fill, white text, 4px radius, JetBrains Mono 10px Bold</Annotation>
         <Annotation>Ghost search: transparent bg, teal focus glow 3px at rgba(0,119,91,0.12)</Annotation>
         <Annotation>Filter + Sort: 4px sharp corners · active state teal tint + indicator dot</Annotation>
@@ -2912,7 +2923,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
   );
 };
 
-const ROWS_PER_PAGE_V22 = 5;
+const ROWS_PER_PAGE_V22 = 10;
 
 const V2_2Content = () => {
   const [searchQ, setSearchQ] = useState("");
