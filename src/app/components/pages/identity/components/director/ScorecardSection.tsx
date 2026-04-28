@@ -7,6 +7,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { cn } from "@/app/lib/utils";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 
 interface Props { terminology: IdentityTerminology }
 
@@ -73,46 +74,75 @@ export const ScorecardSection = ({ terminology: _terminology }: Props) => {
             <span className="text-red-500">{offTarget} Off Target</span>
           </div>
         </div>
-        <div className="overflow-x-auto flex-1">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50/80">
-                <th className="pl-4 pr-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Metric</th>
-                <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">This Period</th>
-                <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Last Period</th>
-                <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Target</th>
-                <th className="pl-2 pr-4 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-50">
-              {IDENTITY_SCORECARD.map((row) => (
-                <tr
-                  key={row.metric}
-                  className={cn("border-l-2 hover:bg-neutral-50/60 transition-colors", STATUS_LEFT[row.status])}
-                >
-                  <td className="pl-4 pr-2 py-2.5 text-[11px] font-semibold text-neutral-700">{row.metric}</td>
-                  <td className="px-2 py-2.5 text-right font-data tabular-nums text-[12px] font-black text-neutral-900">
-                    {row.this_period}{row.unit}
-                  </td>
-                  <td className="px-2 py-2.5 text-right font-data tabular-nums text-[11px] text-neutral-500">
-                    {row.last_period}{row.unit}
-                  </td>
-                  <td className="px-2 py-2.5 text-right font-data tabular-nums text-[11px] text-neutral-400">
-                    {row.target}{row.unit}
-                  </td>
-                  <td className="pl-2 pr-4 py-2.5 text-center">
-                    <span className={cn(
-                      "inline-flex h-5 items-center rounded-[2px] border px-1.5 text-[9px] font-black uppercase tracking-wide",
-                      STATUS_BADGE[row.status]
-                    )}>
-                      {STATUS_LABEL[row.status]}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {(() => {
+          type ScorecardRow = (typeof IDENTITY_SCORECARD)[number];
+          const scorecardColumns: DataGridColumn<ScorecardRow>[] = [
+            {
+              key: "metric",
+              header: "Metric",
+              width: "1fr",
+              render: (row, hovered) => (
+                <InterCell hovered={hovered} isPrimary fontSize={11}>{row.metric}</InterCell>
+              ),
+            },
+            {
+              key: "this_period",
+              header: "This Period",
+              width: "100px",
+              align: "right",
+              render: (row, hovered) => (
+                <MonoCell hovered={hovered} isPrimary fontSize={12}>{row.this_period}{row.unit}</MonoCell>
+              ),
+            },
+            {
+              key: "last_period",
+              header: "Last Period",
+              width: "100px",
+              align: "right",
+              render: (row, hovered) => (
+                <MonoCell hovered={hovered} fontSize={11} color="#64748B">{row.last_period}{row.unit}</MonoCell>
+              ),
+            },
+            {
+              key: "target",
+              header: "Target",
+              width: "90px",
+              align: "right",
+              render: (row, hovered) => (
+                <MonoCell hovered={hovered} fontSize={11} color="#94A3B8">{row.target}{row.unit}</MonoCell>
+              ),
+            },
+            {
+              key: "status",
+              header: "Status",
+              width: "100px",
+              align: "center",
+              render: (row) => {
+                const statusMap: Record<string, string> = {
+                  ON_TRACK: "active",
+                  WATCH: "warning",
+                  OFF_TARGET: "critical",
+                };
+                const labelMap: Record<string, string> = {
+                  ON_TRACK: "On Track",
+                  WATCH: "Monitor",
+                  OFF_TARGET: "Off Target",
+                };
+                return <StatusCapsule status={statusMap[row.status] ?? "unknown"} label={labelMap[row.status]} />;
+              },
+            },
+          ];
+
+          return (
+            <div className="flex-1 overflow-hidden">
+              <DataGrid<ScorecardRow>
+                columns={scorecardColumns}
+                data={IDENTITY_SCORECARD}
+                getRowId={(row) => row.metric}
+              />
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Panel } from "../shared/Panel";
-import { StatusBadge } from "../shared/StatusBadge";
 import { Bell } from "lucide-react";
 import { ALERTS } from "../../data/mockData";
 import type { QualityTerminology, AlertEvent } from "../../data/types";
 import { cn } from "@/app/lib/utils";
+import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;
@@ -74,69 +74,62 @@ export const AlertFeedPanel = ({ terminology: _terminology }: Props) => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-neutral-100">
-              <th className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-3 whitespace-nowrap">
-                Time
-              </th>
-              <th className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-3">
-                Severity
-              </th>
-              <th className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-3">
-                Alert
-              </th>
-              <th className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-3">
-                Zone
-              </th>
-              <th className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2">
-                Message
-              </th>
-              <th className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pl-3">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((alert) => (
-              <tr
-                key={alert.id}
-                className={cn(
-                  "border-b border-neutral-50 transition-colors",
-                  severityRowBg[alert.severity]
-                )}
-              >
-                <td className="py-2 pr-3 text-neutral-500 whitespace-nowrap font-data text-[10px]">
-                  {formatTs(alert.timestamp)}
-                </td>
-                <td className="py-2 pr-3">
-                  <StatusBadge severity={alert.severity} />
-                </td>
-                <td className="py-2 pr-3 font-semibold text-neutral-700 whitespace-nowrap">
-                  {alert.name}
-                </td>
-                <td className="py-2 pr-3 text-neutral-500 whitespace-nowrap">{alert.zone}</td>
-                <td className="py-2 text-neutral-500 max-w-xs truncate">{alert.message}</td>
-                <td className="py-2 pl-3">
-                  <span
-                    className={cn(
-                      "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                      alert.status === "ACTIVE"
-                        ? "bg-red-100 text-red-700"
-                        : alert.status === "ACKNOWLEDGED"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-emerald-100 text-emerald-700"
-                    )}
-                  >
-                    {alert.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataGrid<AlertEvent>
+        data={filtered}
+        columns={[
+          {
+            key: "time",
+            header: "Time",
+            width: "72px",
+            render: (alert, hovered) => (
+              <MonoCell hovered={hovered} fontSize={10}>{formatTs(alert.timestamp)}</MonoCell>
+            ),
+          },
+          {
+            key: "severity",
+            header: "Severity",
+            width: "88px",
+            render: (alert) => (
+              <StatusCapsule status={alert.severity.toLowerCase()} />
+            ),
+          },
+          {
+            key: "name",
+            header: "Alert",
+            width: "140px",
+            render: (alert, hovered) => (
+              <InterCell hovered={hovered} isPrimary>{alert.name}</InterCell>
+            ),
+          },
+          {
+            key: "zone",
+            header: "Zone",
+            width: "100px",
+            render: (alert, hovered) => (
+              <InterCell hovered={hovered}>{alert.zone}</InterCell>
+            ),
+          },
+          {
+            key: "message",
+            header: "Message",
+            width: "1fr",
+            render: (alert, hovered) => (
+              <InterCell hovered={hovered} color="#64748B" className="truncate block">{alert.message}</InterCell>
+            ),
+          },
+          {
+            key: "status",
+            header: "Status",
+            width: "100px",
+            render: (alert) => (
+              <StatusCapsule
+                status={alert.status === "ACTIVE" ? "active" : alert.status === "ACKNOWLEDGED" ? "warning" : "resolved"}
+                label={alert.status}
+              />
+            ),
+          },
+        ]}
+      />
     </Panel>
   );
 };

@@ -1,7 +1,8 @@
 import { Panel } from "../shared/Panel";
 import { Users } from "lucide-react";
 import { REPEAT_VIOLATORS } from "../../data/mockData";
-import type { QualityTerminology } from "../../data/types";
+import type { QualityTerminology, RepeatViolator } from "../../data/types";
+import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;
@@ -33,71 +34,93 @@ export const RepeatViolatorsSection = ({ terminology }: Props) => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-neutral-100 bg-neutral-50/80">
-              {[
-                `${terminology.entityLabel} ID`,
-                `${terminology.negativeEventLabel}s`,
-                "Days Seen",
-                "Zones",
-                "Last Seen",
-                "Top Types",
-                "Badge",
-                "Action",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 py-2 pr-3 whitespace-nowrap"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-50">
-            {REPEAT_VIOLATORS.map((v) => (
-              <tr
-                key={v.tracker_id}
-                className="hover:bg-neutral-50/60 transition-colors"
-              >
-                <td className="py-2.5 pr-3 font-semibold text-neutral-700">{v.anonymized_label}</td>
-                <td className="py-2.5 pr-3 font-black font-data tabular-nums text-red-500">{v.violation_count}</td>
-                <td className="py-2.5 pr-3 text-neutral-600">{v.days_seen}</td>
-                <td className="py-2.5 pr-3 text-neutral-500">{v.zones.join(", ")}</td>
-                <td className="py-2.5 pr-3 text-neutral-400 font-data text-[10px] whitespace-nowrap">
-                  {new Date(v.last_violation_ts).toLocaleString("en-GB", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </td>
-                <td className="py-2.5 pr-3 text-neutral-500">
-                  {Object.entries(v.violation_types)
-                    .map(([type, count]) => `${type}(${count})`)
-                    .join(", ")}
-                </td>
-                <td className="py-2.5 pr-3">
-                  {v.badge === "RECURRING" ? (
-                    <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
-                      RECURRING
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-neutral-300">—</span>
-                  )}
-                </td>
-                <td className="py-2.5">
-                  <button className="text-[10px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors whitespace-nowrap">
-                    Flag for Review
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataGrid<RepeatViolator>
+        data={REPEAT_VIOLATORS}
+        getRowId={(v) => v.tracker_id}
+        columns={[
+          {
+            key: "entity_id",
+            header: `${terminology.entityLabel} ID`,
+            width: "1fr",
+            render: (v, hovered) => (
+              <InterCell hovered={hovered} isPrimary>{v.anonymized_label}</InterCell>
+            ),
+          },
+          {
+            key: "violation_count",
+            header: `${terminology.negativeEventLabel}s`,
+            width: "72px",
+            render: (v, hovered) => (
+              <MonoCell hovered={hovered} isPrimary color="#EF4444" hoveredColor="#DC2626">
+                {v.violation_count}
+              </MonoCell>
+            ),
+          },
+          {
+            key: "days_seen",
+            header: "Days Seen",
+            width: "72px",
+            render: (v, hovered) => (
+              <MonoCell hovered={hovered}>{v.days_seen}</MonoCell>
+            ),
+          },
+          {
+            key: "zones",
+            header: "Zones",
+            width: "120px",
+            render: (v, hovered) => (
+              <InterCell hovered={hovered} color="#64748B">{v.zones.join(", ")}</InterCell>
+            ),
+          },
+          {
+            key: "last_seen",
+            header: "Last Seen",
+            width: "120px",
+            render: (v, hovered) => (
+              <MonoCell hovered={hovered} fontSize={10} color="#94A3B8">
+                {new Date(v.last_violation_ts).toLocaleString("en-GB", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </MonoCell>
+            ),
+          },
+          {
+            key: "top_types",
+            header: "Top Types",
+            width: "1fr",
+            render: (v, hovered) => (
+              <InterCell hovered={hovered} color="#64748B">
+                {Object.entries(v.violation_types).map(([type, count]) => `${type}(${count})`).join(", ")}
+              </InterCell>
+            ),
+          },
+          {
+            key: "badge",
+            header: "Badge",
+            width: "88px",
+            render: (v) => (
+              v.badge === "RECURRING"
+                ? <StatusCapsule status="warning" label="RECURRING" />
+                : <span className="text-[10px] text-neutral-300">—</span>
+            ),
+          },
+          {
+            key: "action",
+            header: "Action",
+            width: "100px",
+            render: (_v, hovered) => (
+              <GridActions visible={hovered}>
+                <GridActionButton hoverColor="#DC2626" hoverBg="rgba(220,38,38,0.08)" title="Flag for Review">
+                  <span style={{ fontSize: 10, fontWeight: 700 }}>Flag</span>
+                </GridActionButton>
+              </GridActions>
+            ),
+          },
+        ]}
+      />
     </Panel>
   );
 };

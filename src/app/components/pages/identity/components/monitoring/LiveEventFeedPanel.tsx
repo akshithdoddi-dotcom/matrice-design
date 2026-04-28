@@ -5,6 +5,7 @@ import { IDENTITY_ALERTS } from "../../data/mockData";
 import type { IdentityAlert, IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
 import { IdentityEvidenceMedia } from "../shared/IdentityEvidenceMedia";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
 
 type FilterKey = "ALL" | "CRITICAL" | "HIGH" | "UNKNOWNS";
 
@@ -96,147 +97,149 @@ export const LiveEventFeedPanel = ({ terminology, onEntityClick }: Props) => {
         </div>
       }
     >
-      <div className="overflow-x-auto -mx-4 -mb-4">
-        <table className="w-full text-xs min-w-[600px]">
-          <thead>
-            <tr className="border-b border-neutral-100 bg-neutral-50/80">
-              <th className="pl-4 pr-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-12">
-                {isLPR ? "Plate" : "Capture"}
-              </th>
-              <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-20">
-                Severity
-              </th>
-              <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">
-                Subject
-              </th>
-              <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">
-                Event
-              </th>
-              <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">
-                Location
-              </th>
-              <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-14">
-                Conf
-              </th>
-              <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-16">
-                Time
-              </th>
-              <th className="pl-2 pr-4 py-2 w-16" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-50">
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-8 text-center text-[11px] text-neutral-400">
-                  No {filter === "ALL" ? "" : filter.toLowerCase()} events
-                </td>
-              </tr>
-            ) : (
-              filtered.map(alert => {
-                const cfg = SEVERITY_ROW[alert.severity] ?? SEVERITY_ROW.LOW;
-                const entityType = resolveEntityType(alert);
+      <div className="-mx-4 -mb-4">
+        {(() => {
+          type AlertRow = IdentityAlert & { id: string };
+          const rows = filtered as AlertRow[];
+
+          const columns: DataGridColumn<AlertRow>[] = [
+            {
+              key: "capture",
+              header: isLPR ? "Plate" : "Capture",
+              width: "72px",
+              render: (alert) => {
                 const isLPREvent = alert.type === "UNREGISTERED_PLATE" || alert.type === "STOLEN_PLATE";
-
-                return (
-                  <tr
-                    key={alert.id}
-                    className={cn(
-                      "border-l-[3px] transition-colors hover:bg-neutral-50/80",
-                      cfg.border, cfg.bg
-                    )}
-                  >
-                    {/* Capture */}
-                    <td className="pl-4 pr-2 py-2.5">
-                      {isLPR || isLPREvent ? (
-                        <IdentityEvidenceMedia
-                          kind="PLATE"
-                          seed={alert.subject}
-                          imageSrc="https://images.pexels.com/photos/9331863/pexels-photo-9331863.jpeg?cs=srgb&dl=pexels-hasan-albari-1229861-9331863.jpg&fm=jpg"
-                          plateText={alert.subject.length <= 10 ? alert.subject : alert.subject.slice(0, 10)}
-                          confidence={alert.confidence}
-                          className="h-10 w-[68px]"
-                        />
-                      ) : (
-                        <IdentityEvidenceMedia
-                          kind="FACE"
-                          seed={alert.subject}
-                          imageSrc={FACE_SOURCES[alert.subject]}
-                          confidence={alert.confidence}
-                          className="h-10 w-10"
-                        />
-                      )}
-                    </td>
-
-                    {/* Severity */}
-                    <td className="px-2 py-2.5">
-                      <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide", cfg.badge)}>
-                        {alert.severity}
-                      </span>
-                      {alert.status === "ACTIVE" && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[8px] text-emerald-600 font-bold">LIVE</span>
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Subject */}
-                    <td className="px-2 py-2.5">
-                      <span className={cn("font-semibold", cfg.text)}>{alert.subject}</span>
-                    </td>
-
-                    {/* Event type */}
-                    <td className="px-2 py-2.5">
-                      <span className="text-[10px] text-neutral-500">
-                        {alert.type.replace(/_/g, " ")}
-                      </span>
-                    </td>
-
-                    {/* Location */}
-                    <td className="px-2 py-2.5">
-                      <div className="text-neutral-700 font-medium">{alert.zone}</div>
-                      <div className="text-[10px] text-neutral-400">{alert.camera_id}</div>
-                    </td>
-
-                    {/* Confidence */}
-                    <td className="px-2 py-2.5 text-right">
-                      {alert.confidence != null ? (
-                        <span className={cn(
-                          "font-data tabular-nums font-bold text-[11px]",
-                          alert.confidence >= 90 ? "text-emerald-600" :
-                          alert.confidence >= 75 ? "text-amber-600" : "text-red-500"
-                        )}>
-                          {alert.confidence}%
-                        </span>
-                      ) : <span className="text-neutral-300">—</span>}
-                    </td>
-
-                    {/* Time */}
-                    <td className="px-2 py-2.5 text-right">
-                      <span className="text-[10px] text-neutral-400 font-data flex items-center justify-end gap-0.5">
-                        <Clock className="w-3 h-3" />
-                        {timeAgo(alert.timestamp)}
-                      </span>
-                    </td>
-
-                    {/* Action */}
-                    <td className="pl-2 pr-4 py-2.5 text-right">
-                      {alert.status === "ACTIVE" && onEntityClick && (
-                        <button
-                          onClick={() => onEntityClick(entityType)}
-                          className="flex items-center gap-1 h-6 px-2 rounded-[4px] border border-neutral-200 bg-white text-[10px] font-semibold text-neutral-600 hover:border-[#00775B] hover:text-[#00775B] transition-colors whitespace-nowrap"
-                        >
-                          <Eye className="w-3 h-3" />
-                          View
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                return isLPR || isLPREvent ? (
+                  <IdentityEvidenceMedia
+                    kind="PLATE"
+                    seed={alert.subject}
+                    imageSrc="https://images.pexels.com/photos/9331863/pexels-photo-9331863.jpeg?cs=srgb&dl=pexels-hasan-albari-1229861-9331863.jpg&fm=jpg"
+                    plateText={alert.subject.length <= 10 ? alert.subject : alert.subject.slice(0, 10)}
+                    confidence={alert.confidence}
+                    className="h-10 w-[68px]"
+                  />
+                ) : (
+                  <IdentityEvidenceMedia
+                    kind="FACE"
+                    seed={alert.subject}
+                    imageSrc={FACE_SOURCES[alert.subject]}
+                    confidence={alert.confidence}
+                    className="h-10 w-10"
+                  />
                 );
-              })
-            )}
-          </tbody>
-        </table>
+              },
+            },
+            {
+              key: "severity",
+              header: "Severity",
+              width: "100px",
+              render: (alert) => {
+                const cfg = SEVERITY_ROW[alert.severity] ?? SEVERITY_ROW.LOW;
+                return (
+                  <div>
+                    <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide", cfg.badge)}>
+                      {alert.severity}
+                    </span>
+                    {alert.status === "ACTIVE" && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[8px] text-emerald-600 font-bold">LIVE</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              },
+            },
+            {
+              key: "subject",
+              header: "Subject",
+              width: "1fr",
+              render: (alert, hovered) => {
+                const cfg = SEVERITY_ROW[alert.severity] ?? SEVERITY_ROW.LOW;
+                return (
+                  <InterCell hovered={hovered} isPrimary className={cfg.text}>
+                    {alert.subject}
+                  </InterCell>
+                );
+              },
+            },
+            {
+              key: "event",
+              header: "Event",
+              width: "1fr",
+              render: (alert, hovered) => (
+                <InterCell hovered={hovered} color="#6B7280" hoveredColor="#374151">
+                  {alert.type.replace(/_/g, " ")}
+                </InterCell>
+              ),
+            },
+            {
+              key: "location",
+              header: "Location",
+              width: "1fr",
+              render: (alert, hovered) => (
+                <div>
+                  <InterCell hovered={hovered} isPrimary>{alert.zone}</InterCell>
+                  <div className="text-[10px] text-neutral-400">{alert.camera_id}</div>
+                </div>
+              ),
+            },
+            {
+              key: "confidence",
+              header: "Conf",
+              width: "64px",
+              align: "right",
+              render: (alert, hovered) => alert.confidence != null ? (
+                <MonoCell
+                  hovered={hovered}
+                  color={alert.confidence >= 90 ? "#059669" : alert.confidence >= 75 ? "#D97706" : "#EF4444"}
+                  hoveredColor={alert.confidence >= 90 ? "#047857" : alert.confidence >= 75 ? "#B45309" : "#DC2626"}
+                >
+                  {alert.confidence}%
+                </MonoCell>
+              ) : <span className="text-neutral-300">—</span>,
+            },
+            {
+              key: "time",
+              header: "Time",
+              width: "80px",
+              align: "right",
+              render: (alert, hovered) => (
+                <MonoCell hovered={hovered}>
+                  <span className="flex items-center justify-end gap-0.5">
+                    <Clock className="w-3 h-3" />
+                    {timeAgo(alert.timestamp)}
+                  </span>
+                </MonoCell>
+              ),
+            },
+            {
+              key: "action",
+              header: "",
+              width: "72px",
+              align: "right",
+              render: (alert, hovered) => alert.status === "ACTIVE" && onEntityClick ? (
+                <GridActions visible={hovered}>
+                  <GridActionButton
+                    title="View"
+                    onClick={() => onEntityClick(resolveEntityType(alert))}
+                  >
+                    <Eye className="w-3 h-3" />
+                  </GridActionButton>
+                </GridActions>
+              ) : null,
+            },
+          ];
+
+          return (
+            <DataGrid<AlertRow>
+              columns={columns}
+              data={rows}
+              getRowId={(row) => row.id}
+              emptyState={<>No {filter === "ALL" ? "" : filter.toLowerCase()} events</>}
+            />
+          );
+        })()}
       </div>
     </Panel>
   );

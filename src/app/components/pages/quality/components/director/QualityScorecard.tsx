@@ -1,8 +1,9 @@
 import { Panel } from "../shared/Panel";
 import { ClipboardList } from "lucide-react";
 import { SCORECARD_DATA } from "../../data/mockData";
-import type { QualityTerminology } from "../../data/types";
+import type { QualityTerminology, ScorecardRow } from "../../data/types";
 import { cn } from "@/app/lib/utils";
+import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;
@@ -31,52 +32,60 @@ export const QualityScorecard = ({ terminology: _terminology }: Props) => {
       icon={ClipboardList}
       info="Month-over-month scorecard for key quality metrics. Status is determined by comparison to target."
     >
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-neutral-100">
-              {["Metric", "This Month", "Last Month", "Target", "Status"].map((h) => (
-                <th
-                  key={h}
-                  className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-4 whitespace-nowrap"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {SCORECARD_DATA.map((row) => {
-              const styles = STATUS_STYLES[row.status];
+      <DataGrid<ScorecardRow>
+        data={SCORECARD_DATA}
+        getRowId={(row) => row.metric}
+        columns={[
+          {
+            key: "metric",
+            header: "Metric",
+            width: "1fr",
+            render: (row, hovered) => (
+              <InterCell hovered={hovered} isPrimary>{row.metric}</InterCell>
+            ),
+          },
+          {
+            key: "this_period",
+            header: "This Month",
+            width: "100px",
+            render: (row, hovered) => {
+              const c = row.status === "ON_TRACK" ? "#059669" : row.status === "WATCH" ? "#D97706" : "#DC2626";
               return (
-                <tr
-                  key={row.metric}
-                  className={cn("border-b border-neutral-50 hover:bg-neutral-50 transition-colors")}
-                >
-                  <td className="py-3 pr-4 font-semibold text-neutral-700 whitespace-nowrap">
-                    {row.metric}
-                  </td>
-                  <td className={cn("py-3 pr-4 font-black tabular-nums font-data rounded px-2", styles.cell)}>
-                    {formatValue(row.this_period, row.unit)}
-                  </td>
-                  <td className="py-3 pr-4 text-neutral-500 tabular-nums font-data">
-                    {formatValue(row.last_period, row.unit)}
-                  </td>
-                  <td className="py-3 pr-4 text-neutral-400 tabular-nums font-data">
-                    {formatValue(row.target, row.unit)}
-                  </td>
-                  <td className="py-3">
-                    <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold", styles.pill)}>
-                      <span>{row.symbol}</span>
-                      {row.status === "ON_TRACK" ? "On Track" : row.status === "WATCH" ? "Watch" : "Off Target"}
-                    </span>
-                  </td>
-                </tr>
+                <MonoCell hovered={hovered} isPrimary color={c} hoveredColor={c}>
+                  {formatValue(row.this_period, row.unit)}
+                </MonoCell>
               );
-            })}
-          </tbody>
-        </table>
-      </div>
+            },
+          },
+          {
+            key: "last_period",
+            header: "Last Month",
+            width: "100px",
+            render: (row, hovered) => (
+              <MonoCell hovered={hovered} color="#64748B">{formatValue(row.last_period, row.unit)}</MonoCell>
+            ),
+          },
+          {
+            key: "target",
+            header: "Target",
+            width: "100px",
+            render: (row, hovered) => (
+              <MonoCell hovered={hovered} color="#94A3B8">{formatValue(row.target, row.unit)}</MonoCell>
+            ),
+          },
+          {
+            key: "status",
+            header: "Status",
+            width: "108px",
+            render: (row) => (
+              <StatusCapsule
+                status={row.status === "ON_TRACK" ? "stable" : row.status === "WATCH" ? "warning" : "critical"}
+                label={`${row.symbol} ${row.status === "ON_TRACK" ? "On Track" : row.status === "WATCH" ? "Watch" : "Off Target"}`}
+              />
+            ),
+          },
+        ]}
+      />
 
       {/* Summary footer */}
       <div className="mt-4 pt-3 border-t border-neutral-50 flex items-center gap-3 text-[11px] font-semibold">

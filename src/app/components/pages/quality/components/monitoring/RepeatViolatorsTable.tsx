@@ -4,6 +4,7 @@ import { REPEAT_VIOLATORS } from "../../data/mockData";
 import type { QualityTerminology, RepeatViolator } from "../../data/types";
 import { cn } from "@/app/lib/utils";
 import { ViolatorDetailPanel } from "../panels/ViolatorDetailPanel";
+import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;
@@ -35,89 +36,117 @@ export const RepeatViolatorsTable = ({ terminology }: Props) => {
           </span>
         </div>
 
-        <div className="overflow-x-auto -mb-0">
-          <table className="w-full min-w-[600px] text-xs">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50/80">
-                <th className="pl-4 pr-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-8">#</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">{terminology.entityLabel}</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Zones</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Top {terminology.negativeEventLabel}</th>
-                <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">{terminology.negativeCountLabel}</th>
-                <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Days</th>
-                <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Last Seen</th>
-                <th className="pl-2 pr-4 py-2 w-16" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-50">
-              {sorted.map((v, i) => {
-                const topType = Object.entries(v.violation_types).sort((a, b) => b[1] - a[1])[0];
+        <DataGrid<RepeatViolator>
+          data={sorted}
+          getRowId={(v) => v.tracker_id}
+          onRowClick={(v) => setSelectedViolator(v)}
+          columns={[
+            {
+              key: "rank",
+              header: "#",
+              width: "36px",
+              render: (_v, hovered) => {
+                const idx = sorted.findIndex(x => x.tracker_id === _v.tracker_id);
+                return (
+                  <MonoCell hovered={hovered} fontSize={10} color="#CBD5E1">{idx + 1}</MonoCell>
+                );
+              },
+            },
+            {
+              key: "entity",
+              header: terminology.entityLabel,
+              width: "1fr",
+              render: (v, hovered) => {
                 const isRecurring = v.badge === "RECURRING";
                 return (
-                  <tr
-                    key={v.tracker_id}
-                    onClick={() => setSelectedViolator(v)}
-                    className={cn(
-                      "transition-colors group cursor-pointer",
-                      isRecurring ? "hover:bg-amber-50/40" : "hover:bg-neutral-50/60"
-                    )}
-                  >
-                    <td className="pl-4 pr-2 py-3 text-[10px] font-bold text-neutral-300">{i + 1}</td>
-                    <td className="px-2 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className={cn(
-                          "w-6 h-6 rounded-[2px] flex items-center justify-center text-[9px] font-black",
-                          isRecurring ? "bg-amber-100 text-amber-700" : "bg-neutral-100 text-neutral-500"
-                        )}>
-                          {v.tracker_id}
-                        </div>
-                        <span className="text-[12px] font-bold text-neutral-800">{v.anonymized_label}</span>
-                      </div>
-                    </td>
-                    <td className="px-2 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {v.zones.map(zone => (
-                          <span key={zone} className="inline-flex h-5 items-center rounded-[2px] border border-neutral-200 bg-neutral-50 px-1.5 text-[9px] font-semibold text-neutral-600">
-                            {zone}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-2 py-3 text-[12px] text-neutral-600">
-                      {topType ? (
-                        <span>
-                          {topType[0]}
-                          <span className="ml-1 font-data tabular-nums text-[10px] text-neutral-400">({topType[1]}×)</span>
-                        </span>
-                      ) : "—"}
-                    </td>
-                    <td className="px-2 py-3 text-right">
-                      <span className="font-data tabular-nums text-[15px] font-black text-red-600">
-                        {v.violation_count}
-                      </span>
-                    </td>
-                    <td className="px-2 py-3 text-right font-data tabular-nums text-[12px] text-neutral-600">
-                      {v.days_seen}d
-                    </td>
-                    <td className="px-2 py-3 text-right font-data tabular-nums text-[11px] text-neutral-400">
-                      {formatTs(v.last_violation_ts)}
-                    </td>
-                    <td className="pl-2 pr-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        {isRecurring && (
-                          <span className="inline-flex h-5 items-center rounded-[2px] bg-amber-50 border border-amber-200 px-1.5 text-[9px] font-black text-amber-700">
-                            RECURRING
-                          </span>
-                        )}
-                        <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-[#00775B] transition-colors" />
-                      </div>
-                    </td>
-                  </tr>
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-6 h-6 rounded-[2px] flex items-center justify-center text-[9px] font-black shrink-0",
+                      isRecurring ? "bg-amber-100 text-amber-700" : "bg-neutral-100 text-neutral-500"
+                    )}>
+                      {v.tracker_id}
+                    </div>
+                    <InterCell hovered={hovered} isPrimary fontSize={12}>{v.anonymized_label}</InterCell>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
+              },
+            },
+            {
+              key: "zones",
+              header: "Zones",
+              width: "140px",
+              render: (v) => (
+                <div className="flex flex-wrap gap-1">
+                  {v.zones.map(zone => (
+                    <span key={zone} className="inline-flex h-5 items-center rounded-[2px] border border-neutral-200 bg-neutral-50 px-1.5 text-[9px] font-semibold text-neutral-600">
+                      {zone}
+                    </span>
+                  ))}
+                </div>
+              ),
+            },
+            {
+              key: "top_violation",
+              header: `Top ${terminology.negativeEventLabel}`,
+              width: "1fr",
+              render: (v, hovered) => {
+                const topType = Object.entries(v.violation_types).sort((a, b) => b[1] - a[1])[0];
+                return topType ? (
+                  <InterCell hovered={hovered} color="#475569">
+                    {topType[0]}
+                    <span style={{ marginLeft: 4, fontFamily: "monospace", fontSize: 10, color: "#94A3B8" }}>({topType[1]}×)</span>
+                  </InterCell>
+                ) : <span>—</span>;
+              },
+            },
+            {
+              key: "violation_count",
+              header: terminology.negativeCountLabel,
+              width: "72px",
+              align: "right",
+              render: (v, hovered) => (
+                <MonoCell hovered={hovered} isPrimary fontSize={15} color="#EF4444" hoveredColor="#DC2626">
+                  {v.violation_count}
+                </MonoCell>
+              ),
+            },
+            {
+              key: "days_seen",
+              header: "Days",
+              width: "52px",
+              align: "right",
+              render: (v, hovered) => (
+                <MonoCell hovered={hovered} color="#475569">{v.days_seen}d</MonoCell>
+              ),
+            },
+            {
+              key: "last_seen",
+              header: "Last Seen",
+              width: "120px",
+              align: "right",
+              render: (v, hovered) => (
+                <MonoCell hovered={hovered} fontSize={11} color="#94A3B8">{formatTs(v.last_violation_ts)}</MonoCell>
+              ),
+            },
+            {
+              key: "badge_chevron",
+              header: "",
+              width: "88px",
+              align: "right",
+              render: (v, hovered) => (
+                <div className="flex items-center justify-end gap-2">
+                  {v.badge === "RECURRING" && (
+                    <StatusCapsule status="warning" label="RECURRING" />
+                  )}
+                  <ChevronRight
+                    className="w-3.5 h-3.5 transition-colors"
+                    style={{ color: hovered ? "#00775B" : "#CBD5E1" }}
+                  />
+                </div>
+              ),
+            },
+          ]}
+        />
       </div>
 
       <ViolatorDetailPanel

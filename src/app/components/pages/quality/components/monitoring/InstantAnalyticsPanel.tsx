@@ -10,6 +10,7 @@ import {
 import { cn } from "@/app/lib/utils";
 import { QualitySlidePanel as SlidePanel } from "../panels/QualitySlidePanel";
 import type { QualityTerminology } from "../../data/types";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -433,164 +434,201 @@ export const InstantAnalyticsPanel = ({ terminology: _terminology, appId, groups
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-[#001E18]">
-              <tr className="border-b border-[#00775B]/20 text-[10px] uppercase tracking-wider font-bold text-white/90 h-10">
-                <th className="w-[3px] p-0" />
-                <th className="px-4 py-2 w-20">ID</th>
-                <th className="px-4 py-2 w-28">Snapshot</th>
-                <th className="px-4 py-2">Event Details</th>
-                <th className="px-4 py-2 w-24 text-center">Severity</th>
-                <th className="px-4 py-2 w-36">Location</th>
-                <th className="px-4 py-2 w-36">Camera / Zone</th>
-                <th className="px-4 py-2 w-24 text-right">Age</th>
-                <th className="px-4 py-2 w-8" />
-              </tr>
-            </thead>
-
-            {/* Live rows */}
-            <tbody className="divide-y divide-neutral-100">
-              {filteredLive.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center">
-                    <div className="flex flex-col items-center gap-1.5 text-neutral-400">
-                      <CheckCircle2 className="w-7 h-7 text-emerald-400" />
-                      <span className="text-[11px] font-semibold">
-                        {liveRows.length === 0 ? "All clear — no active events" : "No events match this filter"}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredLive.map((ev, idx) => (
-                <tr
-                  key={ev.id}
-                  onClick={() => setSelectedEvent(ev)}
-                  className={cn(
-                    "group transition-colors cursor-pointer h-20",
-                    SEV_ROW[ev.severity],
-                    "hover:bg-[#E5FFF9]",
-                    idx === 0 && ev.severity !== "INFO" && "bg-[#00775B]/5"
-                  )}
-                >
-                  {/* Severity left bar */}
-                  <td className={cn("w-[3px] p-0", SEV_BAR[ev.severity])} />
-
-                  {/* ID */}
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-[11px] font-bold text-neutral-500">
-                      #{ev.id.toUpperCase()}
-                    </span>
-                  </td>
-
-                  {/* Snapshot */}
-                  <td className="px-4 py-3">
-                    <div className="h-14 w-20 rounded-[2px] overflow-hidden border border-neutral-200 group-hover:border-[#00775B]/30 transition-colors bg-neutral-100">
+          {filteredLive.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="flex flex-col items-center gap-1.5 text-neutral-400">
+                <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+                <span className="text-[11px] font-semibold">
+                  {liveRows.length === 0 ? "All clear — no active events" : "No events match this filter"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <DataGrid<InstantEvent>
+              data={filteredLive}
+              onRowClick={(ev) => setSelectedEvent(ev)}
+              columns={[
+                {
+                  key: "id",
+                  header: "ID",
+                  width: "80px",
+                  render: (ev, hovered) => (
+                    <MonoCell hovered={hovered} isPrimary>#{ev.id.toUpperCase()}</MonoCell>
+                  ),
+                },
+                {
+                  key: "snapshot",
+                  header: "Snapshot",
+                  width: "96px",
+                  render: (ev) => (
+                    <div className="h-14 w-20 rounded-[2px] overflow-hidden border border-neutral-200 bg-neutral-100">
                       <img
                         src={`https://picsum.photos/seed/${ev.imgSeed}/160/112`}
                         alt="Snapshot"
                         className="h-full w-full object-cover"
                       />
                     </div>
-                  </td>
-
-                  {/* Event details */}
-                  <td className="px-4 py-3 min-w-0">
-                    <p className="text-[12px] font-bold text-neutral-900 leading-snug">{ev.title}</p>
-                  </td>
-
-                  {/* Severity badge */}
-                  <td className="px-4 py-3 text-center">
-                    <div className={cn(
-                      "inline-flex items-center gap-1 text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide",
-                      SEV_BADGE_COLOR[ev.severity]
-                    )}>
-                      {ev.severity === "CRITICAL" && (
-                        <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                      )}
-                      {ev.severity}
-                    </div>
-                  </td>
-
-                  {/* Location */}
-                  <td className="px-4 py-3">
+                  ),
+                },
+                {
+                  key: "title",
+                  header: "Event Details",
+                  width: "1fr",
+                  render: (ev, hovered) => (
+                    <InterCell hovered={hovered} isPrimary fontSize={12}>{ev.title}</InterCell>
+                  ),
+                },
+                {
+                  key: "severity",
+                  header: "Severity",
+                  width: "96px",
+                  align: "center",
+                  render: (ev) => (
+                    <StatusCapsule status={ev.severity.toLowerCase()} />
+                  ),
+                },
+                {
+                  key: "location",
+                  header: "Location",
+                  width: "140px",
+                  render: (ev, hovered) => (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
-                      <span className="text-[11px] font-bold text-neutral-700">{ev.location}</span>
+                      <InterCell hovered={hovered} fontSize={11}>{ev.location}</InterCell>
                     </div>
-                  </td>
-
-                  {/* Camera */}
-                  <td className="px-4 py-3">
+                  ),
+                },
+                {
+                  key: "camera",
+                  header: "Camera / Zone",
+                  width: "140px",
+                  render: (ev, hovered) => (
                     <div className="flex items-center gap-1.5">
                       <Camera className="w-3 h-3 text-neutral-400 shrink-0" />
-                      <span className="text-[11px] font-bold text-neutral-700">{ev.camera}</span>
+                      <InterCell hovered={hovered} fontSize={11}>{ev.camera}</InterCell>
                     </div>
-                  </td>
-
-                  {/* Age */}
-                  <td className="px-4 py-3 text-right">
-                    <span className="text-[10px] font-mono tabular-nums text-neutral-400">
+                  ),
+                },
+                {
+                  key: "age",
+                  header: "Age",
+                  width: "80px",
+                  align: "right",
+                  render: (ev, hovered) => (
+                    <MonoCell hovered={hovered} fontSize={10} color="#94A3B8">
                       {fmtAge(ev.ageSeconds + ticked)}
-                    </span>
-                  </td>
+                    </MonoCell>
+                  ),
+                },
+                {
+                  key: "actions",
+                  header: "",
+                  width: "32px",
+                  render: (_ev, hovered) => (
+                    <ChevronRight
+                      className="w-3.5 h-3.5 transition-colors"
+                      style={{ color: hovered ? "#00775B" : "#CBD5E1" }}
+                    />
+                  ),
+                },
+              ]}
+              emptyState="No active events"
+            />
+          )}
 
-                  {/* Open chevron */}
-                  <td className="px-2 py-3">
-                    <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-[#00775B] transition-colors" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-
-            {/* Acknowledged rows */}
-            {ackedRows.length > 0 && (
-              <tbody className="divide-y divide-neutral-50 opacity-50">
-                <tr>
-                  <td colSpan={9} className="px-4 py-1.5 bg-neutral-50">
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Acknowledged</span>
-                  </td>
-                </tr>
-                {ackedRows.map((ev) => (
-                  <tr key={ev.id} className="hover:bg-neutral-50/50 transition-colors h-14">
-                    <td className="w-[3px] p-0 bg-neutral-300" />
-                    <td className="px-4 py-2">
-                      <span className="font-mono text-[11px] font-bold text-neutral-400">#{ev.id.toUpperCase()}</span>
-                    </td>
-                    <td className="px-4 py-2">
+          {/* Acknowledged rows */}
+          {ackedRows.length > 0 && (
+            <div className="opacity-50">
+              <div className="px-4 py-1.5 bg-neutral-50">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Acknowledged</span>
+              </div>
+              <DataGrid<InstantEvent>
+                data={ackedRows}
+                columns={[
+                  {
+                    key: "id",
+                    header: "ID",
+                    width: "80px",
+                    render: (ev, hovered) => (
+                      <MonoCell hovered={hovered} color="#94A3B8">#{ev.id.toUpperCase()}</MonoCell>
+                    ),
+                  },
+                  {
+                    key: "snapshot",
+                    header: "Snapshot",
+                    width: "96px",
+                    render: (ev) => (
                       <div className="h-10 w-16 rounded-[2px] overflow-hidden border border-neutral-200 bg-neutral-100">
                         <img src={`https://picsum.photos/seed/${ev.imgSeed}/160/112`} alt="" className="h-full w-full object-cover opacity-50" />
                       </div>
-                    </td>
-                    <td className="px-4 py-2">
-                      <p className="text-[11px] font-bold text-neutral-500">{ev.title}</p>
-                    </td>
-                    <td className="px-4 py-2 text-center">
+                    ),
+                  },
+                  {
+                    key: "title",
+                    header: "Event Details",
+                    width: "1fr",
+                    render: (ev, hovered) => (
+                      <InterCell hovered={hovered} fontSize={11} color="#64748B">{ev.title}</InterCell>
+                    ),
+                  },
+                  {
+                    key: "status",
+                    header: "Severity",
+                    width: "96px",
+                    align: "center",
+                    render: (_ev, _hovered) => (
                       <span className="inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-[2px] bg-neutral-100 text-neutral-500 uppercase">
                         <RotateCcw className="w-2 h-2" /> ACKED
                       </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="text-[10px] text-neutral-400">{ev.location}</span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="text-[10px] text-neutral-400">{ev.camera}</span>
-                    </td>
-                    <td className="px-4 py-2 text-right">
-                      <span className="text-[10px] font-mono text-neutral-400">{fmtAge(ev.ageSeconds + ticked)}</span>
-                    </td>
-                    <td className="px-2 py-2 text-right">
-                      <button
-                        onClick={() => resolve(ev.id)}
-                        className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
-                      >
-                        Resolve
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            )}
-          </table>
+                    ),
+                  },
+                  {
+                    key: "location",
+                    header: "Location",
+                    width: "140px",
+                    render: (ev, hovered) => (
+                      <InterCell hovered={hovered} fontSize={10} color="#94A3B8">{ev.location}</InterCell>
+                    ),
+                  },
+                  {
+                    key: "camera",
+                    header: "Camera / Zone",
+                    width: "140px",
+                    render: (ev, hovered) => (
+                      <InterCell hovered={hovered} fontSize={10} color="#94A3B8">{ev.camera}</InterCell>
+                    ),
+                  },
+                  {
+                    key: "age",
+                    header: "Age",
+                    width: "80px",
+                    align: "right",
+                    render: (ev, hovered) => (
+                      <MonoCell hovered={hovered} fontSize={10} color="#94A3B8">
+                        {fmtAge(ev.ageSeconds + ticked)}
+                      </MonoCell>
+                    ),
+                  },
+                  {
+                    key: "resolve",
+                    header: "",
+                    width: "72px",
+                    align: "right",
+                    render: (ev, hovered) => (
+                      <GridActions visible={hovered}>
+                        <GridActionButton
+                          hoverColor="#10B981"
+                          onClick={(e) => { e.stopPropagation(); resolve(ev.id); }}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </GridActionButton>
+                      </GridActions>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}

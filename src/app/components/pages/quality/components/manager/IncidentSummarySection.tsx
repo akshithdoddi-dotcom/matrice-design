@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Panel } from "../shared/Panel";
-import { StatusBadge } from "../shared/StatusBadge";
-import type { Severity } from "../shared/StatusBadge";
 import { FileText } from "lucide-react";
 import { ALERTS } from "../../data/mockData";
 import type { QualityTerminology, AlertEvent } from "../../data/types";
 import { cn } from "@/app/lib/utils";
+import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;
@@ -70,58 +69,72 @@ export const IncidentSummarySection = ({ terminology: _terminology }: Props) => 
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-neutral-100">
-              {["ID", "Time", "Type", "Severity", "Zone", "Message", "Status"].map((h) => (
-                <th
-                  key={h}
-                  className="text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 pb-2 pr-3 whitespace-nowrap"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((alert) => (
-              <tr
-                key={alert.id}
-                className="border-b border-neutral-50 hover:bg-neutral-50 transition-colors"
-              >
-                <td className="py-2.5 pr-3 font-data text-[10px] text-neutral-500">{alert.id}</td>
-                <td className="py-2.5 pr-3 text-neutral-500 whitespace-nowrap font-data text-[10px]">
-                  {new Date(alert.timestamp).toLocaleTimeString("en-GB", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </td>
-                <td className="py-2.5 pr-3 text-neutral-500">{alert.event_type}</td>
-                <td className="py-2.5 pr-3">
-                  <StatusBadge severity={alert.severity as Severity} />
-                </td>
-                <td className="py-2.5 pr-3 text-neutral-500">{alert.zone}</td>
-                <td className="py-2.5 pr-3 text-neutral-500 max-w-xs truncate">{alert.message}</td>
-                <td className="py-2.5">
-                  <span
-                    className={cn(
-                      "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                      alert.status === "ACTIVE"
-                        ? "bg-red-100 text-red-700"
-                        : alert.status === "ACKNOWLEDGED"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-emerald-100 text-emerald-700"
-                    )}
-                  >
-                    {alert.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataGrid<AlertEvent>
+        data={filtered}
+        columns={[
+          {
+            key: "id",
+            header: "ID",
+            width: "72px",
+            render: (alert, hovered) => (
+              <MonoCell hovered={hovered} fontSize={10} color="#94A3B8">{alert.id}</MonoCell>
+            ),
+          },
+          {
+            key: "time",
+            header: "Time",
+            width: "60px",
+            render: (alert, hovered) => (
+              <MonoCell hovered={hovered} fontSize={10}>
+                {new Date(alert.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+              </MonoCell>
+            ),
+          },
+          {
+            key: "type",
+            header: "Type",
+            width: "80px",
+            render: (alert, hovered) => (
+              <InterCell hovered={hovered} color="#64748B">{alert.event_type}</InterCell>
+            ),
+          },
+          {
+            key: "severity",
+            header: "Severity",
+            width: "88px",
+            render: (alert) => (
+              <StatusCapsule status={alert.severity.toLowerCase()} />
+            ),
+          },
+          {
+            key: "zone",
+            header: "Zone",
+            width: "100px",
+            render: (alert, hovered) => (
+              <InterCell hovered={hovered} color="#64748B">{alert.zone}</InterCell>
+            ),
+          },
+          {
+            key: "message",
+            header: "Message",
+            width: "1fr",
+            render: (alert, hovered) => (
+              <InterCell hovered={hovered} color="#64748B" className="truncate block">{alert.message}</InterCell>
+            ),
+          },
+          {
+            key: "status",
+            header: "Status",
+            width: "108px",
+            render: (alert) => (
+              <StatusCapsule
+                status={alert.status === "ACTIVE" ? "active" : alert.status === "ACKNOWLEDGED" ? "warning" : "resolved"}
+                label={alert.status}
+              />
+            ),
+          },
+        ]}
+      />
     </Panel>
   );
 };

@@ -4,6 +4,7 @@ import { DoorOpen, ChevronUp, ChevronDown } from "lucide-react";
 import { ENTRY_POINTS } from "../../data/mockData";
 import type { EntryPoint, IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 
 interface Props { terminology: IdentityTerminology }
 
@@ -39,6 +40,148 @@ export const EntryPointTable = ({ terminology }: Props) => {
       ? (sortAsc ? <ChevronUp className="w-3 h-3 inline" /> : <ChevronDown className="w-3 h-3 inline" />)
       : null;
 
+  const columns: DataGridColumn<EntryPoint>[] = [
+    {
+      key: "name",
+      header: `Entry Point`,
+      headerContent: (
+        <span
+          className="text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+          onClick={() => handleSort("name")}
+        >
+          Entry Point <SortIcon k="name" />
+        </span>
+      ),
+      width: "1fr",
+      render: (entry, hovered) => (
+        <div>
+          <InterCell hovered={hovered} isPrimary>
+            {entry.name}
+            {entry.flag && (
+              <span className="ml-1.5 text-[9px] text-orange-600 font-bold">⚠ {entry.flag}</span>
+            )}
+          </InterCell>
+        </div>
+      ),
+    },
+    {
+      key: "identifications",
+      header: `${terminology.identLabel}s`,
+      headerContent: (
+        <span
+          className="text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+          onClick={() => handleSort("identifications")}
+        >
+          {terminology.identLabel}s <SortIcon k="identifications" />
+        </span>
+      ),
+      width: "100px",
+      render: (entry, hovered) => (
+        <MonoCell hovered={hovered}>{entry.identifications.toLocaleString()}</MonoCell>
+      ),
+    },
+    {
+      key: "match_rate_pct",
+      header: "Match %",
+      headerContent: (
+        <span
+          className="text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+          onClick={() => handleSort("match_rate_pct")}
+        >
+          Match % <SortIcon k="match_rate_pct" />
+        </span>
+      ),
+      width: "90px",
+      render: (entry, hovered) => (
+        <MonoCell
+          hovered={hovered}
+          isPrimary
+          color={entry.match_rate_pct >= 97 ? "#059669" : entry.match_rate_pct >= 94 ? "#D97706" : "#DC2626"}
+          hoveredColor={entry.match_rate_pct >= 97 ? "#047857" : entry.match_rate_pct >= 94 ? "#B45309" : "#B91C1C"}
+        >
+          {entry.match_rate_pct.toFixed(1)}%
+        </MonoCell>
+      ),
+    },
+    {
+      key: "unknown_rate_pct",
+      header: "Unknown %",
+      headerContent: (
+        <span
+          className="text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+          onClick={() => handleSort("unknown_rate_pct")}
+        >
+          Unknown % <SortIcon k="unknown_rate_pct" />
+        </span>
+      ),
+      width: "100px",
+      render: (entry, hovered) => (
+        <MonoCell
+          hovered={hovered}
+          color={entry.unknown_rate_pct > 7 ? "#DC2626" : entry.unknown_rate_pct > 4 ? "#D97706" : "#374151"}
+        >
+          {entry.unknown_rate_pct.toFixed(1)}%
+        </MonoCell>
+      ),
+    },
+    {
+      key: "denied_count",
+      header: "Denied",
+      headerContent: (
+        <span
+          className="text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+          onClick={() => handleSort("denied_count")}
+        >
+          Denied <SortIcon k="denied_count" />
+        </span>
+      ),
+      width: "80px",
+      render: (entry, hovered) => (
+        <MonoCell hovered={hovered}>{entry.denied_count}</MonoCell>
+      ),
+    },
+    {
+      key: "blacklist_hits",
+      header: "BL Hits",
+      headerContent: (
+        <span
+          className="text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+          onClick={() => handleSort("blacklist_hits")}
+        >
+          BL Hits <SortIcon k="blacklist_hits" />
+        </span>
+      ),
+      width: "80px",
+      render: (entry, hovered) => (
+        <MonoCell
+          hovered={hovered}
+          isPrimary={entry.blacklist_hits > 0}
+          color={entry.blacklist_hits > 0 ? "#DC2626" : "#94A3B8"}
+          hoveredColor={entry.blacklist_hits > 0 ? "#B91C1C" : "#64748B"}
+        >
+          {entry.blacklist_hits}
+        </MonoCell>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      headerContent: (
+        <span
+          className="text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+          onClick={() => handleSort("status")}
+        >
+          Status <SortIcon k="status" />
+        </span>
+      ),
+      width: "100px",
+      render: (entry) => {
+        const statusMap: Record<string, string> = { NORMAL: "stable", WATCH: "warning", CRITICAL: "critical" };
+        return <StatusCapsule status={statusMap[entry.status] ?? entry.status.toLowerCase()} label={entry.status} />;
+      },
+    },
+  ];
+
   return (
     <Panel
       title="Entry Point Performance"
@@ -51,73 +194,13 @@ export const EntryPointTable = ({ terminology }: Props) => {
           <button onClick={() => setSelectedEntry(null)} className="text-neutral-400 hover:text-neutral-600 underline">Clear</button>
         </div>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-neutral-100">
-              {[
-                { key: "name" as SortKey, label: "Entry Point" },
-                { key: "identifications" as SortKey, label: `${terminology.identLabel}s` },
-                { key: "match_rate_pct" as SortKey, label: "Match %" },
-                { key: "unknown_rate_pct" as SortKey, label: "Unknown %" },
-                { key: "denied_count" as SortKey, label: "Denied" },
-                { key: "blacklist_hits" as SortKey, label: "BL Hits" },
-                { key: "status" as SortKey, label: "Status" },
-              ].map((col) => (
-                <th
-                  key={col.key}
-                  className="text-left py-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400 cursor-pointer hover:text-neutral-600 whitespace-nowrap"
-                  onClick={() => handleSort(col.key)}
-                >
-                  {col.label} <SortIcon k={col.key} />
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((entry) => (
-              <tr
-                key={entry.entry_id}
-                onClick={() => setSelectedEntry(entry.name === selectedEntry ? null : entry.name)}
-                className={cn(
-                  "border-b border-neutral-50 cursor-pointer hover:bg-neutral-50 transition-colors",
-                  entry.name === selectedEntry && "bg-emerald-50"
-                )}
-              >
-                <td className="py-2.5 px-2 font-semibold text-neutral-800">
-                  {entry.name}
-                  {entry.flag && (
-                    <span className="ml-1.5 text-[9px] text-orange-600 font-bold">⚠ {entry.flag}</span>
-                  )}
-                </td>
-                <td className="py-2.5 px-2 tabular-nums font-data">{entry.identifications.toLocaleString()}</td>
-                <td className={cn("py-2.5 px-2 font-semibold tabular-nums font-data",
-                  entry.match_rate_pct >= 97 ? "text-emerald-600" :
-                  entry.match_rate_pct >= 94 ? "text-amber-600" : "text-red-600"
-                )}>
-                  {entry.match_rate_pct.toFixed(1)}%
-                </td>
-                <td className={cn("py-2.5 px-2 tabular-nums font-data",
-                  entry.unknown_rate_pct > 7 ? "text-red-600 font-semibold" :
-                  entry.unknown_rate_pct > 4 ? "text-amber-600" : "text-neutral-700"
-                )}>
-                  {entry.unknown_rate_pct.toFixed(1)}%
-                </td>
-                <td className="py-2.5 px-2 tabular-nums font-data text-neutral-700">{entry.denied_count}</td>
-                <td className={cn("py-2.5 px-2 tabular-nums font-data font-bold",
-                  entry.blacklist_hits > 0 ? "text-red-600" : "text-neutral-400"
-                )}>
-                  {entry.blacklist_hits}
-                </td>
-                <td className="py-2.5 px-2">
-                  <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", STATUS_STYLE[entry.status])}>
-                    {entry.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="-mx-4 -mb-4">
+        <DataGrid<EntryPoint>
+          columns={columns}
+          data={sorted}
+          getRowId={(row) => row.entry_id}
+          onRowClick={(row) => setSelectedEntry(row.name === selectedEntry ? null : row.name)}
+        />
       </div>
     </Panel>
   );

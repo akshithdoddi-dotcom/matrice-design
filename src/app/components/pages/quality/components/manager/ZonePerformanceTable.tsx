@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Panel } from "../shared/Panel";
-import { StatusBadge } from "../shared/StatusBadge";
-import type { Severity } from "../shared/StatusBadge";
 import { Map } from "lucide-react";
 import { ZONE_DATA } from "../../data/mockData";
 import type { ZoneMetric, QualityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
 import { ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;
@@ -59,69 +58,148 @@ export const ZonePerformanceTable = ({ terminology }: Props) => {
       icon={Map}
       info="Sortable table of zone compliance, violations, and risk status."
     >
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-neutral-100 bg-neutral-50/80">
-              {[
-                { label: "Zone", col: "zone_name" as SortKey },
-                { label: `${terminology.primaryMetricLabel}`, col: "compliance_pct" as SortKey },
-                { label: terminology.negativeCountLabel, col: "violation_count" as SortKey },
-                { label: `Top ${terminology.negativeEventLabel}`, col: "top_violation_type" as SortKey },
-                { label: "Peak Hour", col: "peak_violation_hour" as SortKey },
-                { label: "Trend", col: "trend" as SortKey },
-                { label: "Status", col: "status" as SortKey },
-              ].map(({ label, col }) => (
-                <th
-                  key={col}
-                  className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 py-2 pr-3 first:pl-4 whitespace-nowrap cursor-pointer hover:text-neutral-600"
-                  onClick={() => handleSort(col)}
-                >
-                  {label} <SortBtn col={col} />
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-50">
-            {sorted.map((zone) => (
-              <tr
-                key={zone.zone_id}
-                className={cn("transition-colors hover:bg-neutral-50/60", rowBg(zone.status))}
+      <DataGrid<ZoneMetric>
+        data={sorted}
+        getRowId={(z) => z.zone_id}
+        columns={[
+          {
+            key: "zone_name",
+            header: "Zone",
+            width: "1fr",
+            headerContent: (
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+                onClick={() => handleSort("zone_name")}
               >
-                <td className="py-2.5 pr-3 pl-4 font-semibold text-neutral-700 whitespace-nowrap">
-                  {zone.zone_name}
-                </td>
-                <td className={cn("py-2.5 pr-3 font-black tabular-nums font-data", compColor(zone.compliance_pct))}>
+                Zone <SortBtn col="zone_name" />
+              </span>
+            ),
+            render: (zone, hovered) => (
+              <InterCell hovered={hovered} isPrimary>{zone.zone_name}</InterCell>
+            ),
+          },
+          {
+            key: "compliance_pct",
+            header: terminology.primaryMetricLabel,
+            width: "100px",
+            headerContent: (
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+                onClick={() => handleSort("compliance_pct")}
+              >
+                {terminology.primaryMetricLabel} <SortBtn col="compliance_pct" />
+              </span>
+            ),
+            render: (zone, hovered) => {
+              const c = zone.compliance_pct >= 90 ? "#059669" : zone.compliance_pct >= 80 ? "#D97706" : "#DC2626";
+              return (
+                <MonoCell hovered={hovered} isPrimary color={c} hoveredColor={c}>
                   {zone.compliance_pct.toFixed(1)}%
-                </td>
-                <td className="py-2.5 pr-3 font-semibold text-neutral-700">{zone.violation_count}</td>
-                <td className="py-2.5 pr-3 text-neutral-500">{zone.top_violation_type}</td>
-                <td className="py-2.5 pr-3 text-neutral-500">{zone.peak_violation_hour}:00</td>
-                <td className="py-2.5 pr-3">
-                  {zone.trend === "up" && (
-                    <span className="flex items-center gap-0.5 text-emerald-600 font-bold text-[10px]">
-                      <ArrowUp className="w-3 h-3" /> +{zone.trend_delta_pct}%
-                    </span>
-                  )}
-                  {zone.trend === "down" && (
-                    <span className="flex items-center gap-0.5 text-red-500 font-bold text-[10px]">
-                      <ArrowDown className="w-3 h-3" /> {zone.trend_delta_pct}%
-                    </span>
-                  )}
-                  {zone.trend === "stable" && (
-                    <span className="flex items-center gap-0.5 text-neutral-400 font-bold text-[10px]">
-                      <Minus className="w-3 h-3" /> {zone.trend_delta_pct}%
-                    </span>
-                  )}
-                </td>
-                <td className="py-2.5">
-                  <StatusBadge severity={zone.status as Severity} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </MonoCell>
+              );
+            },
+          },
+          {
+            key: "violation_count",
+            header: terminology.negativeCountLabel,
+            width: "80px",
+            headerContent: (
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+                onClick={() => handleSort("violation_count")}
+              >
+                {terminology.negativeCountLabel} <SortBtn col="violation_count" />
+              </span>
+            ),
+            render: (zone, hovered) => (
+              <MonoCell hovered={hovered} isPrimary>{zone.violation_count}</MonoCell>
+            ),
+          },
+          {
+            key: "top_violation_type",
+            header: `Top ${terminology.negativeEventLabel}`,
+            width: "1fr",
+            headerContent: (
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+                onClick={() => handleSort("top_violation_type")}
+              >
+                Top {terminology.negativeEventLabel} <SortBtn col="top_violation_type" />
+              </span>
+            ),
+            render: (zone, hovered) => (
+              <InterCell hovered={hovered} color="#64748B">{zone.top_violation_type}</InterCell>
+            ),
+          },
+          {
+            key: "peak_violation_hour",
+            header: "Peak Hour",
+            width: "80px",
+            headerContent: (
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+                onClick={() => handleSort("peak_violation_hour")}
+              >
+                Peak Hour <SortBtn col="peak_violation_hour" />
+              </span>
+            ),
+            render: (zone, hovered) => (
+              <MonoCell hovered={hovered} color="#64748B">{zone.peak_violation_hour}:00</MonoCell>
+            ),
+          },
+          {
+            key: "trend",
+            header: "Trend",
+            width: "80px",
+            headerContent: (
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+                onClick={() => handleSort("trend")}
+              >
+                Trend <SortBtn col="trend" />
+              </span>
+            ),
+            render: (zone) => (
+              <>
+                {zone.trend === "up" && (
+                  <span className="flex items-center gap-0.5 text-emerald-600 font-bold text-[10px]">
+                    <ArrowUp className="w-3 h-3" /> +{zone.trend_delta_pct}%
+                  </span>
+                )}
+                {zone.trend === "down" && (
+                  <span className="flex items-center gap-0.5 text-red-500 font-bold text-[10px]">
+                    <ArrowDown className="w-3 h-3" /> {zone.trend_delta_pct}%
+                  </span>
+                )}
+                {zone.trend === "stable" && (
+                  <span className="flex items-center gap-0.5 text-neutral-400 font-bold text-[10px]">
+                    <Minus className="w-3 h-3" /> {zone.trend_delta_pct}%
+                  </span>
+                )}
+              </>
+            ),
+          },
+          {
+            key: "status",
+            header: "Status",
+            width: "100px",
+            headerContent: (
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 cursor-pointer hover:text-neutral-600"
+                onClick={() => handleSort("status")}
+              >
+                Status <SortBtn col="status" />
+              </span>
+            ),
+            render: (zone) => {
+              const s = zone.status === "HIGH_RISK" ? "critical"
+                : zone.status === "WATCH" || zone.status === "AMBER" ? "warning"
+                : "stable";
+              return <StatusCapsule status={s} label={zone.status.replace("_", " ")} />;
+            },
+          },
+        ]}
+      />
     </Panel>
   );
 };

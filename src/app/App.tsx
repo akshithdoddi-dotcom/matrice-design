@@ -27,6 +27,7 @@ import { Compliance } from "@/app/components/pages/Compliance";
 import { DesignSystem } from "@/app/components/pages/DesignSystem";
 import { SettingsPage } from "@/app/components/pages/Settings";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@/app/components/ui/DataGrid";
 
 // Main App Component
 function useGridColumns() {
@@ -767,42 +768,154 @@ export default function App() {
                  </div>
                ) : (
                  <div className="w-full bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                         <thead className="bg-[#001E18]">
-                            <tr className="border-b border-[#00775B]/20 text-[10px] uppercase tracking-wider font-bold text-white/90 h-10">
-                               <th className="w-10 px-4 text-center first:rounded-tl-[4px]"><Checkbox checked={isAllSelected} onCheckedChange={toggleSelectAll} className={cn("border-white/20 data-[state=checked]:bg-[#00775B] data-[state=checked]:border-[#00775B] data-[state=checked]:text-white", isIndeterminate && "data-[state=checked]:bg-[#00775B] data-[state=checked]:text-white")} /></th>
-                               <th className="px-4 py-2 w-16 text-center">Severity</th>
-                               <th className="px-4 py-2 w-24">ID</th>
-                               <th className="px-4 py-2 w-32">Snapshot</th>
-                               <th className="px-4 py-2">Incident Details</th>
-                               <th className="px-4 py-2">Location</th>
-                               <th className="px-4 py-2">Camera</th>
-                               <th className="px-4 py-2 w-32 text-right">Date & Time</th>
-                               <th className="px-4 py-2 text-right last:rounded-tr-[4px]">Actions</th>
-                            </tr>
-                         </thead>
-                         <tbody className="divide-y divide-neutral-100">
-                            {paginatedTableIncidents.map((incident, index) => {
-                              const isSelected = selectedIncidents.has(incident.id);
-                              const isFirstRow = index === 0;
-                              return (
-                                <tr key={incident.id} className={cn("group transition-colors hover:bg-[#E5FFF9] h-20 cursor-pointer", isSelected && "bg-[#E5FFF9]", incident.severity === "resolved" && "bg-[#E5FFF9]", isFirstRow && incident.severity !== "resolved" && "bg-[#00775B]/5")} onClick={() => openDetailModal(incident)}>
-                                   <td className="px-4 text-center" onClick={(e) => e.stopPropagation()}><Checkbox checked={isSelected} onCheckedChange={() => toggleSelection(incident.id)} /></td>
-                                   <td className="px-4 text-center"><div className={cn("h-6 w-6 inline-flex items-center justify-center rounded-[2px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)]", getSeverityBadgeColor(incident.severity))}><SeverityIcon severity={incident.severity} mode="inverse" className="w-[12.6px] h-[12.6px]" /></div></td>
-                                   <td className="px-4 font-mono text-xs font-bold text-neutral-500">{incident.incidentId}</td>
-                                   <td className="px-4 py-1.5"><div className={cn("h-16 w-24 rounded-[2px] overflow-hidden border border-neutral-200 shrink-0 relative group-hover:border-[#00775B]/30 transition-colors bg-neutral-100", isFirstRow && "border-[#00775B]/30")}><ImageWithFallback src={incident.image} alt="Evidence" className="h-full w-full object-cover" /></div></td>
-                                   <td className="px-4"><span className="text-[11px] font-bold text-neutral-900 uppercase tracking-wide leading-tight">{incident.title}</span></td>
-                                   <td className="px-4"><div className="flex items-center gap-2"><span className="text-[11px] font-bold text-neutral-700">{incident.location}</span></div></td>
-                                   <td className="px-4"><div className="flex items-center gap-2"><span className="text-[11px] font-bold text-neutral-700">{incident.camera}</span></div></td>
-                                   <td className="px-4 text-right"><span className="text-[10px] font-medium text-neutral-500 font-mono">{incident.timestamp}</span></td>
-                                   <td className="px-4 text-right"><div className="flex items-center justify-end gap-2"><Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openAssignModal(incident); }} className="h-7 w-7 p-0 rounded-full border-neutral-200 hover:border-[#00775B] hover:text-[#00775B]" title="Assign"><User className="w-3.5 h-3.5" /></Button><Button size="sm" onClick={(e) => { e.stopPropagation(); openAckModal(incident); }} className="h-7 w-7 p-0 rounded-full bg-[#00775B] hover:bg-[#009e78] text-white shadow-sm" title="Acknowledge"><Check className="w-3.5 h-3.5" /></Button></div></td>
-                                </tr>
-                              );
-                            })}
-                         </tbody>
-                      </table>
-                    </div>
+                    <DataGrid<Incident>
+                      columns={[
+                        {
+                          key: "select",
+                          header: "",
+                          headerContent: (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={isAllSelected}
+                                onCheckedChange={toggleSelectAll}
+                                className={cn(
+                                  "border-neutral-300 data-[state=checked]:bg-[#00775B] data-[state=checked]:border-[#00775B]",
+                                  isIndeterminate && "data-[state=checked]:bg-[#00775B]"
+                                )}
+                              />
+                            </div>
+                          ),
+                          width: "44px",
+                          align: "center",
+                          render: (row, _h) => (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedIncidents.has(row.id)}
+                                onCheckedChange={() => toggleSelection(row.id)}
+                              />
+                            </div>
+                          ),
+                        },
+                        {
+                          key: "severity",
+                          header: "Severity",
+                          width: "60px",
+                          align: "center",
+                          render: (row, _h) => (
+                            <div
+                              className={cn(
+                                "h-6 w-6 inline-flex items-center justify-center rounded-[2px] shadow-sm",
+                                getSeverityBadgeColor(row.severity)
+                              )}
+                            >
+                              <SeverityIcon severity={row.severity} mode="inverse" className="w-[12.6px] h-[12.6px]" />
+                            </div>
+                          ),
+                        },
+                        {
+                          key: "incidentId",
+                          header: "ID",
+                          width: "100px",
+                          render: (row, hovered) => (
+                            <MonoCell hovered={hovered} isPrimary color="#64748B" hoveredColor="#0F172A" fontSize={11}>
+                              {row.incidentId}
+                            </MonoCell>
+                          ),
+                        },
+                        {
+                          key: "snapshot",
+                          header: "Snapshot",
+                          width: "88px",
+                          render: (row, hovered) => (
+                            <div
+                              className={cn(
+                                "h-12 w-[72px] rounded-[2px] overflow-hidden border transition-colors bg-neutral-100",
+                                hovered ? "border-[#00775B]/30" : "border-neutral-200"
+                              )}
+                            >
+                              <ImageWithFallback src={row.image} alt="Evidence" className="h-full w-full object-cover" />
+                            </div>
+                          ),
+                        },
+                        {
+                          key: "title",
+                          header: "Incident Details",
+                          render: (row, hovered) => (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.04em",
+                                color: hovered ? "#0F172A" : "#374151",
+                                transition: "color 120ms ease",
+                              }}
+                            >
+                              {row.title}
+                            </span>
+                          ),
+                        },
+                        {
+                          key: "location",
+                          header: "Location",
+                          width: "140px",
+                          render: (row, hovered) => (
+                            <InterCell hovered={hovered} fontSize={11} color="#475569" hoveredColor="#0F172A">
+                              {row.location}
+                            </InterCell>
+                          ),
+                        },
+                        {
+                          key: "camera",
+                          header: "Camera",
+                          width: "120px",
+                          render: (row, hovered) => (
+                            <InterCell hovered={hovered} fontSize={11} color="#475569" hoveredColor="#0F172A">
+                              {row.camera}
+                            </InterCell>
+                          ),
+                        },
+                        {
+                          key: "timestamp",
+                          header: "Date & Time",
+                          width: "108px",
+                          align: "right",
+                          render: (row, hovered) => (
+                            <MonoCell hovered={hovered} fontSize={10} color="#94A3B8" hoveredColor="#475569">
+                              {row.timestamp}
+                            </MonoCell>
+                          ),
+                        },
+                        {
+                          key: "actions",
+                          header: "",
+                          width: "80px",
+                          align: "right",
+                          render: (row, hovered) => (
+                            <div className="flex justify-end pr-1">
+                              <GridActions visible={hovered}>
+                                <GridActionButton
+                                  title="Assign"
+                                  hoverColor="#2B7FFF"
+                                  onClick={(e) => { e.stopPropagation(); openAssignModal(row); }}
+                                >
+                                  <User className="w-3.5 h-3.5" />
+                                </GridActionButton>
+                                <GridActionButton
+                                  title="Acknowledge"
+                                  hoverColor="#00A63E"
+                                  onClick={(e) => { e.stopPropagation(); openAckModal(row); }}
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </GridActionButton>
+                              </GridActions>
+                            </div>
+                          ),
+                        },
+                      ]}
+                      data={paginatedTableIncidents}
+                      onRowClick={(row) => openDetailModal(row)}
+                    />
                     {/* Pagination - Simplistic */}
                     {tableTotalPages > 1 && (
                       <div className="p-2 border-t border-neutral-100 flex justify-center bg-neutral-50">

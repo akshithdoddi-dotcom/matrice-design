@@ -6,6 +6,7 @@ import {
   ChevronLeft, ChevronRight, ShieldAlert, Clock,
   AlertTriangle, Mail, ChevronDown, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
+import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 import {
   AreaChart, Area, LineChart, Line, YAxis, ResponsiveContainer,
 } from "recharts";
@@ -1712,31 +1713,112 @@ export const MonitoringView = ({ terminology, appId, groups = [] }: Props) => {
             {filtered.length === 0 ? (
               <div className="py-12 text-center text-[11px] text-neutral-400">No events</div>
             ) : (
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-neutral-100 sticky top-0 z-10 border-b border-neutral-200">
-                  <tr className="text-[9px] uppercase tracking-widest font-bold text-neutral-500 h-8">
-                    <th className="px-3 py-2 w-16">ID</th>
-                    <th className="px-3 py-2 w-16">Snapshot</th>
-                    <th className="px-3 py-2">Event</th>
-                    <th className="px-3 py-2 w-24">Severity</th>
-                    <th className="px-3 py-2">Zone</th>
-                    <th className="px-3 py-2 w-28">Camera</th>
-                    <th className="px-3 py-2 w-28">Stage</th>
-                    <th className="px-3 py-2 w-20 text-right">Conf %</th>
-                    <th className="px-3 py-2 w-24 text-right">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paged.map((e, i) => (
-                    <FeedTableRow
-                      key={e.id}
-                      event={e}
-                      rowIndex={safePage * PAGE_SIZE + i}
-                      onRowClick={(event, rowId) => setSelectedDefect(feedToDetail(event, rowId))}
-                    />
-                  ))}
-                </tbody>
-              </table>
+              <DataGrid<QualityFeedEvent>
+                data={paged}
+                onRowClick={(event) => {
+                  const i = paged.findIndex(e => e.id === event.id);
+                  setSelectedDefect(feedToDetail(event, `EVT-${String(safePage * PAGE_SIZE + i + 1).padStart(3, "0")}`));
+                }}
+                columns={[
+                  {
+                    key: "id",
+                    header: "ID",
+                    width: "64px",
+                    render: (_e, hovered) => {
+                      const i = paged.findIndex(x => x.id === _e.id);
+                      const rowId = `EVT-${String(safePage * PAGE_SIZE + i + 1).padStart(3, "0")}`;
+                      return <MonoCell hovered={hovered} isPrimary fontSize={10}>{rowId}</MonoCell>;
+                    },
+                  },
+                  {
+                    key: "snapshot",
+                    header: "Snapshot",
+                    width: "72px",
+                    render: (e) => (
+                      <DefectSwatch severity={e.severity} defectType={e.defectType} className="h-10 w-[60px]" />
+                    ),
+                  },
+                  {
+                    key: "event",
+                    header: "Event",
+                    width: "1fr",
+                    render: (e, hovered) => {
+                      const isCritical = e.severity === "CRITICAL";
+                      const isHigh = e.severity === "HIGH";
+                      return (
+                        <div>
+                          <InterCell hovered={hovered} isPrimary fontSize={11}>{e.eventName}</InterCell>
+                          <div className={cn(
+                            "text-[9px] truncate mt-0.5 leading-snug",
+                            (isCritical || isHigh) ? "text-red-600 font-semibold" : "text-neutral-400"
+                          )}>
+                            {e.defectType}
+                          </div>
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    key: "severity",
+                    header: "Severity",
+                    width: "88px",
+                    render: (e) => <StatusCapsule status={e.severity.toLowerCase()} />,
+                  },
+                  {
+                    key: "zone",
+                    header: "Zone",
+                    width: "100px",
+                    render: (e, hovered) => (
+                      <InterCell hovered={hovered} fontSize={11}>{e.zone}</InterCell>
+                    ),
+                  },
+                  {
+                    key: "camera",
+                    header: "Camera",
+                    width: "100px",
+                    render: (e, hovered) => (
+                      <MonoCell hovered={hovered} fontSize={11}>{e.camera}</MonoCell>
+                    ),
+                  },
+                  {
+                    key: "stage",
+                    header: "Stage",
+                    width: "100px",
+                    render: (e, hovered) => (
+                      <InterCell hovered={hovered} fontSize={10} color="#64748B">{e.stage}</InterCell>
+                    ),
+                  },
+                  {
+                    key: "confidence",
+                    header: "Conf %",
+                    width: "72px",
+                    align: "right",
+                    render: (e, hovered) => e.confidence != null ? (
+                      <MonoCell
+                        hovered={hovered}
+                        isPrimary
+                        color={e.confidence >= 90 ? "#059669" : "#F59E0B"}
+                        hoveredColor={e.confidence >= 90 ? "#059669" : "#F59E0B"}
+                        fontSize={11}
+                      >
+                        {e.confidence.toFixed(1)}%
+                      </MonoCell>
+                    ) : (
+                      <MonoCell hovered={hovered} fontSize={11} color="#CBD5E1">—</MonoCell>
+                    ),
+                  },
+                  {
+                    key: "time",
+                    header: "Time",
+                    width: "80px",
+                    align: "right",
+                    render: (e, hovered) => (
+                      <MonoCell hovered={hovered} fontSize={10} color="#64748B">{e.time}</MonoCell>
+                    ),
+                  },
+                ]}
+                emptyState="No events"
+              />
             )}
           </div>
 

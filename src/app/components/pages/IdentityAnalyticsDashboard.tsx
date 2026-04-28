@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, Cell, PieChart, Pie, Legend,
@@ -855,107 +856,135 @@ export const IdentityAnalyticsDashboard = ({ persona }: Props) => {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-[900px]">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50/80">
-                <th className="pl-4 pr-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-14">Capture</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-24">Type</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-20">Severity</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Name / ID</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Location</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-24">Time</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-28">Confidence</th>
-                <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400 w-20">Status</th>
-                <th className="pl-2 pr-4 py-2 w-10" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-50">
-              {pageEvents.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center text-[11px] text-neutral-400">
-                    No events match the current filters
-                  </td>
-                </tr>
-              ) : pageEvents.map(event => {
-                const isExpanded = expandedId === event.id;
-                const status = getStatus(event);
+        {(() => {
+          const identColumns: DataGridColumn<IdentEvent>[] = [
+            {
+              key: "capture",
+              header: "Capture",
+              width: "60px",
+              render: (event) => <EventThumb event={event} />,
+            },
+            {
+              key: "type",
+              header: "Type",
+              width: "110px",
+              render: (event) => <TypeBadge type={event.type} />,
+            },
+            {
+              key: "severity",
+              header: "Severity",
+              width: "90px",
+              render: (event) => {
                 const scfg = SEVERITY_CFG[event.severity];
+                const status = getStatus(event);
                 return (
-                  <>
-                    <tr
-                      key={event.id}
-                      onClick={() => setExpandedId(isExpanded ? null : event.id)}
-                      className={cn(
-                        "border-l-[3px] transition-colors cursor-pointer hover:bg-neutral-50/80",
-                        event.severity === "CRITICAL" ? "border-l-red-600 bg-red-50/30" :
-                        event.severity === "HIGH" ? "border-l-orange-500 bg-white" :
-                        "border-l-neutral-200 bg-white"
-                      )}
-                    >
-                      <td className="pl-4 pr-2 py-2.5">
-                        <EventThumb event={event} />
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <TypeBadge type={event.type} />
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide", scfg.badge)}>
-                          {event.severity}
-                        </span>
-                        {status === "ACTIVE" && event.severity !== "LOW" && event.severity !== "INFO" && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", scfg.dot)} />
-                            <span className="text-[8px] text-neutral-500 font-bold">LIVE</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <p className="font-semibold text-neutral-800 text-[11px]">{event.subject}</p>
-                        <p className="text-[9px] font-mono text-neutral-400">{event.subject_id}</p>
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <p className="text-neutral-700 font-medium text-[11px]">{event.zone}</p>
-                        <p className="text-[9px] text-neutral-400">{event.camera_id}</p>
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <span className="flex items-center gap-1 text-[10px] text-neutral-400 font-mono">
-                          <Clock className="w-3 h-3" />
-                          {event.timestamp}
-                        </span>
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <ConfBar value={event.confidence} />
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-[2px]", STATUS_CFG[status].cls)}>
-                          {STATUS_CFG[status].label}
-                        </span>
-                      </td>
-                      <td className="pl-2 pr-4 py-2.5">
-                        {isExpanded
-                          ? <ChevronUp className="w-3.5 h-3.5 text-neutral-400" />
-                          : <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />}
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr key={`${event.id}-expand`}>
-                        <td colSpan={9} className="p-0">
-                          <ExpandedRow
-                            event={event}
-                            onAck={() => ack(event.id)}
-                            onEscalate={() => escalate(event.id)}
-                            onResolve={() => resolve(event.id)}
-                          />
-                        </td>
-                      </tr>
+                  <div>
+                    <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide", scfg.badge)}>
+                      {event.severity}
+                    </span>
+                    {status === "ACTIVE" && event.severity !== "LOW" && event.severity !== "INFO" && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", scfg.dot)} />
+                        <span className="text-[8px] text-neutral-500 font-bold">LIVE</span>
+                      </div>
                     )}
-                  </>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
+              },
+            },
+            {
+              key: "nameId",
+              header: "Name / ID",
+              width: "1fr",
+              render: (event, hovered) => (
+                <div>
+                  <InterCell hovered={hovered} isPrimary fontSize={11}>{event.subject}</InterCell>
+                  <div className="mt-0.5">
+                    <MonoCell hovered={hovered} fontSize={9} color="#94A3B8">{event.subject_id}</MonoCell>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "location",
+              header: "Location",
+              width: "1fr",
+              render: (event, hovered) => (
+                <div>
+                  <InterCell hovered={hovered} isPrimary fontSize={11}>{event.zone}</InterCell>
+                  <div className="text-[9px] text-neutral-400">{event.camera_id}</div>
+                </div>
+              ),
+            },
+            {
+              key: "time",
+              header: "Time",
+              width: "96px",
+              render: (event, hovered) => (
+                <MonoCell hovered={hovered} fontSize={10} color="#94A3B8">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {event.timestamp}
+                  </span>
+                </MonoCell>
+              ),
+            },
+            {
+              key: "confidence",
+              header: "Confidence",
+              width: "110px",
+              render: (event) => <ConfBar value={event.confidence} />,
+            },
+            {
+              key: "status",
+              header: "Status",
+              width: "90px",
+              render: (event) => {
+                const status = getStatus(event);
+                const statusMap: Record<EventStatus, string> = {
+                  ACTIVE: "active",
+                  ACKNOWLEDGED: "info",
+                  ESCALATED: "critical",
+                  RESOLVED: "resolved",
+                };
+                return <StatusCapsule status={statusMap[status]} label={STATUS_CFG[status].label} />;
+              },
+            },
+            {
+              key: "expand",
+              header: "",
+              width: "36px",
+              align: "right",
+              render: (event) => expandedId === event.id
+                ? <ChevronUp className="w-3.5 h-3.5 text-neutral-400" />
+                : <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />,
+            },
+          ];
+
+          const expandedEvent = expandedId ? pageEvents.find(e => e.id === expandedId) : null;
+
+          return (
+            <div>
+              <DataGrid<IdentEvent>
+                columns={identColumns}
+                data={pageEvents}
+                getRowId={(row) => row.id}
+                onRowClick={(event) => setExpandedId(expandedId === event.id ? null : event.id)}
+                emptyState="No events match the current filters"
+              />
+              {expandedEvent && (
+                <div className="border-t border-[#00775B]/20 bg-neutral-50/70">
+                  <ExpandedRow
+                    event={expandedEvent}
+                    onAck={() => ack(expandedEvent.id)}
+                    onEscalate={() => escalate(expandedEvent.id)}
+                    onResolve={() => resolve(expandedEvent.id)}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-neutral-50 bg-neutral-50/40">

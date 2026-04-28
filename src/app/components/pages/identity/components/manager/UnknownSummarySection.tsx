@@ -3,6 +3,7 @@ import { UserX } from "lucide-react";
 import { UNKNOWN_TRACKERS } from "../../data/mockData";
 import type { IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
 
 interface Props { terminology: IdentityTerminology }
 
@@ -33,52 +34,83 @@ export const UnknownSummarySection = ({ terminology }: Props) => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-neutral-100">
-              <th className="text-left py-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">ID</th>
-              <th className="text-left py-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Appearances</th>
-              <th className="text-left py-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Cameras</th>
-              <th className="text-left py-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Last Seen</th>
-              <th className="text-left py-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Conf</th>
-              <th className="text-left py-2 px-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Badge</th>
-            </tr>
-          </thead>
-          <tbody>
-            {UNKNOWN_TRACKERS.map((tracker) => (
-              <tr key={tracker.tracker_id} className="border-b border-neutral-50 hover:bg-neutral-50 transition-colors">
-                <td className="py-2.5 px-2 font-bold text-neutral-700">{tracker.anonymized_label}</td>
-                <td className="py-2.5 px-2 tabular-nums font-data">{tracker.appearances}</td>
-                <td className="py-2.5 px-2">
-                  <div className="flex flex-wrap gap-1">
-                    {tracker.cameras.map((c) => (
-                      <span key={c} className="text-[9px] bg-neutral-100 text-neutral-600 rounded px-1.5 py-0.5">{c}</span>
-                    ))}
-                  </div>
-                </td>
-                <td className="py-2.5 px-2 font-data text-neutral-500">{tracker.last_seen}</td>
-                <td className={cn("py-2.5 px-2 font-semibold tabular-nums font-data",
-                  tracker.confidence < 70 ? "text-red-600" :
-                  tracker.confidence < 80 ? "text-amber-600" : "text-emerald-600"
-                )}>
-                  {tracker.confidence}%
-                </td>
-                <td className="py-2.5 px-2">
-                  {tracker.badge && (
-                    <span className={cn(
-                      "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
-                      tracker.badge === "RECURRING" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"
-                    )}>
-                      {tracker.badge}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {(() => {
+        type TrackerRow = (typeof UNKNOWN_TRACKERS)[number];
+        const columns: DataGridColumn<TrackerRow>[] = [
+          {
+            key: "id",
+            header: "ID",
+            width: "1fr",
+            render: (tracker, hovered) => (
+              <MonoCell hovered={hovered} isPrimary>{tracker.anonymized_label}</MonoCell>
+            ),
+          },
+          {
+            key: "appearances",
+            header: "Appearances",
+            width: "100px",
+            render: (tracker, hovered) => (
+              <MonoCell hovered={hovered}>{tracker.appearances}</MonoCell>
+            ),
+          },
+          {
+            key: "cameras",
+            header: "Cameras",
+            width: "1fr",
+            render: (tracker) => (
+              <div className="flex flex-wrap gap-1">
+                {tracker.cameras.map((c) => (
+                  <span key={c} className="text-[9px] bg-neutral-100 text-neutral-600 rounded px-1.5 py-0.5">{c}</span>
+                ))}
+              </div>
+            ),
+          },
+          {
+            key: "last_seen",
+            header: "Last Seen",
+            width: "90px",
+            render: (tracker, hovered) => (
+              <MonoCell hovered={hovered} color="#64748B">{tracker.last_seen}</MonoCell>
+            ),
+          },
+          {
+            key: "confidence",
+            header: "Conf",
+            width: "70px",
+            render: (tracker, hovered) => (
+              <MonoCell
+                hovered={hovered}
+                isPrimary
+                color={tracker.confidence < 70 ? "#DC2626" : tracker.confidence < 80 ? "#D97706" : "#059669"}
+                hoveredColor={tracker.confidence < 70 ? "#B91C1C" : tracker.confidence < 80 ? "#B45309" : "#047857"}
+              >
+                {tracker.confidence}%
+              </MonoCell>
+            ),
+          },
+          {
+            key: "badge",
+            header: "Badge",
+            width: "90px",
+            render: (tracker) => tracker.badge ? (
+              <StatusCapsule
+                status={tracker.badge === "RECURRING" ? "warning" : "info"}
+                label={tracker.badge}
+              />
+            ) : null,
+          },
+        ];
+
+        return (
+          <div className="-mx-4 -mb-4">
+            <DataGrid<TrackerRow>
+              columns={columns}
+              data={UNKNOWN_TRACKERS}
+              getRowId={(row) => row.tracker_id}
+            />
+          </div>
+        );
+      })()}
     </Panel>
   );
 };
