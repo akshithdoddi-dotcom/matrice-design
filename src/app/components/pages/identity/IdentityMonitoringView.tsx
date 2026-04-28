@@ -2228,7 +2228,7 @@ function HiTechEntityModal({
                     <p className="text-[11px] font-mono" style={{ color: T.textSub }}>{person.employeeId}</p>
                   </div>
                 )}
-                {person.dwell != null && (
+                {person.dwell != null && !isUnknown && (
                   <div>
                     <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Dwell</p>
                     <p className="text-[11px] font-mono font-bold"
@@ -2538,9 +2538,9 @@ function HiTechEntityModal({
                   disabled={!notifySelected.length}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-[5px] text-[11px] font-bold transition-all shrink-0"
                   style={{
-                    background: notifySelected.length ? accent : T.btnDisabledBg,
+                    background: notifySelected.length ? (isDark ? "#00D4AA" : "#00775B") : T.btnDisabledBg,
                     color: notifySelected.length ? (isDark ? "#030d0a" : "#FFFFFF") : T.btnDisabledTx,
-                    border: notifySelected.length ? `1px solid ${accent}` : T.btnDisabledBd,
+                    border: notifySelected.length ? `1px solid ${isDark ? "#00D4AA" : "#00775B"}` : T.btnDisabledBd,
                     cursor: notifySelected.length ? "pointer" : "not-allowed",
                   }}>
                   <Mail className="w-3.5 h-3.5" />
