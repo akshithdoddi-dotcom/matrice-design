@@ -2589,7 +2589,7 @@ const V22GhostPill = ({ status }: { status: string }) => {
         letterSpacing: "0.04em", textTransform: "uppercase",
         color,
         backgroundColor: "transparent",
-        border: `1px solid ${color}`,
+        border: `1.5px solid ${color}`,
         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
         whiteSpace: "nowrap",
       }}
@@ -2659,7 +2659,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
               backgroundColor: isHovered
                 ? "rgba(0, 119, 91, 0.08)"
                 : isEven
-                ? "rgba(0, 119, 91, 0.02)"
+                ? "rgba(0, 119, 91, 0.03)"
                 : "#ffffff",
               // NO border-bottom — borderless rows
               cursor: "default",
@@ -2692,12 +2692,12 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                 overflow: "hidden",
               }}
             >
-              {/* 2px severity color indicator */}
+              {/* 3px severity color indicator */}
               <div
                 style={{
-                  width: 2,
-                  height: 20,
-                  borderRadius: 1,
+                  width: 3,
+                  height: 24,
+                  borderRadius: 1.5,
                   backgroundColor: sevColor,
                   flexShrink: 0,
                   opacity: isHovered ? 1 : 0.65,
@@ -2913,11 +2913,11 @@ const V2_2Content = () => {
         {[
           ["Header",        "Transparent + 2px teal bottom"],
           ["Row Dividers",  "None (borderless)"],
-          ["Zebra",         "rgba(0,119,91,0.02) even rows"],
+          ["Zebra",         "rgba(0,119,91,0.03) even rows"],
           ["Hover BG",      "rgba(0,119,91,0.08) + text glow"],
-          ["Pills",         "Ghost — 1px outline, bright text"],
-          ["ID Strip",      "2px severity color indicator"],
-          ["Toolbar",       "Bottom-border only, no container"],
+          ["Pills",         "Ghost — 1.5px outline, bright text"],
+          ["ID Strip",      "3px severity color strip"],
+          ["Toolbar",       "1px neutral-200 separator, no container"],
           ["Font",          "Mono IDs/numbers · Inter labels"],
         ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
       </div>
@@ -2929,8 +2929,8 @@ const V2_2Content = () => {
         <div
           style={{
             display: "flex", alignItems: "flex-end", gap: 16,
-            marginBottom: 16,
-            paddingBottom: 4,
+            marginBottom: 0,
+            paddingBottom: 10,
           }}
         >
           {/* Bottom-border-only search */}
@@ -3107,10 +3107,13 @@ const V2_2Content = () => {
           </div>
         </div>
 
+        {/* 1px neutral-200 separator — structural anchor between toolbar and table header */}
+        <div style={{ height: 1, backgroundColor: "#E2E8F0" }} />
+
         {/* Table — no outer border, seamless */}
         <div
           style={{
-            borderRadius: 6,
+            borderRadius: 0,
             overflow: "hidden",
             backgroundColor: "#ffffff",
           }}
@@ -3202,12 +3205,12 @@ const V2_2Content = () => {
 
       {/* Annotations */}
       <div className="grid grid-cols-2 gap-2">
-        <Annotation>Frameless header: transparent bg · 2px teal bottom border only · Inter Bold #1E293B</Annotation>
-        <Annotation>Zebra-glass: even rows <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(0,119,91,0.02)</code> · zero horizontal dividers</Annotation>
+        <Annotation>Frameless header: transparent bg · 2px teal bottom border only · Inter Bold 11px #1E293B all-caps</Annotation>
+        <Annotation>Zebra-glass: even rows <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(0,119,91,0.03)</code> · zero horizontal dividers</Annotation>
         <Annotation>Hover glow: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">text-shadow 0 0 10px rgba(0,119,91,0.3)</code> on ID and event cells</Annotation>
-        <Annotation>Ghost pills: transparent bg · 1px solid bright border · bright colored text</Annotation>
-        <Annotation>ID strip: 2px vertical rectangle · severity color (red/orange/green/blue)</Annotation>
-        <Annotation>Integrated toolbar: bottom-border-only inputs · focus glow on teal line</Annotation>
+        <Annotation>Ghost pills: transparent bg · 1.5px solid bright border · bright colored text · JetBrains Mono 10px Bold</Annotation>
+        <Annotation>ID strip: 3px × 24px vertical bar · severity color (red/orange/green/blue) · 0.65→1 opacity on hover</Annotation>
+        <Annotation>Toolbar: no background, no border · 1px neutral-200 line anchors toolbar from table header · bottom-border-only inputs</Annotation>
       </div>
     </div>
   );
