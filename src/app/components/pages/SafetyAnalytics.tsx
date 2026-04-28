@@ -281,6 +281,7 @@ const FloatingHUD = ({
             border: "1px solid rgba(0,0,0,0.06)",
             borderRadius: 4,               // matches KPI card corners
             flexShrink: 0,
+            width: 176,
             marginLeft: 4,                 // 8px (row gap) + 4px = 12px from selector
           }}
         >
@@ -292,9 +293,6 @@ const FloatingHUD = ({
               fontSize: 11,
               color: "#475569",
               whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              maxWidth: 152,
             }}
           >
             {timeRangeInfo}

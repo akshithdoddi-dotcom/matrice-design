@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Zap,
+  User,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 
@@ -1542,10 +1543,328 @@ const V1_2Content = () => (
 
 
 // ══════════════════════════════════════════════════════════════════════════════
+//  DATA GRID — v2.0 / v2.1
+// ══════════════════════════════════════════════════════════════════════════════
+
+interface GridRow {
+  id: string;
+  status: "critical" | "warning" | "stable" | "info" | "resolved";
+  event: string;
+  zone: string;
+  camera: string;
+  confidence: number;
+  timestamp: string;
+}
+
+const GRID_DATA: GridRow[] = [
+  { id: "INC-004821", status: "critical",  event: "Hardhat Missing",           zone: "Loading Dock A",  camera: "CAM-14", confidence: 97.3, timestamp: "2026-04-28  16:05" },
+  { id: "INC-004820", status: "warning",   event: "Safety Zone Breach",         zone: "Assembly Line 2", camera: "CAM-07", confidence: 84.1, timestamp: "2026-04-28  15:58" },
+  { id: "INC-004819", status: "stable",    event: "PPE Compliant Check",        zone: "Warehouse B",     camera: "CAM-22", confidence: 99.7, timestamp: "2026-04-28  15:47" },
+  { id: "INC-004818", status: "info",      event: "Crowd Density Alert",        zone: "Exit Gate 3",     camera: "CAM-31", confidence: 76.2, timestamp: "2026-04-28  15:33" },
+  { id: "INC-004817", status: "warning",   event: "Restricted Area Intrusion",  zone: "Server Room",     camera: "CAM-05", confidence: 92.8, timestamp: "2026-04-28  15:21" },
+  { id: "INC-004816", status: "resolved",  event: "Spill Detected",             zone: "Kitchen Area",    camera: "CAM-18", confidence: 88.5, timestamp: "2026-04-28  14:56" },
+  { id: "INC-004815", status: "critical",  event: "Vest Missing",               zone: "Loading Dock B",  camera: "CAM-15", confidence: 95.1, timestamp: "2026-04-28  14:42" },
+  { id: "INC-004814", status: "info",      event: "Queue Length Exceeded",      zone: "Main Entrance",   camera: "CAM-01", confidence: 71.4, timestamp: "2026-04-28  14:19" },
+];
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  critical: { label: "Critical",  color: "#E7000B", bg: "rgba(231,0,11,0.08)",    border: "rgba(231,0,11,0.2)" },
+  warning:  { label: "Warning",   color: "#EA580C", bg: "rgba(234,88,12,0.08)",   border: "rgba(234,88,12,0.2)" },
+  stable:   { label: "Stable",    color: "#00A63E", bg: "rgba(0,166,62,0.08)",    border: "rgba(0,166,62,0.2)" },
+  info:     { label: "Info",      color: "#2B7FFF", bg: "rgba(43,127,255,0.08)",  border: "rgba(43,127,255,0.2)" },
+  resolved: { label: "Resolved",  color: "#64748B", bg: "rgba(100,116,139,0.08)", border: "rgba(100,116,139,0.2)" },
+};
+
+const StatusCapsule = ({ status }: { status: string }) => {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.info;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center",
+      padding: "2px 8px",
+      borderRadius: 100,
+      fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
+      color: cfg.color,
+      backgroundColor: cfg.bg,
+      border: `1px solid ${cfg.border}`,
+      whiteSpace: "nowrap",
+    }}>
+      {cfg.label}
+    </span>
+  );
+};
+
+const GRID_COLS = "40px 128px 110px 1fr 148px 72px 88px 148px 80px";
+
+const DataGrid = ({ compact = false }: { compact?: boolean }) => {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const rowH = compact ? 36 : 44;
+
+  return (
+    <div style={{ maxWidth: 1200, margin: "0 auto", fontFamily: "inherit" }}>
+      {/* Ghost Header */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: GRID_COLS,
+        alignItems: "center",
+        height: 36,
+        paddingLeft: 8,
+        paddingRight: 8,
+        backgroundColor: "rgba(241,245,249,0.5)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+        borderBottom: "1px solid #E2E8F0",
+        gap: 0,
+      }}>
+        {["#", "Incident ID", "Status", "Event Type", "Zone", "Camera", "Conf.", "Timestamp", ""].map((h, i) => (
+          <div key={i} style={{
+            fontSize: 11, fontWeight: 700, color: "#94A3B8",
+            textTransform: "uppercase", letterSpacing: "0.05em",
+            paddingLeft: i === 0 ? 0 : 8,
+            paddingRight: 8,
+          }}>
+            {h}
+          </div>
+        ))}
+      </div>
+
+      {/* Rows */}
+      {GRID_DATA.map((row, idx) => {
+        const isHovered = hoveredId === row.id;
+        return (
+          <div
+            key={row.id}
+            onMouseEnter={() => setHoveredId(row.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            style={{
+              display: "grid",
+              gridTemplateColumns: GRID_COLS,
+              alignItems: "center",
+              height: rowH,
+              position: "relative",
+              backgroundColor: isHovered ? "rgba(0,119,91,0.04)" : "#ffffff",
+              borderBottom: "1px solid #F1F5F9",
+              cursor: "default",
+              transition: "background-color 120ms ease",
+              paddingLeft: 8,
+              paddingRight: 8,
+            }}
+          >
+            {/* 3px teal selection bar on left */}
+            <div style={{
+              position: "absolute", left: 0, top: 0, bottom: 0,
+              width: 3,
+              backgroundColor: "#00775B",
+              opacity: isHovered ? 1 : 0,
+              transition: "opacity 120ms ease",
+            }} />
+
+            {/* # */}
+            <div style={{ fontSize: 11, color: "#CBD5E1", fontFamily: "'JetBrains Mono', monospace", paddingLeft: 8 }}>
+              {String(idx + 1).padStart(2, "0")}
+            </div>
+
+            {/* Incident ID — weight bumps on hover */}
+            <div style={{
+              fontSize: 11,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: isHovered ? 600 : 500,
+              color: isHovered ? "#0F172A" : "#334155",
+              paddingLeft: 8,
+              transition: "font-weight 120ms ease, color 120ms ease",
+              letterSpacing: "0.01em",
+            }}>
+              {row.id}
+            </div>
+
+            {/* Status */}
+            <div style={{ paddingLeft: 8 }}>
+              <StatusCapsule status={row.status} />
+            </div>
+
+            {/* Event Type — Inter */}
+            <div style={{
+              fontSize: 12,
+              fontFamily: "Inter, sans-serif",
+              fontWeight: isHovered ? 500 : 400,
+              color: isHovered ? "#0F172A" : "#334155",
+              paddingLeft: 8,
+              paddingRight: 8,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}>
+              {row.event}
+            </div>
+
+            {/* Zone — Inter */}
+            <div style={{
+              fontSize: 11,
+              fontFamily: "Inter, sans-serif",
+              color: "#475569",
+              paddingLeft: 8,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}>
+              {row.zone}
+            </div>
+
+            {/* Camera — Mono */}
+            <div style={{
+              fontSize: 11,
+              fontFamily: "'JetBrains Mono', monospace",
+              color: "#64748B",
+              paddingLeft: 8,
+            }}>
+              {row.camera}
+            </div>
+
+            {/* Confidence — Mono */}
+            <div style={{
+              fontSize: 11,
+              fontFamily: "'JetBrains Mono', monospace",
+              color: "#475569",
+              paddingLeft: 8,
+              fontVariantNumeric: "tabular-nums",
+            } as React.CSSProperties}>
+              {row.confidence.toFixed(1)}%
+            </div>
+
+            {/* Timestamp — Mono */}
+            <div style={{
+              fontSize: 11,
+              fontFamily: "'JetBrains Mono', monospace",
+              color: "#64748B",
+              paddingLeft: 8,
+              letterSpacing: "0.01em",
+            }}>
+              {row.timestamp}
+            </div>
+
+            {/* Actions — glassmorphic, hidden until hover */}
+            <div style={{
+              paddingLeft: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              opacity: isHovered ? 1 : 0,
+              transition: "opacity 150ms ease",
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "4px 8px",
+                backgroundColor: "rgba(255,255,255,0.9)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(0,0,0,0.07)",
+                borderRadius: 4,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              }}>
+                <button style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#00775B"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,119,91,0.08)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#64748B"; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+                  <Eye style={{ width: 13, height: 13 }} />
+                </button>
+                <button style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#00A63E"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,166,62,0.08)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#64748B"; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+                  <CheckCircle2 style={{ width: 13, height: 13 }} />
+                </button>
+                <button style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#2B7FFF"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(43,127,255,0.08)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#64748B"; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+                  <User style={{ width: 13, height: 13 }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const PrecisionGridContent = () => (
+  <div className="space-y-8">
+    <SectionHeader
+      icon={Eye}
+      title="Precision Grid v2.0 — Master Data Table"
+      description="Unified high-precision table with ghost header, JetBrains Mono data columns, capsule status badges, and glassmorphic hover actions."
+    />
+
+    {/* Spec chips */}
+    <div className="flex flex-wrap gap-2">
+      {[
+        ["Row Height", "44px"],
+        ["Header BG", "rgba(241,245,249,0.5)"],
+        ["Header Blur", "4px"],
+        ["Divider", "1px neutral-100"],
+        ["Hover BG", "rgba(0,119,91,0.04)"],
+        ["Selection Bar", "3px #00775B"],
+        ["ID Font", "JetBrains Mono"],
+        ["Cell Padding", "8px grid"],
+        ["Max Width", "1200px"],
+      ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
+    </div>
+
+    {/* Grid showcase */}
+    <div className="rounded-[6px] border border-[#E2E8F0] overflow-hidden bg-white shadow-sm">
+      <DataGrid compact={false} />
+    </div>
+
+    {/* Annotations */}
+    <div className="grid grid-cols-2 gap-2">
+      <Annotation>Ghost header: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(241,245,249,0.5) blur(4px)</code> — stays legible over any bg</Annotation>
+      <Annotation>3px teal selection bar on left edge of hovered row</Annotation>
+      <Annotation>Incident ID weight shifts from Medium → Semibold on hover</Annotation>
+      <Annotation>Action container: glassmorphic, opacity 0→1 on row hover</Annotation>
+      <Annotation>JetBrains Mono for all IDs, confidence scores, and timestamps</Annotation>
+      <Annotation>Status capsules use 10% opacity fill matching KPI card severity tokens</Annotation>
+    </div>
+  </div>
+);
+
+const DenseGridContent = () => (
+  <div className="space-y-8">
+    <SectionHeader
+      icon={Eye}
+      title="Dense Log v2.1 — Compact Data Table"
+      description="High-density variant with 36px rows for log-style data. Ideal for operational dashboards requiring maximum data density."
+    />
+
+    <div className="flex flex-wrap gap-2">
+      {[
+        ["Row Height", "36px"],
+        ["Density", "High"],
+        ["Header BG", "rgba(241,245,249,0.5)"],
+        ["Same Hover", "Yes"],
+      ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
+    </div>
+
+    <div className="rounded-[6px] border border-[#E2E8F0] overflow-hidden bg-white shadow-sm">
+      <DataGrid compact={true} />
+    </div>
+
+    <div className="grid grid-cols-2 gap-2">
+      <Annotation>36px rows — 22% denser than the standard 44px grid</Annotation>
+      <Annotation>All interaction patterns (hover bar, actions) carry through at compact size</Annotation>
+    </div>
+  </div>
+);
+
+// ══════════════════════════════════════════════════════════════════════════════
 //  PAGE SHELL
 // ══════════════════════════════════════════════════════════════════════════════
+type TableTabId = "precision" | "dense";
+const TABLE_TABS: { id: TableTabId; version: string; label: string; badge: string; badgeColor: string }[] = [
+  { id: "precision", version: "v2.0", label: "Precision Grid", badge: "Master",  badgeColor: "#00775B" },
+  { id: "dense",     version: "v2.1", label: "Dense Log",      badge: "Compact", badgeColor: "#2B7FFF" },
+];
+
 type TabId = "v1" | "v1-1" | "v1-2";
-const TABS: { id: TabId; version: string; label: string; badge: string; badgeColor: string }[] = [
+const CARD_TABS: { id: TabId; version: string; label: string; badge: string; badgeColor: string }[] = [
   { id: "v1",   version: "v1.0", label: "Standard",      badge: "Stable",  badgeColor: "#2B7FFF" },
   { id: "v1-1", version: "v1.1", label: "High-Tech HUD", badge: "Latest",  badgeColor: "#00A63E" },
   { id: "v1-2", version: "v1.2", label: "Card Catalogue", badge: "New",    badgeColor: "#EA580C" },
@@ -1553,6 +1872,8 @@ const TABS: { id: TabId; version: string; label: string; badge: string; badgeCol
 
 export const DesignSystem = () => {
   const [activeTab, setActiveTab] = useState<TabId>("v1-1");
+  const [componentType, setComponentType] = useState<"card" | "table">("card");
+  const [tableTab, setTableTab] = useState<TableTabId>("precision");
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -1584,10 +1905,11 @@ export const DesignSystem = () => {
           </div>
           <div className="flex items-center gap-6 mt-5 flex-wrap">
             {[
-              ["Versions", "2"],
+              ["Versions", "3"],
               ["Severity Levels", "4"],
               ["Interactive States", "3"],
               ["Token Families", "4"],
+              ["Table Variants", "2"],
             ].map(([l, v]) => (
               <div key={l} className="flex items-center gap-2">
                 <span className="text-[11px] text-white/40 font-medium">{l}</span>
@@ -1601,14 +1923,40 @@ export const DesignSystem = () => {
 
       <div className="max-w-6xl mx-auto px-8">
 
+        {/* Component type selector */}
+        <div className="flex items-center gap-0 py-5">
+          <div className="rounded-[6px] p-0.5 bg-[#F1F5F9] border border-[#E2E8F0] flex items-center">
+            {(["card", "table"] as const).map((type) => {
+              const isActive = componentType === type;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setComponentType(type)}
+                  className="px-5 py-2 text-[11px] font-bold uppercase tracking-[0.05em] rounded-[4px] transition-all"
+                  style={{
+                    backgroundColor: isActive ? "#00775B" : "white",
+                    color: isActive ? "white" : "#64748B",
+                    border: isActive ? "none" : "1px solid #E2E8F0",
+                  }}
+                >
+                  {type === "card" ? "Cards" : "Tables"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Tab strip */}
         <div className="flex items-end gap-0 border-b border-[#E2E8F0] mt-0">
-          {TABS.map((tab) => {
-            const active = activeTab === tab.id;
+          {(componentType === "card" ? CARD_TABS : TABLE_TABS).map((tab) => {
+            const active = componentType === "card" ? activeTab === tab.id : tableTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (componentType === "card") setActiveTab(tab.id as TabId);
+                  else setTableTab(tab.id as TableTabId);
+                }}
                 className={cn(
                   "relative flex items-center gap-2.5 px-6 py-4 text-[12px] font-bold transition-all duration-200 border-b-2 -mb-px",
                   active
@@ -1638,9 +1986,11 @@ export const DesignSystem = () => {
 
         {/* Tab content */}
         <div className="py-8 animate-in fade-in duration-300">
-          {activeTab === "v1"   && <V1Content />}
-          {activeTab === "v1-1" && <V1_1Content />}
-          {activeTab === "v1-2" && <V1_2Content />}
+          {componentType === "card" && activeTab === "v1"   && <V1Content />}
+          {componentType === "card" && activeTab === "v1-1" && <V1_1Content />}
+          {componentType === "card" && activeTab === "v1-2" && <V1_2Content />}
+          {componentType === "table" && tableTab === "precision" && <PrecisionGridContent />}
+          {componentType === "table" && tableTab === "dense"     && <DenseGridContent />}
         </div>
 
         {/* Footer */}

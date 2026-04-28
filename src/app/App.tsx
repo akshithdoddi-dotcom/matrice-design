@@ -433,7 +433,16 @@ export default function App() {
       <Sidebar activePage={activePage} onPageChange={setActivePage} collapsed={sidebarCollapsed} noTransition={!sidebarMounted.current} />
 
       <div className={cn("flex-1 relative z-10 w-full min-w-0 h-full overflow-y-visible overflow-x-hidden", sidebarMounted.current && "transition-all duration-300", sidebarCollapsed ? "lg:pl-14" : "lg:pl-56", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
-        <header className={cn("sticky top-0 z-30 flex h-12 items-center justify-between bg-[#0d1f1b] px-4 border-b border-white/8 text-white transition-all duration-300", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
+        <header
+          className={cn(
+            "fixed top-0 right-0 z-[41] flex h-12 items-center justify-between bg-[#0d1f1b] px-4 border-b border-white/8 text-white",
+            (isGlobalFilterOpen || isClientSwitcherOpen) && "z-[51]"
+          )}
+          style={{
+            left: sidebarCollapsed ? 56 : 224,
+            transition: sidebarMounted.current ? "left 300ms cubic-bezier(0.4, 0, 0.2, 1)" : "none",
+          }}
+        >
           {/* ── Left: toggle + page title ── */}
           <div className="flex items-center gap-3">
             <button
@@ -641,6 +650,9 @@ export default function App() {
             </div>
           </div>
         </header>
+
+        {/* Spacer: compensates for the fixed header (h-12 = 48px) so content starts below it */}
+        <div className="h-12 flex-shrink-0" />
 
         <div className="p-6 space-y-6 relative w-full overflow-x-hidden rounded-tl-lg">
           
