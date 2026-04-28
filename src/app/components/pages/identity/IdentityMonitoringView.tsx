@@ -1987,170 +1987,194 @@ function HiTechEntityModal({
           <div className="w-[44%] shrink-0 flex flex-col p-4 gap-3"
                style={{ borderRight: `1px solid ${T.colDivider}` }}>
 
-            {/* ── Primary camera frame — HORIZONTAL / LANDSCAPE ── */}
-            <div className="relative rounded-[5px] overflow-hidden shrink-0"
-                 style={{
-                   aspectRatio: "16 / 10",
-                   background: T.frameBg,
-                   border: `1px solid ${isDark ? a(0.2) : "#CBD5E1"}`,
-                   boxShadow: T.frameInset,
-                 }}>
-              {person.imageSrc ? (
-                <img src={person.imageSrc} alt=""
-                     className="absolute inset-0 w-full h-full object-cover"
-                     style={{ filter: isDark ? "contrast(1.05) saturate(0.85)" : "contrast(1.02) saturate(0.90)" }}
-                     onError={e => { (e.target as HTMLImageElement).style.opacity = "0"; }} />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Fingerprint className="w-16 h-16" style={{ color: isDark ? a(0.15) : "#CBD5E1" }} />
-                </div>
-              )}
+            {/* ── Split image row: system record (left) + live capture (right) ── */}
+            <div className="grid grid-cols-2 gap-2 shrink-0">
 
-              {/* Vignette */}
-              <div className="absolute inset-0 pointer-events-none"
-                   style={{ background: T.vignetteTop }} />
-
-              {/* SVG HUD mesh overlay */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none"
-                   viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
-                {Array.from({ length: 20 }, (_, i) => (
-                  <line key={i} x1="0" y1={i * 5} x2="100" y2={i * 5}
-                    stroke={accent} strokeOpacity="0.035" strokeWidth="0.3" />
-                ))}
-                {!isLPR ? (
-                  <>
-                    {/* Corner bracket markers only — face landmark mesh removed */}
-                    <path d="M 17 7 L 17 15 M 17 7 L 25 7"    stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
-                    <path d="M 83 7 L 83 15 M 83 7 L 75 7"    stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
-                    <path d="M 17 93 L 17 85 M 17 93 L 25 93" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
-                    <path d="M 83 93 L 83 85 M 83 93 L 75 93" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
-                  </>
-                ) : (
-                  <>
-                    <path d="M 10 10 L 10 20 M 10 10 L 20 10" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
-                    <path d="M 90 10 L 90 20 M 90 10 L 80 10" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
-                    <path d="M 10 90 L 10 80 M 10 90 L 20 90" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
-                    <path d="M 90 90 L 90 80 M 90 90 L 80 90" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.9" />
-                    <rect x="20" y="62" width="60" height="16" fill="none" stroke={accent} strokeWidth="0.8" strokeOpacity="0.7" />
-                    <path d="M 20 62 L 24 62 M 20 62 L 20 66" stroke={accent} strokeWidth="1" fill="none" strokeOpacity="0.9" />
-                    <path d="M 80 62 L 76 62 M 80 62 L 80 66" stroke={accent} strokeWidth="1" fill="none" strokeOpacity="0.9" />
-                    <path d="M 20 78 L 24 78 M 20 78 L 20 74" stroke={accent} strokeWidth="1" fill="none" strokeOpacity="0.9" />
-                    <path d="M 80 78 L 76 78 M 80 78 L 80 74" stroke={accent} strokeWidth="1" fill="none" strokeOpacity="0.9" />
-                  </>
-                )}
-              </svg>
-
-              {/* Camera ID / LIVE tag — top bar */}
-              <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-3 py-2 pointer-events-none"
-                   style={{ background: T.camOverlay }}>
-                <span className="text-[9px] font-mono tracking-wider" style={{ color: accent }}>{person.camera}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
-                  <span className="text-[8px] font-black tracking-widest" style={{ color: accent }}>LIVE</span>
+              {/* LEFT — System / enrolled photo */}
+              <div className="flex flex-col gap-1">
+                <p className="text-[8px] font-bold uppercase tracking-[0.14em]" style={{ color: T.textMuted }}>
+                  System Record
+                </p>
+                <div className="relative rounded-[5px] overflow-hidden"
+                     style={{
+                       aspectRatio: "3 / 4",
+                       background: T.frameBg,
+                       border: `1px solid ${isDark ? a(0.2) : "#CBD5E1"}`,
+                     }}>
+                  {person.imageSrc ? (
+                    <img src={person.imageSrc} alt="Enrolled photo"
+                         className="absolute inset-0 w-full h-full object-cover object-top"
+                         style={{ filter: "contrast(1.06) saturate(0.75) brightness(1.04)" }}
+                         onError={e => { (e.target as HTMLImageElement).style.opacity = "0"; }} />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Fingerprint className="w-10 h-10" style={{ color: isDark ? a(0.15) : "#CBD5E1" }} />
+                    </div>
+                  )}
+                  {/* Subtle corner bracket HUD — no text overlay */}
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none"
+                       viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+                    <path d="M 8 8 L 8 18 M 8 8 L 18 8"   stroke={accent} strokeWidth="1.8" fill="none" strokeOpacity="0.7" />
+                    <path d="M 92 8 L 92 18 M 92 8 L 82 8" stroke={accent} strokeWidth="1.8" fill="none" strokeOpacity="0.7" />
+                    <path d="M 8 92 L 8 82 M 8 92 L 18 92" stroke={accent} strokeWidth="1.8" fill="none" strokeOpacity="0.7" />
+                    <path d="M 92 92 L 92 82 M 92 92 L 82 92" stroke={accent} strokeWidth="1.8" fill="none" strokeOpacity="0.7" />
+                  </svg>
                 </div>
               </div>
 
-              {/* Bottom overlay — "wanted poster" stamp for threats, minimal badge otherwise */}
-              {modalStamp ? (
-                /* ── BLACKLIST / BOLO — bold stamp overlay ── */
-                <div className="absolute bottom-0 left-0 right-0 pointer-events-none"
-                     style={{ background: "linear-gradient(to top, rgba(0,0,0,0.93) 0%, rgba(0,0,0,0.65) 65%, transparent 100%)" }}>
-                  <div className="px-3.5 pt-2 pb-3">
-                    {/* Headline — large bold type, like a printed stamp */}
-                    <p className="text-[21px] font-black uppercase leading-none mb-1"
-                       style={{
-                         color: modalStamp.color,
-                         letterSpacing: "0.14em",
-                         textShadow: `0 0 24px ${modalStamp.color}70`,
-                       }}>
-                      {modalStamp.headline}
-                    </p>
-                    {/* Crime / alert reason — the actionable context */}
-                    <p className="text-[12px] font-bold text-white/90 leading-snug mb-2.5">
-                      {modalStamp.reason}
-                    </p>
-                    {/* Match confidence + plate as secondary info */}
-                    <div className="flex items-center gap-2">
-                      {person.confidence != null && (
-                        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5"
-                              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)" }}>
-                          <span className="text-[8px] font-mono uppercase tracking-widest text-white/50">
-                            {terminology.matchScoreLabel ?? "Match"}
-                          </span>
-                          <span className="text-[10px] font-mono font-bold text-white/75">
-                            {person.confidence.toFixed(1)}%
-                          </span>
-                        </span>
-                      )}
-                      {isLPR && person.plateText && (
-                        <span className="ml-auto text-[15px] font-black font-mono tracking-widest text-white/90">
-                          {person.plateText}
-                        </span>
-                      )}
+              {/* RIGHT — Live camera capture */}
+              <div className="flex flex-col gap-1">
+                <p className="text-[8px] font-bold uppercase tracking-[0.14em]" style={{ color: T.textMuted }}>
+                  Live Capture
+                </p>
+                <div className="relative rounded-[5px] overflow-hidden"
+                     style={{
+                       aspectRatio: "3 / 4",
+                       background: T.frameBg,
+                       border: `1px solid ${isDark ? a(0.2) : "#CBD5E1"}`,
+                     }}>
+                  {person.imageSrc ? (
+                    <img src={person.imageSrc} alt="Live capture"
+                         className="absolute inset-0 w-full h-full object-cover"
+                         style={{ filter: isDark ? "contrast(1.05) saturate(0.85)" : "contrast(1.02) saturate(0.90)" }}
+                         onError={e => { (e.target as HTMLImageElement).style.opacity = "0"; }} />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Fingerprint className="w-10 h-10" style={{ color: isDark ? a(0.15) : "#CBD5E1" }} />
+                    </div>
+                  )}
+                  {/* Camera ID + LIVE pulse — top bar only, no bottom overlay */}
+                  <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-2 py-1.5 pointer-events-none"
+                       style={{ background: T.camOverlay }}>
+                    <span className="text-[8px] font-mono tracking-wider" style={{ color: accent }}>{person.camera}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
+                      <span className="text-[7px] font-black tracking-widest" style={{ color: accent }}>LIVE</span>
                     </div>
                   </div>
+                  {/* LPR plate overlay */}
+                  {isLPR && person.plateText && (
+                    <div className="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none">
+                      <span className="text-[13px] font-black font-mono tracking-widest text-white/90 px-2 py-0.5 rounded"
+                            style={{ background: "rgba(0,0,0,0.55)" }}>
+                        {person.plateText}
+                      </span>
+                    </div>
+                  )}
+                  {/* Corner bracket HUD */}
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none"
+                       viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+                    {!isLPR ? (
+                      <>
+                        <path d="M 15 12 L 15 22 M 15 12 L 25 12" stroke={accent} strokeWidth="1.8" fill="none" strokeOpacity="0.85" />
+                        <path d="M 85 12 L 85 22 M 85 12 L 75 12" stroke={accent} strokeWidth="1.8" fill="none" strokeOpacity="0.85" />
+                        <path d="M 15 88 L 15 78 M 15 88 L 25 88" stroke={accent} strokeWidth="1.8" fill="none" strokeOpacity="0.85" />
+                        <path d="M 85 88 L 85 78 M 85 88 L 75 88" stroke={accent} strokeWidth="1.8" fill="none" strokeOpacity="0.85" />
+                      </>
+                    ) : (
+                      <>
+                        <rect x="18" y="58" width="64" height="18" fill="none" stroke={accent} strokeWidth="0.9" strokeOpacity="0.7" />
+                        <path d="M 8 8 L 8 18 M 8 8 L 18 8"     stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.85" />
+                        <path d="M 92 8 L 92 18 M 92 8 L 82 8"   stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.85" />
+                        <path d="M 8 92 L 8 82 M 8 92 L 18 92"   stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.85" />
+                        <path d="M 92 92 L 92 82 M 92 92 L 82 92" stroke={accent} strokeWidth="1.5" fill="none" strokeOpacity="0.85" />
+                      </>
+                    )}
+                  </svg>
                 </div>
-              ) : (
-                /* ── Non-threat — compact confidence / plate badge ── */
-                <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 pointer-events-none"
-                     style={{ background: T.confOverlay }}>
-                  <div className="flex items-end justify-between">
-                    {person.confidence != null && (
-                      <div>
-                        <p className="text-[8px] font-mono uppercase tracking-widest mb-0.5" style={{ color: T.confLabel }}>
-                          {terminology.matchScoreLabel ?? "Match Conf."}
-                        </p>
-                        <p className="text-[20px] font-black font-mono tabular-nums leading-none" style={{ color: accent }}>
-                          {person.confidence.toFixed(1)}<span className="text-[11px]">%</span>
-                        </p>
-                      </div>
-                    )}
-                    {isLPR && person.plateText && (
-                      <div className="text-right">
-                        <p className="text-[7px] font-mono uppercase tracking-widest mb-0.5" style={{ color: T.plateLabel }}>Plate</p>
-                        <p className="text-[16px] font-black font-mono tracking-widest text-white">{person.plateText}</p>
-                      </div>
-                    )}
+              </div>
+            </div>
+
+            {/* ── Alert / match info strip — clean text, no image overlay ── */}
+            <div className="shrink-0 rounded-[5px] px-3 py-2.5 flex items-center gap-3"
+                 style={{
+                   background: modalStamp
+                     ? (isDark ? "rgba(239,68,68,0.07)" : "#FFF5F5")
+                     : (isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC"),
+                   border: `1px solid ${modalStamp
+                     ? (isDark ? "rgba(239,68,68,0.2)" : "#FECACA")
+                     : (isDark ? a(0.08) : "#E2E8F0")}`,
+                 }}>
+              {modalStamp ? (
+                <>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-black uppercase leading-none mb-0.5"
+                       style={{ color: modalStamp.color, letterSpacing: "0.1em" }}>
+                      {modalStamp.headline}
+                    </p>
+                    <p className="text-[11px] font-semibold leading-snug" style={{ color: T.textSub }}>
+                      {modalStamp.reason}
+                    </p>
                   </div>
-                </div>
+                  {person.confidence != null && (
+                    <div className="text-right shrink-0">
+                      <p className="text-[8px] font-mono uppercase tracking-widest mb-0.5" style={{ color: T.textMuted }}>
+                        {terminology.matchScoreLabel ?? "Similarity"}
+                      </p>
+                      <p className="text-[18px] font-black font-mono tabular-nums leading-none"
+                         style={{ color: modalStamp.color }}>
+                        {person.confidence.toFixed(1)}<span className="text-[10px]">%</span>
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {person.subLabel && (
+                    <p className="flex-1 text-[11px] leading-snug" style={{ color: isUnknown ? "#f59e0b" : T.textMono }}>
+                      {person.subLabel}
+                    </p>
+                  )}
+                  {person.confidence != null && (
+                    <div className="text-right shrink-0 ml-auto">
+                      <p className="text-[8px] font-mono uppercase tracking-widest mb-0.5" style={{ color: T.textMuted }}>
+                        {terminology.matchScoreLabel ?? "Match Conf."}
+                      </p>
+                      <p className="text-[18px] font-black font-mono tabular-nums leading-none" style={{ color: accent }}>
+                        {person.confidence.toFixed(1)}<span className="text-[10px]">%</span>
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
-            {/* ── Person detail strip (below frame) ── */}
-            <div className="shrink-0 grid grid-cols-2 gap-x-4 gap-y-1.5 px-1">
-              {person.subLabel && (
-                <div className="col-span-2">
-                  <p className="text-[11px] leading-snug"
-                     style={{ color: isThreat ? "#ef4444" : isUnknown ? "#f59e0b" : T.textMono }}>
-                    {person.subLabel}
-                  </p>
+            {/* ── Detection Event (compact) ── */}
+            <div className="shrink-0">
+              <p className="text-[8px] font-bold uppercase tracking-[0.14em] mb-1.5" style={{ color: T.otherCamsLabel }}>
+                Detection Event
+              </p>
+              <div className="rounded-[5px] overflow-hidden"
+                   style={{ border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "#E2E8F0"}` }}>
+                <div className="grid grid-cols-2">
+                  {([
+                    { label: "Timestamp",  value: `${person.time} IST` },
+                    { label: "Camera",     value: person.camera },
+                    { label: "Frame #",    value: frameNum.toLocaleString() },
+                    { label: "Duration",   value: durInFrame },
+                    { label: "Det. Conf",  value: detConf },
+                    person.confidence != null ? { label: "Match",  value: matchConf } : null,
+                  ] as ({ label: string; value: string } | null)[])
+                    .filter((x): x is { label: string; value: string } => x !== null)
+                    .map((item, i) => (
+                      <div key={item.label}
+                           className="px-2.5 py-2"
+                           style={{
+                             borderRight:  i % 2 === 0 ? `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0"}` : "none",
+                             borderBottom: i < 4        ? `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0"}` : "none",
+                             background:   isDark ? "rgba(255,255,255,0.01)" : "#FAFAFA",
+                           }}>
+                        <p className="text-[7px] font-bold uppercase tracking-widest mb-0.5" style={{ color: T.textMuted }}>
+                          {item.label}
+                        </p>
+                        <p className="text-[10px] font-semibold truncate" style={{ color: T.textPrimary }}>
+                          {item.value}
+                        </p>
+                      </div>
+                    ))
+                  }
                 </div>
-              )}
-              {person.department && (
-                <div>
-                  <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Dept.</p>
-                  <p className="text-[11px] font-semibold" style={{ color: T.textSub }}>{person.department}</p>
-                </div>
-              )}
-              {person.employeeId && (
-                <div>
-                  <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>ID</p>
-                  <p className="text-[11px] font-mono" style={{ color: T.textSub }}>{person.employeeId}</p>
-                </div>
-              )}
-              {person.dwell != null && (
-                <div>
-                  <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Dwell</p>
-                  <p className="text-[11px] font-mono font-bold"
-                     style={{ color: person.dwell > 180 ? "#f59e0b" : T.textSub }}>{fmtDwell(person.dwell)}</p>
-                </div>
-              )}
-              {person.totalAppearances != null && (
-                <div>
-                  <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Visits</p>
-                  <p className="text-[11px] font-mono" style={{ color: T.textSub }}>{person.totalAppearances}</p>
-                </div>
-              )}
+              </div>
             </div>
 
             {/* ── Additional camera thumbnails ── */}
@@ -2197,6 +2221,37 @@ function HiTechEntityModal({
                 })}
               </div>
             </div>
+
+            {/* ── Person detail strip (below thumbnails) ── */}
+            {(person.department || person.employeeId || person.dwell != null || person.totalAppearances != null) && (
+              <div className="shrink-0 grid grid-cols-2 gap-x-4 gap-y-1.5 px-0.5">
+                {person.department && (
+                  <div>
+                    <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Dept.</p>
+                    <p className="text-[11px] font-semibold" style={{ color: T.textSub }}>{person.department}</p>
+                  </div>
+                )}
+                {person.employeeId && (
+                  <div>
+                    <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>ID</p>
+                    <p className="text-[11px] font-mono" style={{ color: T.textSub }}>{person.employeeId}</p>
+                  </div>
+                )}
+                {person.dwell != null && (
+                  <div>
+                    <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Dwell</p>
+                    <p className="text-[11px] font-mono font-bold"
+                       style={{ color: person.dwell > 180 ? "#f59e0b" : T.textSub }}>{fmtDwell(person.dwell)}</p>
+                  </div>
+                )}
+                {person.totalAppearances != null && (
+                  <div>
+                    <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: T.textMuted }}>Visits</p>
+                    <p className="text-[11px] font-mono" style={{ color: T.textSub }}>{person.totalAppearances}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── RIGHT COLUMN: scrollable data panels ─────────────────────────── */}
@@ -2224,19 +2279,33 @@ function HiTechEntityModal({
                 {journey.length === 0 ? (
                   <p className="px-5 text-[11px]" style={{ color: T.noJourney }}>No movement recorded</p>
                 ) : (
-                  <div className="relative px-3">
-                    {/* Vertical connector line — sits behind the dots */}
-                    {journey.length > 1 && (
-                      <div className="absolute left-[24px] w-[2px] rounded-full"
-                           style={{ top: 20, bottom: 20, background: T.journeyLine }} />
-                    )}
-
+                  <div className="px-4 space-y-0">
                     {journey.map((stop, idx) => {
-                      const nextStop = journey[idx + 1];
-                      const timeDiff = nextStop ? calcTimeDiff(stop.time, nextStop.time) : "";
+                      const nextStop      = journey[idx + 1];
+                      const timeDiff      = nextStop ? calcTimeDiff(stop.time, nextStop.time) : "";
                       const isCurrentStop = stop.isCurrent;
+                      const isLast        = idx === journey.length - 1;
+                      const lineColor     = isDark ? "#334155" : "#D1D5DB";
 
-                      // Derive a narrative description for this stop
+                      const stepDotBg = isCurrentStop && isThreat ? "#EF4444"
+                        : isCurrentStop                            ? "#00775B"
+                        : idx === 0                                ? (isDark ? "#475569" : "#94A3B8")
+                                                                   : "#00775B";
+
+                      const cardBg = isCurrentStop
+                        ? (isThreat
+                            ? (isDark ? "rgba(239,68,68,0.06)" : "#FFF5F5")
+                            : (isDark ? "rgba(0,119,91,0.06)" : "#F0FDFB"))
+                        : (isDark ? "rgba(255,255,255,0.02)" : "#FFFFFF");
+
+                      const cardBorder = isCurrentStop
+                        ? (isThreat
+                            ? (isDark ? "rgba(239,68,68,0.3)" : "#FECACA")
+                            : (isDark ? "rgba(0,119,91,0.3)" : "#99E9D2"))
+                        : (isDark ? "rgba(255,255,255,0.07)" : "#E2E8F0");
+
+                      const headerBg = isDark ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.025)";
+
                       const stopDesc = stop.alertNote
                         ? stop.alertNote
                         : isCurrentStop
@@ -2246,182 +2315,136 @@ function HiTechEntityModal({
                             : `Transited through ${stop.zone.toLowerCase()}`;
 
                       return (
-                        <div key={idx}>
-                          {/* ── Stop card ── */}
-                          <div className="flex items-start gap-3 px-2 py-3 rounded-[8px]"
-                               style={{
-                                 background: isCurrentStop
-                                   ? (isThreat
-                                       ? (isDark ? "rgba(239,68,68,0.06)" : "#FFF5F5")
-                                       : (isDark ? "rgba(0,212,170,0.04)" : "#F0FDFB"))
-                                   : "transparent",
-                               }}>
+                        <div key={idx} className="flex gap-3">
 
-                            {/* Status dot (sits on the connector line) */}
-                            <div className="shrink-0 flex items-start justify-center pt-[5px]" style={{ width: 14 }}>
-                              <div className="w-3.5 h-3.5 rounded-full z-10"
-                                   style={{
-                                     background: isCurrentStop
-                                       ? (isThreat ? "#EF4444" : "#00775B")
-                                       : (idx === 0
-                                           ? (isDark ? "#475569" : "#94A3B8")
-                                           : "#00775B"),
-                                     boxShadow: isCurrentStop
-                                       ? `0 0 0 3px ${isThreat ? "rgba(239,68,68,0.22)" : "rgba(0,119,91,0.22)"}`
-                                       : "none",
-                                   }} />
-                            </div>
-
-                            {/* Square person thumbnail */}
-                            <div className="shrink-0 w-[60px] h-[60px] rounded-[7px] overflow-hidden relative"
+                          {/* ── Left: numbered square + connecting line ── */}
+                          <div className="flex flex-col items-center" style={{ width: 34 }}>
+                            {/* Square step number */}
+                            <div className="w-[34px] h-[34px] rounded-[6px] flex items-center justify-center shrink-0"
                                  style={{
-                                   background: isDark ? "#0F172A" : "#1E293B",
-                                   border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "#CBD5E1"}`,
+                                   background: stepDotBg,
+                                   boxShadow: isCurrentStop
+                                     ? `0 0 0 3px ${isThreat ? "rgba(239,68,68,0.2)" : "rgba(0,119,91,0.2)"}`
+                                     : "0 1px 3px rgba(0,0,0,0.2)",
                                  }}>
-                              {isLPR ? (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                                  <Camera className="w-5 h-5 text-neutral-500" />
-                                  <span className="text-[7px] font-mono text-amber-300 font-bold">
-                                    {person.plateText ?? "──"}
-                                  </span>
-                                </div>
-                              ) : (
-                                <>
-                                  <img
-                                    src={person.imageSrc ?? `https://i.pravatar.cc/112?u=${person.id}-stop${idx}`}
-                                    alt=""
-                                    className="absolute inset-0 w-full h-full object-cover"
-                                    style={{ opacity: 0.88, filter: "contrast(1.04) saturate(0.82)" }}
-                                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                  />
-                                  <div className="absolute inset-0"
-                                       style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.36))" }} />
-                                </>
-                              )}
-                              {/* Camera ID chip */}
-                              <div className="absolute top-0 left-0 right-0 px-1.5 py-[3px]"
-                                   style={{ background: "rgba(0,0,0,0.72)" }}>
-                                <span className="text-[6px] font-mono text-[#00FF84] tracking-wide leading-none">
-                                  {stop.camera}
-                                </span>
-                              </div>
-                              {isCurrentStop && (
-                                <div className="absolute bottom-1 right-1 flex items-center gap-0.5 rounded-[3px] px-[3px] py-[2px]"
-                                     style={{ background: "rgba(0,0,0,0.8)" }}>
-                                  <span className="w-[5px] h-[5px] rounded-full bg-red-500 animate-pulse" />
-                                </div>
-                              )}
+                              <span className="text-[10px] font-black text-white leading-none tabular-nums">
+                                {String(idx + 1).padStart(2, "0")}
+                              </span>
                             </div>
+                            {/* Line segment — grows to match card height on the right */}
+                            {!isLast && (
+                              <div className="w-[2px] flex-1 mt-1" style={{ background: lineColor }} />
+                            )}
+                          </div>
 
-                            {/* Text content */}
-                            <div className="flex-1 min-w-0">
-                              {/* Row 1: Zone name left, Time right */}
-                              <div className="flex items-start justify-between gap-2 mb-0.5">
-                                <span className="text-[15px] font-bold leading-tight" style={{ color: T.textPrimary }}>
-                                  {stop.zone}
-                                </span>
-                                <span className="text-[15px] font-bold font-mono tabular-nums shrink-0" style={{ color: T.textPrimary }}>
+                          {/* ── Right: card + time gap ── */}
+                          <div className="flex-1 min-w-0 pb-3">
+                            {/* Stop card */}
+                            <div className="rounded-[8px] overflow-hidden"
+                                 style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
+
+                              {/* Header — zone + status badge + time */}
+                              <div className="flex items-center justify-between px-3 py-2 gap-2"
+                                   style={{ background: headerBg, borderBottom: `1px solid ${cardBorder}` }}>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-[13px] font-bold leading-none truncate" style={{ color: T.textPrimary }}>
+                                    {stop.zone}
+                                  </span>
+                                  {isCurrentStop && (
+                                    <span className="shrink-0 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-[3px]"
+                                          style={{ background: isThreat ? "#EF4444" : "#00775B", color: "#fff" }}>
+                                      {isThreat ? "ACTIVE THREAT" : "CURRENT"}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[12px] font-bold font-mono tabular-nums shrink-0" style={{ color: T.textPrimary }}>
                                   {stop.time}
                                 </span>
                               </div>
 
-                              {/* Row 2: camera · conf · dwell + status badges right */}
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] font-mono truncate" style={{ color: T.textMono }}>
-                                  {stop.camera}
-                                  {person.confidence != null ? ` · ${person.confidence.toFixed(1)}%` : ""}
-                                  {stop.dwellText ? ` · ${stop.dwellText}` : ""}
-                                </span>
-                                {/* Badges — pushed to right */}
-                                <div className="ml-auto flex items-center gap-1 shrink-0">
+                              {/* Body — thumbnail + meta + badges */}
+                              <div className="flex items-center gap-2.5 px-3 py-2.5">
+                                {/* Thumbnail */}
+                                <div className="shrink-0 w-[48px] h-[48px] rounded-[4px] overflow-hidden relative"
+                                     style={{
+                                       background: isDark ? "#0F172A" : "#1E293B",
+                                       border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "#CBD5E1"}`,
+                                     }}>
+                                  {isLPR ? (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+                                      <Camera className="w-4 h-4 text-neutral-500" />
+                                      <span className="text-[6px] font-mono text-amber-300 font-bold">{person.plateText ?? "──"}</span>
+                                    </div>
+                                  ) : (
+                                    <img src={person.imageSrc ?? `https://i.pravatar.cc/96?u=${person.id}-${idx}`}
+                                         alt="" className="absolute inset-0 w-full h-full object-cover"
+                                         style={{ opacity: 0.85, filter: "contrast(1.04) saturate(0.8)" }}
+                                         onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                                  )}
+                                  <div className="absolute bottom-0 left-0 right-0 px-1 py-[2px]"
+                                       style={{ background: "rgba(0,0,0,0.72)" }}>
+                                    <span className="text-[6px] font-mono leading-none" style={{ color: accent }}>{stop.camera}</span>
+                                  </div>
+                                </div>
+
+                                {/* Meta */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1 mb-1 flex-wrap">
+                                    <span className="text-[9px] font-mono" style={{ color: T.textMono }}>{stop.camera}</span>
+                                    {person.confidence != null && (
+                                      <>
+                                        <span style={{ color: T.textMuted }} className="text-[8px]">·</span>
+                                        <span className="text-[9px] font-mono font-bold" style={{ color: accent }}>
+                                          {person.confidence.toFixed(1)}%
+                                        </span>
+                                      </>
+                                    )}
+                                    {stop.dwellText && (
+                                      <>
+                                        <span style={{ color: T.textMuted }} className="text-[8px]">·</span>
+                                        <span className="text-[9px] font-mono" style={{ color: T.textMono }}>{stop.dwellText}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] leading-snug" style={{ color: T.textMono }}>{stopDesc}</p>
+                                </div>
+
+                                {/* Badges */}
+                                <div className="flex flex-col items-end gap-1 shrink-0">
                                   {stop.alertNote && (
-                                    <span className="text-[8px] font-bold px-2 py-[3px] rounded-full border leading-none"
+                                    <span className="text-[7px] font-black uppercase tracking-wider px-2 py-[3px] rounded-[3px] leading-none"
                                           style={{
                                             color: isThreat ? "#EF4444" : "#D97706",
-                                            borderColor: isThreat ? "#EF4444" : "#D97706",
-                                            background: isThreat
-                                              ? (isDark ? "rgba(239,68,68,0.1)" : "#FEF2F2")
-                                              : (isDark ? "rgba(217,119,6,0.1)" : "#FFFBEB"),
+                                            background: isThreat ? (isDark ? "rgba(239,68,68,0.12)" : "#FEF2F2") : (isDark ? "rgba(217,119,6,0.12)" : "#FFFBEB"),
+                                            border: `1px solid ${isThreat ? "rgba(239,68,68,0.3)" : "rgba(217,119,6,0.3)"}`,
                                           }}>
                                       {stop.alertNote.toUpperCase()}
                                     </span>
                                   )}
-                                  {isCurrentStop && (
-                                    <span className="text-[8px] font-bold px-2 py-[3px] rounded-full border leading-none"
-                                          style={{
-                                            color: accent,
-                                            borderColor: accent,
-                                            background: isDark ? a(0.08) : "#F0FDFB",
-                                          }}>
-                                      CURRENT
-                                    </span>
-                                  )}
                                   {stop.linkedPlate && (
-                                    <span className="text-[8px] font-mono font-bold px-2 py-[3px] rounded-full border leading-none"
-                                          style={{
-                                            color: "#00775B",
-                                            borderColor: "#00775B",
-                                            background: isDark ? "rgba(0,119,91,0.12)" : "#E5FFF9",
-                                          }}>
+                                    <span className="text-[7px] font-mono font-bold uppercase px-2 py-[3px] rounded-[3px] leading-none"
+                                          style={{ color: "#00775B", background: isDark ? "rgba(0,119,91,0.12)" : "#E5FFF9", border: "1px solid rgba(0,119,91,0.25)" }}>
                                       {stop.linkedPlate}
                                     </span>
                                   )}
                                 </div>
                               </div>
-
-                              {/* Row 3: narrative description (italic) */}
-                              <p className="text-[10px] italic leading-snug" style={{ color: T.textMono }}>
-                                {stopDesc}
-                              </p>
                             </div>
+
+                            {/* Time gap label between stops */}
+                            {timeDiff && !isLast && (
+                              <div className="flex items-center gap-2 mt-2">
+                                <div className="h-px flex-1" style={{ background: lineColor }} />
+                                <span className="text-[9px] font-mono shrink-0" style={{ color: T.textMuted }}>{timeDiff}</span>
+                                <div className="h-px flex-1" style={{ background: lineColor }} />
+                              </div>
+                            )}
                           </div>
-
-                          {/* Time-gap connector between stops */}
-                          {timeDiff && (
-                            <div className="flex items-center gap-1.5 py-0.5" style={{ paddingLeft: 55 }}>
-                              <span className="text-[11px]" style={{ color: T.textMuted }}>↓</span>
-                              <span className="text-[10px] font-mono" style={{ color: T.textMuted }}>{timeDiff}</span>
-                            </div>
-                          )}
                         </div>
                       );
                     })}
                   </div>
                 )}
-              </div>
-
-              {/* ═══════════════════════════════════════════════════════════ */}
-              {/* DETECTION EVENT — label / value data grid                  */}
-              {/* ═══════════════════════════════════════════════════════════ */}
-              <div className="px-5 pt-5 pb-6" style={{ borderTop: T.sectionBorder }}>
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-5" style={{ color: T.secHeadColor }}>
-                  Detection Event
-                </p>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-                  {([
-                    { label: "Timestamp",            value: `2026-04-06 · ${person.time} IST` },
-                    { label: "Camera",               value: `${person.zone} · ${person.camera}` },
-                    { label: "Frame #",              value: frameNum.toLocaleString() },
-                    { label: "Duration in Frame",    value: durInFrame },
-                    { label: "Detection Confidence", value: detConf },
-                    person.confidence != null
-                      ? { label: "Match Confidence", value: matchConf }
-                      : null,
-                  ] as ({ label: string; value: string } | null)[])
-                    .filter((x): x is { label: string; value: string } => x !== null)
-                    .map(item => (
-                      <div key={item.label}>
-                        <p className="text-[8px] font-bold uppercase tracking-[0.15em] mb-1.5"
-                           style={{ color: T.textMuted }}>
-                          {item.label}
-                        </p>
-                        <p className="text-[13px] font-semibold" style={{ color: T.textPrimary }}>
-                          {item.value}
-                        </p>
-                      </div>
-                    ))
-                  }
-                </div>
               </div>
 
               {/* ═══════════════════════════════════════════════════════════ */}

@@ -25,6 +25,7 @@ interface PanelEntity {
   match_status: "MATCHED" | "UNMATCHED";
   display_name: string; initials: string; photo_url?: string;
   list_membership: "WHITELIST" | "BLACKLIST" | "VIP" | "UNKNOWN";
+  alert_reason?: string;
   metadata?: { employee_id: string; department: string; access_level: string };
   vip_info?: { title: string; protocol: string; escort: boolean };
   last_detection: {
@@ -76,6 +77,7 @@ export const PANEL_ENTITIES: Record<string, PanelEntity> = {
     display_name: "Marcus Webb", initials: "MW",
     photo_url: "/people/man1.avif",
     list_membership: "BLACKLIST",
+    alert_reason: "Theft & Assault · Repeat Offender",
     last_detection: {
       timestamp: "2026-04-06 · 14:31:22 IST", camera_id: "CAM-LB-01", camera_label: "Main Lobby",
       match_confidence: 94.7, detection_confidence: 96.0, duration_in_frame_sec: 6.1, frame_number: "22,134",
@@ -719,6 +721,7 @@ interface PanelHeroProps {
   initials: string;
   displayName: string;
   tagline: string;
+  alertReason?: string;
   membership: string;
   isVehicle?: boolean;
   confidence: number;
@@ -735,7 +738,7 @@ interface PanelHeroProps {
 }
 
 function PanelHero({
-  photoUrl, initials, displayName, tagline, membership, isVehicle,
+  photoUrl, initials, displayName, tagline, alertReason, membership, isVehicle,
   confidence, confidenceLabel, isLive,
   currentLocation, cameraId, metaC, metaD,
   avatarFailed, onAvatarError,
@@ -745,15 +748,16 @@ function PanelHero({
   const avatarBorder = AVATAR_BORDER[membership] ?? AVATAR_BORDER.UNKNOWN;
   const avatarText   = AVATAR_TEXT[membership]   ?? AVATAR_TEXT.UNKNOWN;
   const showPhoto    = photoUrl && !avatarFailed;
-  const conf = confidence;
+  const isAlert      = membership === "BLACKLIST" || membership === "BOLO";
+  const conf         = confidence;
 
   return (
-    <div className="px-5 py-5 border-b border-neutral-100">
+    <div className="px-5 py-4 border-b border-neutral-100">
       <div className="flex gap-4">
         {/* Subject image */}
         <div className={cn(
           "relative shrink-0 overflow-hidden rounded border-2",
-          isVehicle ? "w-44 h-28" : "w-40 h-40",
+          isVehicle ? "w-40 h-[102px]" : "w-[130px] h-[130px]",
           avatarBorder
         )}>
           {showPhoto ? (
@@ -769,34 +773,53 @@ function PanelHero({
               {isVehicle ? initials.slice(0, 10) : initials}
             </div>
           )}
-          {/* Confidence strip at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60">
-            <span className="text-[10px] font-bold text-emerald-400 font-mono">
-              {confidenceLabel} {conf}%
-            </span>
-          </div>
-          {/* Live badge */}
+
+          {/* LIVE badge — top right */}
           {isLive && (
             <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-red-600/90 rounded px-1.5 py-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               <span className="text-[9px] font-black text-white tracking-wide">LIVE</span>
             </div>
           )}
+
+          {/* Watchlist Hit stamp — solid bar, no gradient, clearly readable */}
+          {isAlert ? (
+            <div className="absolute bottom-0 left-0 right-0 bg-red-600 flex items-center justify-center gap-1 py-1">
+              <ShieldAlert className="w-2.5 h-2.5 text-white shrink-0" />
+              <span className="text-[8px] font-black uppercase tracking-[0.10em] text-white leading-none">
+                Watchlist Hit
+              </span>
+            </div>
+          ) : (
+            /* Slim confidence badge — non-alert, subtle */
+            <div className="absolute bottom-0 left-0 right-0 bg-black/45 flex items-center justify-center py-[3px]">
+              <span className="text-[8px] font-mono font-bold text-white/80">
+                {confidenceLabel} {conf}%
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Right column */}
-        <div className="flex-1 min-w-0 flex flex-col justify-between">
+        <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+
+          {/* Name row + badge */}
           <div>
-            {/* Row 1: name/plate + badge */}
             <div className="flex items-start justify-between gap-2">
               <h2 className={cn("font-black text-neutral-900 leading-tight",
-                isVehicle ? "text-[17px] font-mono tracking-wider" : "text-xl")}>
+                isVehicle ? "text-[16px] font-mono tracking-wider" : "text-[18px]")}>
                 {displayName}
               </h2>
               <MembershipBadge membership={membership} isVehicle={isVehicle} />
             </div>
-            {/* Row 2: tagline */}
-            <p className="text-[12px] text-neutral-500 font-medium mt-1 truncate">{tagline}</p>
+
+            {/* Alert reason — prominent red line for BLACKLIST; tagline for others */}
+            {isAlert && alertReason ? (
+              <p className="text-[11px] font-bold text-red-600 mt-0.5 leading-snug">{alertReason}</p>
+            ) : (
+              <p className="text-[11px] text-neutral-500 font-medium mt-0.5 truncate">{tagline}</p>
+            )}
+
             {/* Quick-action links */}
             {canRegister && !registered && (
               <button onClick={onRegister}
@@ -812,24 +835,24 @@ function PanelHero({
             )}
           </div>
 
-          <div className="border-t border-neutral-100 my-2.5" />
+          <div className="border-t border-neutral-100" />
 
-          {/* 2×2 meta grid */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+          {/* 2×2 meta grid — confidence % lives here on the right */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Current Location</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Location</p>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse bg-[#00775B]" />
-                <p className="font-bold text-[12px] text-neutral-900 truncate leading-tight">{currentLocation}</p>
+                <p className="font-bold text-[11px] text-neutral-900 truncate leading-tight">{currentLocation}</p>
               </div>
             </div>
             <div>
               <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Camera</p>
-              <p className="font-bold text-[12px] text-neutral-900 font-mono truncate leading-tight">{cameraId}</p>
+              <p className="font-bold text-[11px] text-neutral-900 font-mono truncate leading-tight">{cameraId}</p>
             </div>
             <div>
               <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">{metaC.label}</p>
-              <p className={cn("font-bold text-[12px] leading-tight",
+              <p className={cn("font-bold text-[13px] leading-tight",
                 metaC.colored
                   ? (conf >= 90 ? "text-emerald-600" : conf >= 75 ? "text-amber-500" : "text-red-600")
                   : "text-neutral-900"
@@ -837,7 +860,7 @@ function PanelHero({
             </div>
             <div>
               <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">{metaD.label}</p>
-              <p className="font-bold text-[12px] text-neutral-900 truncate leading-tight">{metaD.value}</p>
+              <p className="font-bold text-[11px] text-neutral-900 truncate leading-tight">{metaD.value}</p>
             </div>
           </div>
         </div>
@@ -1560,6 +1583,7 @@ export const EntityDetailPanel = ({
         initials={entity.initials}
         displayName={entity.display_name}
         tagline={frTagline}
+        alertReason={entity.alert_reason}
         membership={entity.list_membership}
         confidence={displayConf}
         confidenceLabel="FACE"

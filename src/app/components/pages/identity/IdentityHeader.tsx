@@ -66,7 +66,7 @@ export const IdentityHeader = ({
             className="flex items-center gap-1.5 rounded-sm border border-[#00775B]/30 bg-[#E5FFF9] px-3 py-1.5 text-[10px] font-bold text-[#00775B] transition-colors hover:bg-[#00775B]/10"
           >
             <Plus className="h-3 w-3" />
-            {identityType === "FACE" ? "Manage People" : "Manage Vehicles"}
+            {identityType === "FACE" ? "People" : "Vehicle"}
           </button>
         </>
       }
