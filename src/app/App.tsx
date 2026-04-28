@@ -661,7 +661,7 @@ export default function App() {
 
         {/* Settings page */}
         {activePage === "settings" && (
-          <div className="flex-1 overflow-hidden">
+          <div className="overflow-hidden bg-white" style={{ height: "calc(100% - 3rem)" }}>
             <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
           </div>
         )}

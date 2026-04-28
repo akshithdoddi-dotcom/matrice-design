@@ -1094,13 +1094,13 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
                 )}>
                   <div className={cn("h-3.5 w-full flex items-center px-2 gap-1", t.key === "dark" ? "bg-[#021d18]" : "bg-[#0d1f1b]")}>
                     <div className="w-1.5 h-1.5 rounded-full bg-[#00775B]" />
-                    <div className={cn("h-1 w-8 rounded-full", t.key === "dark" ? "bg-white/20" : "bg-white/50")} />
+                    <div className={cn("h-1 w-8 rounded-full", t.key === "dark" ? "bg-[#1e3a32]" : "bg-white/50")} />
                   </div>
                   <div className="p-1.5 flex gap-1">
-                    <div className={cn("h-5 w-5 rounded", t.key === "dark" ? "bg-white/10" : "bg-gray-100")} />
+                    <div className={cn("h-5 w-5 rounded", t.key === "dark" ? "bg-[#1a3830]" : "bg-gray-100")} />
                     <div className="flex-1 space-y-1">
-                      <div className={cn("h-1 w-full rounded-full", t.key === "dark" ? "bg-white/20" : "bg-gray-200")} />
-                      <div className={cn("h-1 w-3/4 rounded-full", t.key === "dark" ? "bg-white/10" : "bg-gray-100")} />
+                      <div className={cn("h-1 w-full rounded-full", t.key === "dark" ? "bg-[#1e3a32]" : "bg-gray-200")} />
+                      <div className={cn("h-1 w-3/4 rounded-full", t.key === "dark" ? "bg-[#17302a]" : "bg-gray-100")} />
                     </div>
                   </div>
                 </div>
@@ -1279,14 +1279,14 @@ export function SettingsPage({ isDark, onToggleDark }: SettingsPageProps) {
                     key={item.key}
                     onClick={() => setActiveSection(item.key)}
                     className={cn(
-                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      "w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors",
                       active
                         ? "bg-gray-100 text-gray-900"
                         : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                     )}
                   >
-                    <Icon className="w-[15px] h-[15px] shrink-0" />
-                    {item.label}
+                    <Icon className="w-[14px] h-[14px] shrink-0" />
+                    <span className="truncate">{item.label}</span>
                   </button>
                 );
               })}
