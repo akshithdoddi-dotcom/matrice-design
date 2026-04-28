@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, createContext, useContext } from "react";
 import {
   Info,
   TrendingUp,
@@ -21,6 +21,11 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
+
+// ─── Sandbox Theme Context ────────────────────────────────────────────────────
+// Default "light" means ALL components outside the Provider stay unaffected.
+const SandboxThemeCtx = createContext<"light" | "dark">("light");
+const useSandboxTheme = () => useContext(SandboxThemeCtx);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type SeverityDir = "up" | "down" | "neutral";
@@ -158,17 +163,30 @@ const SectionHeader = ({
   icon: React.ElementType;
   title: string;
   description: string;
-}) => (
-  <div className="flex items-start gap-3 mb-5">
-    <div className="w-8 h-8 rounded-[4px] bg-[#E5FFF9] flex items-center justify-center flex-shrink-0 mt-0.5">
-      <Icon className="w-4 h-4 text-[#00775B]" />
+}) => {
+  const isDark = useSandboxTheme() === "dark";
+  return (
+    <div className="flex items-start gap-3 mb-5">
+      <div
+        className="w-8 h-8 rounded-[4px] flex items-center justify-center flex-shrink-0 mt-0.5"
+        style={{ backgroundColor: isDark ? "rgba(0,149,109,0.15)" : "#E5FFF9" }}
+      >
+        <Icon className="w-4 h-4" style={{ color: isDark ? "#00956D" : "#00775B" }} />
+      </div>
+      <div>
+        <h2
+          className="text-[13px] font-bold uppercase tracking-[0.6px]"
+          style={{ color: isDark ? "#E2E8F0" : "#0f172a" }}
+        >
+          {title}
+        </h2>
+        <p className="text-[12px] mt-0.5" style={{ color: isDark ? "#64748B" : "#64748b" }}>
+          {description}
+        </p>
+      </div>
     </div>
-    <div>
-      <h2 className="text-[13px] font-bold uppercase tracking-[0.6px] text-[#0f172a]">{title}</h2>
-      <p className="text-[12px] text-[#64748b] mt-0.5">{description}</p>
-    </div>
-  </div>
-);
+  );
+};
 
 const Badge = ({ label, color }: { label: string; color: string }) => (
   <span
@@ -179,19 +197,31 @@ const Badge = ({ label, color }: { label: string; color: string }) => (
   </span>
 );
 
-const SpecChip = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-white border border-[#E2E8F0] text-[11px]">
-    <span className="text-[#94a3b8] font-medium">{label}:</span>
-    <span className="font-semibold text-[#334155] font-mono">{value}</span>
-  </div>
-);
+const SpecChip = ({ label, value }: { label: string; value: string }) => {
+  const isDark = useSandboxTheme() === "dark";
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[11px]"
+      style={{
+        backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "#ffffff",
+        border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
+      }}
+    >
+      <span style={{ color: isDark ? "#475569" : "#94a3b8", fontWeight: 500 }}>{label}:</span>
+      <span className="font-mono" style={{ color: isDark ? "#9CA3AF" : "#334155", fontWeight: 600 }}>{value}</span>
+    </div>
+  );
+};
 
-const Annotation = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
-    <CheckCircle2 className="w-3.5 h-3.5 text-[#00775B] flex-shrink-0" />
-    {children}
-  </div>
-);
+const Annotation = ({ children }: { children: React.ReactNode }) => {
+  const isDark = useSandboxTheme() === "dark";
+  return (
+    <div className="flex items-center gap-1.5 text-[11px]" style={{ color: isDark ? "#475569" : "#64748b" }}>
+      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isDark ? "#00956D" : "#00775B" }} />
+      {children}
+    </div>
+  );
+};
 
 // ─── V1.0 Showcase canvas (dark gradient + dot grid) ─────────────────────────
 const ShowcaseCanvas = ({ children }: { children: React.ReactNode }) => (
@@ -1603,6 +1633,7 @@ const GRID_COLS = "40px 128px 110px 1fr 148px 72px 88px 148px 80px";
 
 const DataGrid = ({ compact = false }: { compact?: boolean }) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const isDark = useSandboxTheme() === "dark";
   const rowH = compact ? 36 : 44;
 
   return (
@@ -1615,10 +1646,10 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
         height: 36,
         paddingLeft: 8,
         paddingRight: 8,
-        backgroundColor: "rgba(241,245,249,0.5)",
+        backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(241,245,249,0.5)",
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
-        borderBottom: "1px solid #E2E8F0",
+        borderBottom: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
         gap: 0,
       }}>
         {["#", "Incident ID", "Status", "Event Type", "Zone", "Camera", "Conf.", "Timestamp", ""].map((h, i) => (
@@ -1647,8 +1678,8 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
               alignItems: "center",
               height: rowH,
               position: "relative",
-              backgroundColor: isHovered ? "rgba(0,119,91,0.04)" : "#ffffff",
-              borderBottom: "1px solid #F1F5F9",
+              backgroundColor: isHovered ? (isDark ? "rgba(0,119,91,0.10)" : "rgba(0,119,91,0.04)") : (isDark ? "transparent" : "#ffffff"),
+              borderBottom: isDark ? "1px solid rgba(255,255,255,0.05)" : "1px solid #F1F5F9",
               cursor: "default",
               transition: "background-color 120ms ease",
               paddingLeft: 8,
@@ -1665,7 +1696,7 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
             }} />
 
             {/* # */}
-            <div style={{ fontSize: 11, color: "#CBD5E1", fontFamily: "'JetBrains Mono', monospace", paddingLeft: 8 }}>
+            <div style={{ fontSize: 11, color: isDark ? "#374151" : "#CBD5E1", fontFamily: "'JetBrains Mono', monospace", paddingLeft: 8 }}>
               {String(idx + 1).padStart(2, "0")}
             </div>
 
@@ -1674,7 +1705,7 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
               fontSize: 11,
               fontFamily: "'JetBrains Mono', monospace",
               fontWeight: isHovered ? 600 : 500,
-              color: isHovered ? "#0F172A" : "#334155",
+              color: isHovered ? (isDark ? "#F1F5F9" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155"),
               paddingLeft: 8,
               transition: "font-weight 120ms ease, color 120ms ease",
               letterSpacing: "0.01em",
@@ -1692,7 +1723,7 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
               fontSize: 12,
               fontFamily: "Inter, sans-serif",
               fontWeight: isHovered ? 500 : 400,
-              color: isHovered ? "#0F172A" : "#334155",
+              color: isHovered ? (isDark ? "#F1F5F9" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155"),
               paddingLeft: 8,
               paddingRight: 8,
               overflow: "hidden",
@@ -1706,7 +1737,7 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
             <div style={{
               fontSize: 11,
               fontFamily: "Inter, sans-serif",
-              color: "#475569",
+              color: isDark ? "#94A3B8" : "#475569",
               paddingLeft: 8,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -1719,7 +1750,7 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
             <div style={{
               fontSize: 11,
               fontFamily: "'JetBrains Mono', monospace",
-              color: "#64748B",
+              color: isDark ? "#4B5563" : "#64748B",
               paddingLeft: 8,
             }}>
               {row.camera}
@@ -1729,7 +1760,7 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
             <div style={{
               fontSize: 11,
               fontFamily: "'JetBrains Mono', monospace",
-              color: "#475569",
+              color: isDark ? "#9CA3AF" : "#475569",
               paddingLeft: 8,
               fontVariantNumeric: "tabular-nums",
             } as React.CSSProperties}>
@@ -1740,7 +1771,7 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
             <div style={{
               fontSize: 11,
               fontFamily: "'JetBrains Mono', monospace",
-              color: "#64748B",
+              color: isDark ? "#4B5563" : "#64748B",
               paddingLeft: 8,
               letterSpacing: "0.01em",
             }}>
@@ -1761,12 +1792,12 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
                 alignItems: "center",
                 gap: 4,
                 padding: "4px 8px",
-                backgroundColor: "rgba(255,255,255,0.9)",
+                backgroundColor: isDark ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.9)",
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(0,0,0,0.07)",
+                border: isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.07)",
                 borderRadius: 4,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.08)",
               }}>
                 <button style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#00775B"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,119,91,0.08)"; }}
@@ -1792,79 +1823,100 @@ const DataGrid = ({ compact = false }: { compact?: boolean }) => {
   );
 };
 
-const PrecisionGridContent = () => (
-  <div className="space-y-8">
-    <SectionHeader
-      icon={Eye}
-      title="Precision Grid v2.0 — Master Data Table"
-      description="Unified high-precision table with ghost header, JetBrains Mono data columns, capsule status badges, and glassmorphic hover actions."
-    />
+const PrecisionGridContent = () => {
+  const isDark = useSandboxTheme() === "dark";
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        icon={Eye}
+        title="Precision Grid v2.0 — Master Data Table"
+        description="Unified high-precision table with ghost header, JetBrains Mono data columns, capsule status badges, and glassmorphic hover actions."
+      />
 
-    {/* Spec chips */}
-    <div className="flex flex-wrap gap-2">
-      {[
-        ["Row Height", "44px"],
-        ["Header BG", "rgba(241,245,249,0.5)"],
-        ["Header Blur", "4px"],
-        ["Divider", "1px neutral-100"],
-        ["Hover BG", "rgba(0,119,91,0.04)"],
-        ["Selection Bar", "3px #00775B"],
-        ["ID Font", "JetBrains Mono"],
-        ["Cell Padding", "8px grid"],
-        ["Max Width", "1200px"],
-      ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
+      {/* Spec chips */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["Row Height", "44px"],
+          ["Header BG", "rgba(241,245,249,0.5)"],
+          ["Header Blur", "4px"],
+          ["Divider", "1px neutral-100"],
+          ["Hover BG", "rgba(0,119,91,0.04)"],
+          ["Selection Bar", "3px #00775B"],
+          ["ID Font", "JetBrains Mono"],
+          ["Cell Padding", "8px grid"],
+          ["Max Width", "1200px"],
+        ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
+      </div>
+
+      {/* Grid showcase */}
+      <div
+        className="rounded-[6px] overflow-hidden"
+        style={{
+          border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
+          backgroundColor: isDark ? "#131C2E" : "white",
+          boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+      >
+        <DataGrid compact={false} />
+      </div>
+
+      {/* Annotations */}
+      <div className="grid grid-cols-2 gap-2">
+        <Annotation>Ghost header: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(241,245,249,0.5) blur(4px)</code> — stays legible over any bg</Annotation>
+        <Annotation>3px teal selection bar on left edge of hovered row</Annotation>
+        <Annotation>Incident ID weight shifts from Medium → Semibold on hover</Annotation>
+        <Annotation>Action container: glassmorphic, opacity 0→1 on row hover</Annotation>
+        <Annotation>JetBrains Mono for all IDs, confidence scores, and timestamps</Annotation>
+        <Annotation>Status capsules use 10% opacity fill matching KPI card severity tokens</Annotation>
+      </div>
     </div>
+  );
+};
 
-    {/* Grid showcase */}
-    <div className="rounded-[6px] border border-[#E2E8F0] overflow-hidden bg-white shadow-sm">
-      <DataGrid compact={false} />
+const DenseGridContent = () => {
+  const isDark = useSandboxTheme() === "dark";
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        icon={Eye}
+        title="Dense Log v2.1 — Compact Data Table"
+        description="High-density variant with 36px rows for log-style data. Ideal for operational dashboards requiring maximum data density."
+      />
+
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["Row Height", "36px"],
+          ["Density", "High"],
+          ["Header BG", "rgba(241,245,249,0.5)"],
+          ["Same Hover", "Yes"],
+        ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
+      </div>
+
+      <div
+        className="rounded-[6px] overflow-hidden"
+        style={{
+          border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
+          backgroundColor: isDark ? "#131C2E" : "white",
+          boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+      >
+        <DataGrid compact={true} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Annotation>36px rows — 22% denser than the standard 44px grid</Annotation>
+        <Annotation>All interaction patterns (hover bar, actions) carry through at compact size</Annotation>
+      </div>
     </div>
-
-    {/* Annotations */}
-    <div className="grid grid-cols-2 gap-2">
-      <Annotation>Ghost header: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(241,245,249,0.5) blur(4px)</code> — stays legible over any bg</Annotation>
-      <Annotation>3px teal selection bar on left edge of hovered row</Annotation>
-      <Annotation>Incident ID weight shifts from Medium → Semibold on hover</Annotation>
-      <Annotation>Action container: glassmorphic, opacity 0→1 on row hover</Annotation>
-      <Annotation>JetBrains Mono for all IDs, confidence scores, and timestamps</Annotation>
-      <Annotation>Status capsules use 10% opacity fill matching KPI card severity tokens</Annotation>
-    </div>
-  </div>
-);
-
-const DenseGridContent = () => (
-  <div className="space-y-8">
-    <SectionHeader
-      icon={Eye}
-      title="Dense Log v2.1 — Compact Data Table"
-      description="High-density variant with 36px rows for log-style data. Ideal for operational dashboards requiring maximum data density."
-    />
-
-    <div className="flex flex-wrap gap-2">
-      {[
-        ["Row Height", "36px"],
-        ["Density", "High"],
-        ["Header BG", "rgba(241,245,249,0.5)"],
-        ["Same Hover", "Yes"],
-      ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
-    </div>
-
-    <div className="rounded-[6px] border border-[#E2E8F0] overflow-hidden bg-white shadow-sm">
-      <DataGrid compact={true} />
-    </div>
-
-    <div className="grid grid-cols-2 gap-2">
-      <Annotation>36px rows — 22% denser than the standard 44px grid</Annotation>
-      <Annotation>All interaction patterns (hover bar, actions) carry through at compact size</Annotation>
-    </div>
-  </div>
-);
+  );
+};
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  DATA GRID v2.0 Base — wrapper for Precision + Dense sub-tabs
 // ══════════════════════════════════════════════════════════════════════════════
 const V2BaseContent = () => {
   const [subTab, setSubTab] = useState<"precision" | "dense">("precision");
+  const isDark = useSandboxTheme() === "dark";
   return (
     <div className="space-y-8">
       {/* Sub-tab selector */}
@@ -1873,8 +1925,8 @@ const V2BaseContent = () => {
           style={{
             display: "flex", alignItems: "center",
             gap: 2, padding: "3px",
-            backgroundColor: "#F1F5F9",
-            border: "1px solid #E2E8F0",
+            backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
+            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0"}`,
             borderRadius: 6,
           }}
         >
@@ -1888,7 +1940,7 @@ const V2BaseContent = () => {
                 fontSize: 11, fontWeight: 700,
                 textTransform: "uppercase", letterSpacing: "0.05em",
                 backgroundColor: subTab === v ? "#00775B" : "transparent",
-                color: subTab === v ? "white" : "#64748B",
+                color: subTab === v ? "white" : (isDark ? "#4B5563" : "#64748B"),
                 border: "none", cursor: "pointer",
                 transition: "background-color 150ms ease, color 150ms ease",
               }}
@@ -1966,6 +2018,7 @@ const V21_COLS = "40px 128px 108px 1fr 148px 72px 80px 148px 68px";
 
 const V21DataGrid = ({ data }: { data: GridRow[] }) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const isDark = useSandboxTheme() === "dark";
 
   return (
     <div style={{ fontFamily: "inherit", width: "100%" }}>
@@ -1976,9 +2029,9 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
           gridTemplateColumns: V21_COLS,
           alignItems: "center",
           height: 38,
-          backgroundColor: "#F8FAFC",
-          borderTop: "1px solid #E2E8F0",
-          borderBottom: "1px solid #E2E8F0",
+          backgroundColor: isDark ? "#1E293B" : "#F8FAFC",
+          borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0"}`,
+          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0"}`,
           paddingLeft: 8,
           paddingRight: 8,
         }}
@@ -1989,7 +2042,7 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
             style={{
               fontSize: 11, fontWeight: 700,
               fontFamily: "Inter, sans-serif",
-              color: "#64748B",
+              color: "#94A3B8",
               textTransform: "uppercase", letterSpacing: "0.05em",
               paddingLeft: i === 0 ? 4 : 8,
               paddingRight: 8,
@@ -2014,8 +2067,8 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
               alignItems: "center",
               height: 44,
               position: "relative",
-              backgroundColor: isHovered ? "rgba(0, 119, 91, 0.05)" : "#ffffff",
-              borderBottom: "1px solid #F1F5F9",
+              backgroundColor: isHovered ? (isDark ? "rgba(0,119,91,0.10)" : "rgba(0, 119, 91, 0.05)") : (isDark ? "transparent" : "#ffffff"),
+              borderBottom: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #F1F5F9",
               cursor: "default",
               transition: "background-color 120ms ease",
               paddingLeft: 8,
@@ -2045,7 +2098,7 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
                   fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
                   fontSize: 11,
                   fontWeight: isHovered ? 600 : 500,
-                  color: isHovered ? "#0F172A" : "#334155",
+                  color: isHovered ? (isDark ? "#F1F5F9" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155"),
                   letterSpacing: "0.01em",
                   transition: "font-weight 120ms ease, color 120ms ease",
                 }}
@@ -2066,7 +2119,7 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
                 fontSize: 12,
                 fontFamily: "Inter, sans-serif",
                 fontWeight: isHovered ? 500 : 400,
-                color: isHovered ? "#0F172A" : "#334155",
+                color: isHovered ? (isDark ? "#F1F5F9" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155"),
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 transition: "color 120ms ease",
               }}
@@ -2080,7 +2133,7 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
                 paddingLeft: 8,
                 fontSize: 11,
                 fontFamily: "Inter, sans-serif",
-                color: "#475569",
+                color: isDark ? "#6B7280" : "#475569",
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               }}
             >
@@ -2088,17 +2141,17 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
             </div>
 
             {/* Camera — Mono */}
-            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#64748B" }}>
+            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: isDark ? "#4B5563" : "#64748B" }}>
               {row.camera}
             </div>
 
             {/* Confidence — Mono */}
-            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#475569", fontVariantNumeric: "tabular-nums" } as React.CSSProperties}>
+            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: isDark ? "#9CA3AF" : "#475569", fontVariantNumeric: "tabular-nums" } as React.CSSProperties}>
               {row.confidence.toFixed(1)}%
             </div>
 
             {/* Timestamp — Mono */}
-            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#64748B", letterSpacing: "0.01em" }}>
+            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: isDark ? "#4B5563" : "#64748B", letterSpacing: "0.01em" }}>
               {row.timestamp}
             </div>
 
@@ -2113,11 +2166,11 @@ const V21DataGrid = ({ data }: { data: GridRow[] }) => {
                 style={{
                   display: "flex", alignItems: "center", gap: 2,
                   padding: "3px 6px",
-                  backgroundColor: "rgba(255,255,255,0.92)",
+                  backgroundColor: isDark ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.92)",
                   backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(0,0,0,0.07)",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.07)"}`,
                   borderRadius: 4,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+                  boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.5)" : "0 2px 8px rgba(0,0,0,0.07)",
                 }}
               >
                 <button
@@ -2152,6 +2205,7 @@ const V2_1Content = () => {
   const [sortField, setSortField] = useState<"timestamp" | "confidence" | "id">("timestamp");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const isDark = useSandboxTheme() === "dark";
 
   const filteredData = V21_GRID_DATA
     .filter((row) => {
@@ -2240,9 +2294,9 @@ const V2_1Content = () => {
                 paddingLeft: 30, paddingRight: searchQ ? 28 : 10,
                 fontSize: 12,
                 fontFamily: "Inter, sans-serif",
-                color: "#334155",
+                color: isDark ? "#E2E8F0" : "#334155",
                 backgroundColor: "transparent",
-                border: "1px solid #E2E8F0",
+                border: isDark ? "1px solid rgba(255,255,255,0.10)" : "1px solid #E2E8F0",
                 borderRadius: 4,
                 outline: "none",
                 transition: "border-color 150ms ease, box-shadow 150ms ease",
@@ -2252,7 +2306,7 @@ const V2_1Content = () => {
                 e.target.style.boxShadow = "0 0 0 3px rgba(0,119,91,0.12)";
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = "#E2E8F0";
+                e.target.style.borderColor = isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0";
                 e.target.style.boxShadow = "none";
               }}
             />
@@ -2282,9 +2336,9 @@ const V2_1Content = () => {
                 height: 32, padding: "0 12px",
                 fontSize: 11, fontWeight: 600,
                 fontFamily: "Inter, sans-serif",
-                color: statusFilter !== "all" ? "#00775B" : "#475569",
+                color: statusFilter !== "all" ? "#00775B" : (isDark ? "#94A3B8" : "#475569"),
                 backgroundColor: statusFilter !== "all" ? "rgba(0,119,91,0.06)" : "transparent",
-                border: statusFilter !== "all" ? "1px solid rgba(0,119,91,0.25)" : "1px solid #E2E8F0",
+                border: statusFilter !== "all" ? "1px solid rgba(0,119,91,0.25)" : (isDark ? "1px solid rgba(255,255,255,0.10)" : "1px solid #E2E8F0"),
                 borderRadius: 4,
                 cursor: "pointer",
                 transition: "all 120ms ease",
@@ -2358,9 +2412,9 @@ const V2_1Content = () => {
                 height: 32, padding: "0 12px",
                 fontSize: 11, fontWeight: 600,
                 fontFamily: "Inter, sans-serif",
-                color: sortField !== "timestamp" ? "#00775B" : "#475569",
+                color: sortField !== "timestamp" ? "#00775B" : (isDark ? "#94A3B8" : "#475569"),
                 backgroundColor: sortField !== "timestamp" ? "rgba(0,119,91,0.06)" : "transparent",
-                border: sortField !== "timestamp" ? "1px solid rgba(0,119,91,0.25)" : "1px solid #E2E8F0",
+                border: sortField !== "timestamp" ? "1px solid rgba(0,119,91,0.25)" : (isDark ? "1px solid rgba(255,255,255,0.10)" : "1px solid #E2E8F0"),
                 borderRadius: 4,
                 cursor: "pointer",
                 transition: "all 120ms ease",
@@ -2422,10 +2476,10 @@ const V2_1Content = () => {
         {/* ── Table card (header + rows + pagination) ── */}
         <div
           style={{
-            border: "1px solid #E2E8F0",
+            border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
             borderRadius: 6,
             overflow: "hidden",
-            backgroundColor: "#ffffff",
+            backgroundColor: isDark ? "#0D1B2A" : "#ffffff",
           }}
         >
           {paginatedData.length === 0 ? (
@@ -2448,8 +2502,8 @@ const V2_1Content = () => {
             <div
               style={{
                 padding: "10px 16px",
-                borderTop: "1px solid #E2E8F0",
-                backgroundColor: "#FAFAFA",
+                borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #E2E8F0",
+                backgroundColor: isDark ? "transparent" : "#FAFAFA",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -2469,8 +2523,8 @@ const V2_1Content = () => {
                   textTransform: "uppercase", letterSpacing: "0.06em",
                   fontFamily: "Inter, sans-serif",
                   border: "none", cursor: page === 1 ? "not-allowed" : "pointer",
-                  backgroundColor: page === 1 ? "#E2E8F0" : "#00775B",
-                  color: page === 1 ? "#94A3B8" : "#ffffff",
+                  backgroundColor: page === 1 ? (isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0") : "#00775B",
+                  color: page === 1 ? (isDark ? "#374151" : "#94A3B8") : "#ffffff",
                   transition: "background-color 120ms ease",
                 }}
               >
@@ -2512,8 +2566,8 @@ const V2_1Content = () => {
                   textTransform: "uppercase", letterSpacing: "0.06em",
                   fontFamily: "Inter, sans-serif",
                   border: "none", cursor: page === totalPages ? "not-allowed" : "pointer",
-                  backgroundColor: page === totalPages ? "#E2E8F0" : "#00775B",
-                  color: page === totalPages ? "#94A3B8" : "#ffffff",
+                  backgroundColor: page === totalPages ? (isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0") : "#00775B",
+                  color: page === totalPages ? (isDark ? "#374151" : "#94A3B8") : "#ffffff",
                   transition: "background-color 120ms ease",
                 }}
               >
@@ -2577,6 +2631,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 // Ghost pill — transparent bg, 1px solid bright border, bright colored text
 // Contrasts with v2.1 solid fills
 const V22GhostPill = ({ status }: { status: string }) => {
+  const isDark = useSandboxTheme() === "dark";
   const color = SEVERITY_COLORS[status.toLowerCase()] ?? "#64748B";
   const label = (V21_STATUS_CFG[status.toLowerCase()]?.label ?? status);
   return (
@@ -2592,6 +2647,7 @@ const V22GhostPill = ({ status }: { status: string }) => {
         border: `1.5px solid ${color}`,
         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
         whiteSpace: "nowrap",
+        textShadow: isDark ? `0 0 8px ${color}99` : "none",
       }}
     >
       {label}
@@ -2601,8 +2657,21 @@ const V22GhostPill = ({ status }: { status: string }) => {
 
 const V22_COLS = "40px 136px 108px 1fr 148px 72px 80px 148px 68px";
 
+const ELECTRIC_COLORS: Record<string, string> = {
+  critical: "#FF3131",
+  warning: "#FF6B35",
+  stable: "#4ADE80",
+  success: "#4ADE80",
+  info: "#60A5FA",
+  resolved: "#6B7280",
+  medium: "#FBBF24",
+  high: "#FF6B35",
+  low: "#60A5FA",
+};
+
 const V22DataGrid = ({ data }: { data: GridRow[] }) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const isDark = useSandboxTheme() === "dark";
 
   return (
     <div style={{ fontFamily: "inherit", width: "100%" }}>
@@ -2614,7 +2683,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
           alignItems: "center",
           height: 38,
           backgroundColor: "transparent",
-          borderBottom: "2px solid #00775B",
+          borderBottom: isDark ? "2px solid #00956D" : "2px solid #00775B",
           paddingLeft: 8,
           paddingRight: 8,
         }}
@@ -2626,7 +2695,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
               fontSize: 11,
               fontWeight: 700,
               fontFamily: "Inter, sans-serif",
-              color: "#1E293B",
+              color: isDark ? "#94A3B8" : "#1E293B",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               paddingLeft: i === 0 ? 4 : 8,
@@ -2643,6 +2712,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
         const isHovered = hoveredId === row.id;
         const isEven = idx % 2 === 1; // 0-indexed: odd index = even visual row
         const sevColor = SEVERITY_COLORS[row.status] ?? "#64748B";
+        const stripColor = isDark ? (ELECTRIC_COLORS[row.status] ?? "#6B7280") : sevColor;
 
         return (
           <div
@@ -2657,13 +2727,14 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
               position: "relative",
               // Zebra stripe on even rows; hover overrides
               backgroundColor: isHovered
-                ? "rgba(0, 119, 91, 0.08)"
+                ? (isDark ? "rgba(0,149,109,0.15)" : "rgba(0, 119, 91, 0.08)")
                 : isEven
-                ? "rgba(0, 119, 91, 0.03)"
-                : "#ffffff",
+                ? (isDark ? "rgba(255,255,255,0.04)" : "rgba(0, 119, 91, 0.03)")
+                : (isDark ? "transparent" : "#ffffff"),
+              boxShadow: isDark && isHovered ? "inset 0 0 24px rgba(0,149,109,0.10)" : "none",
               // NO border-bottom — borderless rows
               cursor: "default",
-              transition: "background-color 120ms ease",
+              transition: "background-color 120ms ease, box-shadow 120ms ease",
               paddingLeft: 8,
               paddingRight: 8,
             }}
@@ -2672,7 +2743,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
             <div
               style={{
                 fontSize: 11,
-                color: "#CBD5E1",
+                color: isDark ? "#374151" : "#CBD5E1",
                 fontFamily: "'JetBrains Mono', monospace",
                 paddingLeft: 4,
                 textShadow: isHovered ? "0 0 8px rgba(0,119,91,0.35)" : "none",
@@ -2698,9 +2769,9 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                   width: 3,
                   height: 24,
                   borderRadius: 1.5,
-                  backgroundColor: sevColor,
+                  backgroundColor: stripColor,
                   flexShrink: 0,
-                  opacity: isHovered ? 1 : 0.65,
+                  opacity: isHovered ? 1 : (isDark ? 0.75 : 0.65),
                   transition: "opacity 120ms ease",
                 }}
               />
@@ -2709,9 +2780,9 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                   fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
                   fontSize: 11,
                   fontWeight: isHovered ? 600 : 500,
-                  color: isHovered ? "#0F172A" : "#334155",
+                  color: isHovered ? (isDark ? "#F1F5F9" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155"),
                   letterSpacing: "0.01em",
-                  textShadow: isHovered ? "0 0 10px rgba(0,119,91,0.3)" : "none",
+                  textShadow: isHovered ? (isDark ? "0 0 12px rgba(0,149,109,0.4)" : "0 0 10px rgba(0,119,91,0.3)") : "none",
                   transition: "font-weight 120ms ease, color 120ms ease, text-shadow 200ms ease",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -2734,8 +2805,8 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                 fontSize: 12,
                 fontFamily: "Inter, sans-serif",
                 fontWeight: isHovered ? 500 : 400,
-                color: isHovered ? "#0F172A" : "#334155",
-                textShadow: isHovered ? "0 0 10px rgba(0,119,91,0.25)" : "none",
+                color: isHovered ? (isDark ? "#F1F5F9" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155"),
+                textShadow: isHovered ? (isDark ? "0 0 12px rgba(0,149,109,0.4)" : "0 0 10px rgba(0,119,91,0.25)") : "none",
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 transition: "color 120ms ease, text-shadow 200ms ease",
               }}
@@ -2749,7 +2820,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                 paddingLeft: 8,
                 fontSize: 11,
                 fontFamily: "Inter, sans-serif",
-                color: isHovered ? "#334155" : "#475569",
+                color: isDark ? "#6B7280" : (isHovered ? "#334155" : "#475569"),
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 transition: "color 120ms ease",
               }}
@@ -2763,7 +2834,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                 paddingLeft: 8,
                 fontSize: 11,
                 fontFamily: "'JetBrains Mono', monospace",
-                color: isHovered ? "#475569" : "#64748B",
+                color: isDark ? "#374151" : (isHovered ? "#475569" : "#64748B"),
                 transition: "color 120ms ease",
               }}
             >
@@ -2776,7 +2847,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                 paddingLeft: 8,
                 fontSize: 11,
                 fontFamily: "'JetBrains Mono', monospace",
-                color: isHovered ? "#334155" : "#475569",
+                color: isDark ? "#6B7280" : (isHovered ? "#334155" : "#475569"),
                 fontVariantNumeric: "tabular-nums",
                 transition: "color 120ms ease",
               } as React.CSSProperties}
@@ -2790,7 +2861,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                 paddingLeft: 8,
                 fontSize: 11,
                 fontFamily: "'JetBrains Mono', monospace",
-                color: isHovered ? "#475569" : "#64748B",
+                color: isDark ? "#374151" : (isHovered ? "#475569" : "#64748B"),
                 letterSpacing: "0.01em",
                 transition: "color 120ms ease",
               }}
@@ -2811,9 +2882,9 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                 style={{
                   display: "flex", alignItems: "center", gap: 2,
                   padding: "3px 6px",
-                  backgroundColor: "rgba(255,255,255,0.85)",
+                  backgroundColor: isDark ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.85)",
                   backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(0,0,0,0.07)",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.07)"}`,
                   borderRadius: 4,
                   boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
                 }}
@@ -2850,6 +2921,7 @@ const V2_2Content = () => {
   const [sortField, setSortField] = useState<"timestamp" | "confidence" | "id">("timestamp");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const isDark = useSandboxTheme() === "dark";
 
   const filteredData = V21_GRID_DATA
     .filter((row) => {
@@ -2895,7 +2967,7 @@ const V2_2Content = () => {
     display: "flex", alignItems: "center", gap: 5,
     fontSize: 11, fontWeight: 600,
     fontFamily: "Inter, sans-serif",
-    color: "#64748B",
+    color: isDark ? "#4B5563" : "#64748B",
     padding: "4px 2px",
     transition: "color 150ms ease, border-bottom-color 150ms ease",
   };
@@ -2954,21 +3026,21 @@ const V2_2Content = () => {
                 paddingRight: searchQ ? 24 : 4,
                 fontSize: 12,
                 fontFamily: "Inter, sans-serif",
-                color: "#1E293B",
+                color: isDark ? "#E2E8F0" : "#1E293B",
                 backgroundColor: "transparent",
                 // Bottom border only — integrated feel
                 border: "none",
-                borderBottom: "2px solid #E2E8F0",
+                borderBottom: isDark ? "2px solid rgba(255,255,255,0.12)" : "2px solid #E2E8F0",
                 borderRadius: 0,
                 outline: "none",
                 transition: "border-bottom-color 200ms ease, box-shadow 200ms ease",
               }}
               onFocus={(e) => {
-                e.target.style.borderBottomColor = "#00775B";
-                e.target.style.boxShadow = "0 2px 8px rgba(0,119,91,0.18)";
+                e.target.style.borderBottomColor = isDark ? "#00956D" : "#00775B";
+                e.target.style.boxShadow = isDark ? "0 2px 8px rgba(0,149,109,0.25)" : "0 2px 8px rgba(0,119,91,0.18)";
               }}
               onBlur={(e) => {
-                e.target.style.borderBottomColor = "#E2E8F0";
+                e.target.style.borderBottomColor = isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0";
                 e.target.style.boxShadow = "none";
               }}
             />
@@ -2988,7 +3060,7 @@ const V2_2Content = () => {
           </div>
 
           {/* Divider */}
-          <div style={{ width: 1, height: 20, backgroundColor: "#E2E8F0", flexShrink: 0 }} />
+          <div style={{ width: 1, height: 20, backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0", flexShrink: 0 }} />
 
           {/* Filter — integrated bottom-border button */}
           <div style={{ position: "relative" }}>
@@ -3108,14 +3180,14 @@ const V2_2Content = () => {
         </div>
 
         {/* 1px neutral-200 separator — structural anchor between toolbar and table header */}
-        <div style={{ height: 1, backgroundColor: "#E2E8F0" }} />
+        <div style={{ height: 1, backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0" }} />
 
         {/* Table — no outer border, seamless */}
         <div
           style={{
             borderRadius: 0,
             overflow: "hidden",
-            backgroundColor: "#ffffff",
+            backgroundColor: isDark ? "transparent" : "#ffffff",
           }}
         >
           {paginatedData.length === 0 ? (
@@ -3131,7 +3203,7 @@ const V2_2Content = () => {
             <div
               style={{
                 padding: "10px 16px",
-                borderTop: "1px solid #F1F5F9",
+                borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #F1F5F9",
                 backgroundColor: "transparent",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 gap: 8,
@@ -3147,8 +3219,8 @@ const V2_2Content = () => {
                   borderRadius: 4, border: "none", cursor: page === 1 ? "not-allowed" : "pointer",
                   fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
                   fontFamily: "Inter, sans-serif",
-                  backgroundColor: page === 1 ? "#E2E8F0" : "#00775B",
-                  color: page === 1 ? "#94A3B8" : "#ffffff",
+                  backgroundColor: page === 1 ? (isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0") : "#00775B",
+                  color: page === 1 ? (isDark ? "#374151" : "#94A3B8") : "#ffffff",
                   transition: "background-color 120ms ease",
                 }}
               >
@@ -3163,7 +3235,7 @@ const V2_2Content = () => {
                     style={{
                       width: 28, height: 28, borderRadius: 4, border: "none", cursor: "pointer",
                       fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                      backgroundColor: page === p ? "#00775B" : "#F1F5F9",
+                      backgroundColor: page === p ? "#00775B" : (isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9"),
                       color: page === p ? "#ffffff" : "#475569",
                       transition: "background-color 120ms ease",
                     }}
@@ -3182,8 +3254,8 @@ const V2_2Content = () => {
                   borderRadius: 4, border: "none", cursor: page === totalPages ? "not-allowed" : "pointer",
                   fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
                   fontFamily: "Inter, sans-serif",
-                  backgroundColor: page === totalPages ? "#E2E8F0" : "#00775B",
-                  color: page === totalPages ? "#94A3B8" : "#ffffff",
+                  backgroundColor: page === totalPages ? (isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0") : "#00775B",
+                  color: page === totalPages ? (isDark ? "#374151" : "#94A3B8") : "#ffffff",
                   transition: "background-color 120ms ease",
                 }}
               >
@@ -3237,6 +3309,7 @@ export const DesignSystem = () => {
   const [activeTab, setActiveTab] = useState<TabId>("v1-1");
   const [componentType, setComponentType] = useState<"card" | "table">("card");
   const [tableTab, setTableTab] = useState<TableTabId>("v2base");
+  const [sandboxTheme, setSandboxTheme] = useState<"light" | "dark">("light");
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -3347,15 +3420,124 @@ export const DesignSystem = () => {
           })}
         </div>
 
-        {/* Tab content */}
-        <div className="py-8 animate-in fade-in duration-300">
-          {componentType === "card" && activeTab === "v1"   && <V1Content />}
-          {componentType === "card" && activeTab === "v1-1" && <V1_1Content />}
-          {componentType === "card" && activeTab === "v1-2" && <V1_2Content />}
-          {componentType === "table" && tableTab === "v2base" && <V2BaseContent />}
-          {componentType === "table" && tableTab === "v2-1"   && <V2_1Content />}
-          {componentType === "table" && tableTab === "v2-2"   && <V2_2Content />}
-        </div>
+        {/* Card tab content — outside sandbox, always light */}
+        {componentType === "card" && (
+          <div className="py-8 animate-in fade-in duration-300">
+            {activeTab === "v1"   && <V1Content />}
+            {activeTab === "v1-1" && <V1_1Content />}
+            {activeTab === "v1-2" && <V1_2Content />}
+          </div>
+        )}
+
+        {/* Component Sandbox — wraps all table content with SandboxThemeCtx */}
+        {componentType === "table" && (
+          <SandboxThemeCtx.Provider value={sandboxTheme}>
+            <div
+              style={{
+                borderRadius: 8,
+                marginTop: 24,
+                transition: "background-color 350ms ease",
+                backgroundColor: sandboxTheme === "dark" ? "#0F172A" : "#F1F5F9",
+                overflow: "visible",
+              }}
+            >
+              {/* Sandbox topbar */}
+              <div
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "10px 24px",
+                  borderBottom: sandboxTheme === "dark"
+                    ? "1px solid rgba(255,255,255,0.06)"
+                    : "1px solid rgba(0,0,0,0.06)",
+                  borderRadius: "8px 8px 0 0",
+                }}
+              >
+                {/* Label */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      fontSize: 9, fontWeight: 800, letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      color: sandboxTheme === "dark" ? "#334155" : "#CBD5E1",
+                      fontFamily: "Inter, sans-serif",
+                    }}
+                  >
+                    Component Sandbox
+                  </span>
+                  <span
+                    style={{
+                      width: 3, height: 3, borderRadius: 2,
+                      backgroundColor: "#00775B",
+                      display: "inline-block",
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 9, fontFamily: "'JetBrains Mono', monospace",
+                      color: sandboxTheme === "dark" ? "#334155" : "#CBD5E1",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    Tables v2.x
+                  </span>
+                </div>
+
+                {/* Theme toggle */}
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", padding: "2px",
+                    backgroundColor: sandboxTheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                    borderRadius: 6,
+                    border: sandboxTheme === "dark"
+                      ? "1px solid rgba(255,255,255,0.08)"
+                      : "1px solid rgba(0,0,0,0.06)",
+                    gap: 1,
+                  }}
+                >
+                  {(["light", "dark"] as const).map((t) => {
+                    const isActive = sandboxTheme === t;
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setSandboxTheme(t)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 5,
+                          height: 26, padding: "0 12px",
+                          borderRadius: 4, border: "none", cursor: "pointer",
+                          fontSize: 11, fontWeight: 700,
+                          fontFamily: "Inter, sans-serif",
+                          letterSpacing: "0.02em",
+                          transition: "all 200ms ease",
+                          backgroundColor: isActive
+                            ? (t === "dark" ? "#1E293B" : "#ffffff")
+                            : "transparent",
+                          color: isActive
+                            ? (t === "dark" ? "#E2E8F0" : "#334155")
+                            : (sandboxTheme === "dark" ? "#334155" : "#94A3B8"),
+                          boxShadow: isActive
+                            ? (t === "dark" ? "0 1px 4px rgba(0,0,0,0.5)" : "0 1px 3px rgba(0,0,0,0.10)")
+                            : "none",
+                        }}
+                      >
+                        {t === "light" ? "☀ Light" : "🌙 Dark"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Table content — padded inside sandbox */}
+              <div
+                className="animate-in fade-in duration-300"
+                style={{ padding: "32px 32px" }}
+              >
+                {tableTab === "v2base" && <V2BaseContent />}
+                {tableTab === "v2-1"   && <V2_1Content />}
+                {tableTab === "v2-2"   && <V2_2Content />}
+              </div>
+            </div>
+          </SandboxThemeCtx.Provider>
+        )}
 
         {/* Footer */}
         <div className="border-t border-[#E2E8F0] py-6 flex items-center justify-between text-[11px] text-[#94a3b8]">
