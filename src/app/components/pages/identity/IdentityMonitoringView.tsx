@@ -2043,15 +2043,6 @@ function HiTechEntityModal({
                       <Fingerprint className="w-10 h-10" style={{ color: isDark ? a(0.15) : "#CBD5E1" }} />
                     </div>
                   )}
-                  {/* Camera ID + LIVE pulse — top bar only, no bottom overlay */}
-                  <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-2 py-1.5 pointer-events-none"
-                       style={{ background: T.camOverlay }}>
-                    <span className="text-[8px] font-mono tracking-wider" style={{ color: accent }}>{person.camera}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
-                      <span className="text-[7px] font-black tracking-widest" style={{ color: accent }}>LIVE</span>
-                    </div>
-                  </div>
                   {/* LPR plate overlay */}
                   {isLPR && person.plateText && (
                     <div className="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none">
