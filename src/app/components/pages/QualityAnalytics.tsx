@@ -33,8 +33,6 @@ export const QualityAnalytics = ({ persona }: { persona: Persona }) => {
         onAppChange={setActiveApp}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
-        groups={groups}
-        onUpdateGroups={setGroups}
       />
 
       {persona === "monitoring" && (

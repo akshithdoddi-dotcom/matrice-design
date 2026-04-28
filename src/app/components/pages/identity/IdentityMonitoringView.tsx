@@ -7,7 +7,7 @@ import {
   Shield, Ban, Navigation2, Fingerprint, ChevronDown,
   CheckCircle2, X, AlertTriangle, Star, Camera,
   Zap, BookmarkPlus, MapPin, Activity, Upload, Mail,
-  Users, Plus, ChevronRight, ChevronLeft,
+  Users, Plus, Trash2, ChevronRight, ChevronLeft,
 } from "lucide-react";
 import { IdentityEvidenceMedia } from "./components/shared/IdentityEvidenceMedia";
 import { SlidePanel } from "./components/panels/SlidePanel";
@@ -799,14 +799,18 @@ export function WatchlistForm({
 }
 
 // ─── Standalone Manage Modal (triggered from page header) ─────────────────────
-export function ManageModal({ isOpen, isLPR, onClose, onWatchlistAdd }: {
+export function ManageModal({ isOpen, isLPR, onClose, onWatchlistAdd, watchlistEntries = [], onUpdateEntries }: {
   isOpen: boolean; isLPR: boolean; onClose: () => void;
   onWatchlistAdd?: (entry: WatchlistEntry) => void;
+  watchlistEntries?: WatchlistEntry[];
+  onUpdateEntries?: (entries: WatchlistEntry[]) => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"add" | "all">("add");
+  const [editingEntry, setEditingEntry] = useState<WatchlistEntry | null>(null);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) { setDone(false); }
+    if (!isOpen) { setDone(false); setActiveTab("add"); setEditingEntry(null); }
   }, [isOpen]);
 
   useEffect(() => {
@@ -817,46 +821,196 @@ export function ManageModal({ isOpen, isLPR, onClose, onWatchlistAdd }: {
 
   if (!isOpen) return null;
 
+  const entityLabel = isLPR ? "Vehicle" : "Person";
+  const entityLabelPlural = isLPR ? "Vehicles" : "People";
+
   const handleSubmit = (entry: WatchlistEntry) => {
     onWatchlistAdd?.(entry);
     setDone(true);
-    setTimeout(onClose, 2000);
+    setTimeout(() => { setDone(false); setActiveTab("all"); }, 1500);
   };
 
   return createPortal(
     <>
       <div className="fixed inset-0 z-[1000] bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
       <div
-        className="fixed z-[1001] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden w-[560px] max-w-[95vw] max-h-[90vh]"
+        className="fixed z-[1001] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden w-[70vw] max-w-[900px] max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-neutral-100 shrink-0">
-          <div>
-            <h3 className="text-[14px] font-bold text-neutral-900">
-              {isLPR ? "Add/Manage Watchlist Plates" : "Add/Manage Flagged Persons"}
-            </h3>
-            <p className="text-[11px] text-neutral-400 mt-0.5">
-              {isLPR ? "BOLO Watchlist" : "Facial Recognition Watchlist"}
-            </p>
-          </div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 shrink-0">
+          <h3 className="text-[14px] font-bold text-neutral-900">
+            {isLPR ? "Manage Watchlist Vehicles" : "Manage Watchlist People"}
+          </h3>
           <button onClick={onClose}
-            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0"
+            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {done ? (
-          <div className="flex flex-col items-center justify-center flex-1 gap-3 p-8">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-            <p className="text-[14px] font-bold text-neutral-800">
-              {isLPR ? "Plates processed — watchlist updated" : "Person added — alerts active"}
-            </p>
-          </div>
-        ) : (
-          <WatchlistForm isLPR={isLPR} onCancel={onClose} onSubmit={handleSubmit} />
-        )}
+        {/* Tabs */}
+        <div className="flex border-b border-neutral-100 px-5 shrink-0">
+          {([
+            { key: "add", label: `Add ${entityLabel}` },
+            { key: "all", label: `All ${entityLabelPlural}`, count: watchlistEntries.length },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => { setActiveTab(tab.key); setEditingEntry(null); }}
+              className={cn(
+                "flex items-center gap-1.5 py-2.5 px-1 mr-5 text-[11px] font-bold border-b-2 transition-colors -mb-px",
+                activeTab === tab.key
+                  ? "border-[#00775B] text-[#00775B]"
+                  : "border-transparent text-neutral-400 hover:text-neutral-600"
+              )}
+            >
+              {tab.label}
+              {"count" in tab && tab.count > 0 && (
+                <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[#00775B] text-white text-[9px] font-bold">
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+
+          {/* ── Add tab ── */}
+          {activeTab === "add" && (
+            done ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 p-8">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                <p className="text-[14px] font-bold text-neutral-800">
+                  {isLPR ? "Plates processed — watchlist updated" : "Person added — alerts active"}
+                </p>
+              </div>
+            ) : (
+              <WatchlistForm isLPR={isLPR} onCancel={onClose} onSubmit={handleSubmit} />
+            )
+          )}
+
+          {/* ── All tab ── */}
+          {activeTab === "all" && (
+            editingEntry ? (
+              <div className="flex flex-col h-full">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 shrink-0">
+                  <button
+                    onClick={() => setEditingEntry(null)}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-[#00775B] hover:text-[#006349] transition-colors"
+                  >
+                    ← Back to list
+                  </button>
+                  <span className="text-neutral-300 text-xs">·</span>
+                  <span className="text-[11px] text-neutral-500">
+                    Editing: <span className="font-bold text-neutral-700">{editingEntry.name}</span>
+                  </span>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <WatchlistForm
+                    isLPR={editingEntry.type === "LPR"}
+                    initialEntry={editingEntry}
+                    onCancel={() => setEditingEntry(null)}
+                    onSubmit={(updated) => {
+                      onUpdateEntries?.(watchlistEntries.map(e => e.id === updated.id ? updated : e));
+                      setEditingEntry(null);
+                    }}
+                  />
+                </div>
+              </div>
+            ) : watchlistEntries.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-20 text-center px-8">
+                <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center">
+                  <Plus className="w-5 h-5 text-neutral-400" />
+                </div>
+                <p className="text-[12px] font-bold text-neutral-600">No entries yet</p>
+                <p className="text-[11px] text-neutral-400">
+                  Use the <span className="font-semibold">Add {entityLabel}</span> tab to add people to the watchlist.
+                </p>
+                <button
+                  onClick={() => setActiveTab("add")}
+                  className="mt-1 h-8 px-4 rounded-[6px] bg-[#00775B] text-white text-[11px] font-bold hover:bg-[#006349] transition-colors"
+                >
+                  Add {entityLabel}
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-[#001E18]">
+                    <tr className="border-b border-[#00775B]/20 text-[10px] uppercase tracking-wider font-bold text-white/90 h-10">
+                      <th className="px-4 py-2 w-12 text-center">Type</th>
+                      <th className="px-4 py-2">Name / Plate</th>
+                      <th className="px-4 py-2">Reason</th>
+                      <th className="px-4 py-2 text-center">Severity</th>
+                      <th className="px-4 py-2">Cameras</th>
+                      <th className="px-4 py-2 text-right">Added</th>
+                      <th className="px-4 py-2 w-10" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {watchlistEntries.map((entry, i) => (
+                      <tr
+                        key={entry.id}
+                        onClick={() => setEditingEntry(entry)}
+                        className={cn(
+                          "group transition-colors hover:bg-[#E5FFF9] h-14 cursor-pointer",
+                          i === 0 && "bg-[#00775B]/5"
+                        )}
+                      >
+                        <td className="px-4 text-center">
+                          <span className={cn(
+                            "inline-flex items-center justify-center h-5 px-1.5 rounded-[3px] text-[9px] font-black uppercase tracking-wide",
+                            entry.type === "FR" ? "bg-[#001E18] text-[#00D68F]" : "bg-blue-900 text-blue-200"
+                          )}>
+                            {entry.type}
+                          </span>
+                        </td>
+                        <td className="px-4">
+                          <p className="text-[11px] font-bold text-neutral-900 truncate max-w-[140px]">{entry.name}</p>
+                          {entry.plates && entry.plates.includes(",") && (
+                            <p className="text-[9px] text-neutral-400 mt-0.5">+multiple plates</p>
+                          )}
+                        </td>
+                        <td className="px-4">
+                          <p className="text-[11px] text-neutral-600 truncate max-w-[130px]">{entry.reason || "—"}</p>
+                        </td>
+                        <td className="px-4 text-center">
+                          <span className={cn(
+                            "inline-flex items-center justify-center h-5 px-2 rounded-[3px] text-[9px] font-bold uppercase",
+                            entry.severity === "Critical" ? "bg-red-100 text-red-700" :
+                            entry.severity === "High"     ? "bg-amber-100 text-amber-700" :
+                                                            "bg-neutral-100 text-neutral-600"
+                          )}>
+                            {entry.severity}
+                          </span>
+                        </td>
+                        <td className="px-4">
+                          <p className="text-[10px] text-neutral-500 truncate max-w-[120px]">
+                            {entry.cameras.join(", ")}
+                          </p>
+                        </td>
+                        <td className="px-4 text-right">
+                          <span className="text-[10px] font-mono text-neutral-400">
+                            {new Date(entry.addedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </td>
+                        <td className="px-4 text-center" onClick={e => {
+                          e.stopPropagation();
+                          onUpdateEntries?.(watchlistEntries.filter(e => e.id !== entry.id));
+                        }}>
+                          <Trash2 className="w-3.5 h-3.5 text-neutral-300 group-hover:text-red-400 transition-colors" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          )}
+        </div>
       </div>
     </>,
     document.body
