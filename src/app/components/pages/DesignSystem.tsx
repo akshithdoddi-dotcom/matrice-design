@@ -13,6 +13,12 @@ import {
   ArrowDownRight,
   Zap,
   User,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 
@@ -1855,12 +1861,707 @@ const DenseGridContent = () => (
 );
 
 // ══════════════════════════════════════════════════════════════════════════════
+//  DATA GRID v2.0 Base — wrapper for Precision + Dense sub-tabs
+// ══════════════════════════════════════════════════════════════════════════════
+const V2BaseContent = () => {
+  const [subTab, setSubTab] = useState<"precision" | "dense">("precision");
+  return (
+    <div className="space-y-8">
+      {/* Sub-tab selector */}
+      <div className="flex items-center gap-0 pt-1">
+        <div
+          style={{
+            display: "flex", alignItems: "center",
+            gap: 2, padding: "3px",
+            backgroundColor: "#F1F5F9",
+            border: "1px solid #E2E8F0",
+            borderRadius: 6,
+          }}
+        >
+          {(["precision", "dense"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setSubTab(v)}
+              style={{
+                padding: "5px 16px",
+                borderRadius: 4,
+                fontSize: 11, fontWeight: 700,
+                textTransform: "uppercase", letterSpacing: "0.05em",
+                backgroundColor: subTab === v ? "#00775B" : "transparent",
+                color: subTab === v ? "white" : "#64748B",
+                border: "none", cursor: "pointer",
+                transition: "background-color 150ms ease, color 150ms ease",
+              }}
+            >
+              {v === "precision" ? "Precision Grid" : "Dense Log"}
+            </button>
+          ))}
+        </div>
+      </div>
+      {subTab === "precision" && <PrecisionGridContent />}
+      {subTab === "dense" && <DenseGridContent />}
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DATA GRID v2.1 — High-Tech Dense
+//  Solid neutral-50 header · bright-fill severity pills · ghost toolbar
+//  2px teal selection bar · JetBrains Mono data · bottom pagination
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Extended 14-row dataset for pagination demo (5 rows/page = 3 pages)
+const V21_GRID_DATA: GridRow[] = [
+  { id: "INC-004821", status: "critical",  event: "Hardhat Missing",           zone: "Loading Dock A",  camera: "CAM-14", confidence: 97.3,  timestamp: "2026-04-28 16:05" },
+  { id: "INC-004820", status: "warning",   event: "Safety Zone Breach",         zone: "Assembly Line 2", camera: "CAM-07", confidence: 84.1,  timestamp: "2026-04-28 15:58" },
+  { id: "INC-004819", status: "stable",    event: "PPE Compliant Check",        zone: "Warehouse B",     camera: "CAM-22", confidence: 99.7,  timestamp: "2026-04-28 15:47" },
+  { id: "INC-004818", status: "info",      event: "Crowd Density Alert",        zone: "Exit Gate 3",     camera: "CAM-31", confidence: 76.2,  timestamp: "2026-04-28 15:33" },
+  { id: "INC-004817", status: "warning",   event: "Restricted Area Intrusion",  zone: "Server Room",     camera: "CAM-05", confidence: 92.8,  timestamp: "2026-04-28 15:21" },
+  { id: "INC-004816", status: "resolved",  event: "Spill Detected",             zone: "Kitchen Area",    camera: "CAM-18", confidence: 88.5,  timestamp: "2026-04-28 14:56" },
+  { id: "INC-004815", status: "critical",  event: "Vest Missing",               zone: "Loading Dock B",  camera: "CAM-15", confidence: 95.1,  timestamp: "2026-04-28 14:42" },
+  { id: "INC-004814", status: "info",      event: "Queue Length Exceeded",      zone: "Main Entrance",   camera: "CAM-01", confidence: 71.4,  timestamp: "2026-04-28 14:19" },
+  { id: "INC-004813", status: "critical",  event: "Fire Hazard Detected",       zone: "Boiler Room",     camera: "CAM-09", confidence: 98.2,  timestamp: "2026-04-28 13:55" },
+  { id: "INC-004812", status: "warning",   event: "Forklift Proximity Alert",   zone: "Warehouse A",     camera: "CAM-11", confidence: 89.4,  timestamp: "2026-04-28 13:31" },
+  { id: "INC-004811", status: "stable",    event: "PPE Compliant Shift",        zone: "Assembly Line 1", camera: "CAM-03", confidence: 100.0, timestamp: "2026-04-28 13:00" },
+  { id: "INC-004810", status: "info",      event: "Visitor Badge Missing",      zone: "Reception",       camera: "CAM-02", confidence: 68.9,  timestamp: "2026-04-28 12:44" },
+  { id: "INC-004809", status: "resolved",  event: "Equipment Obstruction",      zone: "Loading Bay",     camera: "CAM-17", confidence: 91.3,  timestamp: "2026-04-28 12:18" },
+  { id: "INC-004808", status: "critical",  event: "No Safety Harness",          zone: "Roof Access",     camera: "CAM-28", confidence: 96.7,  timestamp: "2026-04-28 11:52" },
+];
+
+// Bright-fill severity pill — solid bg, white text, JetBrains Mono 10px Bold, 4px radius
+const V21_STATUS_CFG: Record<string, { label: string; bg: string }> = {
+  critical: { label: "Critical", bg: "#E7000B" },
+  warning:  { label: "Warning",  bg: "#EA580C" },
+  stable:   { label: "Stable",   bg: "#00A63E" },
+  success:  { label: "Success",  bg: "#00A63E" },
+  info:     { label: "Info",     bg: "#2B7FFF" },
+  resolved: { label: "Resolved", bg: "#475569" },
+  medium:   { label: "Medium",   bg: "#E19A04" },
+  high:     { label: "High",     bg: "#EA580C" },
+  low:      { label: "Low",      bg: "#2B7FFF" },
+};
+
+const V21StatusPill = ({ status }: { status: string }) => {
+  const cfg = V21_STATUS_CFG[status.toLowerCase()] ?? { label: status, bg: "#64748B" };
+  return (
+    <span
+      style={{
+        display: "inline-flex", alignItems: "center",
+        padding: "2px 8px",
+        borderRadius: 4,
+        fontSize: 10, fontWeight: 700,
+        letterSpacing: "0.04em", textTransform: "uppercase",
+        color: "#ffffff",
+        backgroundColor: cfg.bg,
+        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {cfg.label}
+    </span>
+  );
+};
+
+const V21_COLS = "40px 128px 108px 1fr 148px 72px 80px 148px 68px";
+
+const V21DataGrid = ({ data }: { data: GridRow[] }) => {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  return (
+    <div style={{ fontFamily: "inherit", width: "100%" }}>
+      {/* Solid neutral-50 header — 1px border top AND bottom */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: V21_COLS,
+          alignItems: "center",
+          height: 38,
+          backgroundColor: "#F8FAFC",
+          borderTop: "1px solid #E2E8F0",
+          borderBottom: "1px solid #E2E8F0",
+          paddingLeft: 8,
+          paddingRight: 8,
+        }}
+      >
+        {["#", "Incident ID", "Status", "Event Type", "Zone", "Camera", "Conf.", "Timestamp", ""].map((h, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: 11, fontWeight: 700,
+              fontFamily: "Inter, sans-serif",
+              color: "#64748B",
+              textTransform: "uppercase", letterSpacing: "0.05em",
+              paddingLeft: i === 0 ? 4 : 8,
+              paddingRight: 8,
+            }}
+          >
+            {h}
+          </div>
+        ))}
+      </div>
+
+      {/* Rows */}
+      {data.map((row, idx) => {
+        const isHovered = hoveredId === row.id;
+        return (
+          <div
+            key={row.id}
+            onMouseEnter={() => setHoveredId(row.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            style={{
+              display: "grid",
+              gridTemplateColumns: V21_COLS,
+              alignItems: "center",
+              height: 44,
+              position: "relative",
+              backgroundColor: isHovered ? "rgba(0, 119, 91, 0.05)" : "#ffffff",
+              borderBottom: "1px solid #F1F5F9",
+              cursor: "default",
+              transition: "background-color 120ms ease",
+              paddingLeft: 8,
+              paddingRight: 8,
+            }}
+          >
+            {/* 2px teal selection bar */}
+            <div
+              style={{
+                position: "absolute", left: 0, top: 0, bottom: 0,
+                width: 2,
+                backgroundColor: "#00775B",
+                opacity: isHovered ? 1 : 0,
+                transition: "opacity 120ms ease",
+              }}
+            />
+
+            {/* # */}
+            <div style={{ fontSize: 11, color: "#CBD5E1", fontFamily: "'JetBrains Mono', monospace", paddingLeft: 4 }}>
+              {String(idx + 1).padStart(2, "0")}
+            </div>
+
+            {/* ID — weight bump on hover */}
+            <div style={{ paddingLeft: 8 }}>
+              <span
+                style={{
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  fontSize: 11,
+                  fontWeight: isHovered ? 600 : 500,
+                  color: isHovered ? "#0F172A" : "#334155",
+                  letterSpacing: "0.01em",
+                  transition: "font-weight 120ms ease, color 120ms ease",
+                }}
+              >
+                {row.id}
+              </span>
+            </div>
+
+            {/* Status — bright fill pill */}
+            <div style={{ paddingLeft: 8 }}>
+              <V21StatusPill status={row.status} />
+            </div>
+
+            {/* Event Type — Inter */}
+            <div
+              style={{
+                paddingLeft: 8, paddingRight: 8,
+                fontSize: 12,
+                fontFamily: "Inter, sans-serif",
+                fontWeight: isHovered ? 500 : 400,
+                color: isHovered ? "#0F172A" : "#334155",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                transition: "color 120ms ease",
+              }}
+            >
+              {row.event}
+            </div>
+
+            {/* Zone — Inter */}
+            <div
+              style={{
+                paddingLeft: 8,
+                fontSize: 11,
+                fontFamily: "Inter, sans-serif",
+                color: "#475569",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}
+            >
+              {row.zone}
+            </div>
+
+            {/* Camera — Mono */}
+            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#64748B" }}>
+              {row.camera}
+            </div>
+
+            {/* Confidence — Mono */}
+            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#475569", fontVariantNumeric: "tabular-nums" } as React.CSSProperties}>
+              {row.confidence.toFixed(1)}%
+            </div>
+
+            {/* Timestamp — Mono */}
+            <div style={{ paddingLeft: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#64748B", letterSpacing: "0.01em" }}>
+              {row.timestamp}
+            </div>
+
+            {/* Actions — glassmorphic, hover-revealed */}
+            <div
+              style={{
+                paddingLeft: 8, display: "flex", alignItems: "center", justifyContent: "flex-end",
+                opacity: isHovered ? 1 : 0, transition: "opacity 150ms ease",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex", alignItems: "center", gap: 2,
+                  padding: "3px 6px",
+                  backgroundColor: "rgba(255,255,255,0.92)",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(0,0,0,0.07)",
+                  borderRadius: 4,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+                }}
+              >
+                <button
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8" }}
+                  onMouseEnter={(e) => { (e.currentTarget).style.color = "#00775B"; (e.currentTarget).style.background = "rgba(0,119,91,0.08)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget).style.color = "#94A3B8"; (e.currentTarget).style.background = "transparent"; }}
+                >
+                  <Eye style={{ width: 13, height: 13 }} />
+                </button>
+                <button
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8" }}
+                  onMouseEnter={(e) => { (e.currentTarget).style.color = "#00A63E"; (e.currentTarget).style.background = "rgba(0,166,62,0.08)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget).style.color = "#94A3B8"; (e.currentTarget).style.background = "transparent"; }}
+                >
+                  <CheckCircle2 style={{ width: 13, height: 13 }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const ROWS_PER_PAGE_V21 = 5;
+
+const V2_1Content = () => {
+  const [searchQ, setSearchQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<"timestamp" | "confidence" | "id">("timestamp");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+
+  const filteredData = V21_GRID_DATA
+    .filter((row) => {
+      if (
+        searchQ &&
+        !row.event.toLowerCase().includes(searchQ.toLowerCase()) &&
+        !row.id.toLowerCase().includes(searchQ.toLowerCase()) &&
+        !row.zone.toLowerCase().includes(searchQ.toLowerCase())
+      ) return false;
+      if (statusFilter !== "all" && row.status !== statusFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortField === "confidence") return b.confidence - a.confidence;
+      if (sortField === "id") return a.id.localeCompare(b.id);
+      return b.timestamp.localeCompare(a.timestamp);
+    });
+
+  const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE_V21);
+  const paginatedData = filteredData.slice(
+    (page - 1) * ROWS_PER_PAGE_V21,
+    page * ROWS_PER_PAGE_V21
+  );
+
+  const handleSearch = (q: string) => { setSearchQ(q); setPage(1); };
+  const handleStatus = (s: string) => { setStatusFilter(s); setPage(1); setFilterOpen(false); };
+  const handleSort = (f: "timestamp" | "confidence" | "id") => { setSortField(f); setSortOpen(false); };
+
+  const SORT_OPTIONS: { id: "timestamp" | "confidence" | "id"; label: string }[] = [
+    { id: "timestamp",  label: "Newest First" },
+    { id: "confidence", label: "Confidence ↓" },
+    { id: "id",         label: "ID Ascending" },
+  ];
+
+  const STATUS_OPTIONS = ["all", "critical", "warning", "stable", "info", "resolved"];
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        icon={Eye}
+        title="High-Tech Dense v2.1"
+        description="Solid header, bright-fill severity pills, ghost toolbar with search + filter + sort, bottom pagination matching the Safety Analytics violation log."
+      />
+
+      {/* Spec chips */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["Header BG",     "#F8FAFC (neutral-50)"],
+          ["Header Border", "top + bottom 1px"],
+          ["Hover BG",      "rgba(0,119,91,0.05)"],
+          ["Selection Bar", "2px #00775B"],
+          ["Pills",         "Bright fill, 4px radius"],
+          ["Pill Font",     "JetBrains Mono 10px Bold"],
+          ["Toolbar",       "Ghost style search + filter"],
+          ["Pagination",    "Bottom-center PREV / 1 2 3 / NEXT"],
+        ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
+      </div>
+
+      {/* ── Toolbar + Table ──────────────────────────────────────────────── */}
+      <div style={{ maxWidth: 1200 }}>
+
+        {/* Toolbar row */}
+        <div
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            marginBottom: 16,   // exactly 16px = 2×8px grid tokens
+          }}
+        >
+          {/* Ghost search bar */}
+          <div style={{ position: "relative", flex: 1, maxWidth: 280 }}>
+            <Search
+              style={{
+                position: "absolute", left: 10,
+                top: "50%", transform: "translateY(-50%)",
+                width: 13, height: 13, color: "#94A3B8",
+                pointerEvents: "none",
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search incidents, zones…"
+              value={searchQ}
+              onChange={(e) => handleSearch(e.target.value)}
+              style={{
+                width: "100%", height: 32,
+                paddingLeft: 30, paddingRight: searchQ ? 28 : 10,
+                fontSize: 12,
+                fontFamily: "Inter, sans-serif",
+                color: "#334155",
+                backgroundColor: "transparent",
+                border: "1px solid #E2E8F0",
+                borderRadius: 4,
+                outline: "none",
+                transition: "border-color 150ms ease, box-shadow 150ms ease",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#00775B";
+                e.target.style.boxShadow = "0 0 0 3px rgba(0,119,91,0.12)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#E2E8F0";
+                e.target.style.boxShadow = "none";
+              }}
+            />
+            {searchQ && (
+              <button
+                onClick={() => handleSearch("")}
+                style={{
+                  position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 16, height: 16,
+                  border: "none", background: "transparent", cursor: "pointer",
+                  color: "#94A3B8",
+                  padding: 0,
+                }}
+              >
+                <X style={{ width: 12, height: 12 }} />
+              </button>
+            )}
+          </div>
+
+          {/* Filter pill */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => { setFilterOpen((o) => !o); setSortOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                height: 32, padding: "0 12px",
+                fontSize: 11, fontWeight: 600,
+                fontFamily: "Inter, sans-serif",
+                color: statusFilter !== "all" ? "#00775B" : "#475569",
+                backgroundColor: statusFilter !== "all" ? "rgba(0,119,91,0.06)" : "transparent",
+                border: statusFilter !== "all" ? "1px solid rgba(0,119,91,0.25)" : "1px solid #E2E8F0",
+                borderRadius: 4,
+                cursor: "pointer",
+                transition: "all 120ms ease",
+              }}
+            >
+              <Filter style={{ width: 13, height: 13 }} />
+              {statusFilter !== "all"
+                ? (V21_STATUS_CFG[statusFilter]?.label ?? statusFilter)
+                : "Filter"}
+              {statusFilter !== "all" && (
+                <span
+                  style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    width: 14, height: 14, borderRadius: "50%",
+                    backgroundColor: "#00775B", color: "#fff",
+                    fontSize: 9, fontWeight: 700,
+                  }}
+                >1</span>
+              )}
+            </button>
+            {filterOpen && (
+              <>
+                <div
+                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                  onClick={() => setFilterOpen(false)}
+                />
+                <div
+                  style={{
+                    position: "absolute", top: "calc(100% + 4px)", left: 0,
+                    zIndex: 50, minWidth: 140,
+                    backgroundColor: "#fff",
+                    border: "1px solid #E2E8F0",
+                    borderRadius: 4,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <div
+                      key={s}
+                      onClick={() => handleStatus(s)}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        gap: 8, padding: "8px 12px",
+                        cursor: "pointer",
+                        backgroundColor: statusFilter === s ? "rgba(0,119,91,0.05)" : "transparent",
+                        fontSize: 11, fontWeight: 600,
+                        fontFamily: "Inter, sans-serif",
+                        color: statusFilter === s ? "#00775B" : "#334155",
+                      }}
+                      onMouseEnter={(e) => { if (statusFilter !== s) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F8FAFC"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = statusFilter === s ? "rgba(0,119,91,0.05)" : "transparent"; }}
+                    >
+                      <span style={{ textTransform: s === "all" ? "none" : "capitalize" }}>
+                        {s === "all" ? "All Statuses" : s}
+                      </span>
+                      {s !== "all" && <V21StatusPill status={s} />}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Sort pill */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => { setSortOpen((o) => !o); setFilterOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                height: 32, padding: "0 12px",
+                fontSize: 11, fontWeight: 600,
+                fontFamily: "Inter, sans-serif",
+                color: sortField !== "timestamp" ? "#00775B" : "#475569",
+                backgroundColor: sortField !== "timestamp" ? "rgba(0,119,91,0.06)" : "transparent",
+                border: sortField !== "timestamp" ? "1px solid rgba(0,119,91,0.25)" : "1px solid #E2E8F0",
+                borderRadius: 4,
+                cursor: "pointer",
+                transition: "all 120ms ease",
+              }}
+            >
+              <SlidersHorizontal style={{ width: 13, height: 13 }} />
+              {SORT_OPTIONS.find((o) => o.id === sortField)?.label ?? "Sort"}
+            </button>
+            {sortOpen && (
+              <>
+                <div
+                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                  onClick={() => setSortOpen(false)}
+                />
+                <div
+                  style={{
+                    position: "absolute", top: "calc(100% + 4px)", left: 0,
+                    zIndex: 50, minWidth: 160,
+                    backgroundColor: "#fff",
+                    border: "1px solid #E2E8F0",
+                    borderRadius: 4,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <div
+                      key={opt.id}
+                      onClick={() => handleSort(opt.id)}
+                      style={{
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                        backgroundColor: sortField === opt.id ? "rgba(0,119,91,0.05)" : "transparent",
+                        fontSize: 11, fontWeight: 600,
+                        fontFamily: "Inter, sans-serif",
+                        color: sortField === opt.id ? "#00775B" : "#334155",
+                      }}
+                      onMouseEnter={(e) => { if (sortField !== opt.id) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F8FAFC"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = sortField === opt.id ? "rgba(0,119,91,0.05)" : "transparent"; }}
+                    >
+                      {opt.label}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Row count — right-aligned */}
+          <div style={{ marginLeft: "auto", fontSize: 11, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: "#475569" }}>
+              {filteredData.length}
+            </span>{" "}
+            {filteredData.length === 1 ? "row" : "rows"}
+            {searchQ || statusFilter !== "all" ? " matched" : " total"}
+          </div>
+        </div>
+
+        {/* ── Table card (header + rows + pagination) ── */}
+        <div
+          style={{
+            border: "1px solid #E2E8F0",
+            borderRadius: 6,
+            overflow: "hidden",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          {paginatedData.length === 0 ? (
+            <div
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                height: 120,
+                fontSize: 12, color: "#94A3B8",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              No incidents match the current filters.
+            </div>
+          ) : (
+            <V21DataGrid data={paginatedData} />
+          )}
+
+          {/* Pagination — Safety Analytics violation log format */}
+          {totalPages > 1 && (
+            <div
+              style={{
+                padding: "10px 16px",
+                borderTop: "1px solid #E2E8F0",
+                backgroundColor: "#FAFAFA",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                position: "relative",
+              }}
+            >
+              {/* PREV */}
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                  height: 28, minWidth: 76, padding: "0 10px",
+                  borderRadius: 4,
+                  fontSize: 11, fontWeight: 700,
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                  fontFamily: "Inter, sans-serif",
+                  border: "none", cursor: page === 1 ? "not-allowed" : "pointer",
+                  backgroundColor: page === 1 ? "#E2E8F0" : "#00775B",
+                  color: page === 1 ? "#94A3B8" : "#ffffff",
+                  transition: "background-color 120ms ease",
+                }}
+              >
+                <ChevronLeft style={{ width: 13, height: 13 }} />
+                PREV
+              </button>
+
+              {/* Page numbers */}
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    style={{
+                      width: 28, height: 28,
+                      borderRadius: 4,
+                      fontSize: 12, fontWeight: 700,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      border: "none", cursor: "pointer",
+                      backgroundColor: page === p ? "#00775B" : "#F1F5F9",
+                      color: page === p ? "#ffffff" : "#475569",
+                      transition: "background-color 120ms ease",
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              {/* NEXT */}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                  height: 28, minWidth: 76, padding: "0 10px",
+                  borderRadius: 4,
+                  fontSize: 11, fontWeight: 700,
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                  fontFamily: "Inter, sans-serif",
+                  border: "none", cursor: page === totalPages ? "not-allowed" : "pointer",
+                  backgroundColor: page === totalPages ? "#E2E8F0" : "#00775B",
+                  color: page === totalPages ? "#94A3B8" : "#ffffff",
+                  transition: "background-color 120ms ease",
+                }}
+              >
+                NEXT
+                <ChevronRight style={{ width: 13, height: 13 }} />
+              </button>
+
+              {/* Showing X–Y of Z — absolute right */}
+              <div
+                style={{
+                  position: "absolute", right: 16,
+                  fontSize: 11, color: "#64748B",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                Showing{" "}
+                <span style={{ fontWeight: 600, color: "#334155" }}>
+                  {(page - 1) * ROWS_PER_PAGE_V21 + 1}–{Math.min(page * ROWS_PER_PAGE_V21, filteredData.length)}
+                </span>{" "}
+                of{" "}
+                <span style={{ fontWeight: 600, color: "#334155" }}>{filteredData.length}</span>{" "}
+                incidents
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Annotations */}
+      <div className="grid grid-cols-2 gap-2">
+        <Annotation>Header: solid <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">#F8FAFC</code> · 1px border top+bottom · Inter Bold 11px #64748B</Annotation>
+        <Annotation>Severity pills: bright fill, white text, 4px radius, JetBrains Mono 10px Bold</Annotation>
+        <Annotation>Ghost search: transparent bg, teal focus glow 3px at rgba(0,119,91,0.12)</Annotation>
+        <Annotation>Filter + Sort: 4px sharp corners · active state teal tint + indicator dot</Annotation>
+        <Annotation>Hover: 2px teal selection bar · rgba(0,119,91,0.05) row tint</Annotation>
+        <Annotation>Pagination: PREV / 1 2 3 / NEXT · Showing X–Y of Z absolute right</Annotation>
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
 //  PAGE SHELL
 // ══════════════════════════════════════════════════════════════════════════════
-type TableTabId = "precision" | "dense";
+type TableTabId = "v2base" | "v2-1";
 const TABLE_TABS: { id: TableTabId; version: string; label: string; badge: string; badgeColor: string }[] = [
-  { id: "precision", version: "v2.0", label: "Precision Grid", badge: "Master",  badgeColor: "#00775B" },
-  { id: "dense",     version: "v2.1", label: "Dense Log",      badge: "Compact", badgeColor: "#2B7FFF" },
+  { id: "v2base", version: "v2.0", label: "Base Grid",        badge: "Standard", badgeColor: "#2B7FFF" },
+  { id: "v2-1",   version: "v2.1", label: "High-Tech Dense",  badge: "New",      badgeColor: "#00775B" },
 ];
 
 type TabId = "v1" | "v1-1" | "v1-2";
@@ -1873,7 +2574,7 @@ const CARD_TABS: { id: TabId; version: string; label: string; badge: string; bad
 export const DesignSystem = () => {
   const [activeTab, setActiveTab] = useState<TabId>("v1-1");
   const [componentType, setComponentType] = useState<"card" | "table">("card");
-  const [tableTab, setTableTab] = useState<TableTabId>("precision");
+  const [tableTab, setTableTab] = useState<TableTabId>("v2base");
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -1909,7 +2610,7 @@ export const DesignSystem = () => {
               ["Severity Levels", "4"],
               ["Interactive States", "3"],
               ["Token Families", "4"],
-              ["Table Variants", "2"],
+              ["Table Variants", "3"],
             ].map(([l, v]) => (
               <div key={l} className="flex items-center gap-2">
                 <span className="text-[11px] text-white/40 font-medium">{l}</span>
@@ -1989,8 +2690,8 @@ export const DesignSystem = () => {
           {componentType === "card" && activeTab === "v1"   && <V1Content />}
           {componentType === "card" && activeTab === "v1-1" && <V1_1Content />}
           {componentType === "card" && activeTab === "v1-2" && <V1_2Content />}
-          {componentType === "table" && tableTab === "precision" && <PrecisionGridContent />}
-          {componentType === "table" && tableTab === "dense"     && <DenseGridContent />}
+          {componentType === "table" && tableTab === "v2base" && <V2BaseContent />}
+          {componentType === "table" && tableTab === "v2-1"   && <V2_1Content />}
         </div>
 
         {/* Footer */}
