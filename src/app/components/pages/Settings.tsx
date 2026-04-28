@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext, createContext } from "react";
 import {
   User, Lock, Users, Bell, Zap, Sun, Moon, Monitor, Mail, Phone, Key,
   Eye, EyeOff, Plus, Trash2, Edit2, Check, Shield, Info, Upload,
@@ -7,6 +7,10 @@ import {
   Clock, ChevronRight, Activity
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
+
+// ─── Theme Context ────────────────────────────────────────────────────────────
+const ThemeCtx = createContext(false);
+const useDark = () => useContext(ThemeCtx);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type NavSection =
@@ -77,23 +81,33 @@ function initials(name: string) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function roleBadge(role: Role | "invited") {
-  const map: Record<string, string> = {
-    director:   "bg-purple-100 text-purple-700 border border-purple-200",
-    manager:    "bg-blue-100 text-blue-700 border border-blue-200",
-    monitoring: "bg-teal-100 text-teal-700 border border-teal-200",
-    invited:    "bg-gray-100 text-gray-500 border border-gray-200",
-  };
+function roleBadge(role: Role | "invited", isDark: boolean) {
+  const map: Record<string, string> = isDark
+    ? {
+        director:   "bg-purple-900/30 text-purple-300 border border-purple-700/40",
+        manager:    "bg-blue-900/30 text-blue-300 border border-blue-700/40",
+        monitoring: "bg-[#00D4AA]/10 text-[#00D4AA] border border-[#00D4AA]/30",
+        invited:    "bg-[#334155] text-[#64748B] border border-[#334155]",
+      }
+    : {
+        director:   "bg-purple-100 text-purple-700 border border-purple-200",
+        manager:    "bg-blue-100 text-blue-700 border border-blue-200",
+        monitoring: "bg-teal-100 text-teal-700 border border-teal-200",
+        invited:    "bg-gray-100 text-gray-500 border border-gray-200",
+      };
   return cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide", map[role] ?? map.invited);
 }
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  const dark = useDark();
   return (
     <button
       onClick={onToggle}
       className={cn(
         "relative w-10 h-5 rounded-full transition-colors shrink-0",
-        on ? "bg-[#00775B]" : "bg-gray-300"
+        on
+          ? dark ? "bg-[#00D4AA]" : "bg-[#00775B]"
+          : dark ? "bg-[#334155]" : "bg-gray-300"
       )}
     >
       <span
@@ -107,62 +121,109 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 }
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
-const SectionHeader = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-3">{children}</p>
-);
+const SectionHeader = ({ children }: { children: React.ReactNode }) => {
+  const dark = useDark();
+  return (
+    <p className={cn(
+      "text-[11px] font-semibold uppercase tracking-widest mb-3",
+      dark ? "text-[#00D4AA]" : "text-gray-400"
+    )}>{children}</p>
+  );
+};
 
-const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("rounded-lg border border-gray-200 bg-white p-4", className)}>{children}</div>
-);
-
-const Label = ({ children }: { children: React.ReactNode }) => (
-  <label className="block text-sm font-medium text-gray-700 mb-1.5">{children}</label>
-);
-
-const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
-  <input
-    className={cn(
-      "h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400",
-      "focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B]",
-      "disabled:bg-gray-50 disabled:text-gray-500",
+const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  const dark = useDark();
+  return (
+    <div className={cn(
+      "rounded-lg border p-4",
+      dark ? "bg-[#1E293B] border-[#334155]" : "bg-white border-gray-200",
       className
-    )}
-    {...props}
-  />
-);
+    )}>{children}</div>
+  );
+};
 
-const Textarea = ({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-  <textarea
-    className={cn(
-      "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400",
-      "focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] resize-none",
-      className
-    )}
-    {...props}
-  />
-);
+const Label = ({ children }: { children: React.ReactNode }) => {
+  const dark = useDark();
+  return (
+    <label className={cn(
+      "block text-sm font-medium mb-1.5",
+      dark ? "text-[#94A3B8]" : "text-gray-700"
+    )}>{children}</label>
+  );
+};
 
-const PrimaryBtn = ({ children, onClick, className, type = "button" }: { children: React.ReactNode; onClick?: () => void; className?: string; type?: "button" | "submit" }) => (
-  <button
-    type={type}
-    onClick={onClick}
-    className={cn("h-9 px-4 rounded-md bg-[#00775B] text-white text-sm font-medium hover:bg-[#006649] transition-colors", className)}
-  >
-    {children}
-  </button>
-);
+const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
+  const dark = useDark();
+  return (
+    <input
+      className={cn(
+        "h-9 w-full rounded-md border px-3 text-sm",
+        dark
+          ? "bg-[#0F172A] border-[#334155] text-[#F1F5F9] placeholder:text-[#475569] focus:border-[#00D4AA] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/15 disabled:bg-[#1E293B] disabled:text-[#475569]"
+          : "border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] disabled:bg-gray-50 disabled:text-gray-500",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 
-const SecondaryBtn = ({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) => (
-  <button
-    onClick={onClick}
-    className={cn("h-9 px-4 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors", className)}
-  >
-    {children}
-  </button>
-);
+const Textarea = ({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => {
+  const dark = useDark();
+  return (
+    <textarea
+      className={cn(
+        "w-full rounded-md border px-3 py-2 text-sm resize-none",
+        dark
+          ? "bg-[#0F172A] border-[#334155] text-[#F1F5F9] placeholder:text-[#475569] focus:border-[#00D4AA] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/15"
+          : "border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B]",
+        className
+      )}
+      {...props}
+    />
+  );
+};
+
+const PrimaryBtn = ({ children, onClick, className, type = "button" }: { children: React.ReactNode; onClick?: () => void; className?: string; type?: "button" | "submit" }) => {
+  const dark = useDark();
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      className={cn(
+        "h-9 px-4 rounded-md text-sm font-medium transition-colors",
+        dark
+          ? "bg-[#00D4AA] text-[#020617] hover:bg-[#00F5C4]"
+          : "bg-[#00775B] text-white hover:bg-[#006649]",
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+};
+
+const SecondaryBtn = ({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) => {
+  const dark = useDark();
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "h-9 px-4 rounded-md border text-sm font-medium transition-colors",
+        dark
+          ? "border-[#334155] bg-transparent text-[#94A3B8] hover:bg-[#1E293B]"
+          : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50",
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+};
 
 // ─── Section: My Profile ──────────────────────────────────────────────────────
 function ProfileSection() {
+  const dark = useDark();
   const [hoverAvatar, setHoverAvatar] = useState(false);
   const [firstName, setFirstName]     = useState("Mohammed Usman");
   const [lastName,  setLastName]      = useState("F");
@@ -184,8 +245,8 @@ function ProfileSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-[17px] font-semibold text-gray-900">My Profile</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Manage your personal information and preferences.</p>
+          <h2 className={cn("text-[17px] font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>My Profile</h2>
+          <p className={cn("text-sm mt-0.5", dark ? "text-[#64748B]" : "text-gray-500")}>Manage your personal information and preferences.</p>
         </div>
         <PrimaryBtn>Save Changes</PrimaryBtn>
       </div>
@@ -201,7 +262,10 @@ function ProfileSection() {
               onMouseEnter={() => setHoverAvatar(true)}
               onMouseLeave={() => setHoverAvatar(false)}
             >
-              <div className="w-20 h-20 rounded-full bg-[#00775B] flex items-center justify-center text-white text-2xl font-black select-none">
+              <div className={cn(
+                "w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-black select-none",
+                dark ? "bg-[#00D4AA] text-[#020617]" : "bg-[#00775B]"
+              )}>
                 MU
               </div>
               {hoverAvatar && (
@@ -212,10 +276,10 @@ function ProfileSection() {
               )}
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{firstName} {lastName}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Director</p>
+              <p className={cn("text-sm font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>{firstName} {lastName}</p>
+              <p className={cn("text-xs mt-0.5", dark ? "text-[#64748B]" : "text-gray-500")}>Director</p>
             </div>
-            <button className="text-[12px] text-[#00775B] hover:underline font-medium flex items-center gap-1">
+            <button className={cn("text-[12px] hover:underline font-medium flex items-center gap-1", dark ? "text-[#00D4AA]" : "text-[#00775B]")}>
               <Upload className="w-3 h-3" /> Change photo
             </button>
           </Card>
@@ -225,16 +289,16 @@ function ProfileSection() {
             <div className="space-y-3">
               <div>
                 <Label>Account Type</Label>
-                <div className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 flex items-center gap-2">
-                  <span className="text-sm text-gray-800 font-medium">Enterprise</span>
+                <div className={cn("h-9 px-3 rounded-md border flex items-center gap-2", dark ? "border-[#334155] bg-[#0F172A]" : "border-gray-200 bg-gray-50")}>
+                  <span className={cn("text-sm font-medium", dark ? "text-[#CBD5E1]" : "text-gray-800")}>Enterprise</span>
                   <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">Active</span>
                 </div>
               </div>
               <div>
                 <Label>Account Number</Label>
                 <div className="relative">
-                  <Input value={ACCOUNT_NUMBER} readOnly className="bg-gray-50 font-mono text-[11px] tracking-tight pr-9" />
-                  <button onClick={handleCopy} title="Copy" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors">
+                  <Input value={ACCOUNT_NUMBER} readOnly className={cn("font-mono text-[11px] tracking-tight pr-9", dark ? "bg-[#0F172A]" : "bg-gray-50")} />
+                  <button onClick={handleCopy} title="Copy" className={cn("absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors", dark ? "text-[#475569] hover:text-[#94A3B8]" : "text-gray-400 hover:text-gray-700")}>
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
@@ -273,7 +337,7 @@ function ProfileSection() {
               <div className="col-span-2">
                 <Label>Email</Label>
                 <div className="relative">
-                  <Input value="mohammed.usman@matrice.ai" readOnly className="pr-20 bg-gray-50 text-gray-500" />
+                  <Input value="mohammed.usman@matrice.ai" readOnly className={cn("pr-20", dark ? "bg-[#0F172A] text-[#475569]" : "bg-gray-50 text-gray-500")} />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">Verified</span>
                 </div>
               </div>
@@ -296,6 +360,7 @@ function ProfileSection() {
 
 // ─── Section: Password & Security ────────────────────────────────────────────
 function SecuritySection() {
+  const dark = useDark();
   const [current, setCurrent] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -322,8 +387,8 @@ function SecuritySection() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">Password & Security</h2>
-        <p className="text-sm text-gray-500 mt-0.5">Manage your password and account security settings.</p>
+        <h2 className={cn("text-[17px] font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>Password & Security</h2>
+        <p className={cn("text-sm mt-0.5", dark ? "text-[#64748B]" : "text-gray-500")}>Manage your password and account security settings.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -335,7 +400,7 @@ function SecuritySection() {
               <Label>Current Password</Label>
               <div className="relative">
                 <Input type={showCurrent ? "text" : "password"} value={current} onChange={e => setCurrent(e.target.value)} placeholder="Enter current password" className="pr-10" />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowCurrent(v => !v)}>
+                <button className={cn("absolute right-2 top-1/2 -translate-y-1/2", dark ? "text-[#475569] hover:text-[#94A3B8]" : "text-gray-400 hover:text-gray-600")} onClick={() => setShowCurrent(v => !v)}>
                   {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -344,7 +409,7 @@ function SecuritySection() {
               <Label>New Password</Label>
               <div className="relative">
                 <Input type={showNew ? "text" : "password"} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Enter new password" className="pr-10" />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowNew(v => !v)}>
+                <button className={cn("absolute right-2 top-1/2 -translate-y-1/2", dark ? "text-[#475569] hover:text-[#94A3B8]" : "text-gray-400 hover:text-gray-600")} onClick={() => setShowNew(v => !v)}>
                   {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -352,10 +417,10 @@ function SecuritySection() {
                 <div className="mt-2 space-y-1">
                   <div className="flex gap-1">
                     {[1, 2, 3, 4].map(i => (
-                      <div key={i} className={cn("h-1 flex-1 rounded-full transition-colors", i <= strength ? strengthColor : "bg-gray-200")} />
+                      <div key={i} className={cn("h-1 flex-1 rounded-full transition-colors", i <= strength ? strengthColor : dark ? "bg-[#334155]" : "bg-gray-200")} />
                     ))}
                   </div>
-                  <p className="text-[11px] text-gray-500">Strength: <span className="font-bold">{strengthLabel}</span></p>
+                  <p className={cn("text-[11px]", dark ? "text-[#64748B]" : "text-gray-500")}>Strength: <span className="font-bold">{strengthLabel}</span></p>
                   <div className="grid grid-cols-2 gap-1 mt-1">
                     {[
                       { key: "length", label: "8+ characters" },
@@ -364,10 +429,10 @@ function SecuritySection() {
                       { key: "special", label: "Special character" },
                     ].map(({ key, label }) => (
                       <div key={key} className="flex items-center gap-1.5">
-                        <div className={cn("w-3 h-3 rounded-full flex items-center justify-center", checks[key as keyof typeof checks] ? "bg-emerald-500" : "bg-gray-200")}>
+                        <div className={cn("w-3 h-3 rounded-full flex items-center justify-center", checks[key as keyof typeof checks] ? "bg-emerald-500" : dark ? "bg-[#334155]" : "bg-gray-200")}>
                           {checks[key as keyof typeof checks] && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
                         </div>
-                        <span className="text-[10px] text-gray-500">{label}</span>
+                        <span className={cn("text-[10px]", dark ? "text-[#64748B]" : "text-gray-500")}>{label}</span>
                       </div>
                     ))}
                   </div>
@@ -390,16 +455,19 @@ function SecuritySection() {
           <Card>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-[#00775B]" />
+                <p className={cn("text-sm font-semibold flex items-center gap-2", dark ? "text-[#F1F5F9]" : "text-gray-900")}>
+                  <Shield className={cn("w-4 h-4", dark ? "text-[#00D4AA]" : "text-[#00775B]")} />
                   Two-Factor Authentication
                 </p>
-                <p className="text-[12px] text-gray-500 mt-0.5">Adds a second layer of security to your account.</p>
+                <p className={cn("text-[12px] mt-0.5", dark ? "text-[#64748B]" : "text-gray-500")}>Adds a second layer of security to your account.</p>
               </div>
               <Toggle on={twoFactor} onToggle={() => setTwoFactor(v => !v)} />
             </div>
             {twoFactor && (
-              <div className="mt-3 p-3 rounded-lg bg-[#E5FFF9] border border-[#00775B]/20 text-[12px] text-[#00775B] font-medium">
+              <div className={cn(
+                "mt-3 p-3 rounded-lg text-[12px] font-medium",
+                dark ? "bg-[#00D4AA]/10 border border-[#00D4AA]/30 text-[#00D4AA]" : "bg-[#E5FFF9] border border-[#00775B]/20 text-[#00775B]"
+              )}>
                 2FA is enabled. You will be prompted for a verification code on each login.
               </div>
             )}
@@ -409,24 +477,24 @@ function SecuritySection() {
             <SectionHeader>Active Sessions</SectionHeader>
             <div className="space-y-2">
               {SESSIONS.map((s, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                <div key={i} className={cn("flex items-center justify-between py-2 border-b last:border-0", dark ? "border-[#334155]" : "border-gray-100")}>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                      <Monitor className="w-3.5 h-3.5 text-gray-500" />
+                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", dark ? "bg-[#0F172A]" : "bg-gray-100")}>
+                      <Monitor className={cn("w-3.5 h-3.5", dark ? "text-[#64748B]" : "text-gray-500")} />
                     </div>
                     <div>
-                      <p className="text-[12px] font-semibold text-gray-800">{s.device} · {s.browser}</p>
-                      <p className="text-[10px] text-gray-400">{s.location} · {s.lastActive}</p>
+                      <p className={cn("text-[12px] font-semibold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>{s.device} · {s.browser}</p>
+                      <p className={cn("text-[10px]", dark ? "text-[#475569]" : "text-gray-400")}>{s.location} · {s.lastActive}</p>
                     </div>
                   </div>
                   {i > 0
-                    ? <button className="text-[11px] font-bold text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors">Revoke</button>
+                    ? <button className={cn("text-[11px] font-bold px-2 py-1 rounded transition-colors", dark ? "text-red-400 hover:text-red-300 hover:bg-red-900/20" : "text-red-500 hover:text-red-700 hover:bg-red-50")}>Revoke</button>
                     : <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Current</span>
                   }
                 </div>
               ))}
             </div>
-            <button className="mt-2 text-[12px] font-medium text-[#00775B] hover:underline flex items-center gap-1">
+            <button className={cn("mt-2 text-[12px] font-medium hover:underline flex items-center gap-1", dark ? "text-[#00D4AA]" : "text-[#00775B]")}>
               <LogOut className="w-3 h-3" /> Sign out all other sessions
             </button>
           </Card>
@@ -438,6 +506,7 @@ function SecuritySection() {
 
 // ─── Section: Members ─────────────────────────────────────────────────────────
 function MembersSection() {
+  const dark = useDark();
   const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("monitoring");
@@ -469,8 +538,8 @@ function MembersSection() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">Members</h2>
-        <p className="text-sm text-gray-500 mt-0.5">Manage who has access to this workspace.</p>
+        <h2 className={cn("text-[17px] font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>Members</h2>
+        <p className={cn("text-sm mt-0.5", dark ? "text-[#64748B]" : "text-gray-500")}>Manage who has access to this workspace.</p>
       </div>
 
       {/* Stats */}
@@ -480,9 +549,9 @@ function MembersSection() {
           { label: "Monitoring Staff", value: monitoringCount },
           { label: "Managers", value: managerCount },
         ].map(s => (
-          <div key={s.label} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 shadow-sm">
-            <span className="text-[18px] font-black text-[#00775B]">{s.value}</span>
-            <span className="text-[11px] text-gray-500 font-medium">{s.label}</span>
+          <div key={s.label} className={cn("flex items-center gap-2 px-4 py-2 rounded-lg border shadow-sm", dark ? "bg-[#1E293B] border-[#334155]" : "bg-white border-gray-200")}>
+            <span className={cn("text-[18px] font-black", dark ? "text-[#00D4AA]" : "text-[#00775B]")}>{s.value}</span>
+            <span className={cn("text-[11px] font-medium", dark ? "text-[#64748B]" : "text-gray-500")}>{s.label}</span>
           </div>
         ))}
       </div>
@@ -505,7 +574,12 @@ function MembersSection() {
             <select
               value={inviteRole}
               onChange={e => setInviteRole(e.target.value as Role)}
-              className="h-9 px-3 rounded-md border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B] w-full bg-white"
+              className={cn(
+                "h-9 px-3 rounded-md border text-sm focus:outline-none w-full",
+                dark
+                  ? "bg-[#0F172A] border-[#334155] text-[#F1F5F9] focus:border-[#00D4AA] focus:ring-2 focus:ring-[#00D4AA]/15"
+                  : "border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-[#00775B]/15 focus:border-[#00775B]"
+              )}
             >
               <option value="monitoring">Monitoring Staff</option>
               <option value="manager">Manager</option>
@@ -523,14 +597,14 @@ function MembersSection() {
         <SectionHeader>Pending Invitations ({PENDING.length})</SectionHeader>
         <div className="space-y-2">
           {PENDING.map((p, i) => (
-            <div key={i} className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-md border border-gray-200">
+            <div key={i} className={cn("flex items-center justify-between py-2.5 px-3 rounded-md border", dark ? "bg-[#0F172A] border-[#334155]" : "bg-gray-50 border-gray-200")}>
               <div>
-                <p className="text-[12px] font-semibold text-gray-800">{p.email}</p>
-                <p className="text-[11px] text-gray-400">{p.role} · Expires in {p.expires}</p>
+                <p className={cn("text-[12px] font-semibold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>{p.email}</p>
+                <p className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>{p.role} · Expires in {p.expires}</p>
               </div>
               <div className="flex gap-2">
                 <SecondaryBtn className="h-7 text-[11px] px-3">Resend</SecondaryBtn>
-                <button className="h-7 px-3 text-[11px] text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-colors font-medium">Cancel</button>
+                <button className={cn("h-7 px-3 text-[11px] rounded-lg border border-transparent transition-colors font-medium", dark ? "text-red-400 hover:text-red-300 hover:bg-red-900/20 hover:border-red-800/30" : "text-red-500 hover:text-red-700 hover:bg-red-50 hover:border-red-100")}>Cancel</button>
               </div>
             </div>
           ))}
@@ -541,7 +615,7 @@ function MembersSection() {
       <Card className="p-0 overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200 text-[10px] uppercase tracking-wider font-semibold text-gray-400">
+            <tr className={cn("border-b text-[10px] uppercase tracking-wider font-semibold", dark ? "bg-[#0F172A] border-[#334155] text-[#475569]" : "bg-gray-50 border-gray-200 text-gray-400")}>
               <th className="px-4 py-3">Member</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Status</th>
@@ -549,45 +623,48 @@ function MembersSection() {
               <th className="px-4 py-3 w-10" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className={cn("divide-y", dark ? "divide-[#334155]" : "divide-gray-100")}>
             {members.map(m => (
-              <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+              <tr key={m.id} className={cn("transition-colors", dark ? "hover:bg-[#1E293B]" : "hover:bg-gray-50")}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0",
+                      dark ? "bg-[#00D4AA] text-[#020617]" : "bg-[#00775B] text-white"
+                    )}>
                       {initials(m.name)}
                     </div>
                     <div>
-                      <p className="text-[12px] font-semibold text-gray-800">{m.name}</p>
-                      <p className="text-[11px] text-gray-400">{m.email}</p>
+                      <p className={cn("text-[12px] font-semibold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>{m.name}</p>
+                      <p className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>{m.email}</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={roleBadge(m.role)}>{m.role}</span>
+                  <span className={roleBadge(m.role, dark)}>{m.role}</span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    <span className={cn("w-2 h-2 rounded-full", m.status === "active" ? "bg-emerald-500" : "bg-gray-300")} />
-                    <span className="text-[11px] text-gray-600 capitalize">{m.status}</span>
+                    <span className={cn("w-2 h-2 rounded-full", m.status === "active" ? "bg-emerald-500" : dark ? "bg-[#334155]" : "bg-gray-300")} />
+                    <span className={cn("text-[11px] capitalize", dark ? "text-[#64748B]" : "text-gray-600")}>{m.status}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[11px] text-gray-500">{m.lastActive}</td>
+                <td className={cn("px-4 py-3 text-[11px]", dark ? "text-[#475569]" : "text-gray-500")}>{m.lastActive}</td>
                 <td className="px-4 py-3 relative" ref={m.id === openMenu ? menuRef : null}>
                   <button
                     onClick={() => setOpenMenu(openMenu === m.id ? null : m.id)}
-                    className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    className={cn("p-1 rounded transition-colors", dark ? "text-[#475569] hover:bg-[#334155] hover:text-[#94A3B8]" : "hover:bg-gray-100 text-gray-400 hover:text-gray-600")}
                   >
                     <MoreVertical className="w-4 h-4" />
                   </button>
                   {openMenu === m.id && (
-                    <div className="absolute right-4 top-8 z-50 w-36 bg-white rounded-lg shadow-xl border border-gray-200 py-1">
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-gray-700 hover:bg-gray-50">
+                    <div className={cn("absolute right-4 top-8 z-50 w-36 rounded-lg shadow-xl border py-1", dark ? "bg-[#1E293B] border-[#334155]" : "bg-white border-gray-200")}>
+                      <button className={cn("w-full flex items-center gap-2 px-3 py-2 text-[12px] transition-colors", dark ? "text-[#94A3B8] hover:bg-[#334155]" : "text-gray-700 hover:bg-gray-50")}>
                         <Edit2 className="w-3.5 h-3.5" /> Change Role
                       </button>
                       <button
                         onClick={() => handleRemove(m.id)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-red-500 hover:bg-red-50"
+                        className={cn("w-full flex items-center gap-2 px-3 py-2 text-[12px] transition-colors", dark ? "text-red-400 hover:bg-red-900/20" : "text-red-500 hover:bg-red-50")}
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Remove
                       </button>
@@ -605,6 +682,7 @@ function MembersSection() {
 
 // ─── Section: User Groups ────────────────────────────────────────────────────
 function GroupsSection() {
+  const dark = useDark();
   const [groups, setGroups] = useState<Group[]>(MOCK_GROUPS);
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
@@ -647,21 +725,24 @@ function GroupsSection() {
     <div className="space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-[17px] font-semibold text-gray-900">User Groups</h2>
-          <p className="text-sm text-gray-500 mt-1">Route alerts to specific teams.</p>
+          <h2 className={cn("text-[17px] font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>User Groups</h2>
+          <p className={cn("text-sm mt-1", dark ? "text-[#64748B]" : "text-gray-500")}>Route alerts to specific teams.</p>
         </div>
         <PrimaryBtn onClick={() => setShowForm(v => !v)} className="flex items-center gap-2">
           <Plus className="w-3.5 h-3.5" /> New Group
         </PrimaryBtn>
       </div>
 
-      <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start gap-2">
+      <div className={cn(
+        "p-3 rounded-lg border text-[12px] flex items-start gap-2",
+        dark ? "bg-blue-900/20 border-blue-700/30 text-blue-300" : "bg-blue-50 border-blue-100 text-blue-700"
+      )}>
         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
         User groups let you route alerts to specific teams. Groups can only contain Monitoring Staff members.
       </div>
 
       {showForm && (
-        <Card className="border-[#00775B]/40">
+        <Card className={dark ? "border-[#00D4AA]/30" : "border-[#00775B]/40"}>
           <SectionHeader>Create New Group</SectionHeader>
           <div className="space-y-4">
             <div>
@@ -681,10 +762,10 @@ function GroupsSection() {
                       type="checkbox"
                       checked={formMembers.has(m.id)}
                       onChange={() => setFormMembers(s => toggleSet(s, m.id))}
-                      className="accent-[#00775B]"
+                      className={dark ? "accent-[#00D4AA]" : "accent-[#00775B]"}
                     />
-                    <span className="text-[12px] text-gray-700">{m.name}</span>
-                    <span className="text-[11px] text-gray-400">{m.email}</span>
+                    <span className={cn("text-[12px]", dark ? "text-[#CBD5E1]" : "text-gray-700")}>{m.name}</span>
+                    <span className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>{m.email}</span>
                   </label>
                 ))}
               </div>
@@ -698,9 +779,9 @@ function GroupsSection() {
                       type="checkbox"
                       checked={formChannels.has(c)}
                       onChange={() => setFormChannels(s => toggleSet(s, c))}
-                      className="accent-[#00775B]"
+                      className={dark ? "accent-[#00D4AA]" : "accent-[#00775B]"}
                     />
-                    <span className="text-[12px] text-gray-700 capitalize">{c}</span>
+                    <span className={cn("text-[12px] capitalize", dark ? "text-[#CBD5E1]" : "text-gray-700")}>{c}</span>
                   </label>
                 ))}
               </div>
@@ -719,21 +800,24 @@ function GroupsSection() {
           return (
             <Card key={g.id} className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-gray-800">{g.name}</p>
-                <p className="text-[12px] text-gray-400 mt-0.5">{g.description}</p>
+                <p className={cn("text-[13px] font-bold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>{g.name}</p>
+                <p className={cn("text-[12px] mt-0.5", dark ? "text-[#475569]" : "text-gray-400")}>{g.description}</p>
                 <div className="flex items-center gap-3 mt-3">
                   {/* Member avatars */}
                   <div className="flex -space-x-1">
                     {groupMembers.map(m => (
-                      <div key={m.id} title={m.name} className="w-6 h-6 rounded-full bg-[#00775B] border-2 border-white flex items-center justify-center text-white text-[8px] font-bold">
+                      <div key={m.id} title={m.name} className={cn(
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center text-[8px] font-bold",
+                        dark ? "bg-[#00D4AA] text-[#020617] border-[#1E293B]" : "bg-[#00775B] text-white border-white"
+                      )}>
                         {initials(m.name)}
                       </div>
                     ))}
                   </div>
-                  <span className="text-[11px] text-gray-400">{groupMembers.length} member{groupMembers.length !== 1 ? "s" : ""}</span>
+                  <span className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>{groupMembers.length} member{groupMembers.length !== 1 ? "s" : ""}</span>
                   <div className="flex gap-1">
                     {g.channels.map(c => (
-                      <span key={c} className="flex items-center gap-1 text-[10px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                      <span key={c} className={cn("flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full", dark ? "text-[#64748B] bg-[#0F172A]" : "text-gray-500 bg-gray-100")}>
                         {CHANNEL_ICONS[c]} {c}
                       </span>
                     ))}
@@ -746,7 +830,7 @@ function GroupsSection() {
                 </SecondaryBtn>
                 <button
                   onClick={() => setGroups(gg => gg.filter(x => x.id !== g.id))}
-                  className="h-8 px-3 text-[11px] text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-lg transition-colors flex items-center gap-1.5"
+                  className={cn("h-8 px-3 text-[11px] border border-transparent rounded-lg transition-colors flex items-center gap-1.5", dark ? "text-red-400 hover:bg-red-900/20 hover:border-red-800/30" : "text-red-500 hover:bg-red-50 hover:border-red-100")}
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
@@ -761,6 +845,7 @@ function GroupsSection() {
 
 // ─── Section: Alert Channels ──────────────────────────────────────────────────
 function ChannelsSection() {
+  const dark = useDark();
   const [email, setEmail] = useState(true);
   const [sms, setSms] = useState(true);
   const [slack, setSlack] = useState(false);
@@ -786,18 +871,25 @@ function ChannelsSection() {
     setMatrix(m => ({ ...m, [sev]: { ...m[sev], [ch]: !m[sev][ch] } }));
   };
 
-  const severityColor: Record<Severity, string> = {
-    Critical: "text-red-600 bg-red-50",
-    High: "text-orange-600 bg-orange-50",
-    Medium: "text-yellow-600 bg-yellow-50",
-    Low: "text-blue-600 bg-blue-50",
-  };
+  const severityColor: Record<Severity, string> = dark
+    ? {
+        Critical: "text-red-400 bg-red-900/30",
+        High:     "text-orange-400 bg-orange-900/30",
+        Medium:   "text-yellow-400 bg-yellow-900/30",
+        Low:      "text-blue-400 bg-blue-900/30",
+      }
+    : {
+        Critical: "text-red-600 bg-red-50",
+        High:     "text-orange-600 bg-orange-50",
+        Medium:   "text-yellow-600 bg-yellow-50",
+        Low:      "text-blue-600 bg-blue-50",
+      };
 
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">Alert Channels</h2>
-        <p className="text-sm text-gray-500 mt-1">Configure how and where alerts are delivered.</p>
+        <h2 className={cn("text-[17px] font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>Alert Channels</h2>
+        <p className={cn("text-sm mt-1", dark ? "text-[#64748B]" : "text-gray-500")}>Configure how and where alerts are delivered.</p>
       </div>
 
       {/* Channel toggles */}
@@ -806,24 +898,24 @@ function ChannelsSection() {
         <Card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Mail className="w-4.5 h-4.5 text-blue-600" style={{ width: 18, height: 18 }} />
+              <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", dark ? "bg-blue-900/30" : "bg-blue-50")}>
+                <Mail className="text-blue-600" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-gray-800">Email</p>
-                <p className="text-[11px] text-gray-400">Send alert notifications via email</p>
+                <p className={cn("text-[13px] font-bold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>Email</p>
+                <p className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>Send alert notifications via email</p>
               </div>
             </div>
             <Toggle on={email} onToggle={() => setEmail(v => !v)} />
           </div>
           {email && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className={cn("mt-4 pt-4 border-t", dark ? "border-[#334155]" : "border-gray-100")}>
               <Label>Email Recipients</Label>
               <div className="space-y-2">
                 {emailList.map((e, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <Input value={e} readOnly className="bg-gray-50" />
-                    <button onClick={() => setEmailList(l => l.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500 p-1 shrink-0">
+                    <Input value={e} readOnly className={dark ? "bg-[#0F172A]" : "bg-gray-50"} />
+                    <button onClick={() => setEmailList(l => l.filter((_, j) => j !== i))} className={cn("p-1 shrink-0 transition-colors", dark ? "text-[#475569] hover:text-red-400" : "text-gray-400 hover:text-red-500")}>
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -843,12 +935,12 @@ function ChannelsSection() {
         <Card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
-                <Phone className="w-4.5 h-4.5 text-green-600" style={{ width: 18, height: 18 }} />
+              <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", dark ? "bg-green-900/30" : "bg-green-50")}>
+                <Phone className="text-green-600" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-gray-800">SMS</p>
-                <p className="text-[11px] text-gray-400">Send alert notifications via SMS</p>
+                <p className={cn("text-[13px] font-bold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>SMS</p>
+                <p className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>Send alert notifications via SMS</p>
               </div>
             </div>
             <Toggle on={sms} onToggle={() => setSms(v => !v)} />
@@ -859,18 +951,18 @@ function ChannelsSection() {
         <Card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Hash className="w-4.5 h-4.5 text-purple-600" style={{ width: 18, height: 18 }} />
+              <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", dark ? "bg-purple-900/30" : "bg-purple-50")}>
+                <Hash className="text-purple-600" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-gray-800">Slack</p>
-                <p className="text-[11px] text-gray-400">Post alerts to a Slack channel</p>
+                <p className={cn("text-[13px] font-bold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>Slack</p>
+                <p className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>Post alerts to a Slack channel</p>
               </div>
             </div>
             <Toggle on={slack} onToggle={() => setSlack(v => !v)} />
           </div>
           {slack && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className={cn("mt-4 pt-4 border-t", dark ? "border-[#334155]" : "border-gray-100")}>
               <Label>Webhook URL</Label>
               <Input placeholder="https://hooks.slack.com/services/..." value={slackWebhook} onChange={e => setSlackWebhook(e.target.value)} />
             </div>
@@ -881,12 +973,12 @@ function ChannelsSection() {
         <Card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
-                <Globe className="w-4.5 h-4.5 text-indigo-600" style={{ width: 18, height: 18 }} />
+              <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", dark ? "bg-indigo-900/30" : "bg-indigo-50")}>
+                <Globe className="text-indigo-600" style={{ width: 18, height: 18 }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-gray-800">Microsoft Teams</p>
-                <p className="text-[11px] text-gray-400">Post alerts to a Teams channel</p>
+                <p className={cn("text-[13px] font-bold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>Microsoft Teams</p>
+                <p className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>Post alerts to a Teams channel</p>
               </div>
             </div>
             <Toggle on={teams} onToggle={() => setTeams(v => !v)} />
@@ -898,18 +990,18 @@ function ChannelsSection() {
       <Card className="p-0 overflow-hidden">
         <div className="px-5 pt-5 pb-3">
           <SectionHeader>Severity Routing Matrix</SectionHeader>
-          <p className="text-[12px] text-gray-500">Choose which channels receive alerts by severity level.</p>
+          <p className={cn("text-[12px]", dark ? "text-[#64748B]" : "text-gray-500")}>Choose which channels receive alerts by severity level.</p>
         </div>
-        <table className="w-full border-t border-gray-100">
+        <table className={cn("w-full border-t", dark ? "border-[#334155]" : "border-gray-100")}>
           <thead>
-            <tr className="bg-gray-50 text-[10px] uppercase tracking-wider font-bold text-gray-400">
+            <tr className={cn("text-[10px] uppercase tracking-wider font-bold", dark ? "bg-[#0F172A] text-[#475569]" : "bg-gray-50 text-gray-400")}>
               <th className="px-5 py-3 text-left">Severity</th>
               {channels.map(c => <th key={c} className="px-4 py-3 text-center">{c}</th>)}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className={cn("divide-y", dark ? "divide-[#334155]" : "divide-gray-100")}>
             {severities.map(sev => (
-              <tr key={sev} className="hover:bg-gray-50">
+              <tr key={sev} className={cn("transition-colors", dark ? "hover:bg-[#1E293B]" : "hover:bg-gray-50")}>
                 <td className="px-5 py-3">
                   <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full", severityColor[sev])}>{sev}</span>
                 </td>
@@ -919,7 +1011,7 @@ function ChannelsSection() {
                       type="checkbox"
                       checked={matrix[sev][ch]}
                       onChange={() => toggleMatrix(sev, ch)}
-                      className="accent-[#00775B] w-4 h-4 cursor-pointer"
+                      className={cn("w-4 h-4 cursor-pointer", dark ? "accent-[#00D4AA]" : "accent-[#00775B]")}
                     />
                   </td>
                 ))}
@@ -934,6 +1026,7 @@ function ChannelsSection() {
 
 // ─── Section: Alert Rules ─────────────────────────────────────────────────────
 function RulesSection() {
+  const dark = useDark();
   const [threshold, setThreshold] = useState(85);
   const [cooldown, setCooldown] = useState(15);
   const [escalation, setEscalation] = useState(true);
@@ -943,8 +1036,8 @@ function RulesSection() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">Alert Rules</h2>
-        <p className="text-sm text-gray-500 mt-1">Configure alert triggering behavior and thresholds.</p>
+        <h2 className={cn("text-[17px] font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>Alert Rules</h2>
+        <p className={cn("text-sm mt-1", dark ? "text-[#64748B]" : "text-gray-500")}>Configure alert triggering behavior and thresholds.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -956,7 +1049,7 @@ function RulesSection() {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <Label>Confidence Threshold</Label>
-                <span className="text-[20px] font-black text-[#00775B]">{threshold}%</span>
+                <span className={cn("text-[20px] font-black", dark ? "text-[#00D4AA]" : "text-[#00775B]")}>{threshold}%</span>
               </div>
               <input
                 type="range"
@@ -964,15 +1057,15 @@ function RulesSection() {
                 max={99}
                 value={threshold}
                 onChange={e => setThreshold(Number(e.target.value))}
-                className="w-full accent-[#00775B]"
+                className={cn("w-full", dark ? "accent-[#00D4AA]" : "accent-[#00775B]")}
               />
-              <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+              <div className={cn("flex justify-between text-[10px] mt-1", dark ? "text-[#475569]" : "text-gray-400")}>
                 <span>70%</span><span>99%</span>
               </div>
-              <p className="text-[11px] text-gray-400 mt-2">Only trigger alerts when match confidence exceeds this value.</p>
+              <p className={cn("text-[11px] mt-2", dark ? "text-[#475569]" : "text-gray-400")}>Only trigger alerts when match confidence exceeds this value.</p>
             </div>
 
-            <div className="h-px bg-gray-100" />
+            <div className={cn("h-px", dark ? "bg-[#334155]" : "bg-gray-100")} />
 
             {/* Detection cooldown */}
             <div>
@@ -986,7 +1079,7 @@ function RulesSection() {
                   onChange={e => setCooldown(Number(e.target.value))}
                   className="w-32"
                 />
-                <p className="text-[11px] text-gray-400">Minimum time between repeat alerts for the same identity.</p>
+                <p className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>Minimum time between repeat alerts for the same identity.</p>
               </div>
             </div>
           </div>
@@ -1001,7 +1094,7 @@ function RulesSection() {
               <div className="flex items-start justify-between">
                 <div>
                   <Label>Auto-Escalation</Label>
-                  <p className="text-[11px] text-gray-400 mt-0.5">Escalate unacknowledged CRITICAL alerts after this period.</p>
+                  <p className={cn("text-[11px] mt-0.5", dark ? "text-[#475569]" : "text-gray-400")}>Escalate unacknowledged CRITICAL alerts after this period.</p>
                 </div>
                 <Toggle on={escalation} onToggle={() => setEscalation(v => !v)} />
               </div>
@@ -1015,18 +1108,18 @@ function RulesSection() {
                     onChange={e => setEscalationMinutes(Number(e.target.value))}
                     className="w-32"
                   />
-                  <span className="text-[12px] text-gray-500">minutes</span>
+                  <span className={cn("text-[12px]", dark ? "text-[#64748B]" : "text-gray-500")}>minutes</span>
                 </div>
               )}
             </div>
 
-            <div className="h-px bg-gray-100" />
+            <div className={cn("h-px", dark ? "bg-[#334155]" : "bg-gray-100")} />
 
             {/* BOLO priority */}
             <div className="flex items-start justify-between">
               <div>
                 <Label>BOLO Priority</Label>
-                <p className="text-[11px] text-gray-400 mt-0.5">Always notify all channels for BOLO hits regardless of threshold.</p>
+                <p className={cn("text-[11px] mt-0.5", dark ? "text-[#475569]" : "text-gray-400")}>Always notify all channels for BOLO hits regardless of threshold.</p>
               </div>
               <Toggle on={bolo} onToggle={() => setBolo(v => !v)} />
             </div>
@@ -1043,6 +1136,7 @@ function RulesSection() {
 
 // ─── Section: Appearance ──────────────────────────────────────────────────────
 function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggleDark: () => void }) {
+  const dark = useDark();
   const [theme, setTheme] = useState<"light" | "dark" | "system">(isDark ? "dark" : "light");
   const [persona, setPersona] = useState<"monitoring" | "manager" | "director">("monitoring");
   const [timeFormat, setTimeFormat] = useState<"12h" | "24h">("24h");
@@ -1057,7 +1151,7 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
   const THEMES: { key: "light" | "dark" | "system"; label: string; desc: string; icon: React.ReactNode }[] = [
     { key: "light",  label: "Light",  desc: "Clean white interface", icon: <Sun className="w-5 h-5 text-yellow-500" /> },
     { key: "dark",   label: "Dark",   desc: "Easy on the eyes",      icon: <Moon className="w-5 h-5 text-indigo-400" /> },
-    { key: "system", label: "System", desc: "Follows OS preference", icon: <Monitor className="w-5 h-5 text-gray-500" /> },
+    { key: "system", label: "System", desc: "Follows OS preference", icon: <Monitor className={cn("w-5 h-5", dark ? "text-[#64748B]" : "text-gray-500")} /> },
   ];
 
   const PERSONAS: { key: "monitoring" | "manager" | "director"; label: string; desc: string }[] = [
@@ -1069,8 +1163,8 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-[17px] font-semibold text-gray-900">Appearance</h2>
-        <p className="text-sm text-gray-500 mt-1">Customize how the platform looks and feels.</p>
+        <h2 className={cn("text-[17px] font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>Appearance</h2>
+        <p className={cn("text-sm mt-1", dark ? "text-[#64748B]" : "text-gray-500")}>Customize how the platform looks and feels.</p>
       </div>
 
       {/* Theme + Default Persona side by side */}
@@ -1084,7 +1178,9 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
                 onClick={() => handleTheme(t.key)}
                 className={cn(
                   "relative flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all",
-                  theme === t.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-gray-200 hover:border-gray-300"
+                  theme === t.key
+                    ? dark ? "border-[#00D4AA] bg-[#00D4AA]/10" : "border-[#00775B] bg-[#E5FFF9]"
+                    : dark ? "border-[#334155] hover:border-[#475569]" : "border-gray-200 hover:border-gray-300"
                 )}
               >
                 {/* Preview */}
@@ -1106,11 +1202,11 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
                 </div>
                 {t.icon}
                 <div className="text-center">
-                  <p className="text-[12px] font-bold text-gray-800">{t.label}</p>
-                  <p className="text-[10px] text-gray-400">{t.desc}</p>
+                  <p className={cn("text-[12px] font-bold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>{t.label}</p>
+                  <p className={cn("text-[10px]", dark ? "text-[#475569]" : "text-gray-400")}>{t.desc}</p>
                 </div>
                 {theme === t.key && (
-                  <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#00775B] flex items-center justify-center">
+                  <div className={cn("absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center", dark ? "bg-[#00D4AA]" : "bg-[#00775B]")}>
                     <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                   </div>
                 )}
@@ -1127,7 +1223,9 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
                 key={p.key}
                 className={cn(
                   "flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
-                  persona === p.key ? "border-[#00775B] bg-[#E5FFF9]" : "border-gray-200 hover:border-gray-300"
+                  persona === p.key
+                    ? dark ? "border-[#00D4AA] bg-[#00D4AA]/10" : "border-[#00775B] bg-[#E5FFF9]"
+                    : dark ? "border-[#334155] hover:border-[#475569]" : "border-gray-200 hover:border-gray-300"
                 )}
               >
                 <input
@@ -1136,11 +1234,11 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
                   value={p.key}
                   checked={persona === p.key}
                   onChange={() => setPersona(p.key)}
-                  className="accent-[#00775B] mt-0.5"
+                  className={dark ? "accent-[#00D4AA] mt-0.5" : "accent-[#00775B] mt-0.5"}
                 />
                 <div>
-                  <p className="text-[12px] font-bold text-gray-800">{p.label}</p>
-                  <p className="text-[11px] text-gray-400">{p.desc}</p>
+                  <p className={cn("text-[12px] font-bold", dark ? "text-[#CBD5E1]" : "text-gray-800")}>{p.label}</p>
+                  <p className={cn("text-[11px]", dark ? "text-[#475569]" : "text-gray-400")}>{p.desc}</p>
                 </div>
               </label>
             ))}
@@ -1155,12 +1253,17 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
           {/* Time format */}
           <div>
             <Label>Time Format</Label>
-            <div className="flex mt-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+            <div className={cn("flex mt-1 rounded-lg p-0.5 w-fit", dark ? "bg-[#0F172A]" : "bg-gray-100")}>
               {(["12h", "24h"] as const).map(f => (
                 <button
                   key={f}
                   onClick={() => setTimeFormat(f)}
-                  className={cn("px-4 py-1.5 rounded-md text-[12px] font-semibold transition-all", timeFormat === f ? "bg-white text-[#00775B] shadow-sm" : "text-gray-500")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-[12px] font-semibold transition-all",
+                    timeFormat === f
+                      ? dark ? "bg-[#1E293B] text-[#00D4AA] shadow-sm" : "bg-white text-[#00775B] shadow-sm"
+                      : dark ? "text-[#64748B]" : "text-gray-500"
+                  )}
                 >
                   {f}
                 </button>
@@ -1171,12 +1274,17 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
           {/* Density */}
           <div>
             <Label>Dashboard Density</Label>
-            <div className="flex mt-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+            <div className={cn("flex mt-1 rounded-lg p-0.5 w-fit", dark ? "bg-[#0F172A]" : "bg-gray-100")}>
               {(["compact", "comfortable"] as const).map(d => (
                 <button
                   key={d}
                   onClick={() => setDensity(d)}
-                  className={cn("px-4 py-1.5 rounded-md text-[12px] font-semibold transition-all capitalize", density === d ? "bg-white text-[#00775B] shadow-sm" : "text-gray-500")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-[12px] font-semibold transition-all capitalize",
+                    density === d
+                      ? dark ? "bg-[#1E293B] text-[#00D4AA] shadow-sm" : "bg-white text-[#00775B] shadow-sm"
+                      : dark ? "text-[#64748B]" : "text-gray-500"
+                  )}
                 >
                   {d}
                 </button>
@@ -1188,8 +1296,8 @@ function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggle
           <div>
             <Label>Timezone</Label>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[13px] text-gray-700">Asia/Kolkata (IST)</span>
-              <button className="text-[12px] text-[#00775B] hover:underline font-medium">Change</button>
+              <span className={cn("text-[13px]", dark ? "text-[#CBD5E1]" : "text-gray-700")}>Asia/Kolkata (IST)</span>
+              <button className={cn("text-[12px] hover:underline font-medium", dark ? "text-[#00D4AA]" : "text-[#00775B]")}>Change</button>
             </div>
           </div>
         </div>
@@ -1255,53 +1363,58 @@ export function SettingsPage({ isDark, onToggleDark }: SettingsPageProps) {
   };
 
   return (
-    <div className="flex h-full w-full bg-white overflow-hidden">
+    <ThemeCtx.Provider value={isDark}>
+      <div className={cn("flex h-full w-full overflow-hidden", isDark ? "bg-[#020617]" : "bg-white")}>
 
-      {/* Left nav */}
-      <aside className="w-52 shrink-0 border-r border-gray-200 overflow-y-auto bg-white">
-        {/* Nav header */}
-        <div className="px-5 pt-6 pb-4 border-b border-gray-100">
-          <h1 className="text-[15px] font-semibold text-gray-900">Settings</h1>
-          <p className="text-[11px] text-gray-400 mt-0.5">Workspace preferences</p>
-        </div>
+        {/* Left nav */}
+        <aside className={cn(
+          "w-52 shrink-0 border-r overflow-y-auto",
+          isDark ? "bg-[#0F172A] border-[#1E293B]" : "bg-white border-gray-200"
+        )}>
+          {/* Nav header */}
+          <div className={cn("px-5 pt-6 pb-4 border-b", isDark ? "border-[#1E293B]" : "border-gray-100")}>
+            <h1 className={cn("text-[15px] font-semibold", isDark ? "text-[#F1F5F9]" : "text-gray-900")}>Settings</h1>
+            <p className={cn("text-[11px] mt-0.5", isDark ? "text-[#64748B]" : "text-gray-400")}>Workspace preferences</p>
+          </div>
 
-        <nav className="py-4 px-3">
-          {NAV_GROUPS.map(group => (
-            <div key={group.label} className="mb-5">
-              <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                {group.label}
-              </p>
-              {group.items.map(item => {
-                const Icon = item.icon;
-                const active = activeSection === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    onClick={() => setActiveSection(item.key)}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors",
-                      active
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                    )}
-                  >
-                    <Icon className="w-[14px] h-[14px] shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-      </aside>
+          <nav className="py-4 px-3">
+            {NAV_GROUPS.map(group => (
+              <div key={group.label} className="mb-5">
+                <p className={cn("px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest", isDark ? "text-[#475569]" : "text-gray-400")}>
+                  {group.label}
+                </p>
+                {group.items.map(item => {
+                  const Icon = item.icon;
+                  const active = activeSection === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => setActiveSection(item.key)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors",
+                        active
+                          ? isDark ? "bg-[#00D4AA]/10 text-[#00D4AA]" : "bg-gray-100 text-gray-900"
+                          : isDark ? "text-[#64748B] hover:bg-[#1E293B] hover:text-[#94A3B8]" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                      )}
+                    >
+                      <Icon className="w-[14px] h-[14px] shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+        </aside>
 
-      {/* Section content — full width, scrollable */}
-      <main className="flex-1 overflow-y-auto bg-white">
-        <div className="px-6 py-6">
-          {renderContent()}
-        </div>
-      </main>
+        {/* Section content — full width, scrollable */}
+        <main className={cn("flex-1 overflow-y-auto", isDark ? "bg-[#020617]" : "bg-white")}>
+          <div className="px-6 py-6">
+            {renderContent()}
+          </div>
+        </main>
 
-    </div>
+      </div>
+    </ThemeCtx.Provider>
   );
 }
