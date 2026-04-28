@@ -2556,12 +2556,671 @@ const V2_1Content = () => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
+//  DATA GRID v2.2 — Seamless HUD
+//  Frameless transparent header · zebra-glass rows · ghost pills
+//  ID severity indicator strip · integrated bottom-border-only toolbar
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Severity color palette used for ID strip and ghost pills
+const SEVERITY_COLORS: Record<string, string> = {
+  critical: "#E7000B",
+  warning:  "#EA580C",
+  stable:   "#00A63E",
+  success:  "#00A63E",
+  info:     "#2B7FFF",
+  resolved: "#64748B",
+  medium:   "#E19A04",
+  high:     "#EA580C",
+  low:      "#2B7FFF",
+};
+
+// Ghost pill — transparent bg, 1px solid bright border, bright colored text
+// Contrasts with v2.1 solid fills
+const V22GhostPill = ({ status }: { status: string }) => {
+  const color = SEVERITY_COLORS[status.toLowerCase()] ?? "#64748B";
+  const label = (V21_STATUS_CFG[status.toLowerCase()]?.label ?? status);
+  return (
+    <span
+      style={{
+        display: "inline-flex", alignItems: "center",
+        padding: "2px 8px",
+        borderRadius: 100,
+        fontSize: 10, fontWeight: 700,
+        letterSpacing: "0.04em", textTransform: "uppercase",
+        color,
+        backgroundColor: "transparent",
+        border: `1px solid ${color}`,
+        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </span>
+  );
+};
+
+const V22_COLS = "40px 136px 108px 1fr 148px 72px 80px 148px 68px";
+
+const V22DataGrid = ({ data }: { data: GridRow[] }) => {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  return (
+    <div style={{ fontFamily: "inherit", width: "100%" }}>
+      {/* Frameless header — transparent bg, 2px teal bottom border ONLY */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: V22_COLS,
+          alignItems: "center",
+          height: 38,
+          backgroundColor: "transparent",
+          borderBottom: "2px solid #00775B",
+          paddingLeft: 8,
+          paddingRight: 8,
+        }}
+      >
+        {["#", "Incident ID", "Status", "Event Type", "Zone", "Camera", "Conf.", "Timestamp", ""].map((h, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: "Inter, sans-serif",
+              color: "#1E293B",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              paddingLeft: i === 0 ? 4 : 8,
+              paddingRight: 8,
+            }}
+          >
+            {h}
+          </div>
+        ))}
+      </div>
+
+      {/* Rows — zebra-glass, no dividers */}
+      {data.map((row, idx) => {
+        const isHovered = hoveredId === row.id;
+        const isEven = idx % 2 === 1; // 0-indexed: odd index = even visual row
+        const sevColor = SEVERITY_COLORS[row.status] ?? "#64748B";
+
+        return (
+          <div
+            key={row.id}
+            onMouseEnter={() => setHoveredId(row.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            style={{
+              display: "grid",
+              gridTemplateColumns: V22_COLS,
+              alignItems: "center",
+              height: 44,
+              position: "relative",
+              // Zebra stripe on even rows; hover overrides
+              backgroundColor: isHovered
+                ? "rgba(0, 119, 91, 0.08)"
+                : isEven
+                ? "rgba(0, 119, 91, 0.02)"
+                : "#ffffff",
+              // NO border-bottom — borderless rows
+              cursor: "default",
+              transition: "background-color 120ms ease",
+              paddingLeft: 8,
+              paddingRight: 8,
+            }}
+          >
+            {/* # */}
+            <div
+              style={{
+                fontSize: 11,
+                color: "#CBD5E1",
+                fontFamily: "'JetBrains Mono', monospace",
+                paddingLeft: 4,
+                textShadow: isHovered ? "0 0 8px rgba(0,119,91,0.35)" : "none",
+                transition: "text-shadow 200ms ease",
+              }}
+            >
+              {String(idx + 1).padStart(2, "0")}
+            </div>
+
+            {/* Incident ID — with left severity indicator strip */}
+            <div
+              style={{
+                paddingLeft: 8,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                overflow: "hidden",
+              }}
+            >
+              {/* 2px severity color indicator */}
+              <div
+                style={{
+                  width: 2,
+                  height: 20,
+                  borderRadius: 1,
+                  backgroundColor: sevColor,
+                  flexShrink: 0,
+                  opacity: isHovered ? 1 : 0.65,
+                  transition: "opacity 120ms ease",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  fontSize: 11,
+                  fontWeight: isHovered ? 600 : 500,
+                  color: isHovered ? "#0F172A" : "#334155",
+                  letterSpacing: "0.01em",
+                  textShadow: isHovered ? "0 0 10px rgba(0,119,91,0.3)" : "none",
+                  transition: "font-weight 120ms ease, color 120ms ease, text-shadow 200ms ease",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {row.id}
+              </span>
+            </div>
+
+            {/* Status — ghost pill */}
+            <div style={{ paddingLeft: 8 }}>
+              <V22GhostPill status={row.status} />
+            </div>
+
+            {/* Event Type — Inter, glow on hover */}
+            <div
+              style={{
+                paddingLeft: 8, paddingRight: 8,
+                fontSize: 12,
+                fontFamily: "Inter, sans-serif",
+                fontWeight: isHovered ? 500 : 400,
+                color: isHovered ? "#0F172A" : "#334155",
+                textShadow: isHovered ? "0 0 10px rgba(0,119,91,0.25)" : "none",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                transition: "color 120ms ease, text-shadow 200ms ease",
+              }}
+            >
+              {row.event}
+            </div>
+
+            {/* Zone — Inter */}
+            <div
+              style={{
+                paddingLeft: 8,
+                fontSize: 11,
+                fontFamily: "Inter, sans-serif",
+                color: isHovered ? "#334155" : "#475569",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                transition: "color 120ms ease",
+              }}
+            >
+              {row.zone}
+            </div>
+
+            {/* Camera — Mono */}
+            <div
+              style={{
+                paddingLeft: 8,
+                fontSize: 11,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: isHovered ? "#475569" : "#64748B",
+                transition: "color 120ms ease",
+              }}
+            >
+              {row.camera}
+            </div>
+
+            {/* Confidence — Mono */}
+            <div
+              style={{
+                paddingLeft: 8,
+                fontSize: 11,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: isHovered ? "#334155" : "#475569",
+                fontVariantNumeric: "tabular-nums",
+                transition: "color 120ms ease",
+              } as React.CSSProperties}
+            >
+              {row.confidence.toFixed(1)}%
+            </div>
+
+            {/* Timestamp — Mono */}
+            <div
+              style={{
+                paddingLeft: 8,
+                fontSize: 11,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: isHovered ? "#475569" : "#64748B",
+                letterSpacing: "0.01em",
+                transition: "color 120ms ease",
+              }}
+            >
+              {row.timestamp}
+            </div>
+
+            {/* Actions — glassmorphic, hover-revealed */}
+            <div
+              style={{
+                paddingLeft: 8,
+                display: "flex", alignItems: "center", justifyContent: "flex-end",
+                opacity: isHovered ? 1 : 0,
+                transition: "opacity 150ms ease",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex", alignItems: "center", gap: 2,
+                  padding: "3px 6px",
+                  backgroundColor: "rgba(255,255,255,0.85)",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(0,0,0,0.07)",
+                  borderRadius: 4,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+                }}
+              >
+                <button
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", transition: "color 120ms, background 120ms" }}
+                  onMouseEnter={(e) => { (e.currentTarget).style.color = "#00775B"; (e.currentTarget).style.background = "rgba(0,119,91,0.08)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget).style.color = "#94A3B8"; (e.currentTarget).style.background = "transparent"; }}
+                >
+                  <Eye style={{ width: 13, height: 13 }} />
+                </button>
+                <button
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", transition: "color 120ms, background 120ms" }}
+                  onMouseEnter={(e) => { (e.currentTarget).style.color = "#00A63E"; (e.currentTarget).style.background = "rgba(0,166,62,0.08)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget).style.color = "#94A3B8"; (e.currentTarget).style.background = "transparent"; }}
+                >
+                  <CheckCircle2 style={{ width: 13, height: 13 }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const ROWS_PER_PAGE_V22 = 5;
+
+const V2_2Content = () => {
+  const [searchQ, setSearchQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<"timestamp" | "confidence" | "id">("timestamp");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+
+  const filteredData = V21_GRID_DATA
+    .filter((row) => {
+      if (
+        searchQ &&
+        !row.event.toLowerCase().includes(searchQ.toLowerCase()) &&
+        !row.id.toLowerCase().includes(searchQ.toLowerCase()) &&
+        !row.zone.toLowerCase().includes(searchQ.toLowerCase())
+      ) return false;
+      if (statusFilter !== "all" && row.status !== statusFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortField === "confidence") return b.confidence - a.confidence;
+      if (sortField === "id") return a.id.localeCompare(b.id);
+      return b.timestamp.localeCompare(a.timestamp);
+    });
+
+  const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE_V22);
+  const paginatedData = filteredData.slice(
+    (page - 1) * ROWS_PER_PAGE_V22,
+    page * ROWS_PER_PAGE_V22
+  );
+
+  const handleSearch = (q: string) => { setSearchQ(q); setPage(1); };
+  const handleStatus = (s: string) => { setStatusFilter(s); setPage(1); setFilterOpen(false); };
+  const handleSort = (f: "timestamp" | "confidence" | "id") => { setSortField(f); setSortOpen(false); };
+
+  const SORT_OPTIONS: { id: "timestamp" | "confidence" | "id"; label: string }[] = [
+    { id: "timestamp",  label: "Newest First" },
+    { id: "confidence", label: "Confidence ↓" },
+    { id: "id",         label: "ID Ascending" },
+  ];
+  const STATUS_OPTIONS = ["all", "critical", "warning", "stable", "info", "resolved"];
+
+  // Shared integrated button style (bottom-border only, no box)
+  const integratedBtnBase: React.CSSProperties = {
+    background: "transparent",
+    border: "none",
+    borderBottom: "2px solid transparent",
+    borderRadius: 0,
+    cursor: "pointer",
+    display: "flex", alignItems: "center", gap: 5,
+    fontSize: 11, fontWeight: 600,
+    fontFamily: "Inter, sans-serif",
+    color: "#64748B",
+    padding: "4px 2px",
+    transition: "color 150ms ease, border-bottom-color 150ms ease",
+  };
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        icon={Eye}
+        title="Seamless HUD v2.2"
+        description="Frameless transparent header, zebra-glass row striping, ghost pills, severity indicator strips on ID column, integrated bottom-border toolbar — the table blends into the page air."
+      />
+
+      {/* Spec chips */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["Header",        "Transparent + 2px teal bottom"],
+          ["Row Dividers",  "None (borderless)"],
+          ["Zebra",         "rgba(0,119,91,0.02) even rows"],
+          ["Hover BG",      "rgba(0,119,91,0.08) + text glow"],
+          ["Pills",         "Ghost — 1px outline, bright text"],
+          ["ID Strip",      "2px severity color indicator"],
+          ["Toolbar",       "Bottom-border only, no container"],
+          ["Font",          "Mono IDs/numbers · Inter labels"],
+        ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
+      </div>
+
+      {/* ── Integrated Toolbar + Table ─────────────────────────────────── */}
+      <div style={{ maxWidth: 1200 }}>
+
+        {/* Integrated toolbar — feels like it's "part of the air" */}
+        <div
+          style={{
+            display: "flex", alignItems: "flex-end", gap: 16,
+            marginBottom: 16,
+            paddingBottom: 4,
+          }}
+        >
+          {/* Bottom-border-only search */}
+          <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
+            <Search
+              style={{
+                position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
+                width: 13, height: 13, color: "#94A3B8",
+                pointerEvents: "none",
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search incidents, zones…"
+              value={searchQ}
+              onChange={(e) => handleSearch(e.target.value)}
+              style={{
+                width: "100%",
+                height: 32,
+                paddingLeft: 22,
+                paddingRight: searchQ ? 24 : 4,
+                fontSize: 12,
+                fontFamily: "Inter, sans-serif",
+                color: "#1E293B",
+                backgroundColor: "transparent",
+                // Bottom border only — integrated feel
+                border: "none",
+                borderBottom: "2px solid #E2E8F0",
+                borderRadius: 0,
+                outline: "none",
+                transition: "border-bottom-color 200ms ease, box-shadow 200ms ease",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderBottomColor = "#00775B";
+                e.target.style.boxShadow = "0 2px 8px rgba(0,119,91,0.18)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderBottomColor = "#E2E8F0";
+                e.target.style.boxShadow = "none";
+              }}
+            />
+            {searchQ && (
+              <button
+                onClick={() => handleSearch("")}
+                style={{
+                  position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
+                  display: "flex", alignItems: "center",
+                  border: "none", background: "transparent", cursor: "pointer",
+                  color: "#94A3B8", padding: 0,
+                }}
+              >
+                <X style={{ width: 12, height: 12 }} />
+              </button>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 20, backgroundColor: "#E2E8F0", flexShrink: 0 }} />
+
+          {/* Filter — integrated bottom-border button */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => { setFilterOpen((o) => !o); setSortOpen(false); }}
+              style={{
+                ...integratedBtnBase,
+                color: statusFilter !== "all" ? "#00775B" : "#64748B",
+                borderBottomColor: statusFilter !== "all" ? "#00775B" : "transparent",
+              }}
+            >
+              <Filter style={{ width: 12, height: 12 }} />
+              {statusFilter !== "all"
+                ? (V21_STATUS_CFG[statusFilter]?.label ?? statusFilter)
+                : "Filter"}
+            </button>
+            {filterOpen && (
+              <>
+                <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setFilterOpen(false)} />
+                <div
+                  style={{
+                    position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 50,
+                    minWidth: 150,
+                    backgroundColor: "#fff",
+                    border: "1px solid #E2E8F0",
+                    borderRadius: 4,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <div
+                      key={s}
+                      onClick={() => handleStatus(s)}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        gap: 8, padding: "8px 12px",
+                        cursor: "pointer",
+                        backgroundColor: statusFilter === s ? "rgba(0,119,91,0.05)" : "transparent",
+                        fontSize: 11, fontWeight: 600,
+                        fontFamily: "Inter, sans-serif",
+                        color: statusFilter === s ? "#00775B" : "#334155",
+                        transition: "background-color 100ms ease",
+                      }}
+                      onMouseEnter={(e) => { if (statusFilter !== s) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F8FAFC"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = statusFilter === s ? "rgba(0,119,91,0.05)" : "transparent"; }}
+                    >
+                      <span style={{ textTransform: s === "all" ? "none" : "capitalize" }}>
+                        {s === "all" ? "All Statuses" : s}
+                      </span>
+                      {s !== "all" && <V22GhostPill status={s} />}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Sort — integrated bottom-border button */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => { setSortOpen((o) => !o); setFilterOpen(false); }}
+              style={{
+                ...integratedBtnBase,
+                color: sortField !== "timestamp" ? "#00775B" : "#64748B",
+                borderBottomColor: sortField !== "timestamp" ? "#00775B" : "transparent",
+              }}
+            >
+              <SlidersHorizontal style={{ width: 12, height: 12 }} />
+              {SORT_OPTIONS.find((o) => o.id === sortField)?.label ?? "Sort"}
+            </button>
+            {sortOpen && (
+              <>
+                <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortOpen(false)} />
+                <div
+                  style={{
+                    position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 50,
+                    minWidth: 160,
+                    backgroundColor: "#fff",
+                    border: "1px solid #E2E8F0",
+                    borderRadius: 4,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <div
+                      key={opt.id}
+                      onClick={() => handleSort(opt.id)}
+                      style={{
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                        backgroundColor: sortField === opt.id ? "rgba(0,119,91,0.05)" : "transparent",
+                        fontSize: 11, fontWeight: 600,
+                        fontFamily: "Inter, sans-serif",
+                        color: sortField === opt.id ? "#00775B" : "#334155",
+                        transition: "background-color 100ms ease",
+                      }}
+                      onMouseEnter={(e) => { if (sortField !== opt.id) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F8FAFC"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = sortField === opt.id ? "rgba(0,119,91,0.05)" : "transparent"; }}
+                    >
+                      {opt.label}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Row count — right-aligned */}
+          <div style={{ marginLeft: "auto", fontSize: 11, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: "#475569" }}>
+              {filteredData.length}
+            </span>{" "}
+            {filteredData.length === 1 ? "row" : "rows"}
+          </div>
+        </div>
+
+        {/* Table — no outer border, seamless */}
+        <div
+          style={{
+            borderRadius: 6,
+            overflow: "hidden",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          {paginatedData.length === 0 ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 120, fontSize: 12, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
+              No incidents match the current filters.
+            </div>
+          ) : (
+            <V22DataGrid data={paginatedData} />
+          )}
+
+          {/* Pagination — same Safety Analytics format */}
+          {totalPages > 1 && (
+            <div
+              style={{
+                padding: "10px 16px",
+                borderTop: "1px solid #F1F5F9",
+                backgroundColor: "transparent",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                gap: 8,
+                position: "relative",
+              }}
+            >
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                  height: 28, minWidth: 76, padding: "0 10px",
+                  borderRadius: 4, border: "none", cursor: page === 1 ? "not-allowed" : "pointer",
+                  fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                  fontFamily: "Inter, sans-serif",
+                  backgroundColor: page === 1 ? "#E2E8F0" : "#00775B",
+                  color: page === 1 ? "#94A3B8" : "#ffffff",
+                  transition: "background-color 120ms ease",
+                }}
+              >
+                <ChevronLeft style={{ width: 13, height: 13 }} /> PREV
+              </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    style={{
+                      width: 28, height: 28, borderRadius: 4, border: "none", cursor: "pointer",
+                      fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                      backgroundColor: page === p ? "#00775B" : "#F1F5F9",
+                      color: page === p ? "#ffffff" : "#475569",
+                      transition: "background-color 120ms ease",
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                  height: 28, minWidth: 76, padding: "0 10px",
+                  borderRadius: 4, border: "none", cursor: page === totalPages ? "not-allowed" : "pointer",
+                  fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                  fontFamily: "Inter, sans-serif",
+                  backgroundColor: page === totalPages ? "#E2E8F0" : "#00775B",
+                  color: page === totalPages ? "#94A3B8" : "#ffffff",
+                  transition: "background-color 120ms ease",
+                }}
+              >
+                NEXT <ChevronRight style={{ width: 13, height: 13 }} />
+              </button>
+
+              <div style={{ position: "absolute", right: 16, fontSize: 11, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
+                Showing{" "}
+                <span style={{ fontWeight: 600, color: "#334155" }}>
+                  {(page - 1) * ROWS_PER_PAGE_V22 + 1}–{Math.min(page * ROWS_PER_PAGE_V22, filteredData.length)}
+                </span>{" "}
+                of{" "}
+                <span style={{ fontWeight: 600, color: "#334155" }}>{filteredData.length}</span> incidents
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Annotations */}
+      <div className="grid grid-cols-2 gap-2">
+        <Annotation>Frameless header: transparent bg · 2px teal bottom border only · Inter Bold #1E293B</Annotation>
+        <Annotation>Zebra-glass: even rows <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(0,119,91,0.02)</code> · zero horizontal dividers</Annotation>
+        <Annotation>Hover glow: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">text-shadow 0 0 10px rgba(0,119,91,0.3)</code> on ID and event cells</Annotation>
+        <Annotation>Ghost pills: transparent bg · 1px solid bright border · bright colored text</Annotation>
+        <Annotation>ID strip: 2px vertical rectangle · severity color (red/orange/green/blue)</Annotation>
+        <Annotation>Integrated toolbar: bottom-border-only inputs · focus glow on teal line</Annotation>
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
 //  PAGE SHELL
 // ══════════════════════════════════════════════════════════════════════════════
-type TableTabId = "v2base" | "v2-1";
+type TableTabId = "v2base" | "v2-1" | "v2-2";
 const TABLE_TABS: { id: TableTabId; version: string; label: string; badge: string; badgeColor: string }[] = [
   { id: "v2base", version: "v2.0", label: "Base Grid",        badge: "Standard", badgeColor: "#2B7FFF" },
-  { id: "v2-1",   version: "v2.1", label: "High-Tech Dense",  badge: "New",      badgeColor: "#00775B" },
+  { id: "v2-1",   version: "v2.1", label: "High-Tech Dense",  badge: "Dense",    badgeColor: "#00775B" },
+  { id: "v2-2",   version: "v2.2", label: "Seamless HUD",     badge: "Fluid",    badgeColor: "#8B5CF6" },
 ];
 
 type TabId = "v1" | "v1-1" | "v1-2";
@@ -2610,7 +3269,7 @@ export const DesignSystem = () => {
               ["Severity Levels", "4"],
               ["Interactive States", "3"],
               ["Token Families", "4"],
-              ["Table Variants", "3"],
+              ["Table Variants", "4"],
             ].map(([l, v]) => (
               <div key={l} className="flex items-center gap-2">
                 <span className="text-[11px] text-white/40 font-medium">{l}</span>
@@ -2692,6 +3351,7 @@ export const DesignSystem = () => {
           {componentType === "card" && activeTab === "v1-2" && <V1_2Content />}
           {componentType === "table" && tableTab === "v2base" && <V2BaseContent />}
           {componentType === "table" && tableTab === "v2-1"   && <V2_1Content />}
+          {componentType === "table" && tableTab === "v2-2"   && <V2_2Content />}
         </div>
 
         {/* Footer */}
