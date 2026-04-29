@@ -2858,75 +2858,99 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
 
 const ROWS_PER_PAGE_V22 = 10;
 
-// Unique event types and zones derived from the dataset
+// Unique event types, zones, and statuses derived from the dataset
 const ALL_APPS  = [...new Set(V21_GRID_DATA.map((r) => r.event))].sort();
 const ALL_ZONES = [...new Set(V21_GRID_DATA.map((r) => r.zone))].sort();
 
+// Severity ordering for sort (lower = more severe)
+const SEVERITY_ORDER_V22: Record<string, number> = {
+  critical: 0, high: 1, warning: 2, medium: 3, info: 4, low: 4, stable: 5, resolved: 6, success: 6,
+};
+const ALL_STATUSES_V22 = [...new Set(V21_GRID_DATA.map((r) => r.status))].sort(
+  (a, b) => (SEVERITY_ORDER_V22[a] ?? 7) - (SEVERITY_ORDER_V22[b] ?? 7)
+);
+
+// 8-way sort options (4 fields × 2 directions)
+const SORT_OPTIONS_V22: { key: string; label: string; shortLabel: string }[] = [
+  { key: "timestamp-desc",  label: "Time: Newest First",         shortLabel: "Time ↓"  },
+  { key: "timestamp-asc",   label: "Time: Oldest First",         shortLabel: "Time ↑"  },
+  { key: "confidence-desc", label: "Confidence: High → Low",     shortLabel: "Conf ↓"  },
+  { key: "confidence-asc",  label: "Confidence: Low → High",     shortLabel: "Conf ↑"  },
+  { key: "id-asc",          label: "ID: A → Z",                  shortLabel: "ID ↑"    },
+  { key: "id-desc",         label: "ID: Z → A",                  shortLabel: "ID ↓"    },
+  { key: "severity-asc",    label: "Severity: Critical First",   shortLabel: "Sev ↓"   },
+  { key: "severity-desc",   label: "Severity: Low First",        shortLabel: "Sev ↑"   },
+];
+
 const V2_2Content = () => {
-  const [searchQ,      setSearchQ]      = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [zoneFilter,   setZoneFilter]   = useState("all");
-  const [appFilter,    setAppFilter]    = useState("all");
-  const [page,         setPage]         = useState(1);
-  const [sortField,    setSortField]    = useState<"timestamp" | "confidence" | "id">("timestamp");
-  const [sortOpen,     setSortOpen]     = useState(false);
-  const [severityOpen, setSeverityOpen] = useState(false);
-  const [appOpen,      setAppOpen]      = useState(false);
-  const [zoneOpen,     setZoneOpen]     = useState(false);
+  const [searchQ,       setSearchQ]       = useState("");
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set());
+  const [zoneFilters,   setZoneFilters]   = useState<Set<string>>(new Set());
+  const [appFilters,    setAppFilters]    = useState<Set<string>>(new Set());
+  const [page,          setPage]          = useState(1);
+  const [sortKey,       setSortKey]       = useState("timestamp-desc");
+  const [sortOpen,      setSortOpen]      = useState(false);
+  const [severityOpen,  setSeverityOpen]  = useState(false);
+  const [appOpen,       setAppOpen]       = useState(false);
+  const [zoneOpen,      setZoneOpen]      = useState(false);
   const isDark = useSandboxTheme() === "dark";
 
-  const hasActiveFilters = searchQ !== "" || statusFilter !== "all" || zoneFilter !== "all" || appFilter !== "all";
+  const hasActiveFilters = searchQ !== "" || statusFilters.size > 0 || zoneFilters.size > 0 || appFilters.size > 0;
+  const clearFilters = () => { setSearchQ(""); setStatusFilters(new Set()); setZoneFilters(new Set()); setAppFilters(new Set()); setPage(1); };
 
-  const clearFilters = () => { setSearchQ(""); setStatusFilter("all"); setZoneFilter("all"); setAppFilter("all"); setPage(1); };
+  // Toggle helpers for multi-select sets
+  const toggleStatus = (s: string) => { setStatusFilters(prev => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; }); setPage(1); };
+  const toggleZone   = (z: string) => { setZoneFilters(prev   => { const n = new Set(prev); n.has(z) ? n.delete(z) : n.add(z); return n; }); setPage(1); };
+  const toggleApp    = (a: string) => { setAppFilters(prev    => { const n = new Set(prev); n.has(a) ? n.delete(a) : n.add(a); return n; }); setPage(1); };
+
+  // Filter button label: empty → name, 1 → that value, 2+ → "N Type"
+  const severityLabel = statusFilters.size === 0 ? "Severity"
+    : statusFilters.size === 1 ? (V21_STATUS_CFG[[...statusFilters][0]]?.label ?? [...statusFilters][0])
+    : `${statusFilters.size} Severities`;
+  const appLabel  = appFilters.size   === 0 ? "Applications"
+    : appFilters.size   === 1 ? ([...appFilters][0].length > 16 ? [...appFilters][0].slice(0, 16) + "…" : [...appFilters][0])
+    : `${appFilters.size} Apps`;
+  const zoneLabel = zoneFilters.size  === 0 ? "Zones"
+    : zoneFilters.size  === 1 ? [...zoneFilters][0]
+    : `${zoneFilters.size} Zones`;
+
+  const currentSortOpt = SORT_OPTIONS_V22.find(o => o.key === sortKey) ?? SORT_OPTIONS_V22[0];
+  const sortIsDefault  = sortKey === "timestamp-desc";
 
   const filteredData = V21_GRID_DATA
     .filter((row) => {
-      if (
-        searchQ &&
-        !row.event.toLowerCase().includes(searchQ.toLowerCase()) &&
-        !row.id.toLowerCase().includes(searchQ.toLowerCase()) &&
-        !row.zone.toLowerCase().includes(searchQ.toLowerCase())
-      ) return false;
-      if (statusFilter !== "all" && row.status !== statusFilter) return false;
-      if (zoneFilter   !== "all" && row.zone   !== zoneFilter)   return false;
-      if (appFilter    !== "all" && row.event  !== appFilter)    return false;
+      if (searchQ && !row.event.toLowerCase().includes(searchQ.toLowerCase()) && !row.id.toLowerCase().includes(searchQ.toLowerCase()) && !row.zone.toLowerCase().includes(searchQ.toLowerCase())) return false;
+      if (statusFilters.size > 0 && !statusFilters.has(row.status)) return false;
+      if (zoneFilters.size   > 0 && !zoneFilters.has(row.zone))     return false;
+      if (appFilters.size    > 0 && !appFilters.has(row.event))     return false;
       return true;
     })
     .sort((a, b) => {
-      if (sortField === "confidence") return b.confidence - a.confidence;
-      if (sortField === "id") return a.id.localeCompare(b.id);
-      return b.timestamp.localeCompare(a.timestamp);
+      if (sortKey === "confidence-desc") return b.confidence - a.confidence;
+      if (sortKey === "confidence-asc")  return a.confidence - b.confidence;
+      if (sortKey === "id-asc")          return a.id.localeCompare(b.id);
+      if (sortKey === "id-desc")         return b.id.localeCompare(a.id);
+      if (sortKey === "severity-asc")    return (SEVERITY_ORDER_V22[a.status] ?? 7) - (SEVERITY_ORDER_V22[b.status] ?? 7);
+      if (sortKey === "severity-desc")   return (SEVERITY_ORDER_V22[b.status] ?? 7) - (SEVERITY_ORDER_V22[a.status] ?? 7);
+      if (sortKey === "timestamp-asc")   return a.timestamp.localeCompare(b.timestamp);
+      return b.timestamp.localeCompare(a.timestamp); // timestamp-desc (default)
     });
 
-  const totalPages   = Math.ceil(filteredData.length / ROWS_PER_PAGE_V22);
+  const totalPages    = Math.ceil(filteredData.length / ROWS_PER_PAGE_V22);
   const paginatedData = filteredData.slice((page - 1) * ROWS_PER_PAGE_V22, page * ROWS_PER_PAGE_V22);
 
   const handleSearch = (q: string) => { setSearchQ(q); setPage(1); };
-  const handleStatus = (s: string) => { setStatusFilter(s); setPage(1); setSeverityOpen(false); };
-  const handleZone   = (z: string) => { setZoneFilter(z);   setPage(1); setZoneOpen(false); };
-  const handleApp    = (a: string) => { setAppFilter(a);    setPage(1); setAppOpen(false); };
-  const handleSort   = (f: "timestamp" | "confidence" | "id") => { setSortField(f); setSortOpen(false); };
-
-  const SORT_OPTIONS: { id: "timestamp" | "confidence" | "id"; label: string }[] = [
-    { id: "timestamp",  label: "Newest First" },
-    { id: "confidence", label: "Confidence ↓" },
-    { id: "id",         label: "ID Ascending" },
-  ];
-  const STATUS_OPTIONS = ["all", "critical", "warning", "stable", "info", "resolved"];
+  const handleSort   = (key: string) => { setSortKey(key); setSortOpen(false); };
 
   // Base style for all integrated bottom-border-only toolbar buttons
   const integratedBtnBase: React.CSSProperties = {
-    background: "transparent",
-    border: "none",
-    borderBottom: "2px solid transparent",
-    borderRadius: 0,
-    cursor: "pointer",
-    display: "flex", alignItems: "center", gap: 5,
-    fontSize: 12, fontWeight: 600,
-    fontFamily: "Inter, sans-serif",
-    color: isDark ? "#4B5563" : "#64748B",
-    padding: "4px 2px",
+    background: "transparent", border: "none",
+    borderBottom: "2px solid transparent", borderRadius: 0,
+    cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+    fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif",
+    color: isDark ? "#4B5563" : "#64748B", padding: "4px 2px",
     transition: "color 150ms ease, border-bottom-color 150ms ease",
+    whiteSpace: "nowrap",
   };
 
   // Shared dropdown panel surface
@@ -2934,29 +2958,41 @@ const V2_2Content = () => {
     position: "absolute", top: "calc(100% + 8px)", left: "auto", right: 0, zIndex: 50,
     backgroundColor: isDark ? "#1E293B" : "#fff",
     border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
-    borderRadius: 4,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-    overflow: "hidden",
+    borderRadius: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", overflow: "hidden",
   };
 
+  // Radio-style item — sort dropdown (single-select, no checkbox)
   const mkItem = (isActive: boolean): React.CSSProperties => ({
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    gap: 8, padding: "8px 12px",
-    cursor: "pointer",
+    display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer",
     backgroundColor: isActive ? (isDark ? "rgba(0,149,109,0.12)" : "rgba(0,119,91,0.05)") : "transparent",
     fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif",
+    color: isActive ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#CBD5E1" : "#334155"),
+    transition: "background-color 100ms ease",
+  });
+  // Checkbox-style item — multi-select filter dropdowns
+  const mkCheckItem = (isActive: boolean): React.CSSProperties => ({
+    display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer",
+    backgroundColor: isActive ? (isDark ? "rgba(0,149,109,0.12)" : "rgba(0,119,91,0.05)") : "transparent",
+    fontSize: 12, fontWeight: 500, fontFamily: "Inter, sans-serif",
     color: isActive ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#CBD5E1" : "#334155"),
     transition: "background-color 100ms ease",
   });
   const hoverIn  = (e: React.MouseEvent<HTMLDivElement>, isActive: boolean) => { if (!isActive) (e.currentTarget).style.backgroundColor = isDark ? "rgba(255,255,255,0.04)" : "#F8FAFC"; };
   const hoverOut = (e: React.MouseEvent<HTMLDivElement>, isActive: boolean) => { (e.currentTarget).style.backgroundColor = isActive ? (isDark ? "rgba(0,149,109,0.12)" : "rgba(0,119,91,0.05)") : "transparent"; };
 
+  // Inline checkbox indicator (no hooks, safe to define inline)
+  const Checkbox = ({ checked }: { checked: boolean }) => (
+    <span style={{ width: 13, height: 13, flexShrink: 0, borderRadius: 2, display: "inline-flex", alignItems: "center", justifyContent: "center", transition: "all 100ms ease", border: `1.5px solid ${checked ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#475569" : "#CBD5E1")}`, backgroundColor: checked ? (isDark ? "#00956D" : "#00775B") : "transparent" }}>
+      {checked && <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+    </span>
+  );
+
   return (
     <div className="space-y-8">
       <SectionHeader
         icon={Eye}
         title="Seamless HUD v2.2"
-        description="Frameless 44px header, zebra-glass rows, solid-fill severity pills, multi-filter toolbar (Severity · Applications · Zones) with Clear Filters — the table blends into the page."
+        description="Frameless 44px header, zebra-glass rows, solid-fill severity pills, multi-select filters (Severity · Applications · Zones), bi-directional sort — the table blends into the page."
       />
 
       {/* Spec chips */}
@@ -2967,9 +3003,9 @@ const V2_2Content = () => {
           ["Zebra",        "rgba(0,119,91,0.03) even rows"],
           ["Hover",        "rgba(0,119,91,0.08) + text glow"],
           ["Pills",        "Bright fill · Inter · 4px radius"],
-          ["Filters",      "Severity + Applications + Zones"],
-          ["Clear",        "Shown when any filter active"],
-          ["Secondary",    "Zone/Camera/Conf/Timestamp unified"],
+          ["Filters",      "Multi-select: Severity · Applications · Zones"],
+          ["Sort",         "Bi-directional: Time · Conf · ID · Severity"],
+          ["Clear",        "Fixed slot · left of filters · hidden when inactive"],
         ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
       </div>
 
@@ -2979,8 +3015,8 @@ const V2_2Content = () => {
         {/* Toolbar — Search + Sort on left · Severity/Applications/Zones/Clear on right */}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 16, paddingBottom: 10 }}>
 
-          {/* Search */}
-          <div style={{ position: "relative", maxWidth: 260 }}>
+          {/* Search — width spans 3 table columns: 40 + 136 + 108 = 284px */}
+          <div style={{ position: "relative", width: 284, flexShrink: 0 }}>
             <Search style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: isDark ? "#374151" : "#94A3B8", pointerEvents: "none" }} />
             <input
               type="text"
@@ -3007,22 +3043,22 @@ const V2_2Content = () => {
             )}
           </div>
 
-          {/* Sort — next to search */}
+          {/* Sort — bi-directional, next to search */}
           <div style={{ position: "relative" }}>
             <button
               onClick={() => { setSortOpen((o) => !o); setSeverityOpen(false); setAppOpen(false); setZoneOpen(false); }}
-              style={{ ...integratedBtnBase, color: sortField !== "timestamp" ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: sortField !== "timestamp" ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
+              style={{ ...integratedBtnBase, color: !sortIsDefault ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: !sortIsDefault ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
             >
               <SlidersHorizontal style={{ width: 12, height: 12 }} />
-              {SORT_OPTIONS.find((o) => o.id === sortField)?.label ?? "Sort"}
+              {sortIsDefault ? "Sort" : currentSortOpt.shortLabel}
             </button>
             {sortOpen && (
               <>
                 <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortOpen(false)} />
-                <div style={{ ...dropdownPanel, left: 0, right: "auto", minWidth: 160 }}>
-                  {SORT_OPTIONS.map((opt) => (
-                    <div key={opt.id} onClick={() => handleSort(opt.id)} style={mkItem(sortField === opt.id)}
-                      onMouseEnter={(e) => hoverIn(e, sortField === opt.id)} onMouseLeave={(e) => hoverOut(e, sortField === opt.id)}>
+                <div style={{ ...dropdownPanel, left: 0, right: "auto", minWidth: 220 }}>
+                  {SORT_OPTIONS_V22.map((opt) => (
+                    <div key={opt.key} onClick={() => handleSort(opt.key)} style={mkItem(sortKey === opt.key)}
+                      onMouseEnter={(e) => hoverIn(e, sortKey === opt.key)} onMouseLeave={(e) => hoverOut(e, sortKey === opt.key)}>
                       {opt.label}
                     </div>
                   ))}
@@ -3031,27 +3067,36 @@ const V2_2Content = () => {
             )}
           </div>
 
-          {/* Right cluster */}
+          {/* Right cluster: Clear (fixed slot, always rendered) + Severity + Applications + Zones */}
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "flex-end", gap: 12 }}>
 
-            {/* Severity */}
+            {/* Clear Filters — visibility:hidden preserves layout when inactive */}
+            <button
+              onClick={clearFilters}
+              style={{ ...integratedBtnBase, visibility: hasActiveFilters ? "visible" : "hidden", color: isDark ? "#EF4444" : "#E7000B", borderBottomColor: isDark ? "#EF4444" : "#E7000B", gap: 4 }}
+            >
+              <X style={{ width: 12, height: 12 }} /> Clear
+            </button>
+
+            {/* Severity — multi-select, stays open on selection */}
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => { setSeverityOpen((o) => !o); setSortOpen(false); setAppOpen(false); setZoneOpen(false); }}
-                style={{ ...integratedBtnBase, color: statusFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: statusFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
+                style={{ ...integratedBtnBase, color: statusFilters.size > 0 ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: statusFilters.size > 0 ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
               >
                 <Filter style={{ width: 12, height: 12 }} />
-                {statusFilter !== "all" ? (V21_STATUS_CFG[statusFilter]?.label ?? statusFilter) : "Severity"}
+                {severityLabel}
               </button>
               {severityOpen && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSeverityOpen(false)} />
-                  <div style={{ ...dropdownPanel, minWidth: 170 }}>
-                    {STATUS_OPTIONS.map((s) => (
-                      <div key={s} onClick={() => handleStatus(s)} style={mkItem(statusFilter === s)}
-                        onMouseEnter={(e) => hoverIn(e, statusFilter === s)} onMouseLeave={(e) => hoverOut(e, statusFilter === s)}>
-                        <span style={{ textTransform: s === "all" ? "none" : "capitalize" }}>{s === "all" ? "All Severities" : s}</span>
-                        {s !== "all" && <V22GhostPill status={s} />}
+                  <div style={{ ...dropdownPanel, minWidth: 210 }}>
+                    {ALL_STATUSES_V22.map((s) => (
+                      <div key={s} onClick={() => toggleStatus(s)} style={mkCheckItem(statusFilters.has(s))}
+                        onMouseEnter={(e) => hoverIn(e, statusFilters.has(s))} onMouseLeave={(e) => hoverOut(e, statusFilters.has(s))}>
+                        <Checkbox checked={statusFilters.has(s)} />
+                        <span style={{ flex: 1 }}>{V21_STATUS_CFG[s]?.label ?? s}</span>
+                        <V22GhostPill status={s} />
                       </div>
                     ))}
                   </div>
@@ -3059,56 +3104,56 @@ const V2_2Content = () => {
               )}
             </div>
 
-            {/* Applications */}
+            {/* Applications — multi-select, stays open on selection */}
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => { setAppOpen((o) => !o); setSortOpen(false); setSeverityOpen(false); setZoneOpen(false); }}
-                style={{ ...integratedBtnBase, color: appFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: appFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
+                style={{ ...integratedBtnBase, color: appFilters.size > 0 ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: appFilters.size > 0 ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
               >
                 <Filter style={{ width: 12, height: 12 }} />
-                {appFilter !== "all" ? (appFilter.length > 16 ? appFilter.slice(0, 16) + "…" : appFilter) : "Applications"}
+                {appLabel}
               </button>
               {appOpen && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setAppOpen(false)} />
                   <div style={{ ...dropdownPanel, minWidth: 210, maxHeight: 280, overflowY: "auto" }}>
-                    <div onClick={() => handleApp("all")} style={mkItem(appFilter === "all")} onMouseEnter={(e) => hoverIn(e, appFilter === "all")} onMouseLeave={(e) => hoverOut(e, appFilter === "all")}>All Applications</div>
                     {ALL_APPS.map((a) => (
-                      <div key={a} onClick={() => handleApp(a)} style={mkItem(appFilter === a)} onMouseEnter={(e) => hoverIn(e, appFilter === a)} onMouseLeave={(e) => hoverOut(e, appFilter === a)}>{a}</div>
+                      <div key={a} onClick={() => toggleApp(a)} style={mkCheckItem(appFilters.has(a))}
+                        onMouseEnter={(e) => hoverIn(e, appFilters.has(a))} onMouseLeave={(e) => hoverOut(e, appFilters.has(a))}>
+                        <Checkbox checked={appFilters.has(a)} />
+                        <span style={{ flex: 1 }}>{a}</span>
+                      </div>
                     ))}
                   </div>
                 </>
               )}
             </div>
 
-            {/* Zones */}
+            {/* Zones — multi-select, stays open on selection */}
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => { setZoneOpen((o) => !o); setSortOpen(false); setSeverityOpen(false); setAppOpen(false); }}
-                style={{ ...integratedBtnBase, color: zoneFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: zoneFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
+                style={{ ...integratedBtnBase, color: zoneFilters.size > 0 ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: zoneFilters.size > 0 ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
               >
                 <Filter style={{ width: 12, height: 12 }} />
-                {zoneFilter !== "all" ? (zoneFilter.length > 14 ? zoneFilter.slice(0, 14) + "…" : zoneFilter) : "Zones"}
+                {zoneLabel}
               </button>
               {zoneOpen && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setZoneOpen(false)} />
                   <div style={{ ...dropdownPanel, minWidth: 200, maxHeight: 280, overflowY: "auto" }}>
-                    <div onClick={() => handleZone("all")} style={mkItem(zoneFilter === "all")} onMouseEnter={(e) => hoverIn(e, zoneFilter === "all")} onMouseLeave={(e) => hoverOut(e, zoneFilter === "all")}>All Zones</div>
                     {ALL_ZONES.map((z) => (
-                      <div key={z} onClick={() => handleZone(z)} style={mkItem(zoneFilter === z)} onMouseEnter={(e) => hoverIn(e, zoneFilter === z)} onMouseLeave={(e) => hoverOut(e, zoneFilter === z)}>{z}</div>
+                      <div key={z} onClick={() => toggleZone(z)} style={mkCheckItem(zoneFilters.has(z))}
+                        onMouseEnter={(e) => hoverIn(e, zoneFilters.has(z))} onMouseLeave={(e) => hoverOut(e, zoneFilters.has(z))}>
+                        <Checkbox checked={zoneFilters.has(z)} />
+                        <span style={{ flex: 1 }}>{z}</span>
+                      </div>
                     ))}
                   </div>
                 </>
               )}
             </div>
 
-            {/* Clear Filters — visible only when any filter is active */}
-            {hasActiveFilters && (
-              <button onClick={clearFilters} style={{ ...integratedBtnBase, color: isDark ? "#EF4444" : "#E7000B", borderBottomColor: isDark ? "#EF4444" : "#E7000B", gap: 4 }}>
-                <X style={{ width: 12, height: 12 }} /> Clear
-              </button>
-            )}
           </div>
         </div>
 
@@ -3167,7 +3212,8 @@ const V2_2Content = () => {
         <Annotation>Hover: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(0,119,91,0.08)</code> bg · text-shadow glow on ID and Event cells</Annotation>
         <Annotation>Pills: bright fill · Inter 10px Bold · 4px radius · electric variants in dark mode (FF3131 / FF6B35 / 4ADE80 / 60A5FA)</Annotation>
         <Annotation>Secondary columns (Zone/Camera/Conf/Timestamp): single unified color token per theme</Annotation>
-        <Annotation>Filters: Severity + Applications + Zones right-aligned · Sort near search · Clear Filters on demand</Annotation>
+        <Annotation>Multi-select filters: 0→label, 1→value name, 2+→"N Type" · Clear fixed-slot left of filters (visibility:hidden when inactive)</Annotation>
+        <Annotation>Bi-directional sort: Time ↑↓ · Confidence ↑↓ · ID ↑↓ · Severity ↑↓ (8 options) · default "timestamp-desc" shows "Sort"</Annotation>
       </div>
     </div>
   );
