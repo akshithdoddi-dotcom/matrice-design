@@ -1048,8 +1048,20 @@ const V1_1Content = () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ─── Shared V12 shell + atoms ─────────────────────────────────────────────────
+//
+// Type scale (applied consistently across all V12 card types):
+//   Card label header : 11px Inter Bold Uppercase #475569
+//   Chip badge        : 9px  Inter Bold Uppercase (accent color)
+//   Primary value     : 28px JB Mono Bold #0F172A  (numbers/counts)
+//   Entity title      : 14px Inter SemiBold #0F172A (zone names, non-numeric)
+//   Sublabel / scope  : 12px Inter Regular #64748B
+//   Footer text       : 11px Inter Regular #94A3B8 / #64748B
+//   Footer label key  : 10px Inter Bold Uppercase #94A3B8
+//   BS badge num      : 13px JB Mono Bold (accent color)
+//   BS badge ref      : 10px Inter Regular #94A3B8
+//   Min card width    : 280px
 
-/** Shared card wrapper — handles hover glow */
+/** Shared card wrapper — handles hover glow, enforces min-width */
 const V12Card = ({
   color, bgColor, children, className,
 }: { color: string; bgColor: string; children: React.ReactNode; className?: string }) => {
@@ -1058,6 +1070,7 @@ const V12Card = ({
     <div
       className={cn("w-full rounded-[4px] flex flex-col cursor-default select-none transition-all duration-200", className)}
       style={{
+        minWidth: 280,
         border: `1px solid ${color}`, background: bgColor,
         boxShadow: h
           ? `0 0 18px 4px ${hex2rgba(color, 0.22)}, 0 4px 14px rgba(0,0,0,0.07)`
@@ -1072,11 +1085,12 @@ const V12Divider = ({ color }: { color: string }) => (
   <div style={{ height: 1, backgroundColor: hex2rgba(color, 0.22), margin: "0 16px" }} />
 );
 
+/** Top label row — 11px bold uppercase neutral + 9px accent chip. Used by all V12 card types. */
 const V12Label = ({ label, chip, color }: { label: string; chip?: string; color: string }) => (
   <div className="px-4 pt-4 flex items-center justify-between">
     <span className="text-[11px] font-bold uppercase tracking-[0.5px] leading-none" style={{ color: "#475569" }}>{label}</span>
     {chip && (
-      <span className="text-[8px] font-bold uppercase tracking-[0.5px] px-2 py-[3px] rounded-full flex-shrink-0"
+      <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-2 py-[3px] rounded-full flex-shrink-0"
         style={{ backgroundColor: hex2rgba(color, 0.14), color }}>
         {chip}
       </span>
@@ -1084,21 +1098,21 @@ const V12Label = ({ label, chip, color }: { label: string; chip?: string; color:
   </div>
 );
 
-/** 2-line badge-stack — reusable across all V12 cards */
+/** 2-line badge-stack — shared across all V12 card types */
 interface BSProps { dir: SeverityDir; num: string; ref_: string; color: string }
 const BS = ({ dir, num, ref_, color }: BSProps) => (
-  <div className="flex flex-col px-[10px] py-[7px] rounded-[6px] flex-shrink-0" style={{ backgroundColor: hex2rgba(color, 0.12) }}>
+  <div className="flex flex-col px-[10px] py-[8px] rounded-[6px] flex-shrink-0" style={{ backgroundColor: hex2rgba(color, 0.12) }}>
     <div className="flex items-center gap-[4px] font-mono font-bold leading-none" style={{ fontSize: 13, color }}>
       {dir === "up" ? <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0" />
         : dir === "down" ? <ArrowDownRight className="w-3.5 h-3.5 flex-shrink-0" />
         : <Minus className="w-3 h-3 flex-shrink-0" />}
       {num}
     </div>
-    <div className="text-[9px] font-normal mt-[4px] leading-none text-[#94a3b8]">{ref_}</div>
+    <div className="text-[10px] font-normal mt-[5px] leading-none text-[#94a3b8]">{ref_}</div>
   </div>
 );
 
-// ─── Type A: Stat Card (no sparkline) ─────────────────────────────────────────
+// ─── Type A: Stat Card ────────────────────────────────────────────────────────
 interface StatData {
   label: string; value: string; sublabel: string;
   num: string; ref_: string; dir: SeverityDir;
@@ -1106,7 +1120,7 @@ interface StatData {
   color: string; bgColor: string;
 }
 const STAT_CARDS: StatData[] = [
-  { label: "Violations",       value: "02",    sublabel: "Assembly Line · Active", num: "-1%",   ref_: "vs Last Week",  dir: "down",    definition: "Security breaches detected", chip: "REAL-TIME", color: "#E7000B", bgColor: "#FFE5E7" },
+  { label: "Violations",       value: "02",    sublabel: "Assembly Line · Active", num: "-1%",   ref_: "vs Last Week",  dir: "down",    definition: "Security breaches detected",   chip: "REAL-TIME", color: "#E7000B", bgColor: "#FFE5E7" },
   { label: "Active Cameras",   value: "142",   sublabel: "All Sites · Live Feed",  num: "0",     ref_: "No Change",     dir: "neutral", definition: "Cameras currently streaming",  chip: "LIVE",      color: "#2B7FFF", bgColor: "#E5F0FF" },
   { label: "Mean Time to Ack", value: "15.2m", sublabel: "Rolling 24h Average",   num: "-3.4%", ref_: "vs Yesterday",  dir: "down",    definition: "Alert to acknowledgement time", chip: "DAILY",    color: "#64748B", bgColor: "#F0F2F4" },
 ];
@@ -1114,41 +1128,39 @@ const STAT_CARDS: StatData[] = [
 const V12StatCard = ({ d, isSkeleton = false }: { d: StatData; isSkeleton?: boolean }) => {
   if (isSkeleton) return (
     <V12Card color={d.color} bgColor={d.bgColor}>
-      <div className="px-4 pt-4 pb-3 flex items-center justify-between"><Sk className="h-3 w-24" /><Sk className="h-4 w-16 rounded-full" /></div>
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between"><Sk className="h-3 w-24" /><Sk className="h-[18px] w-16 rounded-full" /></div>
       <div className="px-4 pb-3 flex items-end justify-between gap-4">
-        <div className="flex flex-col gap-1"><Sk className="h-8 w-16 mt-1" /><Sk className="h-3 w-28" /></div>
-        <Sk className="h-[46px] w-[78px] rounded-[6px]" />
+        <div className="flex flex-col gap-1.5"><Sk className="h-8 w-16 mt-1" /><Sk className="h-3 w-36" /></div>
+        <Sk className="h-[52px] w-[82px] rounded-[6px]" />
       </div>
       <V12Divider color={d.color} />
-      <div className="px-4 py-2.5 flex gap-2"><Sk className="h-3 w-20" /><Sk className="h-3 w-40" /></div>
+      <div className="px-4 py-3 flex gap-2.5"><Sk className="h-3 w-20" /><Sk className="h-3 w-44" /></div>
     </V12Card>
   );
   return (
     <V12Card color={d.color} bgColor={d.bgColor}>
       <V12Label label={d.label} chip={d.chip} color={d.color} />
-      <div className="px-4 pt-3 pb-3 flex items-end justify-between gap-4">
-        <div className="flex flex-col gap-[5px]">
+      <div className="px-4 pt-3 pb-4 flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-[7px]">
           <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: 28 }}>{d.value}</div>
-          <div className="text-[10px] text-[#64748b]">{d.sublabel}</div>
+          <div className="text-[12px] text-[#64748b]">{d.sublabel}</div>
         </div>
         <BS dir={d.dir} num={d.num} ref_={d.ref_} color={d.color} />
       </div>
       <V12Divider color={d.color} />
-      <div className="px-4 py-2.5 flex items-center gap-2">
-        <span className="text-[9px] font-bold uppercase tracking-[0.5px] text-[#94a3b8] flex-shrink-0">Definition</span>
-        <span className="text-[10px] text-[#475569]">{d.definition}</span>
+      <div className="px-4 py-3 flex items-center gap-2">
+        <span className="text-[10px] font-bold uppercase tracking-[0.5px] text-[#94a3b8] flex-shrink-0">Definition</span>
+        <span className="text-[11px] text-[#475569]">{d.definition}</span>
       </div>
     </V12Card>
   );
 };
 
-// ─── Type B: Alert Card (critical zone + cautionary list) ─────────────────────
+// ─── Type C: Alert Card ───────────────────────────────────────────────────────
 interface AlertData {
   label: string; color: string; bgColor: string;
-  // critical
   zoneName?: string; description?: string; compliance?: string;
   alertInfo?: string; cameraId?: string;
-  // cautionary
   zones?: Array<{ name: string; compliance: string; num: string; ref_: string; dir: SeverityDir }>;
   footerNote?: string;
 }
@@ -1170,55 +1182,56 @@ const ALERT_CARDS: AlertData[] = [
 
 const V12AlertCard = ({ d }: { d: AlertData }) => (
   <V12Card color={d.color} bgColor={d.bgColor}>
-    <div className="px-4 pt-3 pb-0">
-      <span className="text-[10px] font-bold uppercase tracking-[0.6px]" style={{ color: d.color }}>{d.label}</span>
+    {/* Header — accent color label matching V12Label sizing/weight */}
+    <div className="px-4 pt-4 pb-0">
+      <span className="text-[11px] font-bold uppercase tracking-[0.5px] leading-none" style={{ color: d.color }}>{d.label}</span>
     </div>
     {d.zoneName ? (
       /* Critical variant */
       <>
-        <div className="px-4 pt-3 pb-3 flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1.5 min-w-0">
-            <div className="font-mono font-bold text-[#0f172a] leading-tight" style={{ fontSize: 20 }}>{d.zoneName}</div>
-            <div className="text-[10px] text-[#64748b]">{d.description}</div>
+        <div className="px-4 pt-3 pb-4 flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-[7px] min-w-0">
+            <div className="text-[16px] font-semibold text-[#0f172a] leading-tight">{d.zoneName}</div>
+            <div className="text-[12px] text-[#64748b]">{d.description}</div>
           </div>
-          <div className="flex flex-col items-center px-4 py-2.5 rounded-[6px] flex-shrink-0 bg-white/70">
-            <span className="font-mono font-bold text-[20px] leading-none" style={{ color: d.color }}>{d.compliance}</span>
-            <span className="text-[8px] font-bold uppercase tracking-[0.5px] text-[#94a3b8] mt-1">Compliance</span>
+          <div className="flex flex-col items-center px-4 py-3 rounded-[6px] flex-shrink-0 bg-white/70">
+            <span className="font-mono font-bold leading-none" style={{ fontSize: 22, color: d.color }}>{d.compliance}</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.5px] text-[#94a3b8] mt-1.5">Compliance</span>
           </div>
         </div>
         <V12Divider color={d.color} />
-        <div className="px-4 py-2.5 flex items-center gap-1.5">
-          <span style={{ color: d.color }} className="text-[10px]">⚠</span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.4px]" style={{ color: d.color }}>{d.alertInfo}</span>
-          <span className="text-[10px] text-[#94a3b8] mx-1">·</span>
-          <span className="text-[10px] font-mono text-[#64748b]">{d.cameraId}</span>
+        <div className="px-4 py-3 flex items-center gap-1.5">
+          <span style={{ color: d.color }} className="text-[11px]">⚠</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.4px]" style={{ color: d.color }}>{d.alertInfo}</span>
+          <span className="text-[11px] text-[#94a3b8] mx-1">·</span>
+          <span className="text-[11px] font-mono text-[#64748b]">{d.cameraId}</span>
         </div>
       </>
     ) : (
       /* Cautionary variant */
       <>
-        <div className="px-4 pt-2 pb-1 flex flex-col gap-2">
+        <div className="px-4 pt-3 pb-1 flex flex-col gap-2">
           {d.zones?.map((z) => (
-            <div key={z.name} className="flex items-center justify-between py-2 px-3 rounded-[4px]" style={{ backgroundColor: hex2rgba(d.color, 0.08) }}>
+            <div key={z.name} className="flex items-center justify-between py-2.5 px-3 rounded-[4px]" style={{ backgroundColor: hex2rgba(d.color, 0.08) }}>
               <div>
-                <div className="text-[11px] font-bold text-[#0f172a]">{z.name}</div>
-                <div className="text-[9px] text-[#64748b] mt-0.5">{z.compliance}</div>
+                <div className="text-[13px] font-semibold text-[#0f172a]">{z.name}</div>
+                <div className="text-[11px] text-[#64748b] mt-[5px]">{z.compliance}</div>
               </div>
               <BS dir={z.dir} num={z.num} ref_={z.ref_} color={d.color} />
             </div>
           ))}
         </div>
         <V12Divider color={d.color} />
-        <div className="px-4 py-2.5 flex items-center gap-1.5">
-          <span style={{ color: d.color }} className="text-[10px]">⚡</span>
-          <span className="text-[9px] font-bold uppercase tracking-[0.4px]" style={{ color: d.color }}>{d.footerNote}</span>
+        <div className="px-4 py-3 flex items-center gap-1.5">
+          <span style={{ color: d.color }} className="text-[11px]">⚡</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.4px]" style={{ color: d.color }}>{d.footerNote}</span>
         </div>
       </>
     )}
   </V12Card>
 );
 
-// ─── Type C: Zone Performance Card (compliance + progress bar) ─────────────────
+// ─── Type D: Zone Performance Card ───────────────────────────────────────────
 interface ZoneData {
   zoneName: string; subLabel: string;
   compliance: number;
@@ -1227,45 +1240,49 @@ interface ZoneData {
   color: string; bgColor: string;
 }
 const ZONE_CARDS: ZoneData[] = [
-  { zoneName: "Loading Dock",   subLabel: "Warehouse A",    compliance: 68, num: "-8%",  ref_: "vs yesterday", dir: "down",    cameras: 4, color: "#E7000B", bgColor: "#FFE5E7" },
-  { zoneName: "Assembly B",     subLabel: "Production Floor",compliance: 84, num: "-5%",  ref_: "vs yesterday", dir: "down",    cameras: 6, color: "#EA580C", bgColor: "#FEEFE7" },
-  { zoneName: "Warehouse C",    subLabel: "Storage Zone",   compliance: 91, num: "+1%",  ref_: "vs yesterday", dir: "up",      cameras: 3, color: "#00A63E", bgColor: "#E5FFEF" },
-  { zoneName: "Office Lobby",   subLabel: "Entrance Zone",  compliance: 97, num: "+0.4%",ref_: "vs yesterday", dir: "up",      cameras: 2, color: "#2B7FFF", bgColor: "#E5F0FF" },
+  { zoneName: "Loading Dock",    subLabel: "Warehouse A",      compliance: 68, num: "-8%",   ref_: "vs yesterday", dir: "down", cameras: 4, color: "#E7000B", bgColor: "#FFE5E7" },
+  { zoneName: "Assembly B",      subLabel: "Production Floor", compliance: 84, num: "-5%",   ref_: "vs yesterday", dir: "down", cameras: 6, color: "#EA580C", bgColor: "#FEEFE7" },
+  { zoneName: "Warehouse C",     subLabel: "Storage Zone",     compliance: 91, num: "+1%",   ref_: "vs yesterday", dir: "up",   cameras: 3, color: "#00A63E", bgColor: "#E5FFEF" },
+  { zoneName: "Office Lobby",    subLabel: "Entrance Zone",    compliance: 97, num: "+0.4%", ref_: "vs yesterday", dir: "up",   cameras: 2, color: "#2B7FFF", bgColor: "#E5F0FF" },
 ];
 
 const V12ZoneCard = ({ d, isSkeleton = false }: { d: ZoneData; isSkeleton?: boolean }) => {
   if (isSkeleton) return (
     <V12Card color={d.color} bgColor={d.bgColor}>
-      <div className="px-4 pt-4 pb-3 flex items-center justify-between">
-        <div className="flex flex-col gap-1"><Sk className="h-3.5 w-28" /><Sk className="h-3 w-20 mt-1" /></div>
-        <Sk className="h-[46px] w-[78px] rounded-[6px]" />
+      {/* Header skeleton row */}
+      <div className="px-4 pt-4 pb-2 flex items-center justify-between"><Sk className="h-3 w-28" /></div>
+      <div className="px-4 pb-3 flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-1.5"><Sk className="h-4 w-32" /><Sk className="h-3 w-24 mt-0.5" /></div>
+        <Sk className="h-[52px] w-[82px] rounded-[6px]" />
       </div>
       <div className="px-4 pb-3"><Sk className="h-2 w-full rounded-full" /></div>
       <V12Divider color={d.color} />
-      <div className="px-4 py-2.5 flex gap-3"><Sk className="h-3 w-20" /><Sk className="h-3 w-24" /></div>
+      <div className="px-4 py-3 flex gap-3"><Sk className="h-3 w-20" /><Sk className="h-3 w-24" /></div>
     </V12Card>
   );
   return (
     <V12Card color={d.color} bgColor={d.bgColor}>
-      <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-[5px] min-w-0">
-          <div className="text-[13px] font-bold text-[#0f172a] leading-none">{d.zoneName}</div>
-          <div className="text-[10px] text-[#64748b]">{d.subLabel}</div>
+      {/* V12Label header — matches all other card types */}
+      <V12Label label="Zone Performance" color={d.color} />
+      <div className="px-4 pt-3 pb-3 flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-[7px] min-w-0">
+          <div className="text-[14px] font-semibold text-[#0f172a] leading-none">{d.zoneName}</div>
+          <div className="text-[12px] text-[#64748b]">{d.subLabel}</div>
         </div>
         <BS dir={d.dir} num={d.num} ref_={d.ref_} color={d.color} />
       </div>
-      {/* Progress bar */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[9px] font-bold uppercase tracking-[0.4px] text-[#94a3b8]">Compliance</span>
-          <span className="font-mono font-bold text-[11px]" style={{ color: d.color }}>{d.compliance}%</span>
+      {/* Compliance bar — value prominently sized */}
+      <div className="px-4 pb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-bold uppercase tracking-[0.4px] text-[#94a3b8]">Compliance</span>
+          <span className="font-mono font-bold leading-none" style={{ fontSize: 16, color: d.color }}>{d.compliance}%</span>
         </div>
         <div className="h-[5px] rounded-full bg-white/60 overflow-hidden">
           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${d.compliance}%`, backgroundColor: d.color }} />
         </div>
       </div>
       <V12Divider color={d.color} />
-      <div className="px-4 py-2.5 flex items-center gap-3 text-[9px] text-[#94a3b8] font-medium">
+      <div className="px-4 py-3 flex items-center gap-3 text-[11px] text-[#94a3b8] font-medium">
         <span>🎥 {d.cameras} cameras</span>
         <span className="w-px h-3 bg-neutral-200" />
         <span className="font-mono" style={{ color: d.compliance < 80 ? d.color : "#64748b" }}>{d.compliance}% compliant</span>
@@ -1274,47 +1291,46 @@ const V12ZoneCard = ({ d, isSkeleton = false }: { d: ZoneData; isSkeleton?: bool
   );
 };
 
-// ─── Type D: Capacity Card (occupancy gauge + bar) ─────────────────────────────
+// ─── Type E: Capacity Card ────────────────────────────────────────────────────
 interface CapData {
   zoneName: string; current: number; max: number; occupancy: number;
   statusLabel: string; color: string; bgColor: string;
 }
 const CAP_CARDS: CapData[] = [
-  { zoneName: "Loading Dock",   current: 56, max: 60, occupancy: 93, statusLabel: "CRITICAL", color: "#E7000B", bgColor: "#FFE5E7" },
-  { zoneName: "Assembly Line A",current: 47, max: 60, occupancy: 78, statusLabel: "WARNING",  color: "#EA580C", bgColor: "#FEEFE7" },
-  { zoneName: "Cafeteria",      current: 36, max: 80, occupancy: 45, statusLabel: "NORMAL",   color: "#00A63E", bgColor: "#E5FFEF" },
+  { zoneName: "Loading Dock",    current: 56, max: 60, occupancy: 93, statusLabel: "CRITICAL", color: "#E7000B", bgColor: "#FFE5E7" },
+  { zoneName: "Assembly Line A", current: 47, max: 60, occupancy: 78, statusLabel: "WARNING",  color: "#EA580C", bgColor: "#FEEFE7" },
+  { zoneName: "Cafeteria",       current: 36, max: 80, occupancy: 45, statusLabel: "NORMAL",   color: "#00A63E", bgColor: "#E5FFEF" },
 ];
 
 const V12CapacityCard = ({ d }: { d: CapData }) => (
   <V12Card color={d.color} bgColor={d.bgColor}>
+    {/* Header — V12Label style inline (includes status chip) */}
     <div className="px-4 pt-4 pb-0 flex items-center justify-between">
-      <span className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#475569]">Zone Capacity</span>
-      <span className="text-[8px] font-bold uppercase tracking-[0.5px] px-2 py-[3px] rounded-full"
+      <span className="text-[11px] font-bold uppercase tracking-[0.5px] leading-none text-[#475569]">Zone Capacity</span>
+      <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-2 py-[3px] rounded-full"
         style={{ backgroundColor: hex2rgba(d.color, 0.14), color: d.color }}>{d.statusLabel}</span>
     </div>
-    <div className="px-4 pt-3 pb-2 flex items-end justify-between gap-4">
-      <div className="flex flex-col gap-[5px]">
-        <div className="text-[13px] font-bold text-[#0f172a]">{d.zoneName}</div>
-        <div className="flex items-baseline gap-1">
-          <span className="font-mono font-bold leading-none text-[#0f172a]" style={{ fontSize: 24 }}>{d.occupancy}%</span>
-          <span className="text-[10px] text-[#64748b] font-mono">{d.current}/{d.max} people</span>
-        </div>
+    <div className="px-4 pt-3 pb-3 flex flex-col gap-[7px]">
+      <div className="text-[14px] font-semibold text-[#0f172a]">{d.zoneName}</div>
+      <div className="flex items-baseline gap-2">
+        <span className="font-mono font-bold leading-none text-[#0f172a]" style={{ fontSize: 28 }}>{d.occupancy}%</span>
+        <span className="text-[12px] text-[#64748b]">{d.current}/{d.max} people</span>
       </div>
     </div>
-    <div className="px-4 pb-3">
+    <div className="px-4 pb-4">
       <div className="h-[6px] rounded-full bg-white/60 overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${d.occupancy}%`, backgroundColor: d.color }} />
       </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-[8px] text-[#94a3b8] font-mono">0</span>
-        <span className="text-[8px] font-mono" style={{ color: d.color }}>{d.occupancy}% capacity</span>
-        <span className="text-[8px] text-[#94a3b8] font-mono">{d.max}</span>
+      <div className="flex justify-between mt-2">
+        <span className="text-[10px] text-[#94a3b8] font-mono">0</span>
+        <span className="text-[10px] font-mono font-bold" style={{ color: d.color }}>{d.occupancy}% capacity</span>
+        <span className="text-[10px] text-[#94a3b8] font-mono">{d.max}</span>
       </div>
     </div>
   </V12Card>
 );
 
-// ─── Type E: Live Zone Card (intrusion / queue with sparkline) ─────────────────
+// ─── Type F: Live Zone Card ───────────────────────────────────────────────────
 interface LiveData {
   appType: string; zoneName: string; isActive: boolean;
   count: string; subtitle: string;
@@ -1357,27 +1373,27 @@ const V12LiveCard = ({ d, frozenCursorFrac }: { d: LiveData; frozenCursorFrac?: 
 
   return (
     <V12Card color={d.color} bgColor={d.bgColor}>
-      {/* Header */}
-      <div className="px-4 pt-3 pb-0 flex items-center justify-between">
+      {/* Header — V12Label style with status chip */}
+      <div className="px-4 pt-4 pb-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.isActive ? d.color : "#94a3b8" }} />
-          <span className="text-[10px] font-bold uppercase tracking-[0.5px] text-[#475569]">{d.appType}</span>
-          <span className="text-[10px] text-[#94a3b8]">·</span>
-          <span className="text-[11px] font-semibold text-[#334155]">{d.zoneName}</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#475569]">{d.appType}</span>
+          <span className="text-[11px] text-[#94a3b8]">·</span>
+          <span className="text-[12px] font-semibold text-[#334155]">{d.zoneName}</span>
         </div>
-        <span className="text-[8px] font-bold uppercase tracking-[0.5px] px-2 py-[3px] rounded-full"
+        <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-2 py-[3px] rounded-full"
           style={{ backgroundColor: hex2rgba(d.color, 0.14), color: d.color }}>
           {d.isActive ? "Active" : "Clear"}
         </span>
       </div>
       {/* Main */}
-      <div className="px-4 pt-3 pb-3 flex items-center justify-between gap-4"
+      <div className="px-4 pt-3 pb-4 flex items-center justify-between gap-4"
         onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-        <div className="flex flex-col gap-[5px]">
-          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: d.count === "CLEAR" ? 16 : 24 }}>
+        <div className="flex flex-col gap-[7px]">
+          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: d.count === "CLEAR" ? 20 : 28 }}>
             {d.count}
           </div>
-          <div className="text-[10px] text-[#64748b]">{d.subtitle}</div>
+          <div className="text-[12px] text-[#64748b]">{d.subtitle}</div>
         </div>
         {/* Sparkline */}
         <div className="relative flex-shrink-0">
@@ -1410,7 +1426,7 @@ const V12LiveCard = ({ d, frozenCursorFrac }: { d: LiveData; frozenCursorFrac?: 
         </div>
       </div>
       <V12Divider color={d.color} />
-      <div className="px-4 py-2.5 flex items-center gap-2 text-[9px] text-[#94a3b8]">
+      <div className="px-4 py-3 flex items-center gap-2 text-[11px] text-[#94a3b8]">
         <span>Last: {d.lastEvent}</span>
         <span>·</span>
         <span className="font-mono">{d.cameraId}</span>
@@ -1453,7 +1469,7 @@ const V1_2Content = () => (
     {/* §1 Type A — Stat Card */}
     <section>
       <SectionHeader icon={Cpu} title="Type A · Stat Card" description="Simple KPI with no sparkline. Used for counts, durations, and status metrics. Includes a definition footer." />
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
         {STAT_CARDS.map((d) => <V12StatCard key={d.label} d={d} />)}
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
@@ -1480,7 +1496,7 @@ const V1_2Content = () => (
     {/* §3 Type C — Alert Card */}
     <section>
       <SectionHeader icon={Eye} title="Type C · Alert Card" description="Zone-level severity alerts. Critical variant shows zone name + compliance badge. Cautionary variant shows ranked zone list." />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
         {ALERT_CARDS.map((d) => <V12AlertCard key={d.label} d={d} />)}
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
@@ -1491,7 +1507,7 @@ const V1_2Content = () => (
     {/* §4 Type D — Zone Performance Card */}
     <section>
       <SectionHeader icon={BookOpen} title="Type D · Zone Performance Card" description="Compliance % with a full-width progress bar. Auto-colors based on threshold. Shows camera count in footer." />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
         {ZONE_CARDS.map((d) => <V12ZoneCard key={d.zoneName} d={d} />)}
       </div>
     </section>
@@ -1499,7 +1515,7 @@ const V1_2Content = () => (
     {/* §5 Type E — Capacity Card */}
     <section>
       <SectionHeader icon={Cpu} title="Type E · Capacity Card" description="Occupancy percentage with current/max count and a capacity bar. Three severity states: Critical → Warning → Normal." />
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
         {CAP_CARDS.map((d) => <V12CapacityCard key={d.zoneName} d={d} />)}
       </div>
     </section>
@@ -1507,7 +1523,7 @@ const V1_2Content = () => (
     {/* §6 Type F — Live Zone Card */}
     <section>
       <SectionHeader icon={Layers} title="Type F · Live Zone Card" description="Real-time intrusion / queue monitoring. Active state shows count + sparkline. Clear state shows confirmation. Hover sparkline for glow + scanning cursor." />
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
         {LIVE_CARDS.map((d, i) => <V12LiveCard key={d.zoneName} d={d} frozenCursorFrac={i === 0 ? 0.72 : undefined} />)}
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
