@@ -2639,26 +2639,38 @@ const SEVERITY_COLORS: Record<string, string> = {
   low:      "#2B7FFF",
 };
 
-// Ghost pill — transparent bg, 1px solid bright border, bright colored text
-// Contrasts with v2.1 solid fills
+// Electric palette for dark-mode pill fills (more saturated / neon)
+const ELECTRIC_COLORS: Record<string, string> = {
+  critical: "#FF3131",
+  warning:  "#FF6B35",
+  stable:   "#4ADE80",
+  success:  "#4ADE80",
+  info:     "#60A5FA",
+  resolved: "#6B7280",
+  medium:   "#FBBF24",
+  high:     "#FF6B35",
+  low:      "#60A5FA",
+};
+
+// v2.2 Status Pill — solid bright fill, Inter font, 4px radius (same grammar as v2.1)
+// Dark mode uses electric/neon variants for visibility against dark surfaces
 const V22GhostPill = ({ status }: { status: string }) => {
   const isDark = useSandboxTheme() === "dark";
-  const color = SEVERITY_COLORS[status.toLowerCase()] ?? "#64748B";
-  const label = (V21_STATUS_CFG[status.toLowerCase()]?.label ?? status);
+  const key = status.toLowerCase();
+  const bg = isDark ? (ELECTRIC_COLORS[key] ?? "#6B7280") : (SEVERITY_COLORS[key] ?? "#64748B");
+  const label = V21_STATUS_CFG[key]?.label ?? status;
   return (
     <span
       style={{
         display: "inline-flex", alignItems: "center",
         padding: "2px 8px",
-        borderRadius: 100,
+        borderRadius: 4,
         fontSize: 10, fontWeight: 700,
         letterSpacing: "0.04em", textTransform: "uppercase",
-        color,
-        backgroundColor: "transparent",
-        border: `1.5px solid ${color}`,
-        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+        color: "#ffffff",
+        backgroundColor: bg,
+        fontFamily: "Inter, sans-serif",
         whiteSpace: "nowrap",
-        textShadow: isDark ? `0 0 8px ${color}99` : "none",
       }}
     >
       {label}
@@ -2668,31 +2680,21 @@ const V22GhostPill = ({ status }: { status: string }) => {
 
 const V22_COLS = "40px 136px 108px 1fr 148px 72px 80px 148px 68px";
 
-const ELECTRIC_COLORS: Record<string, string> = {
-  critical: "#FF3131",
-  warning: "#FF6B35",
-  stable: "#4ADE80",
-  success: "#4ADE80",
-  info: "#60A5FA",
-  resolved: "#6B7280",
-  medium: "#FBBF24",
-  high: "#FF6B35",
-  low: "#60A5FA",
-};
-
 const V22DataGrid = ({ data }: { data: GridRow[] }) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const isDark = useSandboxTheme() === "dark";
+  // Consistent secondary color — zone / camera / conf / timestamp all share one token
+  const sec = isDark ? "#94A3B8" : "#64748B";
 
   return (
     <div style={{ fontFamily: "inherit", width: "100%" }}>
-      {/* Frameless header — transparent bg, 2px teal bottom border ONLY */}
+      {/* Frameless header — 44px (matches row height), transparent, 2px teal bottom anchor */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: V22_COLS,
           alignItems: "center",
-          height: 38,
+          height: 44,
           backgroundColor: "transparent",
           borderBottom: isDark ? "2px solid #00956D" : "2px solid #00775B",
           paddingLeft: 8,
@@ -2703,7 +2705,7 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
           <div
             key={i}
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               fontFamily: "Inter, sans-serif",
               color: isDark ? "#94A3B8" : "#1E293B",
@@ -2718,12 +2720,10 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
         ))}
       </div>
 
-      {/* Rows — zebra-glass, no dividers */}
+      {/* Rows — zebra-glass, no dividers, no severity strip */}
       {data.map((row, idx) => {
         const isHovered = hoveredId === row.id;
-        const isEven = idx % 2 === 1; // 0-indexed: odd index = even visual row
-        const sevColor = SEVERITY_COLORS[row.status] ?? "#64748B";
-        const stripColor = isDark ? (ELECTRIC_COLORS[row.status] ?? "#6B7280") : sevColor;
+        const isEven = idx % 2 === 1;
 
         return (
           <div
@@ -2736,26 +2736,24 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
               alignItems: "center",
               height: 44,
               position: "relative",
-              // Zebra stripe on even rows; hover overrides
               backgroundColor: isHovered
-                ? (isDark ? "rgba(0,149,109,0.15)" : "rgba(0, 119, 91, 0.08)")
+                ? (isDark ? "rgba(0,149,109,0.15)" : "rgba(0,119,91,0.08)")
                 : isEven
-                ? (isDark ? "rgba(255,255,255,0.04)" : "rgba(0, 119, 91, 0.03)")
+                ? (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,119,91,0.03)")
                 : (isDark ? "transparent" : "#ffffff"),
               boxShadow: isDark && isHovered ? "inset 0 0 24px rgba(0,149,109,0.10)" : "none",
-              // NO border-bottom — borderless rows
               cursor: "default",
               transition: "background-color 120ms ease, box-shadow 120ms ease",
               paddingLeft: 8,
               paddingRight: 8,
             }}
           >
-            {/* # */}
+            {/* Row index */}
             <div
               style={{
-                fontSize: 11,
+                fontSize: 12,
                 color: isDark ? "#374151" : "#CBD5E1",
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "Inter, sans-serif",
                 paddingLeft: 4,
                 textShadow: isHovered ? "0 0 8px rgba(0,119,91,0.35)" : "none",
                 transition: "text-shadow 200ms ease",
@@ -2764,32 +2762,12 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
               {String(idx + 1).padStart(2, "0")}
             </div>
 
-            {/* Incident ID — with left severity indicator strip */}
-            <div
-              style={{
-                paddingLeft: 8,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                overflow: "hidden",
-              }}
-            >
-              {/* 3px severity color indicator */}
-              <div
-                style={{
-                  width: 3,
-                  height: 24,
-                  borderRadius: 1.5,
-                  backgroundColor: stripColor,
-                  flexShrink: 0,
-                  opacity: isHovered ? 1 : (isDark ? 0.75 : 0.65),
-                  transition: "opacity 120ms ease",
-                }}
-              />
+            {/* Incident ID */}
+            <div style={{ paddingLeft: 8, overflow: "hidden" }}>
               <span
                 style={{
                   fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: isHovered ? 600 : 500,
                   color: isHovered ? (isDark ? "#F1F5F9" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155"),
                   letterSpacing: "0.01em",
@@ -2798,18 +2776,19 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  display: "block",
                 }}
               >
                 {row.id}
               </span>
             </div>
 
-            {/* Status — ghost pill */}
+            {/* Status — solid-fill pill (same as v2.1 grammar) */}
             <div style={{ paddingLeft: 8 }}>
               <V22GhostPill status={row.status} />
             </div>
 
-            {/* Event Type — Inter, glow on hover */}
+            {/* Event Type */}
             <div
               style={{
                 paddingLeft: 8, paddingRight: 8,
@@ -2825,70 +2804,28 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
               {row.event}
             </div>
 
-            {/* Zone — Inter */}
-            <div
-              style={{
-                paddingLeft: 8,
-                fontSize: 11,
-                fontFamily: "Inter, sans-serif",
-                color: isDark ? "#6B7280" : (isHovered ? "#334155" : "#475569"),
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                transition: "color 120ms ease",
-              }}
-            >
+            {/* Zone */}
+            <div style={{ paddingLeft: 8, fontSize: 12, fontFamily: "Inter, sans-serif", color: sec, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {row.zone}
             </div>
 
-            {/* Camera — Mono */}
-            <div
-              style={{
-                paddingLeft: 8,
-                fontSize: 11,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: isDark ? "#374151" : (isHovered ? "#475569" : "#64748B"),
-                transition: "color 120ms ease",
-              }}
-            >
+            {/* Camera */}
+            <div style={{ paddingLeft: 8, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: sec }}>
               {row.camera}
             </div>
 
-            {/* Confidence — Mono */}
-            <div
-              style={{
-                paddingLeft: 8,
-                fontSize: 11,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: isDark ? "#6B7280" : (isHovered ? "#334155" : "#475569"),
-                fontVariantNumeric: "tabular-nums",
-                transition: "color 120ms ease",
-              } as React.CSSProperties}
-            >
+            {/* Confidence */}
+            <div style={{ paddingLeft: 8, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: sec, fontVariantNumeric: "tabular-nums" } as React.CSSProperties}>
               {row.confidence.toFixed(1)}%
             </div>
 
-            {/* Timestamp — Mono */}
-            <div
-              style={{
-                paddingLeft: 8,
-                fontSize: 11,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: isDark ? "#374151" : (isHovered ? "#475569" : "#64748B"),
-                letterSpacing: "0.01em",
-                transition: "color 120ms ease",
-              }}
-            >
+            {/* Timestamp */}
+            <div style={{ paddingLeft: 8, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: sec, letterSpacing: "0.01em" }}>
               {row.timestamp}
             </div>
 
             {/* Actions — glassmorphic, hover-revealed */}
-            <div
-              style={{
-                paddingLeft: 8,
-                display: "flex", alignItems: "center", justifyContent: "flex-end",
-                opacity: isHovered ? 1 : 0,
-                transition: "opacity 150ms ease",
-              }}
-            >
+            <div style={{ paddingLeft: 8, display: "flex", alignItems: "center", justifyContent: "flex-end", opacity: isHovered ? 1 : 0, transition: "opacity 150ms ease" }}>
               <div
                 style={{
                   display: "flex", alignItems: "center", gap: 2,
@@ -2900,18 +2837,14 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
                   boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
                 }}
               >
-                <button
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", transition: "color 120ms, background 120ms" }}
-                  onMouseEnter={(e) => { (e.currentTarget).style.color = "#00775B"; (e.currentTarget).style.background = "rgba(0,119,91,0.08)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget).style.color = "#94A3B8"; (e.currentTarget).style.background = "transparent"; }}
-                >
+                <button style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", transition: "color 120ms, background 120ms" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#00775B"; e.currentTarget.style.background = "rgba(0,119,91,0.08)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#94A3B8"; e.currentTarget.style.background = "transparent"; }}>
                   <Eye style={{ width: 13, height: 13 }} />
                 </button>
-                <button
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", transition: "color 120ms, background 120ms" }}
-                  onMouseEnter={(e) => { (e.currentTarget).style.color = "#00A63E"; (e.currentTarget).style.background = "rgba(0,166,62,0.08)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget).style.color = "#94A3B8"; (e.currentTarget).style.background = "transparent"; }}
-                >
+                <button style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", transition: "color 120ms, background 120ms" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#00A63E"; e.currentTarget.style.background = "rgba(0,166,62,0.08)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#94A3B8"; e.currentTarget.style.background = "transparent"; }}>
                   <CheckCircle2 style={{ width: 13, height: 13 }} />
                 </button>
               </div>
@@ -2925,14 +2858,26 @@ const V22DataGrid = ({ data }: { data: GridRow[] }) => {
 
 const ROWS_PER_PAGE_V22 = 10;
 
+// Unique event types and zones derived from the dataset
+const ALL_APPS  = [...new Set(V21_GRID_DATA.map((r) => r.event))].sort();
+const ALL_ZONES = [...new Set(V21_GRID_DATA.map((r) => r.zone))].sort();
+
 const V2_2Content = () => {
-  const [searchQ, setSearchQ] = useState("");
+  const [searchQ,      setSearchQ]      = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [sortField, setSortField] = useState<"timestamp" | "confidence" | "id">("timestamp");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
+  const [zoneFilter,   setZoneFilter]   = useState("all");
+  const [appFilter,    setAppFilter]    = useState("all");
+  const [page,         setPage]         = useState(1);
+  const [sortField,    setSortField]    = useState<"timestamp" | "confidence" | "id">("timestamp");
+  const [sortOpen,     setSortOpen]     = useState(false);
+  const [severityOpen, setSeverityOpen] = useState(false);
+  const [appOpen,      setAppOpen]      = useState(false);
+  const [zoneOpen,     setZoneOpen]     = useState(false);
   const isDark = useSandboxTheme() === "dark";
+
+  const hasActiveFilters = searchQ !== "" || statusFilter !== "all" || zoneFilter !== "all" || appFilter !== "all";
+
+  const clearFilters = () => { setSearchQ(""); setStatusFilter("all"); setZoneFilter("all"); setAppFilter("all"); setPage(1); };
 
   const filteredData = V21_GRID_DATA
     .filter((row) => {
@@ -2943,6 +2888,8 @@ const V2_2Content = () => {
         !row.zone.toLowerCase().includes(searchQ.toLowerCase())
       ) return false;
       if (statusFilter !== "all" && row.status !== statusFilter) return false;
+      if (zoneFilter   !== "all" && row.zone   !== zoneFilter)   return false;
+      if (appFilter    !== "all" && row.event  !== appFilter)    return false;
       return true;
     })
     .sort((a, b) => {
@@ -2951,15 +2898,14 @@ const V2_2Content = () => {
       return b.timestamp.localeCompare(a.timestamp);
     });
 
-  const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE_V22);
-  const paginatedData = filteredData.slice(
-    (page - 1) * ROWS_PER_PAGE_V22,
-    page * ROWS_PER_PAGE_V22
-  );
+  const totalPages   = Math.ceil(filteredData.length / ROWS_PER_PAGE_V22);
+  const paginatedData = filteredData.slice((page - 1) * ROWS_PER_PAGE_V22, page * ROWS_PER_PAGE_V22);
 
   const handleSearch = (q: string) => { setSearchQ(q); setPage(1); };
-  const handleStatus = (s: string) => { setStatusFilter(s); setPage(1); setFilterOpen(false); };
-  const handleSort = (f: "timestamp" | "confidence" | "id") => { setSortField(f); setSortOpen(false); };
+  const handleStatus = (s: string) => { setStatusFilter(s); setPage(1); setSeverityOpen(false); };
+  const handleZone   = (z: string) => { setZoneFilter(z);   setPage(1); setZoneOpen(false); };
+  const handleApp    = (a: string) => { setAppFilter(a);    setPage(1); setAppOpen(false); };
+  const handleSort   = (f: "timestamp" | "confidence" | "id") => { setSortField(f); setSortOpen(false); };
 
   const SORT_OPTIONS: { id: "timestamp" | "confidence" | "id"; label: string }[] = [
     { id: "timestamp",  label: "Newest First" },
@@ -2968,7 +2914,7 @@ const V2_2Content = () => {
   ];
   const STATUS_OPTIONS = ["all", "critical", "warning", "stable", "info", "resolved"];
 
-  // Shared integrated button style (bottom-border only, no box)
+  // Base style for all integrated bottom-border-only toolbar buttons
   const integratedBtnBase: React.CSSProperties = {
     background: "transparent",
     border: "none",
@@ -2976,169 +2922,96 @@ const V2_2Content = () => {
     borderRadius: 0,
     cursor: "pointer",
     display: "flex", alignItems: "center", gap: 5,
-    fontSize: 11, fontWeight: 600,
+    fontSize: 12, fontWeight: 600,
     fontFamily: "Inter, sans-serif",
     color: isDark ? "#4B5563" : "#64748B",
     padding: "4px 2px",
     transition: "color 150ms ease, border-bottom-color 150ms ease",
   };
 
+  // Shared dropdown panel surface
+  const dropdownPanel: React.CSSProperties = {
+    position: "absolute", top: "calc(100% + 8px)", left: "auto", right: 0, zIndex: 50,
+    backgroundColor: isDark ? "#1E293B" : "#fff",
+    border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
+    borderRadius: 4,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+    overflow: "hidden",
+  };
+
+  const mkItem = (isActive: boolean): React.CSSProperties => ({
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    gap: 8, padding: "8px 12px",
+    cursor: "pointer",
+    backgroundColor: isActive ? (isDark ? "rgba(0,149,109,0.12)" : "rgba(0,119,91,0.05)") : "transparent",
+    fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif",
+    color: isActive ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#CBD5E1" : "#334155"),
+    transition: "background-color 100ms ease",
+  });
+  const hoverIn  = (e: React.MouseEvent<HTMLDivElement>, isActive: boolean) => { if (!isActive) (e.currentTarget).style.backgroundColor = isDark ? "rgba(255,255,255,0.04)" : "#F8FAFC"; };
+  const hoverOut = (e: React.MouseEvent<HTMLDivElement>, isActive: boolean) => { (e.currentTarget).style.backgroundColor = isActive ? (isDark ? "rgba(0,149,109,0.12)" : "rgba(0,119,91,0.05)") : "transparent"; };
+
   return (
     <div className="space-y-8">
       <SectionHeader
         icon={Eye}
         title="Seamless HUD v2.2"
-        description="Frameless transparent header, zebra-glass row striping, ghost pills, severity indicator strips on ID column, integrated bottom-border toolbar — the table blends into the page air."
+        description="Frameless 44px header, zebra-glass rows, solid-fill severity pills, multi-filter toolbar (Severity · Applications · Zones) with Clear Filters — the table blends into the page."
       />
 
       {/* Spec chips */}
       <div className="flex flex-wrap gap-2">
         {[
-          ["Header",        "Transparent + 2px teal bottom"],
-          ["Row Dividers",  "None (borderless)"],
-          ["Zebra",         "rgba(0,119,91,0.03) even rows"],
-          ["Hover BG",      "rgba(0,119,91,0.08) + text glow"],
-          ["Pills",         "Ghost — 1.5px outline, bright text"],
-          ["ID Strip",      "3px severity color strip"],
-          ["Toolbar",       "1px neutral-200 separator, no container"],
-          ["Font",          "Mono IDs/numbers · Inter labels"],
+          ["Header",       "44px transparent · 2px teal bottom"],
+          ["Typography",   "12px Inter global · Mono IDs & data"],
+          ["Zebra",        "rgba(0,119,91,0.03) even rows"],
+          ["Hover",        "rgba(0,119,91,0.08) + text glow"],
+          ["Pills",        "Bright fill · Inter · 4px radius"],
+          ["Filters",      "Severity + Applications + Zones"],
+          ["Clear",        "Shown when any filter active"],
+          ["Secondary",    "Zone/Camera/Conf/Timestamp unified"],
         ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
       </div>
 
-      {/* ── Integrated Toolbar + Table ─────────────────────────────────── */}
+      {/* ── Toolbar + Table ────────────────────────────────────────────── */}
       <div style={{ maxWidth: 1200 }}>
 
-        {/* Integrated toolbar — feels like it's "part of the air" */}
-        <div
-          style={{
-            display: "flex", alignItems: "flex-end", gap: 16,
-            marginBottom: 0,
-            paddingBottom: 10,
-          }}
-        >
-          {/* Bottom-border-only search */}
-          <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
-            <Search
-              style={{
-                position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
-                width: 13, height: 13, color: "#94A3B8",
-                pointerEvents: "none",
-              }}
-            />
+        {/* Toolbar — Search + Sort on left · Severity/Applications/Zones/Clear on right */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 16, paddingBottom: 10 }}>
+
+          {/* Search */}
+          <div style={{ position: "relative", maxWidth: 260 }}>
+            <Search style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: isDark ? "#374151" : "#94A3B8", pointerEvents: "none" }} />
             <input
               type="text"
               placeholder="Search incidents, zones…"
               value={searchQ}
               onChange={(e) => handleSearch(e.target.value)}
               style={{
-                width: "100%",
-                height: 32,
-                paddingLeft: 22,
-                paddingRight: searchQ ? 24 : 4,
-                fontSize: 12,
-                fontFamily: "Inter, sans-serif",
+                width: "100%", height: 32, paddingLeft: 22, paddingRight: searchQ ? 24 : 4,
+                fontSize: 12, fontFamily: "Inter, sans-serif",
                 color: isDark ? "#E2E8F0" : "#1E293B",
                 backgroundColor: "transparent",
-                // Bottom border only — integrated feel
                 border: "none",
                 borderBottom: isDark ? "2px solid rgba(255,255,255,0.12)" : "2px solid #E2E8F0",
-                borderRadius: 0,
-                outline: "none",
+                borderRadius: 0, outline: "none",
                 transition: "border-bottom-color 200ms ease, box-shadow 200ms ease",
               }}
-              onFocus={(e) => {
-                e.target.style.borderBottomColor = isDark ? "#00956D" : "#00775B";
-                e.target.style.boxShadow = isDark ? "0 2px 8px rgba(0,149,109,0.25)" : "0 2px 8px rgba(0,119,91,0.18)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderBottomColor = isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0";
-                e.target.style.boxShadow = "none";
-              }}
+              onFocus={(e) => { e.target.style.borderBottomColor = isDark ? "#00956D" : "#00775B"; e.target.style.boxShadow = isDark ? "0 2px 8px rgba(0,149,109,0.25)" : "0 2px 8px rgba(0,119,91,0.18)"; }}
+              onBlur={(e)  => { e.target.style.borderBottomColor = isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0"; e.target.style.boxShadow = "none"; }}
             />
             {searchQ && (
-              <button
-                onClick={() => handleSearch("")}
-                style={{
-                  position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
-                  display: "flex", alignItems: "center",
-                  border: "none", background: "transparent", cursor: "pointer",
-                  color: "#94A3B8", padding: 0,
-                }}
-              >
+              <button onClick={() => handleSearch("")} style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", padding: 0 }}>
                 <X style={{ width: 12, height: 12 }} />
               </button>
             )}
           </div>
 
-          {/* Divider */}
-          <div style={{ width: 1, height: 20, backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0", flexShrink: 0 }} />
-
-          {/* Filter — integrated bottom-border button */}
+          {/* Sort — next to search */}
           <div style={{ position: "relative" }}>
             <button
-              onClick={() => { setFilterOpen((o) => !o); setSortOpen(false); }}
-              style={{
-                ...integratedBtnBase,
-                color: statusFilter !== "all" ? "#00775B" : "#64748B",
-                borderBottomColor: statusFilter !== "all" ? "#00775B" : "transparent",
-              }}
-            >
-              <Filter style={{ width: 12, height: 12 }} />
-              {statusFilter !== "all"
-                ? (V21_STATUS_CFG[statusFilter]?.label ?? statusFilter)
-                : "Filter"}
-            </button>
-            {filterOpen && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setFilterOpen(false)} />
-                <div
-                  style={{
-                    position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 50,
-                    minWidth: 150,
-                    backgroundColor: "#fff",
-                    border: "1px solid #E2E8F0",
-                    borderRadius: 4,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-                    overflow: "hidden",
-                  }}
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <div
-                      key={s}
-                      onClick={() => handleStatus(s)}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        gap: 8, padding: "8px 12px",
-                        cursor: "pointer",
-                        backgroundColor: statusFilter === s ? "rgba(0,119,91,0.05)" : "transparent",
-                        fontSize: 11, fontWeight: 600,
-                        fontFamily: "Inter, sans-serif",
-                        color: statusFilter === s ? "#00775B" : "#334155",
-                        transition: "background-color 100ms ease",
-                      }}
-                      onMouseEnter={(e) => { if (statusFilter !== s) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F8FAFC"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = statusFilter === s ? "rgba(0,119,91,0.05)" : "transparent"; }}
-                    >
-                      <span style={{ textTransform: s === "all" ? "none" : "capitalize" }}>
-                        {s === "all" ? "All Statuses" : s}
-                      </span>
-                      {s !== "all" && <V22GhostPill status={s} />}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Sort — integrated bottom-border button */}
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => { setSortOpen((o) => !o); setFilterOpen(false); }}
-              style={{
-                ...integratedBtnBase,
-                color: sortField !== "timestamp" ? "#00775B" : "#64748B",
-                borderBottomColor: sortField !== "timestamp" ? "#00775B" : "transparent",
-              }}
+              onClick={() => { setSortOpen((o) => !o); setSeverityOpen(false); setAppOpen(false); setZoneOpen(false); }}
+              style={{ ...integratedBtnBase, color: sortField !== "timestamp" ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: sortField !== "timestamp" ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
             >
               <SlidersHorizontal style={{ width: 12, height: 12 }} />
               {SORT_OPTIONS.find((o) => o.id === sortField)?.label ?? "Sort"}
@@ -3146,33 +3019,10 @@ const V2_2Content = () => {
             {sortOpen && (
               <>
                 <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortOpen(false)} />
-                <div
-                  style={{
-                    position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 50,
-                    minWidth: 160,
-                    backgroundColor: "#fff",
-                    border: "1px solid #E2E8F0",
-                    borderRadius: 4,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-                    overflow: "hidden",
-                  }}
-                >
+                <div style={{ ...dropdownPanel, left: 0, right: "auto", minWidth: 160 }}>
                   {SORT_OPTIONS.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={() => handleSort(opt.id)}
-                      style={{
-                        padding: "8px 12px",
-                        cursor: "pointer",
-                        backgroundColor: sortField === opt.id ? "rgba(0,119,91,0.05)" : "transparent",
-                        fontSize: 11, fontWeight: 600,
-                        fontFamily: "Inter, sans-serif",
-                        color: sortField === opt.id ? "#00775B" : "#334155",
-                        transition: "background-color 100ms ease",
-                      }}
-                      onMouseEnter={(e) => { if (sortField !== opt.id) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F8FAFC"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = sortField === opt.id ? "rgba(0,119,91,0.05)" : "transparent"; }}
-                    >
+                    <div key={opt.id} onClick={() => handleSort(opt.id)} style={mkItem(sortField === opt.id)}
+                      onMouseEnter={(e) => hoverIn(e, sortField === opt.id)} onMouseLeave={(e) => hoverOut(e, sortField === opt.id)}>
                       {opt.label}
                     </div>
                   ))}
@@ -3181,105 +3031,129 @@ const V2_2Content = () => {
             )}
           </div>
 
-          {/* Row count — right-aligned */}
-          <div style={{ marginLeft: "auto", fontSize: 11, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: "#475569" }}>
-              {filteredData.length}
-            </span>{" "}
-            {filteredData.length === 1 ? "row" : "rows"}
+          {/* Right cluster */}
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "flex-end", gap: 12 }}>
+
+            {/* Severity */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => { setSeverityOpen((o) => !o); setSortOpen(false); setAppOpen(false); setZoneOpen(false); }}
+                style={{ ...integratedBtnBase, color: statusFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: statusFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
+              >
+                <Filter style={{ width: 12, height: 12 }} />
+                {statusFilter !== "all" ? (V21_STATUS_CFG[statusFilter]?.label ?? statusFilter) : "Severity"}
+              </button>
+              {severityOpen && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSeverityOpen(false)} />
+                  <div style={{ ...dropdownPanel, minWidth: 170 }}>
+                    {STATUS_OPTIONS.map((s) => (
+                      <div key={s} onClick={() => handleStatus(s)} style={mkItem(statusFilter === s)}
+                        onMouseEnter={(e) => hoverIn(e, statusFilter === s)} onMouseLeave={(e) => hoverOut(e, statusFilter === s)}>
+                        <span style={{ textTransform: s === "all" ? "none" : "capitalize" }}>{s === "all" ? "All Severities" : s}</span>
+                        {s !== "all" && <V22GhostPill status={s} />}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Applications */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => { setAppOpen((o) => !o); setSortOpen(false); setSeverityOpen(false); setZoneOpen(false); }}
+                style={{ ...integratedBtnBase, color: appFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: appFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
+              >
+                <Filter style={{ width: 12, height: 12 }} />
+                {appFilter !== "all" ? (appFilter.length > 16 ? appFilter.slice(0, 16) + "…" : appFilter) : "Applications"}
+              </button>
+              {appOpen && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setAppOpen(false)} />
+                  <div style={{ ...dropdownPanel, minWidth: 210, maxHeight: 280, overflowY: "auto" }}>
+                    <div onClick={() => handleApp("all")} style={mkItem(appFilter === "all")} onMouseEnter={(e) => hoverIn(e, appFilter === "all")} onMouseLeave={(e) => hoverOut(e, appFilter === "all")}>All Applications</div>
+                    {ALL_APPS.map((a) => (
+                      <div key={a} onClick={() => handleApp(a)} style={mkItem(appFilter === a)} onMouseEnter={(e) => hoverIn(e, appFilter === a)} onMouseLeave={(e) => hoverOut(e, appFilter === a)}>{a}</div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Zones */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => { setZoneOpen((o) => !o); setSortOpen(false); setSeverityOpen(false); setAppOpen(false); }}
+                style={{ ...integratedBtnBase, color: zoneFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : (isDark ? "#4B5563" : "#64748B"), borderBottomColor: zoneFilter !== "all" ? (isDark ? "#00956D" : "#00775B") : "transparent" }}
+              >
+                <Filter style={{ width: 12, height: 12 }} />
+                {zoneFilter !== "all" ? (zoneFilter.length > 14 ? zoneFilter.slice(0, 14) + "…" : zoneFilter) : "Zones"}
+              </button>
+              {zoneOpen && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setZoneOpen(false)} />
+                  <div style={{ ...dropdownPanel, minWidth: 200, maxHeight: 280, overflowY: "auto" }}>
+                    <div onClick={() => handleZone("all")} style={mkItem(zoneFilter === "all")} onMouseEnter={(e) => hoverIn(e, zoneFilter === "all")} onMouseLeave={(e) => hoverOut(e, zoneFilter === "all")}>All Zones</div>
+                    {ALL_ZONES.map((z) => (
+                      <div key={z} onClick={() => handleZone(z)} style={mkItem(zoneFilter === z)} onMouseEnter={(e) => hoverIn(e, zoneFilter === z)} onMouseLeave={(e) => hoverOut(e, zoneFilter === z)}>{z}</div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Clear Filters — visible only when any filter is active */}
+            {hasActiveFilters && (
+              <button onClick={clearFilters} style={{ ...integratedBtnBase, color: isDark ? "#EF4444" : "#E7000B", borderBottomColor: isDark ? "#EF4444" : "#E7000B", gap: 4 }}>
+                <X style={{ width: 12, height: 12 }} /> Clear
+              </button>
+            )}
           </div>
         </div>
 
-        {/* 1px neutral-200 separator — structural anchor between toolbar and table header */}
+        {/* 1px neutral-200 separator — anchors toolbar base to table header */}
         <div style={{ height: 1, backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0" }} />
 
-        {/* Table — no outer border, seamless */}
-        <div
-          style={{
-            borderRadius: 0,
-            overflow: "hidden",
-            backgroundColor: isDark ? "transparent" : "#ffffff",
-          }}
-        >
+        {/* Table */}
+        <div style={{ overflow: "hidden", backgroundColor: isDark ? "transparent" : "#ffffff" }}>
           {paginatedData.length === 0 ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 120, fontSize: 12, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
-              No incidents match the current filters.
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 120, fontSize: 12, color: isDark ? "#374151" : "#94A3B8", fontFamily: "Inter, sans-serif" }}>
+              No incidents match the current filters.{" "}
+              {hasActiveFilters && (
+                <button onClick={clearFilters} style={{ marginLeft: 8, color: isDark ? "#00956D" : "#00775B", background: "none", border: "none", cursor: "pointer", fontSize: 12, fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
+                  Clear filters
+                </button>
+              )}
             </div>
           ) : (
             <V22DataGrid data={paginatedData} />
           )}
 
-          {/* Pagination — same Safety Analytics format */}
+          {/* Pagination */}
           {totalPages > 1 && (
-            <div
-              style={{
-                padding: "10px 16px",
-                borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #F1F5F9",
-                backgroundColor: "transparent",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 8,
-                position: "relative",
-              }}
-            >
+            <div style={{ padding: "10px 16px", borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #F1F5F9", backgroundColor: "transparent", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, position: "relative" }}>
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-                  height: 28, minWidth: 76, padding: "0 10px",
-                  borderRadius: 4, border: "none", cursor: page === 1 ? "not-allowed" : "pointer",
-                  fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
-                  fontFamily: "Inter, sans-serif",
-                  backgroundColor: page === 1 ? (isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0") : "#00775B",
-                  color: page === 1 ? (isDark ? "#374151" : "#94A3B8") : "#ffffff",
-                  transition: "background-color 120ms ease",
-                }}
+                onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, height: 28, minWidth: 76, padding: "0 10px", borderRadius: 4, border: "none", cursor: page === 1 ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Inter, sans-serif", backgroundColor: page === 1 ? (isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0") : "#00775B", color: page === 1 ? (isDark ? "#374151" : "#94A3B8") : "#ffffff", transition: "background-color 120ms ease" }}
               >
                 <ChevronLeft style={{ width: 13, height: 13 }} /> PREV
               </button>
-
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    style={{
-                      width: 28, height: 28, borderRadius: 4, border: "none", cursor: "pointer",
-                      fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                      backgroundColor: page === p ? "#00775B" : (isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9"),
-                      color: page === p ? "#ffffff" : "#475569",
-                      transition: "background-color 120ms ease",
-                    }}
-                  >
-                    {p}
-                  </button>
+                  <button key={p} onClick={() => setPage(p)}
+                    style={{ width: 28, height: 28, borderRadius: 4, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", backgroundColor: page === p ? "#00775B" : (isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9"), color: page === p ? "#ffffff" : (isDark ? "#475569" : "#475569"), transition: "background-color 120ms ease" }}
+                  >{p}</button>
                 ))}
               </div>
-
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-                  height: 28, minWidth: 76, padding: "0 10px",
-                  borderRadius: 4, border: "none", cursor: page === totalPages ? "not-allowed" : "pointer",
-                  fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
-                  fontFamily: "Inter, sans-serif",
-                  backgroundColor: page === totalPages ? (isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0") : "#00775B",
-                  color: page === totalPages ? (isDark ? "#374151" : "#94A3B8") : "#ffffff",
-                  transition: "background-color 120ms ease",
-                }}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, height: 28, minWidth: 76, padding: "0 10px", borderRadius: 4, border: "none", cursor: page === totalPages ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Inter, sans-serif", backgroundColor: page === totalPages ? (isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0") : "#00775B", color: page === totalPages ? (isDark ? "#374151" : "#94A3B8") : "#ffffff", transition: "background-color 120ms ease" }}
               >
                 NEXT <ChevronRight style={{ width: 13, height: 13 }} />
               </button>
-
-              <div style={{ position: "absolute", right: 16, fontSize: 11, color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-                Showing{" "}
-                <span style={{ fontWeight: 600, color: "#334155" }}>
-                  {(page - 1) * ROWS_PER_PAGE_V22 + 1}–{Math.min(page * ROWS_PER_PAGE_V22, filteredData.length)}
-                </span>{" "}
-                of{" "}
-                <span style={{ fontWeight: 600, color: "#334155" }}>{filteredData.length}</span> incidents
+              <div style={{ position: "absolute", right: 16, fontSize: 12, color: isDark ? "#374151" : "#64748B", fontFamily: "Inter, sans-serif" }}>
+                Showing <span style={{ fontWeight: 600, color: isDark ? "#6B7280" : "#334155" }}>{(page - 1) * ROWS_PER_PAGE_V22 + 1}–{Math.min(page * ROWS_PER_PAGE_V22, filteredData.length)}</span> of <span style={{ fontWeight: 600, color: isDark ? "#6B7280" : "#334155" }}>{filteredData.length}</span> incidents
               </div>
             </div>
           )}
@@ -3288,12 +3162,12 @@ const V2_2Content = () => {
 
       {/* Annotations */}
       <div className="grid grid-cols-2 gap-2">
-        <Annotation>Frameless header: transparent bg · 2px teal bottom border only · Inter Bold 11px #1E293B all-caps</Annotation>
-        <Annotation>Zebra-glass: even rows <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(0,119,91,0.03)</code> · zero horizontal dividers</Annotation>
-        <Annotation>Hover glow: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">text-shadow 0 0 10px rgba(0,119,91,0.3)</code> on ID and event cells</Annotation>
-        <Annotation>Ghost pills: transparent bg · 1.5px solid bright border · bright colored text · JetBrains Mono 10px Bold</Annotation>
-        <Annotation>ID strip: 3px × 24px vertical bar · severity color (red/orange/green/blue) · 0.65→1 opacity on hover</Annotation>
-        <Annotation>Toolbar: no background, no border · 1px neutral-200 line anchors toolbar from table header · bottom-border-only inputs</Annotation>
+        <Annotation>Header: 44px transparent · 2px teal bottom border · Inter Bold 12px all-caps · dark: #00956D neon</Annotation>
+        <Annotation>Zebra-glass: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(0,119,91,0.03)</code> even rows · zero horizontal dividers</Annotation>
+        <Annotation>Hover: <code className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded">rgba(0,119,91,0.08)</code> bg · text-shadow glow on ID and Event cells</Annotation>
+        <Annotation>Pills: bright fill · Inter 10px Bold · 4px radius · electric variants in dark mode (FF3131 / FF6B35 / 4ADE80 / 60A5FA)</Annotation>
+        <Annotation>Secondary columns (Zone/Camera/Conf/Timestamp): single unified color token per theme</Annotation>
+        <Annotation>Filters: Severity + Applications + Zones right-aligned · Sort near search · Clear Filters on demand</Annotation>
       </div>
     </div>
   );
