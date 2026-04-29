@@ -64,13 +64,13 @@
   --chart-3: #D97706;
   --chart-4: #BE123C;
   --chart-5: #059669;
-  --sidebar: #0F172A;
+  --sidebar: #021d18;
   --sidebar-foreground: #F1F5F9;
   --sidebar-primary: #00775B;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1E293B;
-  --sidebar-accent-foreground: #CBD5E1;
-  --sidebar-border: #1E293B;
+  --sidebar-accent: rgba(255, 255, 255, 0.05);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(0, 119, 91, 0.15);
   --sidebar-ring: #00775B;
 
   /* Spacing (8px Grid) - Mapping to rem */
@@ -159,13 +159,13 @@
   --chart-3: #FBBF24;
   --chart-4: #FB7185;
   --chart-5: #34D399;
-  --sidebar: #000000;
+  --sidebar: #021d18;
   --sidebar-foreground: #F1F5F9;
   --sidebar-primary: #00D4AA;
   --sidebar-primary-foreground: #0F172A;
-  --sidebar-accent: #1E293B;
-  --sidebar-accent-foreground: #CBD5E1;
-  --sidebar-border: #1E293B;
+  --sidebar-accent: rgba(255, 255, 255, 0.05);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(0, 119, 91, 0.15);
   --sidebar-ring: #00D4AA;
 }
 
