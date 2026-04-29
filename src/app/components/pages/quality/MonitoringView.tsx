@@ -1277,17 +1277,15 @@ function QualityZoneDetailPanel({
   const STATUS_DISPLAY: Record<string, string> = {
     HIGH_RISK: "CRITICAL",
     WATCH:     "WARNING",
-    AMBER:     "MONITOR",
+    AMBER:     "WARNING",
     GREEN:     "GOOD",
   };
   const statusLabel = STATUS_DISPLAY[zone?.status ?? ""] ?? (zone?.status ?? "").replace("_", " ");
   const statusBg = zone?.status === "HIGH_RISK" ? "bg-red-600 text-white"
-    : zone?.status === "WATCH"    ? "bg-orange-500 text-white"
-    : zone?.status === "AMBER"    ? "bg-amber-500 text-black"
+    : (zone?.status === "WATCH" || zone?.status === "AMBER") ? "bg-orange-500 text-white"
     : "bg-emerald-600 text-white";
   const dotCls = zone?.status === "HIGH_RISK" ? "bg-red-500 animate-pulse"
-    : zone?.status === "WATCH"    ? "bg-orange-400"
-    : zone?.status === "AMBER"    ? "bg-amber-400"
+    : (zone?.status === "WATCH" || zone?.status === "AMBER") ? "bg-orange-400"
     : "bg-emerald-500";
 
   return (
@@ -1508,8 +1506,8 @@ export const MonitoringView = ({ terminology, appId, groups = [] }: Props) => {
   const [prevAppId, setPrevAppId] = useState(appId);
   if (prevAppId !== appId) { setPrevAppId(appId); setPage(0); setFeedFilter("all"); }
 
-  // Zone pagination — sorted HIGH_RISK → WATCH → AMBER → GREEN
-  const ZONE_SEVERITY_ORDER: Record<string, number> = { HIGH_RISK: 0, WATCH: 1, AMBER: 2, GREEN: 3 };
+  // Zone pagination — sorted Critical → Warning → Good
+  const ZONE_SEVERITY_ORDER: Record<string, number> = { HIGH_RISK: 0, WATCH: 1, AMBER: 1, GREEN: 2 };
   const sortedZones  = [...activeZones].sort((a, b) =>
     (ZONE_SEVERITY_ORDER[a.status] ?? 9) - (ZONE_SEVERITY_ORDER[b.status] ?? 9)
   );
@@ -1611,14 +1609,20 @@ export const MonitoringView = ({ terminology, appId, groups = [] }: Props) => {
               {/* Zone cards grid */}
               <div className="p-2 grid grid-cols-2 gap-1.5 flex-1 content-start overflow-y-auto">
                 {pagedZones.map(zone => {
-                  const color = zone.status === "HIGH_RISK" ? "bg-red-50 border-red-300 text-red-700"
-                    : zone.status === "WATCH" ? "bg-orange-50 border-orange-200 text-orange-700"
-                    : zone.status === "AMBER" ? "bg-amber-50 border-amber-300 text-amber-700"
+                  const isCritical = zone.status === "HIGH_RISK";
+                  const isWarning  = zone.status === "WATCH" || zone.status === "AMBER";
+                  const color = isCritical ? "bg-red-50 border-red-300 text-red-700"
+                    : isWarning            ? "bg-orange-50 border-orange-200 text-orange-700"
                     : "bg-emerald-50 border-emerald-200 text-emerald-700";
-                  const dot = zone.status === "HIGH_RISK" ? "bg-red-600 animate-pulse"
-                    : zone.status === "WATCH" ? "bg-orange-500"
-                    : zone.status === "AMBER" ? "bg-amber-500"
+                  const dot = isCritical   ? "bg-red-600 animate-pulse"
+                    : isWarning            ? "bg-orange-500"
                     : "bg-emerald-600";
+                  const statusText = isCritical ? "Critical" : isWarning ? "Warning" : "Good";
+                  const statusBadge = isCritical
+                    ? "bg-red-100 text-red-700"
+                    : isWarning
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-emerald-100 text-emerald-700";
                   const shortName = zone.zone_name.replace(/ —.*/, "");
                   return (
                     <button
@@ -1632,7 +1636,10 @@ export const MonitoringView = ({ terminology, appId, groups = [] }: Props) => {
                     >
                       <div className="flex items-center gap-1 mb-0.5">
                         <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dot)} />
-                        <span className="text-[9px] font-bold truncate">{shortName}</span>
+                        <span className="text-[9px] font-bold truncate flex-1 min-w-0">{shortName}</span>
+                        <span className={cn("text-[7px] font-black uppercase tracking-wide px-1 py-0.5 rounded-[2px] shrink-0", statusBadge)}>
+                          {statusText}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[8px] font-mono opacity-70">
                         <span>{zone.compliance_pct.toFixed(0)}%</span>
@@ -1741,7 +1748,7 @@ export const MonitoringView = ({ terminology, appId, groups = [] }: Props) => {
                   {
                     key: "event",
                     header: "Event",
-                    width: "1fr",
+                    width: "minmax(120px, 220px)",
                     render: (e, hovered) => {
                       const isCritical = e.severity === "CRITICAL";
                       const isHigh = e.severity === "HIGH";
@@ -1767,7 +1774,7 @@ export const MonitoringView = ({ terminology, appId, groups = [] }: Props) => {
                   {
                     key: "zone",
                     header: "Zone",
-                    width: "100px",
+                    width: "minmax(80px, 1fr)",
                     render: (e, hovered) => (
                       <InterCell hovered={hovered} fontSize={11}>{e.zone}</InterCell>
                     ),

@@ -3038,7 +3038,7 @@ export const IdentityMonitoringView = ({
 
           {/* Zone status grid — paginated with chevrons */}
           {(() => {
-            const ZONE_STATUS_ORDER: Record<string, number> = { CRITICAL: 0, WATCH: 1, ELEVATED: 2, CLEAR: 3 };
+            const ZONE_STATUS_ORDER: Record<string, number> = { CRITICAL: 0, WATCH: 1, ELEVATED: 1, CLEAR: 2 };
             const sortedZones  = [...activeZones].sort((a, b) =>
               (ZONE_STATUS_ORDER[a.status] ?? 9) - (ZONE_STATUS_ORDER[b.status] ?? 9)
             );
@@ -3055,20 +3055,29 @@ export const IdentityMonitoringView = ({
             </div>
             <div className="flex-1 overflow-y-auto p-2 grid grid-cols-2 gap-1.5 content-start">
               {pagedZones.map(zone => {
-                const color = zone.status === "CRITICAL" ? "bg-red-50 border-red-300 text-red-700"
-                  : zone.status === "WATCH"    ? "bg-amber-50 border-amber-300 text-amber-700"
-                  : zone.status === "ELEVATED" ? "bg-orange-50 border-orange-200 text-orange-700"
+                const isCrit = zone.status === "CRITICAL";
+                const isWarn = zone.status === "WATCH" || zone.status === "ELEVATED";
+                const color = isCrit ? "bg-red-50 border-red-300 text-red-700"
+                  : isWarn           ? "bg-orange-50 border-orange-200 text-orange-700"
                   : "bg-emerald-50 border-emerald-200 text-emerald-700";
-                const dot = zone.status === "CRITICAL" ? "bg-red-600 animate-pulse"
-                  : zone.status === "WATCH"    ? "bg-amber-500"
-                  : zone.status === "ELEVATED" ? "bg-orange-500"
+                const dot = isCrit   ? "bg-red-600 animate-pulse"
+                  : isWarn           ? "bg-orange-500"
                   : "bg-emerald-600";
+                const statusText  = isCrit ? "Critical" : isWarn ? "Warning" : "Good";
+                const statusBadge = isCrit
+                  ? "bg-red-100 text-red-700"
+                  : isWarn
+                  ? "bg-orange-100 text-orange-700"
+                  : "bg-emerald-100 text-emerald-700";
                 return (
                   <button key={zone.zone_id} onClick={() => setSelectedZoneId(zone.zone_id)}
                     className={cn("rounded-[3px] border px-2 py-1.5 text-left transition-all hover:ring-1 hover:ring-[#00775B]/30 hover:shadow-sm", color)}>
                     <div className="flex items-center gap-1 mb-0.5">
                       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dot)} />
-                      <span className="text-[9px] font-bold truncate">{zone.zone_name}</span>
+                      <span className="text-[9px] font-bold truncate flex-1 min-w-0">{zone.zone_name}</span>
+                      <span className={cn("text-[7px] font-black uppercase tracking-wide px-1 py-0.5 rounded-[2px] shrink-0", statusBadge)}>
+                        {statusText}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[8px] font-mono opacity-70">
                       <span>{zone.identifications} IDs</span>
@@ -3251,20 +3260,18 @@ export const IdentityMonitoringView = ({
         isOpen={!!selectedZone}
         onClose={() => setSelectedZoneId(null)}
         title={selectedZone?.zone_name ?? ""}
-        subtitle={`${selectedZone?.status ?? ""} · ${selectedZone?.identifications ?? 0} ${isLPR ? "plates" : "IDs"}`}
+        subtitle={`${selectedZone ? (selectedZone.status === "CRITICAL" ? "Critical" : selectedZone.status === "WATCH" || selectedZone.status === "ELEVATED" ? "Warning" : "Good") : ""} · ${selectedZone?.identifications ?? 0} ${isLPR ? "plates" : "IDs"}`}
         width="w-[480px]"
       >
         {selectedZone && (() => {
           const isCritical = selectedZone.status === "CRITICAL";
-          const isWatch = selectedZone.status === "WATCH";
-          const isElevated = selectedZone.status === "ELEVATED";
+          const isWarning  = selectedZone.status === "WATCH" || selectedZone.status === "ELEVATED";
+          const statusLabel = isCritical ? "Critical" : isWarning ? "Warning" : "Good";
           const statusColor = isCritical ? "text-red-700 bg-red-50 border-red-200"
-            : isWatch ? "text-amber-700 bg-amber-50 border-amber-200"
-            : isElevated ? "text-orange-700 bg-orange-50 border-orange-200"
+            : isWarning ? "text-orange-700 bg-orange-50 border-orange-200"
             : "text-emerald-700 bg-emerald-50 border-emerald-200";
           const dotColor = isCritical ? "bg-red-600 animate-pulse"
-            : isWatch ? "bg-amber-500"
-            : isElevated ? "bg-orange-500"
+            : isWarning ? "bg-orange-500"
             : "bg-emerald-600";
 
           const zoneCameras = CAMERA_NODES.filter(c => c.zone === selectedZone.zone_name);
@@ -3279,7 +3286,7 @@ export const IdentityMonitoringView = ({
               {/* Status banner */}
               <div className={cn("flex items-center gap-2.5 px-5 py-3 border-b", statusColor)}>
                 <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", dotColor)} />
-                <span className="text-[11px] font-black uppercase tracking-widest">{selectedZone.status}</span>
+                <span className="text-[11px] font-black uppercase tracking-widest">{statusLabel}</span>
                 <span className="ml-auto text-[10px] font-mono opacity-70">{selectedZone.zone_id}</span>
               </div>
 
