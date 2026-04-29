@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { SeverityIcon } from "@/app/components/ui/SeverityIcon";
-import { Sidebar, Page } from "@/app/components/layout/Sidebar";
+import { Page } from "@/app/components/layout/Sidebar";
+import { AppLayout } from "@/app/components/layout/AppLayout";
 import { IncidentCard } from "@/app/components/dashboard/IncidentCard";
 import { IncidentDetailModal } from "@/app/components/dashboard/IncidentDetailModal";
 import { Button } from "@/app/components/ui/Button";
@@ -431,251 +432,16 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 relative overflow-hidden">
-      <Sidebar activePage={activePage} onPageChange={setActivePage} collapsed={sidebarCollapsed} noTransition={!sidebarMounted.current} />
-
-      <div className={cn("flex-1 relative z-10 w-full min-w-0 h-full overflow-y-visible overflow-x-hidden", sidebarMounted.current && "transition-all duration-300", sidebarCollapsed ? "lg:pl-14" : "lg:pl-56", (isGlobalFilterOpen || isClientSwitcherOpen) && "z-50")}>
-        <header
-          className={cn(
-            "fixed top-0 right-0 z-[41] flex h-12 items-center justify-between bg-[#0d1f1b] px-4 border-b border-white/8 text-white",
-            (isGlobalFilterOpen || isClientSwitcherOpen) && "z-[51]"
-          )}
-          style={{
-            left: sidebarCollapsed ? 56 : 224,
-            transition: sidebarMounted.current ? "left 300ms cubic-bezier(0.4, 0, 0.2, 1)" : "none",
-          }}
-        >
-          {/* ── Left: toggle + page title ── */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarCollapsed((c) => !c)}
-              className="p-1.5 rounded-md text-white/50 hover:text-white hover:bg-white/8 transition-colors"
-              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <PanelLeft className={cn("w-4 h-4 transition-transform duration-300", sidebarCollapsed && "rotate-180")} />
-            </button>
-            <div className="w-px h-4 bg-white/10" />
-            <span className="text-sm font-semibold text-white/90 tracking-tight">
-              {PAGE_TITLES[activePage] ?? "Dashboard"}
-            </span>
-          </div>
-
-          {/* ── Right: actions ── */}
-          <div className="flex items-center gap-2">
-
-            {/* LIVE pill */}
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-[#00775B] rounded-full text-white text-xs font-semibold shadow-md shadow-[#00775B]/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              LIVE
-            </div>
-
-            {/* Global Filter */}
-            <div className="relative">
-              <button
-                onClick={() => setIsGlobalFilterOpen(!isGlobalFilterOpen)}
-                className={cn(
-                  "hidden md:flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/8 border border-white/10 transition-all",
-                  isGlobalFilterOpen && "bg-white/10 text-white z-50"
-                )}
-              >
-                <Filter className="w-3.5 h-3.5" />
-                Global Filter
-                <ChevronDown className="w-3 h-3 opacity-60" />
-                {activeFilterCount > 0 && (
-                  <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[#00775B] text-white text-[9px] font-bold border border-[#021d18]">
-                    {activeFilterCount}
-                  </div>
-                )}
-              </button>
-
-              {isGlobalFilterOpen && (
-                <>
-                  <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setIsGlobalFilterOpen(false)} />
-                  <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-neutral-100 z-50 overflow-hidden">
-                    <div className="flex border-b border-neutral-100">
-                      <button className={cn("flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors", globalFilterType === "project" ? "text-[#00775B] bg-[#00775B]/5" : "text-neutral-500 hover:bg-neutral-50")} onClick={() => { setGlobalFilterType("project"); setGlobalFilterQuery(""); }}>Project › Pipeline</button>
-                      <div className="w-px bg-neutral-100" />
-                      <button className={cn("flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors", globalFilterType === "camera" ? "text-[#00775B] bg-[#00775B]/5" : "text-neutral-500 hover:bg-neutral-50")} onClick={() => { setGlobalFilterType("camera"); setGlobalFilterQuery(""); }}>Camera Group</button>
-                    </div>
-                    <div className="p-3 space-y-3">
-                      <h3 className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">{globalFilterType === "camera" ? "Select Camera Groups" : (draftProject ? "Select a Pipeline" : "Select a Project")}</h3>
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
-                        <input type="text" placeholder={globalFilterType === "camera" ? "Search camera groups..." : (draftProject ? "Search pipelines..." : "Search projects...")} className="w-full h-8 pl-8 pr-3 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:border-[#00775B] focus:ring-1 focus:ring-[#00775B] outline-none transition-all placeholder:text-neutral-400 text-neutral-900" value={globalFilterQuery} onChange={(e) => setGlobalFilterQuery(e.target.value)} />
-                      </div>
-                      {globalFilterType === "project" && draftProject && (
-                        <div className="flex items-center gap-2 pb-2 border-b border-neutral-100">
-                          <button onClick={() => { setDraftProject(null); setDraftPipeline(null); setGlobalFilterQuery(""); }} className="p-1 rounded hover:bg-neutral-100 text-neutral-500 hover:text-neutral-900"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                          <span className="text-xs font-bold text-neutral-900 truncate"><span className="text-neutral-500 font-normal">Project –</span> {draftProject}</span>
-                        </div>
-                      )}
-                      <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
-                        {filteredGlobalOptions.length > 0 ? filteredGlobalOptions.map(opt => {
-                          const isSelected = globalFilterType === "camera" ? draftCameraGroups.has(opt) : (draftProject ? draftPipeline === opt : false);
-                          return (
-                            <div key={opt} className="flex items-center gap-2 px-2 py-1.5 hover:bg-neutral-50 rounded-lg cursor-pointer group" onClick={() => {
-                              if (globalFilterType === "camera") {
-                                const newSet = new Set(draftCameraGroups);
-                                if (newSet.has(opt)) newSet.delete(opt); else newSet.add(opt);
-                                setDraftCameraGroups(newSet);
-                              } else {
-                                if (draftProject) { setDraftPipeline(isSelected ? null : opt); } else { setDraftProject(opt); setGlobalFilterQuery(""); }
-                              }
-                            }}>
-                              {globalFilterType === "camera" && <Checkbox checked={isSelected} className="data-[state=checked]:bg-[#00775B] data-[state=checked]:border-[#00775B] w-3.5 h-3.5" />}
-                              {globalFilterType === "project" && draftProject && (
-                                <div className={cn("w-3.5 h-3.5 rounded-full border flex items-center justify-center", isSelected ? "border-[#00775B]" : "border-neutral-300")}>{isSelected && <div className="w-2 h-2 rounded-full bg-[#00775B]" />}</div>
-                              )}
-                              <span className={cn("text-xs font-medium text-neutral-700 group-hover:text-neutral-900 flex-1", isSelected && "text-[#00775B] font-bold")}>{opt}</span>
-                              {globalFilterType === "project" && !draftProject && <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />}
-                            </div>
-                          );
-                        }) : <p className="text-center py-4 text-xs text-neutral-400 italic">No matches found</p>}
-                      </div>
-                    </div>
-                    <div className="p-3 border-t border-neutral-100 bg-neutral-50/50 flex justify-between items-center">
-                      <button className="text-[10px] font-bold text-neutral-500 hover:text-neutral-800 uppercase tracking-wide hover:underline" onClick={clearDraftFilters}>Clear All</button>
-                      <Button size="sm" className="h-7 text-[10px] bg-[#00775B] text-white hover:bg-[#00624b] rounded-lg" onClick={applyGlobalFilters}>Apply</Button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Live clock */}
-            <div className="hidden md:flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/10 text-xs font-mono text-white/60">
-              <Clock className="w-3.5 h-3.5 text-white/30" />
-              {clockTime}
-            </div>
-
-            {/* Persona switcher */}
-            <div className="hidden lg:block">
-              <PersonaSwitcher activePersona={activePersona} onPersonaChange={setActivePersona} />
-            </div>
-
-            {/* Search */}
-            <div className="hidden lg:flex items-center gap-2 h-8 px-3 rounded-lg border border-white/10 text-xs text-white/40 bg-white/5 hover:bg-white/8 cursor-pointer transition-colors min-w-[140px]">
-              <Search className="w-3.5 h-3.5 shrink-0" />
-              <span className="flex-1">Search</span>
-              <div className="flex items-center gap-0.5 opacity-60">
-                <kbd className="text-[10px] font-mono px-1 py-0.5 rounded border border-white/20 bg-white/10">⌘</kbd>
-                <kbd className="text-[10px] font-mono px-1 py-0.5 rounded border border-white/20 bg-white/10">K</kbd>
-              </div>
-            </div>
-
-            {/* Bell */}
-            <button className="relative h-8 w-8 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/8 border border-white/10 transition-colors">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-[#021d18]" />
-            </button>
-
-            {/* User avatar + dropdown */}
-            <div className="relative" ref={avatarRef}>
-              <button
-                onClick={() => setIsAvatarMenuOpen(v => !v)}
-                className="h-8 w-8 rounded-full bg-[#00775B] flex items-center justify-center text-white text-xs font-bold shadow-md hover:bg-[#006649] transition-colors ring-2 ring-transparent hover:ring-[#00775B]/40"
-              >
-                AU
-              </button>
-
-              {isAvatarMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl shadow-2xl z-[200] overflow-hidden border"
-                     style={{ background: isDark ? "#0F172A" : "#ffffff", borderColor: isDark ? "#1E293B" : "#e5e7eb" }}>
-                  {/* User info */}
-                  <div className="flex items-center gap-3 px-4 py-3.5"
-                       style={{ borderBottom: isDark ? "1px solid #1E293B" : "1px solid #f1f5f9" }}>
-                    <div className="w-9 h-9 rounded-full bg-[#00775B] flex items-center justify-center text-white text-sm font-black shrink-0">
-                      AU
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-bold truncate" style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>Admin User</p>
-                      <p className="text-[10px] truncate" style={{ color: isDark ? "#64748b" : "#94a3b8" }}>admin@matrice.ai</p>
-                    </div>
-                  </div>
-
-                  {/* Theme toggle row */}
-                  <div className="px-2 py-2"
-                       style={{ borderBottom: isDark ? "1px solid #1E293B" : "1px solid #f1f5f9" }}>
-                    <button
-                      onClick={() => { setIsDark(d => !d); }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group"
-                      style={{
-                        background: "transparent",
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? "#1E293B" : "#f8fafc")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                           style={{ background: isDark ? "#00D4AA22" : "#00775B15" }}>
-                        {isDark
-                          ? <Sun  className="w-3.5 h-3.5" style={{ color: "#00D4AA" }} />
-                          : <Moon className="w-3.5 h-3.5" style={{ color: "#00775B" }} />}
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-[11px] font-semibold" style={{ color: isDark ? "#e2e8f0" : "#374151" }}>
-                          {isDark ? "Switch to Light" : "Switch to Dark"}
-                        </p>
-                        <p className="text-[9px]" style={{ color: isDark ? "#64748b" : "#9ca3af" }}>
-                          {isDark ? "Light mode" : "Dark mode"}
-                        </p>
-                      </div>
-                      {/* Toggle pill */}
-                      <div className="relative w-9 h-5 rounded-full transition-colors shrink-0"
-                           style={{ background: isDark ? "#00D4AA" : "#d1d5db" }}>
-                        <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200"
-                             style={{ left: isDark ? "calc(100% - 18px)" : "2px" }} />
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Other menu items */}
-                  <div className="px-2 py-2">
-                    <button
-                      onClick={() => { setActivePage("settings"); setIsAvatarMenuOpen(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors"
-                      style={{ color: isDark ? "#cbd5e1" : "#374151" }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? "#1E293B" : "#f8fafc")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <Settings className="w-3.5 h-3.5 shrink-0" />
-                      Profile Settings
-                    </button>
-                    <button
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors"
-                      style={{ color: "#ef4444" }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? "#450a0a" : "#fef2f2")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <LogOut className="w-3.5 h-3.5 shrink-0" />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* Spacer: compensates for the fixed header (h-12 = 48px) */}
-        <div className="h-12 flex-shrink-0" />
-
-        {/* Settings page */}
-        {activePage === "settings" && (
-          <div className="overflow-hidden bg-white" style={{ height: "calc(100% - 3rem)" }}>
-            <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
-          </div>
-        )}
-
-        {activePage !== "settings" && (
-        <>
-        <div className="p-6 space-y-6 relative w-full overflow-x-hidden rounded-tl-lg">
+    <AppLayout activePage={activePage} onPageChange={setActivePage} isDark={isDark} onToggleDark={() => setIsDark(d => !d)}>
+      <div className="bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 min-h-full">
+        <div className="max-w-full overflow-x-hidden">
 
           <section className="w-full">
             {activePage === "volume" && <VolumeAnalytics persona={activePersona} />}
             {activePage === "incident" && <IncidentAnalytics persona={activePersona} />}
             {activePage === "zone" && <ZoneAnalytics persona={activePersona} />}
             {activePage === "quality" && <QualityAnalytics persona={activePersona} />}
-            {activePage === "safety" && <SafetyAnalytics persona={activePersona} sidebarCollapsed={sidebarCollapsed} />}
+            {activePage === "safety" && <SafetyAnalytics persona={activePersona} sidebarCollapsed={false} />}
             {activePage === "identity" && <IdentityAnalytics persona={activePersona} />}
             {activePage === "facial-recognition" && <FacialRecognition />}
             {activePage === "license-plates" && <LicensePlates />}
@@ -683,6 +449,7 @@ export default function App() {
             {activePage === "metrics" && <MetricsRules />}
             {activePage === "compliance" && <Compliance />}
             {activePage === "design-system" && <DesignSystem />}
+            {activePage === "settings" && <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />}
             
             {activePage === "dashboard" && (
               <>
@@ -935,28 +702,25 @@ export default function App() {
           )}
           </section>
         </div>
-        </>
-        )} {/* end activePage !== "settings" */}
+
+        {/* Incident Detail Modal */}
+        <IncidentDetailModal
+          incident={currentIncident}
+          open={detailModalOpen}
+          onOpenChange={(open) => {
+            setDetailModalOpen(open);
+            if (!open) setCurrentIncident(null);
+          }}
+          onAcknowledge={() => {
+            setDetailModalOpen(false);
+            setAckModalOpen(true);
+          }}
+          onAssign={() => {
+            setDetailModalOpen(false);
+            setAssignModalOpen(true);
+          }}
+        />
       </div>
-
-      {/* Incident Detail Modal */}
-      <IncidentDetailModal
-        incident={currentIncident}
-        open={detailModalOpen}
-        onOpenChange={(open) => {
-          setDetailModalOpen(open);
-          if (!open) setCurrentIncident(null);
-        }}
-        onAcknowledge={() => {
-          setDetailModalOpen(false);
-          setAckModalOpen(true);
-        }}
-        onAssign={() => {
-          setDetailModalOpen(false);
-          setAssignModalOpen(true);
-        }}
-      />
-
-    </div>
+    </AppLayout>
   );
 }
