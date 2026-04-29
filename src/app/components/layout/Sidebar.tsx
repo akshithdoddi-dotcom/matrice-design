@@ -3,14 +3,14 @@ import { cn } from "@/app/lib/utils";
 import {
   LayoutDashboard, ShieldAlert, Map, TrendingUp, ShoppingBag,
   Settings, HelpCircle, ChevronDown, ChevronUp, Check,
-  ScanFace, CarFront, Video, ClipboardCheck, MapPin, Fingerprint, ShieldCheck, Layers,
+  ScanFace, CarFront, Video, ClipboardCheck, MapPin, Fingerprint, ShieldCheck, Layers, Timer,
 } from "lucide-react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export type Page =
   | "dashboard" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
   | "facial-recognition" | "license-plates" | "cameras" | "metrics" | "compliance"
-  | "design-system" | "settings";
+  | "design-system" | "settings" | "service";
 
 interface SidebarProps {
   activePage: Page;
@@ -36,6 +36,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType; badge?: num
   { id: "quality",            label: "Quality Analytics",   icon: ShoppingBag },
   { id: "safety",             label: "Safety Analytics",    icon: ShieldCheck },
   { id: "identity",           label: "Identity Analytics",  icon: Fingerprint },
+  { id: "service",            label: "Service Analytics",   icon: Timer },
   { id: "facial-recognition", label: "Facial Recognition",  icon: ScanFace },
   { id: "license-plates",     label: "License Plates",      icon: CarFront },
   { id: "cameras",            label: "Cameras",             icon: Video },

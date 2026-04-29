@@ -26,6 +26,7 @@ import { Cameras } from "@/app/components/pages/Cameras";
 import { MetricsRules } from "@/app/components/pages/MetricsRules";
 import { Compliance } from "@/app/components/pages/Compliance";
 import { DesignSystem } from "@/app/components/pages/DesignSystem";
+import { ServiceAnalytics } from "@/app/components/pages/ServiceAnalytics";
 import { SettingsPage } from "@/app/components/pages/Settings";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
 import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@/app/components/ui/DataGrid";
@@ -449,6 +450,7 @@ export default function App() {
             {activePage === "metrics" && <MetricsRules />}
             {activePage === "compliance" && <Compliance />}
             {activePage === "design-system" && <DesignSystem />}
+            {activePage === "service" && <ServiceAnalytics />}
             {activePage === "settings" && <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />}
             
             {activePage === "dashboard" && (
