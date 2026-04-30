@@ -75,7 +75,7 @@ export const PANEL_ENTITIES: Record<string, PanelEntity> = {
   f1: {
     id: "f1", tracker_id: 3, match_status: "MATCHED",
     display_name: "Marcus Webb", initials: "MW",
-    photo_url: "/people/man1.avif",
+    photo_url: "/people/man3.jpg",
     list_membership: "BLACKLIST",
     alert_reason: "Theft & Assault · Repeat Offender",
     last_detection: {
@@ -105,7 +105,7 @@ export const PANEL_ENTITIES: Record<string, PanelEntity> = {
   f2: {
     id: "f2", tracker_id: 88, match_status: "UNMATCHED",
     display_name: "Unknown #88", initials: "?",
-    photo_url: "/people/women2.avif",
+    photo_url: "/people/face_landmark.png",
     list_membership: "UNKNOWN",
     recognition_attempt: {
       best_match_score: 61.2, threshold: 75.0,
@@ -203,7 +203,7 @@ export const PANEL_ENTITIES: Record<string, PanelEntity> = {
   f5: {
     id: "f5", tracker_id: 21, match_status: "MATCHED",
     display_name: "Sarah Johnson", initials: "SJ",
-    photo_url: "/people/women1.avif",
+    photo_url: "/people/AI-autism_900x600.jpg",
     list_membership: "WHITELIST",
     metadata: { employee_id: "EMP-2198", department: "Human Resources", access_level: "L2 — Standard Access" },
     last_detection: {

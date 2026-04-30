@@ -434,7 +434,10 @@ export default function App() {
 
   return (
     <AppLayout activePage={activePage} onPageChange={setActivePage} isDark={isDark} onToggleDark={() => setIsDark(d => !d)}>
-      <div className="bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 min-h-full">
+      {activePage === "settings" ? (
+        <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
+      ) : null}
+      <div className={cn("bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 min-h-full", activePage === "settings" && "hidden")}>
         <div className="max-w-full overflow-x-hidden">
 
           <section className="w-full">
@@ -451,7 +454,6 @@ export default function App() {
             {activePage === "compliance" && <Compliance />}
             {activePage === "design-system" && <DesignSystem />}
             {activePage === "service" && <ServiceAnalytics />}
-            {activePage === "settings" && <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />}
             
             {activePage === "dashboard" && (
               <>
