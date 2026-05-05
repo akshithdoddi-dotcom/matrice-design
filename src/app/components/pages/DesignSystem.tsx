@@ -3495,7 +3495,7 @@ const AccordionContent = () => {
         {/* Body */}
         <div className="flex">
           {/* Accordion preview */}
-          <div className="flex-1 p-6 space-y-2 bg-[#F8FAFC]">
+          <div className="flex-1 min-w-0 p-6 space-y-2 bg-[#F8FAFC]">
             {ACC_ITEMS_DATA.map((item) => (
               <AccItem
                 key={item.id}
@@ -3508,7 +3508,7 @@ const AccordionContent = () => {
           </div>
 
           {/* Controls panel */}
-          <div className="w-[248px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5">
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">
                 Elements
@@ -3957,7 +3957,7 @@ const AccordionContentV11 = () => {
         </div>
 
         <div className="flex">
-          <div className="flex-1 p-6 space-y-2.5 bg-[#F8FAFC]">
+          <div className="flex-1 min-w-0 p-6 space-y-2.5 bg-[#F8FAFC]">
             {ACC_ITEMS_DATA.map((item) => (
               <AccItemV11
                 key={item.id}
@@ -3969,7 +3969,7 @@ const AccordionContentV11 = () => {
             ))}
           </div>
 
-          <div className="w-[248px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5">
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Elements</div>
               <div className="space-y-3">
@@ -4495,7 +4495,7 @@ const AccordionContentV12 = () => {
         {/* Body */}
         <div className="flex">
           {/* Accordion preview */}
-          <div className="flex-1 p-6 space-y-2 bg-[#F8FAFC]">
+          <div className="flex-1 min-w-0 p-6 space-y-2 bg-[#F8FAFC]">
             {ACC_ITEMS_DATA.map((item) => (
               <AccItemV12
                 key={item.id}
@@ -4508,7 +4508,7 @@ const AccordionContentV12 = () => {
           </div>
 
           {/* Controls */}
-          <div className="w-[248px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5">
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
             {/* Elements */}
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Elements</div>
