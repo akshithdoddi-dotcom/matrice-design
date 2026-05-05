@@ -4322,12 +4322,10 @@ const AccItemV12 = ({
         }}
       >
         {showIcon && (
-          <div
-            className="w-8 h-8 rounded-[5px] flex items-center justify-center flex-shrink-0 transition-all duration-200"
-            style={{ backgroundColor: isOpen ? s.iconBg : "#F8FAFC" }}
-          >
-            <Icon className="w-3.5 h-3.5 transition-colors duration-200" style={{ color: isOpen ? s.iconColor : "#94A3B8" }} />
-          </div>
+          <Icon
+            className="w-4 h-4 flex-shrink-0 transition-colors duration-200"
+            style={{ color: s.iconColor }}
+          />
         )}
 
         <div className="flex-1 min-w-0">
@@ -4354,9 +4352,9 @@ const AccItemV12 = ({
           <div
             className="flex-shrink-0 px-2.5 py-1 rounded-[3px] text-[10px] font-mono font-semibold transition-all duration-200"
             style={{
-              backgroundColor: isOpen ? s.badgeBg : "#F1F5F9",
-              color: isOpen ? s.badgeColor : "#94A3B8",
-              border: `1px solid ${isOpen && !isDefault ? s.border : "#E2E8F0"}`,
+              backgroundColor: s.badgeBg,
+              color: s.badgeColor,
+              border: `1px solid ${isDefault ? "#E2E8F0" : s.border}`,
             }}
           >
             {badgeText}
@@ -4366,8 +4364,8 @@ const AccItemV12 = ({
           <div
             className="min-w-[22px] h-[18px] px-1.5 rounded-[3px] flex items-center justify-center flex-shrink-0 text-[9px] font-bold transition-all duration-200"
             style={{
-              backgroundColor: isOpen ? s.badgeBg : "#F1F5F9",
-              color: isOpen ? s.badgeColor : "#94A3B8",
+              backgroundColor: s.badgeBg,
+              color: s.badgeColor,
             }}
           >
             {badgeNum}
@@ -4377,7 +4375,8 @@ const AccItemV12 = ({
         <ChevronDown
           className="w-4 h-4 flex-shrink-0 transition-all duration-200"
           style={{
-            color: isOpen ? (isDefault ? "#475569" : s.color) : "#CBD5E1",
+            color: isDefault ? (isOpen ? "#475569" : "#CBD5E1") : s.color,
+            opacity: isOpen ? 1 : 0.45,
             transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
           }}
         />
