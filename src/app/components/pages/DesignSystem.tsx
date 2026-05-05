@@ -4305,6 +4305,7 @@ const AccItemV12 = ({
       className="rounded-[8px] overflow-hidden transition-all duration-200"
       style={{
         border: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
+        borderLeft: `3px solid ${isOpen ? s.stripe : "transparent"}`,
         backgroundColor: isOpen ? s.bg : "#ffffff",
         boxShadow: isOpen ? s.shadow : hovered ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)",
       }}
@@ -4317,7 +4318,6 @@ const AccItemV12 = ({
         className="w-full flex items-center gap-3 px-4 text-left outline-none transition-all duration-200"
         style={{
           height: 52,
-          borderLeft: `3px solid ${isOpen ? s.stripe : "transparent"}`,
           backgroundColor: !isOpen && hovered ? "#F8FAFC" : "transparent",
         }}
       >
@@ -4352,7 +4352,7 @@ const AccItemV12 = ({
 
         {rightSide === "text" && (
           <div
-            className="flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold transition-all duration-200"
+            className="flex-shrink-0 px-2.5 py-1 rounded-[3px] text-[10px] font-mono font-semibold transition-all duration-200"
             style={{
               backgroundColor: isOpen ? s.badgeBg : "#F1F5F9",
               color: isOpen ? s.badgeColor : "#94A3B8",
@@ -4364,7 +4364,7 @@ const AccItemV12 = ({
         )}
         {rightSide === "icon" && (
           <div
-            className="min-w-[22px] h-[18px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-bold transition-all duration-200"
+            className="min-w-[22px] h-[18px] px-1.5 rounded-[3px] flex items-center justify-center flex-shrink-0 text-[9px] font-bold transition-all duration-200"
             style={{
               backgroundColor: isOpen ? s.badgeBg : "#F1F5F9",
               color: isOpen ? s.badgeColor : "#94A3B8",
@@ -4405,7 +4405,7 @@ const AccItemV12 = ({
                   Zone Summary
                 </span>
                 <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-[3px]"
                   style={{
                     backgroundColor: isDefault ? "#F1F5F9" : s.badgeBg,
                     color: isDefault ? "#64748B" : s.badgeColor,
