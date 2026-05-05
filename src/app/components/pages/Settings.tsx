@@ -438,52 +438,56 @@ function GroupModal({ mode, group, onSave, onClose }: GroupModalProps) {
           <div>
             <Label>Members</Label>
             <div className="relative" ref={memberDropRef}>
-              {/* Selected chips + search input */}
+              {/* Search input */}
               <div
                 onClick={() => setMemberDropOpen(true)}
                 className={cn(
-                  "min-h-9 w-full rounded border px-2 py-1.5 flex flex-wrap gap-1.5 cursor-text transition-colors",
+                  "h-9 w-full rounded border px-2 flex items-center gap-2 cursor-text transition-colors",
                   memberDropOpen
                     ? dark ? "border-[#00D4AA] ring-2 ring-[#00D4AA]/15" : "border-[#00775B] ring-2 ring-[#00775B]/15"
                     : dark ? "border-[#334155] bg-[#0F172A]" : "border-gray-200 bg-white"
                 )}
               >
-                {Array.from(selectedMembers).map(id => {
-                  const m = MOCK_MEMBERS.find(x => x.id === id);
-                  if (!m) return null;
-                  return (
-                    <span
-                      key={id}
-                      className={cn(
-                        "inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full",
-                        dark ? "bg-[#00D4AA]/15 text-[#00D4AA]" : "bg-[#E5FFF9] text-[#00775B]"
-                      )}
-                    >
-                      {m.name}
-                      <button
-                        type="button"
-                        onClick={e => { e.stopPropagation(); removeChip(id); }}
-                        className="hover:opacity-70 transition-opacity"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </span>
-                  );
-                })}
-                <div className="relative flex-1 min-w-[120px] flex items-center">
-                  <Search className={cn("absolute left-0 w-3 h-3 pointer-events-none shrink-0", dark ? "text-[#475569]" : "text-gray-400")} />
-                  <input
-                    value={memberQuery}
-                    onChange={e => { setMemberQuery(e.target.value); setMemberDropOpen(true); }}
-                    onFocus={() => setMemberDropOpen(true)}
-                    placeholder={selectedMembers.size === 0 ? "Search by name or email..." : "Add more..."}
-                    className={cn(
-                      "w-full pl-5 text-[12px] bg-transparent outline-none",
-                      dark ? "text-[#F1F5F9] placeholder:text-[#475569]" : "text-gray-900 placeholder:text-gray-400"
-                    )}
-                  />
-                </div>
+                <Search className={cn("w-3 h-3 pointer-events-none shrink-0", dark ? "text-[#475569]" : "text-gray-400")} />
+                <input
+                  value={memberQuery}
+                  onChange={e => { setMemberQuery(e.target.value); setMemberDropOpen(true); }}
+                  onFocus={() => setMemberDropOpen(true)}
+                  placeholder="Search by name or email..."
+                  className={cn(
+                    "flex-1 text-[12px] bg-transparent outline-none",
+                    dark ? "text-[#F1F5F9] placeholder:text-[#475569]" : "text-gray-900 placeholder:text-gray-400"
+                  )}
+                />
               </div>
+
+              {/* Selected chips below input */}
+              {selectedMembers.size > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {Array.from(selectedMembers).map(id => {
+                    const m = MOCK_MEMBERS.find(x => x.id === id);
+                    if (!m) return null;
+                    return (
+                      <span
+                        key={id}
+                        className={cn(
+                          "inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full",
+                          dark ? "bg-[#00D4AA]/15 text-[#00D4AA]" : "bg-[#E5FFF9] text-[#00775B]"
+                        )}
+                      >
+                        {m.name}
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); removeChip(id); }}
+                          className="hover:opacity-70 transition-opacity"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Dropdown */}
               {memberDropOpen && (
@@ -1189,6 +1193,8 @@ function GroupsSection() {
   const [groups, setGroups] = useState<Group[]>(MOCK_GROUPS);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const CHANNEL_ICONS: Record<string, React.ReactNode> = {
     email: <Mail className="w-3 h-3" />,
@@ -1255,7 +1261,7 @@ function GroupsSection() {
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => setGroups(gg => gg.filter(x => x.id !== g.id))}
+                  onClick={() => { setDeletingGroup(g); setDeleteConfirmText(""); }}
                   title="Delete group"
                   className={cn(
                     "w-7 h-7 rounded flex items-center justify-center transition-colors",
@@ -1325,6 +1331,84 @@ function GroupsSection() {
 
       {editingGroup && (
         <GroupModal mode="edit" group={editingGroup} onSave={handleEdit} onClose={() => setEditingGroup(null)} />
+      )}
+
+      {deletingGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeletingGroup(null)} />
+          <div className={cn(
+            "relative w-full max-w-md mx-4 rounded border shadow-2xl",
+            dark ? "bg-[#1E293B] border-[#334155]" : "bg-white border-gray-200"
+          )}>
+            {/* Header */}
+            <div className={cn("flex items-start gap-3 px-5 pt-5 pb-4 border-b", dark ? "border-[#334155]" : "border-gray-100")}>
+              <div className={cn("w-9 h-9 rounded flex items-center justify-center shrink-0", dark ? "bg-red-900/30" : "bg-red-50")}>
+                <Trash2 className={cn("w-4 h-4", dark ? "text-red-400" : "text-red-500")} />
+              </div>
+              <div>
+                <h3 className={cn("text-[14px] font-semibold", dark ? "text-[#F1F5F9]" : "text-gray-900")}>
+                  Delete "{deletingGroup.name}"?
+                </h3>
+                <p className={cn("text-[12px] mt-0.5", dark ? "text-[#64748B]" : "text-gray-500")}>
+                  This action cannot be undone. All alert routing for this group will be removed.
+                </p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 space-y-3">
+              <p className={cn("text-[12px]", dark ? "text-[#94A3B8]" : "text-gray-600")}>
+                To confirm, type <span className={cn("font-semibold font-mono", dark ? "text-[#F1F5F9]" : "text-gray-900")}>{deletingGroup.name}</span> below:
+              </p>
+              <input
+                autoFocus
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder={deletingGroup.name}
+                className={cn(
+                  "w-full h-9 rounded border px-3 text-[13px] outline-none transition-colors",
+                  dark
+                    ? "bg-[#0F172A] border-[#334155] text-[#F1F5F9] placeholder:text-[#475569] focus:border-red-500"
+                    : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-300 focus:border-red-400"
+                )}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && deleteConfirmText === deletingGroup.name) {
+                    setGroups(gg => gg.filter(x => x.id !== deletingGroup.id));
+                    setDeletingGroup(null);
+                  }
+                }}
+              />
+            </div>
+
+            {/* Footer */}
+            <div className={cn("flex justify-end gap-2 px-5 pb-5")}>
+              <button
+                onClick={() => setDeletingGroup(null)}
+                className={cn(
+                  "h-8 px-4 rounded text-[12px] font-medium border transition-colors",
+                  dark ? "border-[#334155] text-[#94A3B8] hover:bg-[#334155]" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                )}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={deleteConfirmText !== deletingGroup.name}
+                onClick={() => {
+                  setGroups(gg => gg.filter(x => x.id !== deletingGroup.id));
+                  setDeletingGroup(null);
+                }}
+                className={cn(
+                  "h-8 px-4 rounded text-[12px] font-semibold transition-colors",
+                  deleteConfirmText === deletingGroup.name
+                    ? "bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+                    : dark ? "bg-red-900/20 text-red-900/50 cursor-not-allowed" : "bg-red-100 text-red-300 cursor-not-allowed"
+                )}
+              >
+                Delete Group
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
