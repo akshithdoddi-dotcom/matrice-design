@@ -4305,7 +4305,7 @@ const AccItemV12 = ({
       className="rounded-[8px] overflow-hidden transition-all duration-200"
       style={{
         border: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
-        borderLeft: `3px solid ${isOpen ? s.stripe : "transparent"}`,
+        borderLeft: `3px solid ${s.stripe}`,
         backgroundColor: isOpen ? s.bg : "#ffffff",
         boxShadow: isOpen ? s.shadow : hovered ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)",
       }}
