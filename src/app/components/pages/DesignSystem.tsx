@@ -19,6 +19,9 @@ import {
   ChevronRight,
   SlidersHorizontal,
   X,
+  ChevronDown,
+  AlertTriangle,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 
@@ -3236,6 +3239,1478 @@ const V2_2Content = () => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
+//  ACCORDION  ·  Severity tokens & shared controls
+// ══════════════════════════════════════════════════════════════════════════════
+const ACCORDION_SEVERITIES = {
+  default:  { color: "#00775B", bg: "rgba(0,119,91,0.05)",    border: "#E2E8F0",                  label: "Default"  },
+  critical: { color: "#E7000B", bg: "rgba(231,0,11,0.05)",    border: "rgba(231,0,11,0.22)",      label: "Critical" },
+  high:     { color: "#EA580C", bg: "rgba(234,88,12,0.05)",   border: "rgba(234,88,12,0.22)",     label: "High"     },
+  medium:   { color: "#E19A04", bg: "rgba(225,154,4,0.05)",   border: "rgba(225,154,4,0.22)",     label: "Medium"   },
+  stable:   { color: "#00A63E", bg: "rgba(0,166,62,0.05)",    border: "rgba(0,166,62,0.22)",      label: "Stable"   },
+  info:     { color: "#2B7FFF", bg: "rgba(43,127,255,0.05)",  border: "rgba(43,127,255,0.22)",    label: "Info"     },
+  resolved: { color: "#64748B", bg: "rgba(100,116,139,0.05)", border: "rgba(100,116,139,0.22)",   label: "Resolved" },
+} as const;
+type AccSeverity = keyof typeof ACCORDION_SEVERITIES;
+
+const MiniToggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
+  <button
+    onClick={() => onChange(!checked)}
+    className="relative flex-shrink-0 rounded-full transition-colors duration-200"
+    style={{ width: 32, height: 18, backgroundColor: checked ? "#00775B" : "#CBD5E1" }}
+  >
+    <span
+      className="absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full shadow-sm transition-all duration-200"
+      style={{ left: checked ? "calc(100% - 16px)" : "2px" }}
+    />
+  </button>
+);
+
+const CtrlRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="flex items-center justify-between gap-3">
+    <span className="text-[11px] font-medium text-[#475569] leading-tight">{label}</span>
+    {children}
+  </div>
+);
+
+const SegControl = <T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) => (
+  <div className="flex rounded-[4px] overflow-hidden border border-[#E2E8F0]">
+    {options.map((opt) => (
+      <button
+        key={opt.value}
+        onClick={() => onChange(opt.value)}
+        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.04em] transition-all duration-150"
+        style={{
+          backgroundColor: value === opt.value ? "#00775B" : "transparent",
+          color: value === opt.value ? "#fff" : "#94A3B8",
+        }}
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
+);
+
+const ACC_ITEMS_DATA = [
+  { id: "item-1", icon: Zap,  title: "Active Incident Report",  description: "Zone A · Loading Dock · Active",       badgeText: "23 events", badgeNum: "23" },
+  { id: "item-2", icon: Eye,  title: "Camera Feed Anomaly",     description: "Zone B · Assembly Line · Live",        badgeText: "3 feeds",   badgeNum: "3"  },
+  { id: "item-3", icon: Cpu,  title: "System Health Overview",  description: "All Zones · Pipeline Status · Stable", badgeText: "99.1%",     badgeNum: "✓"  },
+];
+
+const ACC_METRIC_CARDS = [
+  { label: "Events",   value: "23",    color: "#E7000B", delta: "+12%" },
+  { label: "Cameras",  value: "142",   color: "#2B7FFF", delta: "0%"   },
+  { label: "Resolved", value: "89",    color: "#00A63E", delta: "+24%" },
+  { label: "Warnings", value: "8",     color: "#EA580C", delta: "+2%"  },
+  { label: "MTTA",     value: "15m",   color: "#64748B", delta: "-3%"  },
+  { label: "Uptime",   value: "99.1%", color: "#00A63E", delta: "+0.4%" },
+];
+
+interface AccItemProps {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  badgeText: string;
+  badgeNum: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  showIcon: boolean;
+  showDescription: boolean;
+  rightSide: "none" | "text" | "icon";
+  contentType: "text" | "cards";
+  severity: AccSeverity;
+}
+
+const AccItem = ({
+  icon: Icon,
+  title,
+  description,
+  badgeText,
+  badgeNum,
+  isOpen,
+  onToggle,
+  showIcon,
+  showDescription,
+  rightSide,
+  contentType,
+  severity,
+}: AccItemProps) => {
+  const s = ACCORDION_SEVERITIES[severity];
+  return (
+    <div
+      className="rounded-[6px] overflow-hidden transition-all duration-200"
+      style={{
+        border: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
+        backgroundColor: isOpen ? s.bg : "#ffffff",
+        boxShadow: isOpen ? `0 2px 12px ${s.color}20` : "0 1px 3px rgba(0,0,0,0.04)",
+      }}
+    >
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-200"
+        style={{ borderLeft: `3px solid ${isOpen ? s.color : "transparent"}` }}
+      >
+        {showIcon && (
+          <div
+            className="w-7 h-7 rounded-[4px] flex items-center justify-center flex-shrink-0 transition-all duration-200"
+            style={{ backgroundColor: isOpen ? `${s.color}18` : "#F1F5F9" }}
+          >
+            <Icon className="w-3.5 h-3.5 transition-colors duration-200" style={{ color: isOpen ? s.color : "#64748B" }} />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div
+            className="text-[13px] font-semibold leading-tight truncate transition-colors duration-200"
+            style={{ color: isOpen ? s.color : "#0f172a" }}
+          >
+            {title}
+          </div>
+          {showDescription && (
+            <div className="text-[11px] text-[#94A3B8] mt-0.5 leading-tight truncate">{description}</div>
+          )}
+        </div>
+        {rightSide === "text" && (
+          <span
+            className="text-[11px] font-mono font-semibold flex-shrink-0 transition-colors duration-200"
+            style={{ color: s.color }}
+          >
+            {badgeText}
+          </span>
+        )}
+        {rightSide === "icon" && (
+          <div
+            className="min-w-[22px] h-[18px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-bold transition-all duration-200"
+            style={{ backgroundColor: `${s.color}18`, color: s.color }}
+          >
+            {badgeNum}
+          </div>
+        )}
+        <ChevronDown
+          className="w-4 h-4 flex-shrink-0 transition-all duration-200"
+          style={{
+            color: isOpen ? s.color : "#94A3B8",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-300"
+        style={{ maxHeight: isOpen ? 240 : 0 }}
+      >
+        <div className="px-4 pb-4" style={{ borderTop: `1px solid ${s.border}` }}>
+          {contentType === "text" ? (
+            <p className="text-[12px] text-[#475569] leading-relaxed pt-3">
+              Last updated 2 minutes ago. Automated detection flagged anomalous activity across 3 camera
+              feeds in Zone A. Response team has been notified and an investigation is underway. All
+              affected feeds have been flagged for manual review.
+            </p>
+          ) : (
+            <div className="pt-3">
+              <div className="text-[9px] font-bold uppercase tracking-[0.6px] text-[#94A3B8] mb-2.5">
+                Related Metrics
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {ACC_METRIC_CARDS.map((card) => (
+                  <div
+                    key={card.label}
+                    className="flex-shrink-0 w-[88px] rounded-[5px] p-2.5"
+                    style={{
+                      border: `1px solid ${card.color}2A`,
+                      backgroundColor: `${card.color}06`,
+                    }}
+                  >
+                    <div className="text-[9px] font-bold uppercase tracking-[0.4px] text-[#94A3B8]">
+                      {card.label}
+                    </div>
+                    <div className="text-[18px] font-bold font-mono mt-1 leading-none" style={{ color: "#0f172a" }}>
+                      {card.value}
+                    </div>
+                    <div className="text-[10px] font-semibold mt-1" style={{ color: card.color }}>
+                      {card.delta}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AccordionContent = () => {
+  const [showIcon, setShowIcon] = useState(true);
+  const [showDescription, setShowDescription] = useState(true);
+  const [rightSide, setRightSide] = useState<"none" | "text" | "icon">("text");
+  const [contentType, setContentType] = useState<"text" | "cards">("text");
+  const [severity, setSeverity] = useState<AccSeverity>("default");
+  const [openItems, setOpenItems] = useState<string[]>(["item-1"]);
+
+  const toggleItem = (id: string) =>
+    setOpenItems((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+
+  const sharedProps = { showIcon, showDescription, rightSide, contentType, severity };
+
+  return (
+    <div className="space-y-10">
+      <SectionHeader
+        icon={Layers}
+        title="Accordion Component"
+        description="Collapsible content sections with icon, description, secondary metadata, and full severity color states. One component — configure every element via the controls panel."
+      />
+
+      {/* Live preview + controls */}
+      <div className="rounded-[8px] border border-[#E2E8F0] overflow-hidden">
+        {/* Topbar */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] bg-white">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#CBD5E1]">
+              Component Sandbox
+            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00775B]" />
+            <span className="text-[9px] font-mono text-[#CBD5E1] tracking-[0.04em]">Accordion v1.0</span>
+          </div>
+          <span
+            className="text-[9px] font-bold uppercase tracking-[0.5px] px-2 py-0.5 rounded-[3px]"
+            style={{
+              backgroundColor: `${ACCORDION_SEVERITIES[severity].color}18`,
+              color: ACCORDION_SEVERITIES[severity].color,
+            }}
+          >
+            {ACCORDION_SEVERITIES[severity].label}
+          </span>
+        </div>
+
+        {/* Body */}
+        <div className="flex">
+          {/* Accordion preview */}
+          <div className="flex-1 min-w-0 p-6 space-y-2 bg-[#F8FAFC]">
+            {ACC_ITEMS_DATA.map((item) => (
+              <AccItem
+                key={item.id}
+                {...item}
+                {...sharedProps}
+                isOpen={openItems.includes(item.id)}
+                onToggle={() => toggleItem(item.id)}
+              />
+            ))}
+          </div>
+
+          {/* Controls panel */}
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">
+                Elements
+              </div>
+              <div className="space-y-3">
+                <CtrlRow label="Left Icon">
+                  <MiniToggle checked={showIcon} onChange={setShowIcon} />
+                </CtrlRow>
+                <CtrlRow label="Description">
+                  <MiniToggle checked={showDescription} onChange={setShowDescription} />
+                </CtrlRow>
+                <CtrlRow label="Right Side">
+                  <SegControl
+                    options={[
+                      { value: "none" as const, label: "—" },
+                      { value: "text" as const, label: "Txt" },
+                      { value: "icon" as const, label: "Ico" },
+                    ]}
+                    value={rightSide}
+                    onChange={setRightSide}
+                  />
+                </CtrlRow>
+              </div>
+            </div>
+
+            <div className="h-px bg-[#F1F5F9]" />
+
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">
+                Content
+              </div>
+              <SegControl
+                options={[
+                  { value: "text" as const, label: "Text" },
+                  { value: "cards" as const, label: "Cards" },
+                ]}
+                value={contentType}
+                onChange={setContentType}
+              />
+            </div>
+
+            <div className="h-px bg-[#F1F5F9]" />
+
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">
+                Severity
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(Object.entries(ACCORDION_SEVERITIES) as [AccSeverity, typeof ACCORDION_SEVERITIES[AccSeverity]][]).map(
+                  ([key, val]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSeverity(key)}
+                      className="flex flex-col items-center gap-1 p-1.5 rounded-[4px] transition-all duration-150"
+                      style={{
+                        backgroundColor: severity === key ? `${val.color}14` : "transparent",
+                        border: severity === key ? `1px solid ${val.color}40` : "1px solid transparent",
+                      }}
+                    >
+                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: val.color }} />
+                      <span
+                        className="text-[7.5px] font-bold uppercase leading-none"
+                        style={{ color: severity === key ? val.color : "#94A3B8" }}
+                      >
+                        {val.label.slice(0, 4)}
+                      </span>
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Severity color state matrix */}
+      <div>
+        <SectionHeader
+          icon={Eye}
+          title="Severity Color States"
+          description="All 7 severity variants shown in collapsed and expanded states. Trigger stripe, background tint, icon fill, and title color all respond to severity."
+        />
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          {(Object.entries(ACCORDION_SEVERITIES) as [AccSeverity, typeof ACCORDION_SEVERITIES[AccSeverity]][]).map(
+            ([key, val]) => (
+              <div key={key}>
+                <div
+                  className="text-[9px] font-bold uppercase tracking-[0.5px] mb-2"
+                  style={{ color: val.color }}
+                >
+                  {val.label}
+                </div>
+                {/* Collapsed state */}
+                <div
+                  className="rounded-[6px] mb-1.5"
+                  style={{
+                    border: "1px solid #E2E8F0",
+                    backgroundColor: "#ffffff",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                  }}
+                >
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2.5"
+                    style={{ borderLeft: "3px solid transparent" }}
+                  >
+                    <div className="w-6 h-6 rounded-[3px] flex items-center justify-center bg-[#F1F5F9]">
+                      <Zap className="w-3 h-3 text-[#64748B]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-semibold text-[#0f172a] truncate">Incident Report</div>
+                      <div className="text-[10px] text-[#94A3B8]">Collapsed</div>
+                    </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#94A3B8]" />
+                  </div>
+                </div>
+                {/* Expanded state */}
+                <div
+                  className="rounded-[6px]"
+                  style={{
+                    border: `1px solid ${val.border}`,
+                    backgroundColor: val.bg,
+                    boxShadow: `0 2px 10px ${val.color}18`,
+                  }}
+                >
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2.5"
+                    style={{ borderLeft: `3px solid ${val.color}` }}
+                  >
+                    <div
+                      className="w-6 h-6 rounded-[3px] flex items-center justify-center"
+                      style={{ backgroundColor: `${val.color}18` }}
+                    >
+                      <Zap className="w-3 h-3" style={{ color: val.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-semibold truncate" style={{ color: val.color }}>
+                        Incident Report
+                      </div>
+                      <div className="text-[10px] text-[#94A3B8]">Expanded</div>
+                    </div>
+                    <ChevronDown
+                      className="w-3.5 h-3.5"
+                      style={{ color: val.color, transform: "rotate(180deg)" }}
+                    />
+                  </div>
+                  <div className="px-3 pb-3" style={{ borderTop: `1px solid ${val.border}` }}>
+                    <p className="text-[10px] text-[#475569] leading-relaxed pt-2">
+                      Detection active · 3 feeds flagged · Response team notified.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+
+      {/* Anatomy & specs */}
+      <div>
+        <SectionHeader
+          icon={BookOpen}
+          title="Anatomy & Specifications"
+          description="Component dimensions, typography rules, and design token references."
+        />
+        <div className="flex flex-wrap gap-2">
+          <SpecChip label="Trigger height"  value="48px" />
+          <SpecChip label="Border radius"   value="6px" />
+          <SpecChip label="Left stripe"     value="3px solid · color on open" />
+          <SpecChip label="Icon box"        value="28×28px · 4px radius" />
+          <SpecChip label="Title"           value="13px Inter 600" />
+          <SpecChip label="Description"     value="11px Inter 400 · #94A3B8" />
+          <SpecChip label="Secondary text"  value="11px JetBrains Mono 600" />
+          <SpecChip label="Secondary icon"  value="18px pill · color/10 bg" />
+          <SpecChip label="Chevron"         value="16px · rotate 180° on open" />
+          <SpecChip label="Content pad"     value="16px H · 12–16px V" />
+          <SpecChip label="Open shadow"     value="0 2px 12px color/12" />
+          <SpecChip label="Card strip"      value="88px min · 12px gap · scroll" />
+          <SpecChip label="Transition"      value="300ms ease-in-out" />
+        </div>
+      </div>
+
+      {/* Annotations */}
+      <div className="grid grid-cols-2 gap-2">
+        <Annotation>Trigger: 3px left color stripe on open · transparent collapsed · 200ms transition</Annotation>
+        <Annotation>Background: severity tint 5% opacity open · white collapsed · box-shadow 12% color</Annotation>
+        <Annotation>Icon: colored bg 10% opacity open · neutral #F1F5F9 bg with #64748B icon collapsed</Annotation>
+        <Annotation>Title: severity accent color open · #0F172A collapsed · 200ms transition</Annotation>
+        <Annotation>Content: free text 12px Inter or horizontal card strip (88px cards, overflow-x scroll)</Annotation>
+        <Annotation>Chevron: rotates 180° on open · severity color open · #94A3B8 collapsed</Annotation>
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  ACCORDION v1.1  ·  Refined White
+//  Key changes from v1.0:
+//  — Default is pure white, no primary tint
+//  — Hover state on collapsed trigger
+//  — Content indented to align with title column
+//  — Pill badges (tinted open, neutral closed)
+//  — Dashed separator for default state
+//  — Font-weight 500→700 on open
+//  — Larger trigger (52px) and border-radius (8px)
+// ══════════════════════════════════════════════════════════════════════════════
+const ACC_SEV_V11 = {
+  default:  { color: "#475569", titleOpen: "#0F172A", bg: "#ffffff",               border: "#E2E8F0",                  stripe: "#CBD5E1",  shadow: "0 4px 20px rgba(0,0,0,0.08)",       iconBg: "#F1F5F9",             iconColor: "#475569", badgeBg: "#F1F5F9",             badgeColor: "#64748B", label: "Default"  },
+  critical: { color: "#E7000B", titleOpen: "#E7000B", bg: "rgba(231,0,11,0.04)",   border: "rgba(231,0,11,0.20)",      stripe: "#E7000B",  shadow: "0 4px 20px rgba(231,0,11,0.12)",    iconBg: "rgba(231,0,11,0.10)", iconColor: "#E7000B", badgeBg: "rgba(231,0,11,0.08)", badgeColor: "#E7000B", label: "Critical" },
+  high:     { color: "#EA580C", titleOpen: "#EA580C", bg: "rgba(234,88,12,0.04)",  border: "rgba(234,88,12,0.20)",     stripe: "#EA580C",  shadow: "0 4px 20px rgba(234,88,12,0.12)",   iconBg: "rgba(234,88,12,0.10)",iconColor: "#EA580C", badgeBg: "rgba(234,88,12,0.08)",badgeColor: "#EA580C", label: "High"     },
+  medium:   { color: "#E19A04", titleOpen: "#B37A00", bg: "rgba(225,154,4,0.04)",  border: "rgba(225,154,4,0.20)",     stripe: "#E19A04",  shadow: "0 4px 20px rgba(225,154,4,0.12)",   iconBg: "rgba(225,154,4,0.10)",iconColor: "#E19A04", badgeBg: "rgba(225,154,4,0.08)",badgeColor: "#B37A00", label: "Medium"   },
+  stable:   { color: "#00A63E", titleOpen: "#00A63E", bg: "rgba(0,166,62,0.04)",   border: "rgba(0,166,62,0.20)",      stripe: "#00A63E",  shadow: "0 4px 20px rgba(0,166,62,0.12)",    iconBg: "rgba(0,166,62,0.10)", iconColor: "#00A63E", badgeBg: "rgba(0,166,62,0.08)", badgeColor: "#00A63E", label: "Stable"   },
+  info:     { color: "#2B7FFF", titleOpen: "#2B7FFF", bg: "rgba(43,127,255,0.04)", border: "rgba(43,127,255,0.20)",    stripe: "#2B7FFF",  shadow: "0 4px 20px rgba(43,127,255,0.12)",  iconBg: "rgba(43,127,255,0.10)",iconColor: "#2B7FFF",badgeBg: "rgba(43,127,255,0.08)",badgeColor: "#2B7FFF", label: "Info"     },
+  resolved: { color: "#64748B", titleOpen: "#475569", bg: "rgba(100,116,139,0.04)",border: "rgba(100,116,139,0.20)",   stripe: "#94A3B8",  shadow: "0 4px 20px rgba(100,116,139,0.10)", iconBg: "rgba(100,116,139,0.10)",iconColor: "#64748B",badgeBg: "rgba(100,116,139,0.08)",badgeColor: "#64748B",label: "Resolved" },
+} as const;
+type AccSeverityV11 = keyof typeof ACC_SEV_V11;
+
+interface AccItemV11Props {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  badgeText: string;
+  badgeNum: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  showIcon: boolean;
+  showDescription: boolean;
+  rightSide: "none" | "text" | "icon";
+  contentType: "text" | "cards";
+  severity: AccSeverityV11;
+}
+
+const AccItemV11 = ({
+  icon: Icon,
+  title,
+  description,
+  badgeText,
+  badgeNum,
+  isOpen,
+  onToggle,
+  showIcon,
+  showDescription,
+  rightSide,
+  contentType,
+  severity,
+}: AccItemV11Props) => {
+  const [hovered, setHovered] = useState(false);
+  const s = ACC_SEV_V11[severity];
+  const isDefault = severity === "default";
+
+  return (
+    <div
+      className="rounded-[8px] overflow-hidden transition-all duration-200"
+      style={{
+        border: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
+        backgroundColor: isOpen ? s.bg : "#ffffff",
+        boxShadow: isOpen ? s.shadow : hovered ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)",
+      }}
+    >
+      {/* Trigger */}
+      <button
+        onClick={onToggle}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="w-full flex items-center gap-3 px-4 text-left outline-none transition-all duration-200"
+        style={{
+          height: 52,
+          borderLeft: `3px solid ${isOpen ? s.stripe : "transparent"}`,
+          backgroundColor: !isOpen && hovered ? "#F8FAFC" : "transparent",
+        }}
+      >
+        {showIcon && (
+          <div
+            className="w-8 h-8 rounded-[5px] flex items-center justify-center flex-shrink-0 transition-all duration-200"
+            style={{ backgroundColor: isOpen ? s.iconBg : "#F8FAFC" }}
+          >
+            <Icon
+              className="w-3.5 h-3.5 transition-colors duration-200"
+              style={{ color: isOpen ? s.iconColor : "#94A3B8" }}
+            />
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <div
+            className="text-[13px] leading-tight truncate transition-all duration-200"
+            style={{ color: isOpen ? s.titleOpen : "#0F172A", fontWeight: isOpen ? 700 : 500 }}
+          >
+            {title}
+          </div>
+          {showDescription && (
+            <div className="text-[11px] mt-0.5 leading-tight truncate" style={{ color: "#94A3B8" }}>
+              {description}
+            </div>
+          )}
+        </div>
+
+        {rightSide === "text" && (
+          <div
+            className="flex-shrink-0 px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold transition-all duration-200"
+            style={{
+              backgroundColor: isOpen ? s.badgeBg : "#F1F5F9",
+              color: isOpen ? s.badgeColor : "#94A3B8",
+            }}
+          >
+            {badgeText}
+          </div>
+        )}
+        {rightSide === "icon" && (
+          <div
+            className="min-w-[22px] h-[18px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] font-bold transition-all duration-200"
+            style={{
+              backgroundColor: isOpen ? s.badgeBg : "#F1F5F9",
+              color: isOpen ? s.badgeColor : "#94A3B8",
+            }}
+          >
+            {badgeNum}
+          </div>
+        )}
+
+        <ChevronDown
+          className="w-4 h-4 flex-shrink-0 transition-all duration-200"
+          style={{
+            color: isOpen ? (isDefault ? "#475569" : s.stripe) : "#CBD5E1",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
+      </button>
+
+      {/* Content */}
+      <div
+        className="overflow-hidden transition-all duration-300"
+        style={{ maxHeight: isOpen ? 280 : 0 }}
+      >
+        <div
+          className="pb-4 pr-5"
+          style={{
+            borderTop: `1px ${isDefault ? "dashed" : "solid"} ${s.border}`,
+            paddingLeft: showIcon ? 60 : 20,
+          }}
+        >
+          {contentType === "text" ? (
+            <p className="text-[12px] leading-relaxed pt-3" style={{ color: "#475569" }}>
+              Last updated 2 minutes ago. Automated detection flagged anomalous activity across 3 camera
+              feeds in Zone A. Response team has been notified and an investigation is underway. All
+              affected feeds have been flagged for manual review.
+            </p>
+          ) : (
+            <div className="pt-3">
+              <div className="text-[9px] font-bold uppercase tracking-[0.6px] mb-2.5" style={{ color: "#94A3B8" }}>
+                Related Metrics
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {ACC_METRIC_CARDS.map((card) => (
+                  <div
+                    key={card.label}
+                    className="flex-shrink-0 w-[96px] rounded-[6px] p-3 bg-white"
+                    style={{
+                      border: `1px solid ${card.color}22`,
+                      boxShadow: `0 1px 4px ${card.color}10`,
+                    }}
+                  >
+                    <div className="text-[9px] font-bold uppercase tracking-[0.4px]" style={{ color: "#94A3B8" }}>
+                      {card.label}
+                    </div>
+                    <div className="text-[20px] font-bold font-mono mt-1 leading-none" style={{ color: "#0f172a" }}>
+                      {card.value}
+                    </div>
+                    <div
+                      className="inline-flex mt-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                      style={{ backgroundColor: `${card.color}12`, color: card.color }}
+                    >
+                      {card.delta}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AccordionContentV11 = () => {
+  const [showIcon, setShowIcon] = useState(true);
+  const [showDescription, setShowDescription] = useState(true);
+  const [rightSide, setRightSide] = useState<"none" | "text" | "icon">("text");
+  const [contentType, setContentType] = useState<"text" | "cards">("text");
+  const [severity, setSeverity] = useState<AccSeverityV11>("default");
+  const [openItems, setOpenItems] = useState<string[]>(["item-1"]);
+
+  const toggleItem = (id: string) =>
+    setOpenItems((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+
+  const sharedProps = { showIcon, showDescription, rightSide, contentType, severity };
+  const s = ACC_SEV_V11[severity];
+
+  return (
+    <div className="space-y-10">
+      <SectionHeader
+        icon={Layers}
+        title="Accordion v1.1 · Refined White"
+        description="Pure white default with no primary color tinting. Hover states, indented content, and pill badges distinguish open vs. closed states cleanly."
+      />
+
+      {/* Change banner */}
+      <div
+        className="rounded-[6px] px-4 py-3 flex items-center gap-2 flex-wrap"
+        style={{ backgroundColor: "#F0F9FF", border: "1px solid #BAE6FD" }}
+      >
+        <span className="text-[10px] font-bold uppercase tracking-[0.6px] text-[#0369A1] mr-1">v1.1 · Changes</span>
+        {[
+          "White default — no tint",
+          "Hover on trigger",
+          "Content indent to title",
+          "Pill badge (open/closed)",
+          "Dashed separator default",
+          "500 → 700 weight on open",
+          "52px trigger · 8px radius",
+        ].map((tag) => (
+          <span key={tag} className="text-[10px] font-medium px-2 py-0.5 rounded-[3px] bg-white border border-[#BAE6FD] text-[#0369A1]">
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      {/* Live preview + controls */}
+      <div className="rounded-[8px] border border-[#E2E8F0] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] bg-white">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#CBD5E1]">Component Sandbox</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00775B]" />
+            <span className="text-[9px] font-mono text-[#CBD5E1] tracking-[0.04em]">Accordion v1.1</span>
+          </div>
+          <span
+            className="text-[9px] font-bold uppercase tracking-[0.5px] px-2 py-0.5 rounded-[3px]"
+            style={{
+              backgroundColor: severity === "default" ? "#F1F5F9" : `${s.color}18`,
+              color: severity === "default" ? "#475569" : s.color,
+            }}
+          >
+            {s.label}
+          </span>
+        </div>
+
+        <div className="flex">
+          <div className="flex-1 min-w-0 p-6 space-y-2.5 bg-[#F8FAFC]">
+            {ACC_ITEMS_DATA.map((item) => (
+              <AccItemV11
+                key={item.id}
+                {...item}
+                {...sharedProps}
+                isOpen={openItems.includes(item.id)}
+                onToggle={() => toggleItem(item.id)}
+              />
+            ))}
+          </div>
+
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Elements</div>
+              <div className="space-y-3">
+                <CtrlRow label="Left Icon">
+                  <MiniToggle checked={showIcon} onChange={setShowIcon} />
+                </CtrlRow>
+                <CtrlRow label="Description">
+                  <MiniToggle checked={showDescription} onChange={setShowDescription} />
+                </CtrlRow>
+                <CtrlRow label="Right Side">
+                  <SegControl
+                    options={[
+                      { value: "none" as const, label: "—" },
+                      { value: "text" as const, label: "Txt" },
+                      { value: "icon" as const, label: "Ico" },
+                    ]}
+                    value={rightSide}
+                    onChange={setRightSide}
+                  />
+                </CtrlRow>
+              </div>
+            </div>
+
+            <div className="h-px bg-[#F1F5F9]" />
+
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Content</div>
+              <SegControl
+                options={[
+                  { value: "text" as const, label: "Text" },
+                  { value: "cards" as const, label: "Cards" },
+                ]}
+                value={contentType}
+                onChange={setContentType}
+              />
+            </div>
+
+            <div className="h-px bg-[#F1F5F9]" />
+
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Severity</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(Object.entries(ACC_SEV_V11) as [AccSeverityV11, typeof ACC_SEV_V11[AccSeverityV11]][]).map(
+                  ([key, val]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSeverity(key)}
+                      className="flex flex-col items-center gap-1 p-1.5 rounded-[4px] transition-all duration-150"
+                      style={{
+                        backgroundColor: severity === key ? (key === "default" ? "#F1F5F9" : `${val.color}14`) : "transparent",
+                        border: severity === key ? (key === "default" ? "1px solid #E2E8F0" : `1px solid ${val.color}40`) : "1px solid transparent",
+                      }}
+                    >
+                      <div
+                        className="w-3.5 h-3.5 rounded-full"
+                        style={{ backgroundColor: key === "default" ? "#CBD5E1" : val.color }}
+                      />
+                      <span
+                        className="text-[7.5px] font-bold uppercase leading-none"
+                        style={{ color: severity === key ? (key === "default" ? "#475569" : val.color) : "#94A3B8" }}
+                      >
+                        {val.label.slice(0, 4)}
+                      </span>
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Severity state matrix */}
+      <div>
+        <SectionHeader
+          icon={Eye}
+          title="Severity Color States"
+          description="Default stays white and neutral — no primary color. Severity states are fully colored. Note the dashed separator exclusive to the default state."
+        />
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          {(Object.entries(ACC_SEV_V11) as [AccSeverityV11, typeof ACC_SEV_V11[AccSeverityV11]][]).map(
+            ([key, val]) => {
+              const isDef = key === "default";
+              return (
+                <div key={key}>
+                  <div
+                    className="text-[9px] font-bold uppercase tracking-[0.5px] mb-2"
+                    style={{ color: isDef ? "#64748B" : val.color }}
+                  >
+                    {val.label}
+                  </div>
+                  {/* Collapsed */}
+                  <div
+                    className="rounded-[8px] mb-1.5"
+                    style={{ border: "1px solid #E2E8F0", backgroundColor: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+                  >
+                    <div className="flex items-center gap-2.5 px-3 py-3" style={{ borderLeft: "3px solid transparent" }}>
+                      <div className="w-7 h-7 rounded-[4px] flex items-center justify-center bg-[#F8FAFC]">
+                        <Zap className="w-3 h-3 text-[#94A3B8]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-medium text-[#0f172a] truncate">Incident Report</div>
+                        <div className="text-[10px] text-[#94A3B8]">Collapsed</div>
+                      </div>
+                      <ChevronDown className="w-3.5 h-3.5 text-[#CBD5E1]" />
+                    </div>
+                  </div>
+                  {/* Expanded */}
+                  <div
+                    className="rounded-[8px]"
+                    style={{ border: `1px solid ${val.border}`, backgroundColor: val.bg, boxShadow: val.shadow }}
+                  >
+                    <div
+                      className="flex items-center gap-2.5 px-3 py-3"
+                      style={{ borderLeft: `3px solid ${val.stripe}` }}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-[4px] flex items-center justify-center"
+                        style={{ backgroundColor: val.iconBg }}
+                      >
+                        <Zap className="w-3 h-3" style={{ color: val.iconColor }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-bold truncate" style={{ color: val.titleOpen }}>
+                          Incident Report
+                        </div>
+                        <div className="text-[10px] text-[#94A3B8]">Expanded</div>
+                      </div>
+                      <ChevronDown
+                        className="w-3.5 h-3.5"
+                        style={{ color: isDef ? "#475569" : val.stripe, transform: "rotate(180deg)" }}
+                      />
+                    </div>
+                    <div
+                      className="px-3 pb-3"
+                      style={{ borderTop: `1px ${isDef ? "dashed" : "solid"} ${val.border}` }}
+                    >
+                      <p className="text-[10px] leading-relaxed pt-2" style={{ color: "#475569" }}>
+                        Detection active · 3 feeds flagged · Response team notified.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          )}
+        </div>
+      </div>
+
+      {/* Anatomy & specs */}
+      <div>
+        <SectionHeader
+          icon={BookOpen}
+          title="v1.1 Anatomy & Specifications"
+          description="Updated dimensions and behaviour changes from v1.0."
+        />
+        <div className="flex flex-wrap gap-2">
+          <SpecChip label="Trigger height"   value="52px (+4px from v1.0)" />
+          <SpecChip label="Border radius"    value="8px (+2px from v1.0)" />
+          <SpecChip label="Default bg"       value="#ffffff · no tint" />
+          <SpecChip label="Default stripe"   value="#CBD5E1 · 3px solid" />
+          <SpecChip label="Default shadow"   value="0 4px 20px rgba(0,0,0,0.08)" />
+          <SpecChip label="Hover bg"         value="#F8FAFC · collapsed trigger only" />
+          <SpecChip label="Title open"       value="13px Inter 700 · severity or #0F172A" />
+          <SpecChip label="Title closed"     value="13px Inter 500 · #0F172A" />
+          <SpecChip label="Separator"        value="dashed for default · solid for severity" />
+          <SpecChip label="Content indent"   value="60px icon visible · 20px without" />
+          <SpecChip label="Badge"            value="pill · tinted bg open · #F1F5F9 closed" />
+          <SpecChip label="Card width"       value="96px (+8px from v1.0)" />
+        </div>
+      </div>
+
+      {/* Annotations */}
+      <div className="grid grid-cols-2 gap-2">
+        <Annotation>Default: white bg open · no tint · neutral gray stripe #CBD5E1 · #0F172A title</Annotation>
+        <Annotation>Hover: #F8FAFC on collapsed trigger only · no hover effect when item is open</Annotation>
+        <Annotation>Title weight: 500 collapsed → 700 open · default title stays #0F172A (not recolored)</Annotation>
+        <Annotation>Right badge: pill · severity-tinted bg open · neutral #F1F5F9 bg collapsed</Annotation>
+        <Annotation>Separator: dashed border for default state · solid border for all severity states</Annotation>
+        <Annotation>Content: indented 60px when icon visible · 20px without · aligns to title text column</Annotation>
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  ACCORDION v1.2  ·  Enhanced White
+//  New in v1.2 vs v1.1:
+//  — Caps-title toggle (ALL CAPS variant with tighter tracking)
+//  — Zone Summary Cards in content area (scrollable 2×2 status grid per zone)
+//  — Summary header row (label + count pill) above card strip
+//  — Inherits v1.1 white surface, dashed separator, pill badge, 52px trigger
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── Zone status icon config ──────────────────────────────────────────────────
+const ZONE_STATUS_CFG = {
+  critical: { Icon: AlertCircle,   color: "#E7000B", bg: "rgba(231,0,11,0.10)"   },
+  warning:  { Icon: AlertTriangle, color: "#EA580C", bg: "rgba(234,88,12,0.10)"  },
+  stable:   { Icon: CheckCircle2,  color: "#00A63E", bg: "rgba(0,166,62,0.10)"   },
+  info:     { Icon: Info,          color: "#2B7FFF", bg: "rgba(43,127,255,0.10)" },
+} as const;
+type ZoneStatus = keyof typeof ZONE_STATUS_CFG;
+
+// ─── Zone data ────────────────────────────────────────────────────────────────
+const ZONES_V12 = [
+  {
+    id: "z-a", label: "Zone A", sub: "Loading Dock", headerColor: "#E7000B",
+    comps: [
+      { name: "Cameras", status: "critical" as ZoneStatus },
+      { name: "Gateway", status: "warning"  as ZoneStatus },
+      { name: "Compute", status: "stable"   as ZoneStatus },
+      { name: "ML",      status: "critical" as ZoneStatus },
+    ],
+    note: "Cameras, ML down",
+  },
+  {
+    id: "z-b", label: "Zone B", sub: "Assembly Line", headerColor: "#EA580C",
+    comps: [
+      { name: "Cameras", status: "critical" as ZoneStatus },
+      { name: "Gateway", status: "warning"  as ZoneStatus },
+      { name: "Compute", status: "stable"   as ZoneStatus },
+      { name: "ML",      status: "stable"   as ZoneStatus },
+    ],
+    note: "1 active alert",
+  },
+  {
+    id: "z-c", label: "Zone C", sub: "Warehouse", headerColor: "#00A63E",
+    comps: [
+      { name: "Cameras", status: "stable" as ZoneStatus },
+      { name: "Gateway", status: "stable" as ZoneStatus },
+      { name: "Compute", status: "stable" as ZoneStatus },
+      { name: "ML",      status: "stable" as ZoneStatus },
+    ],
+    note: "All systems nominal",
+  },
+  {
+    id: "z-d", label: "Zone D", sub: "North Perimeter", headerColor: "#E19A04",
+    comps: [
+      { name: "Cameras", status: "warning" as ZoneStatus },
+      { name: "Gateway", status: "stable"  as ZoneStatus },
+      { name: "Compute", status: "stable"  as ZoneStatus },
+      { name: "ML",      status: "warning" as ZoneStatus },
+    ],
+    note: "Degraded performance",
+  },
+  {
+    id: "z-e", label: "Zone E", sub: "Main Entrance", headerColor: "#2B7FFF",
+    comps: [
+      { name: "Cameras", status: "stable" as ZoneStatus },
+      { name: "Gateway", status: "stable" as ZoneStatus },
+      { name: "Compute", status: "info"   as ZoneStatus },
+      { name: "ML",      status: "stable" as ZoneStatus },
+    ],
+    note: "Update pending",
+  },
+];
+
+// ─── Zone summary card ────────────────────────────────────────────────────────
+const ZoneSummaryCard = ({ zone }: { zone: typeof ZONES_V12[0] }) => (
+  <div
+    className="flex-shrink-0 w-[168px] rounded-[6px] overflow-hidden"
+    style={{ border: "1px solid #E2E8F0", backgroundColor: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+  >
+    {/* Coloured header */}
+    <div className="px-3 py-2" style={{ backgroundColor: zone.headerColor }}>
+      <div className="text-[11px] font-bold text-white leading-tight">{zone.label}</div>
+      <div className="text-[9px] text-white/75 leading-tight mt-[1px]">{zone.sub}</div>
+    </div>
+    {/* 2 × 2 status grid */}
+    <div className="grid grid-cols-2 gap-[3px] p-[5px] bg-[#F8FAFC]">
+      {zone.comps.map((comp) => {
+        const st = ZONE_STATUS_CFG[comp.status];
+        return (
+          <div
+            key={comp.name}
+            className="flex flex-col items-center justify-center gap-[3px] py-[7px] rounded-[4px]"
+            style={{ backgroundColor: st.bg }}
+          >
+            <st.Icon className="w-[13px] h-[13px]" style={{ color: st.color }} />
+            <span className="text-[8px] font-semibold leading-none" style={{ color: "#64748B" }}>
+              {comp.name}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+    {/* Footer note */}
+    <div className="px-3 py-2" style={{ borderTop: "1px solid #F1F5F9" }}>
+      <p className="text-[9px] leading-snug" style={{ color: "#94A3B8" }}>{zone.note}</p>
+    </div>
+  </div>
+);
+
+// ─── V1.2 accordion item ──────────────────────────────────────────────────────
+interface AccItemV12Props {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  badgeText: string;
+  badgeNum: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  showIcon: boolean;
+  showDescription: boolean;
+  rightSide: "none" | "text" | "icon";
+  contentType: "text" | "cards";
+  severity: AccSeverityV11;
+  capsTitle: boolean;
+}
+
+const AccItemV12 = ({
+  icon: Icon,
+  title,
+  description,
+  badgeText,
+  badgeNum,
+  isOpen,
+  onToggle,
+  showIcon,
+  showDescription,
+  rightSide,
+  contentType,
+  severity,
+  capsTitle,
+}: AccItemV12Props) => {
+  const [hovered, setHovered] = useState(false);
+  const s = ACC_SEV_V11[severity];
+  const isDefault = severity === "default";
+
+  return (
+    <div
+      className="rounded-[8px] overflow-hidden transition-all duration-200"
+      style={{
+        border: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
+        borderLeft: `3px solid ${s.stripe}`,
+        backgroundColor: isOpen ? s.bg : "#ffffff",
+        boxShadow: isOpen ? s.shadow : hovered ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)",
+      }}
+    >
+      {/* Trigger */}
+      <button
+        onClick={onToggle}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="w-full flex items-center gap-3 px-4 text-left outline-none transition-all duration-200"
+        style={{
+          height: 52,
+          backgroundColor: !isOpen && hovered ? "#F8FAFC" : "transparent",
+        }}
+      >
+        {showIcon && (
+          <Icon
+            className="w-4 h-4 flex-shrink-0 transition-colors duration-200"
+            style={{ color: s.iconColor }}
+          />
+        )}
+
+        <div className="flex-1 min-w-0">
+          <div
+            className="leading-tight truncate transition-all duration-200"
+            style={{
+              color: isOpen ? s.titleOpen : "#0F172A",
+              fontWeight: isOpen ? 700 : capsTitle ? 600 : 500,
+              fontSize: capsTitle ? 11 : 13,
+              textTransform: capsTitle ? "uppercase" : "none",
+              letterSpacing: capsTitle ? "0.07em" : "normal",
+            }}
+          >
+            {title}
+          </div>
+          {showDescription && (
+            <div className="text-[11px] mt-0.5 leading-tight truncate" style={{ color: "#94A3B8" }}>
+              {description}
+            </div>
+          )}
+        </div>
+
+        {rightSide === "text" && (
+          <div
+            className="flex-shrink-0 px-2.5 py-1 rounded-[3px] text-[10px] font-mono font-semibold transition-all duration-200"
+            style={{
+              backgroundColor: s.badgeBg,
+              color: s.badgeColor,
+              border: `1px solid ${isDefault ? "#E2E8F0" : s.border}`,
+            }}
+          >
+            {badgeText}
+          </div>
+        )}
+        {rightSide === "icon" && (
+          <div
+            className="min-w-[22px] h-[18px] px-1.5 rounded-[3px] flex items-center justify-center flex-shrink-0 text-[9px] font-bold transition-all duration-200"
+            style={{
+              backgroundColor: s.badgeBg,
+              color: s.badgeColor,
+            }}
+          >
+            {badgeNum}
+          </div>
+        )}
+
+        <ChevronDown
+          className="w-4 h-4 flex-shrink-0 transition-all duration-200"
+          style={{
+            color: isDefault ? (isOpen ? "#475569" : "#CBD5E1") : s.color,
+            opacity: isOpen ? 1 : 0.45,
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
+      </button>
+
+      {/* Content */}
+      <div
+        className="overflow-hidden transition-all duration-300"
+        style={{ maxHeight: isOpen ? (contentType === "cards" ? 300 : 200) : 0 }}
+      >
+        <div
+          className="pb-4"
+          style={{ borderTop: `1px dashed ${isDefault ? "#E2E8F0" : s.border}` }}
+        >
+          {contentType === "text" ? (
+            <p className="text-[12px] text-[#475569] leading-relaxed px-4 pt-3">
+              Last updated 2 minutes ago. Automated detection flagged anomalous activity across 3
+              camera feeds. Response team notified. All affected feeds are flagged for manual review.
+            </p>
+          ) : (
+            <div className="px-4 pt-3">
+              {/* Summary header row */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[9px] font-bold uppercase tracking-[0.65px] text-[#94A3B8]">
+                  Zone Summary
+                </span>
+                <span
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-[3px]"
+                  style={{
+                    backgroundColor: isDefault ? "#F1F5F9" : s.badgeBg,
+                    color: isDefault ? "#64748B" : s.badgeColor,
+                  }}
+                >
+                  {ZONES_V12.length}
+                </span>
+              </div>
+              {/* Scrollable card strip */}
+              <div className="flex gap-2.5 overflow-x-auto pb-1.5">
+                {ZONES_V12.map((zone) => (
+                  <ZoneSummaryCard key={zone.id} zone={zone} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── V1.2 showcase ────────────────────────────────────────────────────────────
+const AccordionContentV12 = () => {
+  const [showIcon, setShowIcon] = useState(true);
+  const [showDescription, setShowDescription] = useState(true);
+  const [rightSide, setRightSide] = useState<"none" | "text" | "icon">("text");
+  const [contentType, setContentType] = useState<"text" | "cards">("cards");
+  const [severity, setSeverity] = useState<AccSeverityV11>("default");
+  const [capsTitle, setCapsTitle] = useState(false);
+  const [openItems, setOpenItems] = useState<string[]>(["item-1"]);
+
+  const toggleItem = (id: string) =>
+    setOpenItems((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+
+  const sharedProps = { showIcon, showDescription, rightSide, contentType, severity, capsTitle };
+  const s = ACC_SEV_V11[severity];
+
+  return (
+    <div className="space-y-10">
+      <SectionHeader
+        icon={Layers}
+        title="Accordion v1.2 · Enhanced White"
+        description="Adds caps-title toggle and zone summary card strips to the v1.1 refined white base. Summary cards visualise component health per zone inside the open accordion."
+      />
+
+      {/* Change banner */}
+      <div
+        className="rounded-[6px] px-4 py-3 flex items-center gap-2 flex-wrap"
+        style={{ backgroundColor: "#F0FDF9", border: "1px solid rgba(0,119,91,0.18)" }}
+      >
+        <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-[#00775B] mr-1">v1.2 · New</span>
+        {[
+          "Caps-title toggle",
+          "Zone Summary Cards",
+          "2×2 component status grid",
+          "Scrollable card strip",
+          "Summary label + count pill",
+          "Inherits v1.1 white surface",
+        ].map((tag) => (
+          <span key={tag} className="text-[9px] font-medium px-2 py-0.5 rounded-[3px] bg-white border border-[#00775B]/20 text-[#00775B]">
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      {/* Live preview + controls */}
+      <div className="rounded-[8px] border border-[#E2E8F0] overflow-hidden">
+        {/* Topbar */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] bg-white">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#CBD5E1]">Component Sandbox</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00775B]" />
+            <span className="text-[9px] font-mono text-[#CBD5E1] tracking-[0.04em]">Accordion v1.2</span>
+          </div>
+          <span
+            className="text-[9px] font-bold uppercase tracking-[0.5px] px-2 py-0.5 rounded-[3px]"
+            style={{
+              backgroundColor: severity === "default" ? "#F1F5F9" : `${s.color}18`,
+              color: severity === "default" ? "#475569" : s.color,
+            }}
+          >
+            {s.label}
+          </span>
+        </div>
+
+        {/* Body */}
+        <div className="flex">
+          {/* Accordion preview */}
+          <div className="flex-1 min-w-0 p-6 space-y-2 bg-[#F8FAFC]">
+            {ACC_ITEMS_DATA.map((item) => (
+              <AccItemV12
+                key={item.id}
+                {...item}
+                {...sharedProps}
+                isOpen={openItems.includes(item.id)}
+                onToggle={() => toggleItem(item.id)}
+              />
+            ))}
+          </div>
+
+          {/* Controls */}
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
+            {/* Elements */}
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Elements</div>
+              <div className="space-y-3">
+                <CtrlRow label="Left Icon">
+                  <MiniToggle checked={showIcon} onChange={setShowIcon} />
+                </CtrlRow>
+                <CtrlRow label="Description">
+                  <MiniToggle checked={showDescription} onChange={setShowDescription} />
+                </CtrlRow>
+                <CtrlRow label="Caps Title">
+                  <MiniToggle checked={capsTitle} onChange={setCapsTitle} />
+                </CtrlRow>
+                <CtrlRow label="Right Side">
+                  <SegControl
+                    options={[
+                      { value: "none" as const, label: "—"   },
+                      { value: "text" as const, label: "Txt" },
+                      { value: "icon" as const, label: "Ico" },
+                    ]}
+                    value={rightSide}
+                    onChange={setRightSide}
+                  />
+                </CtrlRow>
+              </div>
+            </div>
+
+            <div className="h-px bg-[#F1F5F9]" />
+
+            {/* Content */}
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Content</div>
+              <SegControl
+                options={[
+                  { value: "text"  as const, label: "Text"  },
+                  { value: "cards" as const, label: "Cards" },
+                ]}
+                value={contentType}
+                onChange={setContentType}
+              />
+            </div>
+
+            <div className="h-px bg-[#F1F5F9]" />
+
+            {/* Severity */}
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Severity</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(Object.entries(ACC_SEV_V11) as [AccSeverityV11, typeof ACC_SEV_V11[AccSeverityV11]][]).map(
+                  ([key, val]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSeverity(key)}
+                      className="flex flex-col items-center gap-1 p-1.5 rounded-[4px] transition-all duration-150"
+                      style={{
+                        backgroundColor: severity === key ? `${val.color}14` : "transparent",
+                        border: severity === key ? `1px solid ${val.color}40` : "1px solid transparent",
+                      }}
+                    >
+                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: val.color }} />
+                      <span
+                        className="text-[7.5px] font-bold uppercase leading-none"
+                        style={{ color: severity === key ? val.color : "#94A3B8" }}
+                      >
+                        {val.label.slice(0, 4)}
+                      </span>
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Severity matrix */}
+      <div>
+        <SectionHeader
+          icon={Eye}
+          title="Severity Color States"
+          description="Same 7 states as v1.1 — default stays truly neutral. Caps-title mode shown across all states."
+        />
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          {(Object.entries(ACC_SEV_V11) as [AccSeverityV11, typeof ACC_SEV_V11[AccSeverityV11]][]).map(
+            ([key, val]) => {
+              const isDefaultState = key === "default";
+              return (
+                <div key={key}>
+                  <div className="text-[9px] font-bold uppercase tracking-[0.5px] mb-2" style={{ color: val.color }}>
+                    {val.label}
+                  </div>
+                  {/* Collapsed */}
+                  <div
+                    className="rounded-[8px] mb-1.5"
+                    style={{ border: "1px solid #E2E8F0", backgroundColor: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+                  >
+                    <div className="flex items-center gap-2.5 px-3 py-0 h-[44px]" style={{ borderLeft: "3px solid transparent" }}>
+                      <div className="w-6 h-6 rounded-[4px] flex items-center justify-center bg-[#F8FAFC]">
+                        <Zap className="w-3 h-3 text-[#94A3B8]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.07em] text-[#0F172A] truncate">Incident Report</div>
+                        <div className="text-[9px] text-[#94A3B8]">Collapsed</div>
+                      </div>
+                      <div className="px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#94A3B8] text-[9px] font-mono font-bold">23</div>
+                      <ChevronDown className="w-3.5 h-3.5 text-[#CBD5E1]" />
+                    </div>
+                  </div>
+                  {/* Expanded */}
+                  <div
+                    className="rounded-[8px]"
+                    style={{ border: `1px solid ${val.border}`, backgroundColor: val.bg, boxShadow: val.shadow }}
+                  >
+                    <div className="flex items-center gap-2.5 px-3 py-0 h-[44px]" style={{ borderLeft: `3px solid ${val.stripe}` }}>
+                      <div className="w-6 h-6 rounded-[4px] flex items-center justify-center" style={{ backgroundColor: val.iconBg }}>
+                        <Zap className="w-3 h-3" style={{ color: val.iconColor }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.07em] truncate" style={{ color: val.titleOpen }}>
+                          Incident Report
+                        </div>
+                        <div className="text-[9px] text-[#94A3B8]">Expanded</div>
+                      </div>
+                      <div
+                        className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold"
+                        style={{ backgroundColor: val.badgeBg, color: val.badgeColor }}
+                      >
+                        23
+                      </div>
+                      <ChevronDown className="w-3.5 h-3.5" style={{ color: isDefaultState ? "#475569" : val.color, transform: "rotate(180deg)" }} />
+                    </div>
+                    <div className="px-3 pb-2.5" style={{ borderTop: `1px dashed ${isDefaultState ? "#E2E8F0" : val.border}` }}>
+                      <div className="flex items-center gap-2 pt-2 mb-2">
+                        <span className="text-[8px] font-bold uppercase tracking-[0.6px] text-[#94A3B8]">Zone Summary</span>
+                        <span className="text-[8px] font-bold px-1 py-0.5 rounded-full" style={{ backgroundColor: val.badgeBg, color: val.badgeColor }}>5</span>
+                      </div>
+                      <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                        {ZONES_V12.slice(0, 3).map((zone) => (
+                          <div key={zone.id} className="flex-shrink-0 rounded-[4px] overflow-hidden" style={{ width: 60, border: "1px solid #E2E8F0" }}>
+                            <div className="px-1.5 py-1" style={{ backgroundColor: zone.headerColor }}>
+                              <div className="text-[7px] font-bold text-white truncate">{zone.label}</div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-[2px] p-[3px] bg-[#F8FAFC]">
+                              {zone.comps.slice(0, 4).map((c) => {
+                                const st = ZONE_STATUS_CFG[c.status];
+                                return (
+                                  <div key={c.name} className="flex items-center justify-center py-[3px] rounded-[2px]" style={{ backgroundColor: st.bg }}>
+                                    <st.Icon className="w-[8px] h-[8px]" style={{ color: st.color }} />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                        <div className="flex-shrink-0 w-[28px] flex items-center justify-center rounded-[4px] text-[8px] font-bold text-[#94A3B8] border border-dashed border-[#E2E8F0]">
+                          +2
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          )}
+        </div>
+      </div>
+
+      {/* Specs */}
+      <div>
+        <SectionHeader
+          icon={BookOpen}
+          title="Anatomy & Specifications"
+          description="v1.2 additions on top of the v1.1 refined white base."
+        />
+        <div className="flex flex-wrap gap-2">
+          <SpecChip label="Trigger height"   value="52px (inherited v1.1)" />
+          <SpecChip label="Border radius"    value="8px (inherited v1.1)" />
+          <SpecChip label="Separator"        value="1px dashed (default) / severity" />
+          <SpecChip label="Caps mode on"     value="11px · 0.07em tracking · wt 600/700" />
+          <SpecChip label="Caps mode off"    value="13px · normal · wt 500/700" />
+          <SpecChip label="Zone card width"  value="168px flex-shrink-0" />
+          <SpecChip label="Card header"      value="severity color full-width bar" />
+          <SpecChip label="Status grid"      value="2×2 · 13px icon · 8px label" />
+          <SpecChip label="Card strip gap"   value="10px · overflow-x auto" />
+          <SpecChip label="Summary label"    value="9px Bold Caps · #94A3B8" />
+          <SpecChip label="Count pill"       value="severity tint when open / #F1F5F9 default" />
+        </div>
+      </div>
+
+      {/* Annotations */}
+      <div className="grid grid-cols-2 gap-2">
+        <Annotation>Caps Title ON: 11px Inter 600/700 · tracking 0.07em · uppercase transform</Annotation>
+        <Annotation>Caps Title OFF: 13px Inter 500→700 on open (inherited v1.1)</Annotation>
+        <Annotation>Zone Summary: scrollable horizontal strip · one card per zone · always visible when Content = Cards</Annotation>
+        <Annotation>Zone card header: solid severity color · white bold text (zone label + sub-location)</Annotation>
+        <Annotation>2×2 status grid: colored icon + label per component · tinted bg per status</Annotation>
+        <Annotation>Summary header row: "Zone Summary" label (9px caps) + count pill (severity tint on open)</Annotation>
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
 //  PAGE SHELL
 // ══════════════════════════════════════════════════════════════════════════════
 type TableTabId = "v2base" | "v2-1" | "v2-2";
@@ -3252,10 +4727,18 @@ const CARD_TABS: { id: TabId; version: string; label: string; badge: string; bad
   { id: "v1-2", version: "v1.2", label: "Card Catalogue", badge: "New",    badgeColor: "#EA580C" },
 ];
 
+type AccordionTabId = "v1-acc" | "v1-1-acc" | "v1-2-acc";
+const ACCORDION_TABS: { id: AccordionTabId; version: string; label: string; badge: string; badgeColor: string }[] = [
+  { id: "v1-acc",   version: "v1.0", label: "Standard",       badge: "Stable",   badgeColor: "#2B7FFF" },
+  { id: "v1-1-acc", version: "v1.1", label: "Refined White",  badge: "Updated",  badgeColor: "#00775B" },
+  { id: "v1-2-acc", version: "v1.2", label: "Enhanced White", badge: "New",      badgeColor: "#8B5CF6" },
+];
+
 export const DesignSystem = () => {
   const [activeTab, setActiveTab] = useState<TabId>("v1-1");
-  const [componentType, setComponentType] = useState<"card" | "table">("card");
+  const [componentType, setComponentType] = useState<"card" | "table" | "accordion">("card");
   const [tableTab, setTableTab] = useState<TableTabId>("v2base");
+  const [accordionTab, setAccordionTab] = useState<AccordionTabId>("v1-acc");
   const [sandboxTheme, setSandboxTheme] = useState<"light" | "dark">("light");
 
   return (
@@ -3309,7 +4792,7 @@ export const DesignSystem = () => {
         {/* Component type selector */}
         <div className="flex items-center gap-0 py-5">
           <div className="rounded-[6px] p-0.5 bg-[#F1F5F9] border border-[#E2E8F0] flex items-center">
-            {(["card", "table"] as const).map((type) => {
+            {(["card", "table", "accordion"] as const).map((type) => {
               const isActive = componentType === type;
               return (
                 <button
@@ -3322,7 +4805,7 @@ export const DesignSystem = () => {
                     border: isActive ? "none" : "1px solid #E2E8F0",
                   }}
                 >
-                  {type === "card" ? "Cards" : "Tables"}
+                  {type === "card" ? "Cards" : type === "table" ? "Tables" : "Accordion"}
                 </button>
               );
             })}
@@ -3331,14 +4814,15 @@ export const DesignSystem = () => {
 
         {/* Tab strip */}
         <div className="flex items-end gap-0 border-b border-[#E2E8F0] mt-0">
-          {(componentType === "card" ? CARD_TABS : TABLE_TABS).map((tab) => {
-            const active = componentType === "card" ? activeTab === tab.id : tableTab === tab.id;
+          {(componentType === "card" ? CARD_TABS : componentType === "table" ? TABLE_TABS : ACCORDION_TABS).map((tab) => {
+            const active = componentType === "card" ? activeTab === tab.id : componentType === "table" ? tableTab === tab.id : accordionTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => {
                   if (componentType === "card") setActiveTab(tab.id as TabId);
-                  else setTableTab(tab.id as TableTabId);
+                  else if (componentType === "table") setTableTab(tab.id as TableTabId);
+                  else setAccordionTab(tab.id as AccordionTabId);
                 }}
                 className={cn(
                   "relative flex items-center gap-2.5 px-6 py-4 text-[12px] font-bold transition-all duration-200 border-b-2 -mb-px",
@@ -3484,6 +4968,15 @@ export const DesignSystem = () => {
               </div>
             </div>
           </SandboxThemeCtx.Provider>
+        )}
+
+        {/* Accordion content */}
+        {componentType === "accordion" && (
+          <div className="py-8 animate-in fade-in duration-300">
+            {accordionTab === "v1-acc"   && <AccordionContent />}
+            {accordionTab === "v1-1-acc" && <AccordionContentV11 />}
+            {accordionTab === "v1-2-acc" && <AccordionContentV12 />}
+          </div>
         )}
 
         {/* Footer */}

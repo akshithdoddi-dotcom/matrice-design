@@ -262,9 +262,11 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
           <CustomSidebarTrigger />
           <div className="h-4 w-px bg-white/10" />
 
-          {/* Breadcrumb placeholder */}
+          {/* Breadcrumb / page title */}
           <div className="flex-1 flex items-center gap-2 text-sm">
-            <span className="font-semibold">Dashboard</span>
+            <span className="text-white/40 font-normal">
+              {activePage === "settings" ? "Settings" : mainNavItems.find(i => i.id === activePage)?.label ?? "Dashboard"}
+            </span>
           </div>
 
           {/* Right side actions */}
@@ -345,7 +347,10 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
         </header>
 
         {/* Main content */}
-        <div className="flex flex-1 flex-col gap-4 p-6 overflow-auto">
+        <div className={cn(
+          "flex flex-1 flex-col overflow-auto",
+          activePage === "settings" ? "p-0 min-h-0" : "gap-4 p-6"
+        )}>
           {children}
         </div>
       </SidebarInset>

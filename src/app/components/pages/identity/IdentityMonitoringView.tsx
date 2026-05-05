@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { IdentityEvidenceMedia } from "./components/shared/IdentityEvidenceMedia";
 import { SlidePanel } from "./components/panels/SlidePanel";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
 import { IDENTITY_LIVE_STATUS, IDENTITY_ZONES, LPR_ZONES, UNKNOWN_TRACKERS } from "./data/mockData";
 import type { IdentityTerminology } from "./data/types";
 import type { IdentityAppOption } from "../IdentityAnalytics";
@@ -98,14 +99,14 @@ const FR_PEOPLE: FeedPerson[] = [
     displayName: "Marcus Webb", subLabel: "Theft & Assault · Repeat Offender",
     camera: "CAM-LB-01", cameraId: "cam_main_lobby", zone: "Main Lobby",
     time: "14:31:22", confidence: 94.7, severity: "CRITICAL",
-    imageSrc: "/people/man1.avif",
+    imageSrc: "/people/man3.jpg",
   },
   {
     id: "f2", identType: "FACE", status: "UNKNOWN",
     displayName: "Unknown #88", subLabel: "Action required · High dwell",
     camera: "CAM-SE-01", cameraId: "cam_south_entrance", zone: "South Entrance",
     time: "14:30:55", dwell: 252, recurringDays: 4, severity: "HIGH",
-    imageSrc: "/people/women2.avif",
+    imageSrc: "/people/face_landmark.png",
   },
   {
     id: "f3", identType: "FACE", status: "VIP",
@@ -128,7 +129,7 @@ const FR_PEOPLE: FeedPerson[] = [
     displayName: "Sarah Johnson", subLabel: "Human Resources · L2 Access",
     camera: "CAM-RC-01", cameraId: "cam_reception", zone: "Reception",
     time: "14:27:14", confidence: 95.4, severity: "LOW",
-    imageSrc: "/people/women1.avif",
+    imageSrc: "/people/AI-autism_900x600.jpg",
     department: "Human Resources", employeeId: "EMP-2198",
     enrollDate: "2024-03-20", totalAppearances: 187,
   },
@@ -137,14 +138,14 @@ const FR_PEOPLE: FeedPerson[] = [
     displayName: "Unknown #42", subLabel: "High dwell · Loitering suspected",
     camera: "CAM-LB-02", cameraId: "cam_main_lobby", zone: "Main Lobby",
     time: "14:22:08", dwell: 410, recurringDays: 2, severity: "HIGH",
-    imageSrc: "/people/man1.avif",
+    imageSrc: "/people/man3.jpg",
   },
   {
     id: "f7", identType: "FACE", status: "WHITELIST",
     displayName: "Anjali Patel", subLabel: "Legal · L3 Access",
     camera: "CAM-NE-02", cameraId: "cam_north_entrance", zone: "North Entrance",
     time: "14:20:33", confidence: 93.8, severity: "LOW",
-    imageSrc: "/people/women2.avif",
+    imageSrc: "/people/face_landmark.png",
     department: "Legal", employeeId: "EMP-1145",
     enrollDate: "2024-07-01", totalAppearances: 223,
   },
@@ -169,14 +170,14 @@ const FR_PEOPLE: FeedPerson[] = [
     displayName: "James Carter", subLabel: "Armed Robbery · 2nd Sighting Today",
     camera: "CAM-SE-01", cameraId: "cam_south_entrance", zone: "South Entrance",
     time: "14:12:04", confidence: 88.6, severity: "CRITICAL",
-    imageSrc: "/people/man1.avif",
+    imageSrc: "/people/man3.jpg",
   },
   {
     id: "f11", identType: "FACE", status: "VIP",
     displayName: "Sunita Rao", subLabel: "CFO · Priority escort",
     camera: "CAM-RC-01", cameraId: "cam_reception", zone: "Reception",
     time: "14:09:50", confidence: 98.1, severity: "LOW",
-    imageSrc: "/people/women1.avif",
+    imageSrc: "/people/AI-autism_900x600.jpg",
   },
   {
     id: "f12", identType: "FACE", status: "WHITELIST",
@@ -192,14 +193,14 @@ const FR_PEOPLE: FeedPerson[] = [
     displayName: "Unknown #61", subLabel: "Observed near loading bay",
     camera: "CAM-LB-03", cameraId: "cam_loading_bay", zone: "Loading Bay",
     time: "14:04:11", dwell: 95, severity: "MEDIUM",
-    imageSrc: "/people/women2.avif",
+    imageSrc: "/people/face_landmark.png",
   },
   {
     id: "f14", identType: "FACE", status: "WHITELIST",
     displayName: "Maria Santos", subLabel: "Marketing · L2 Access",
     camera: "CAM-RC-02", cameraId: "cam_reception", zone: "Reception",
     time: "14:01:58", confidence: 94.9, severity: "LOW",
-    imageSrc: "/people/women1.avif",
+    imageSrc: "/people/AI-autism_900x600.jpg",
     department: "Marketing", employeeId: "EMP-2675",
     enrollDate: "2025-02-10", totalAppearances: 68,
   },
@@ -522,6 +523,7 @@ export interface WatchlistEntry {
   endDate?: string;
   notes: string;
   addedAt: string;      // ISO timestamp
+  photo_url?: string;
 }
 
 export function WatchlistForm({
@@ -936,79 +938,146 @@ export function ManageModal({ isOpen, isLPR, onClose, onWatchlistAdd, watchlistE
                   Add {entityLabel}
                 </button>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-[#001E18]">
-                    <tr className="border-b border-[#00775B]/20 text-[10px] uppercase tracking-wider font-bold text-white/90 h-10">
-                      <th className="px-4 py-2 w-12 text-center">Type</th>
-                      <th className="px-4 py-2">Name / Plate</th>
-                      <th className="px-4 py-2">Reason</th>
-                      <th className="px-4 py-2 text-center">Severity</th>
-                      <th className="px-4 py-2">Cameras</th>
-                      <th className="px-4 py-2 text-right">Added</th>
-                      <th className="px-4 py-2 w-10" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {watchlistEntries.map((entry, i) => (
-                      <tr
-                        key={entry.id}
-                        onClick={() => setEditingEntry(entry)}
-                        className={cn(
-                          "group transition-colors hover:bg-[#E5FFF9] h-14 cursor-pointer",
-                          i === 0 && "bg-[#00775B]/5"
+            ) : (() => {
+              const SEV_CFG: Record<string, { badge: string }> = {
+                Critical:      { badge: "bg-red-600 text-white" },
+                High:          { badge: "bg-orange-500 text-white" },
+                Informational: { badge: "bg-neutral-400 text-white" },
+              };
+              const cols: DataGridColumn<WatchlistEntry>[] = [
+                {
+                  key: "capture",
+                  header: "Capture",
+                  width: "72px",
+                  render: (entry) => entry.type === "LPR" ? (
+                    <IdentityEvidenceMedia
+                      kind="PLATE"
+                      seed={entry.name}
+                      imageSrc="/vehicle/images.jpeg"
+                      plateText={entry.name.slice(0, 10)}
+                      className="h-10 w-[68px]"
+                    />
+                  ) : (
+                    <IdentityEvidenceMedia
+                      kind="FACE"
+                      seed={entry.name}
+                      imageSrc={entry.photo_url}
+                      className="h-10 w-10"
+                    />
+                  ),
+                },
+                {
+                  key: "type",
+                  header: "Type",
+                  width: "56px",
+                  align: "center",
+                  render: (entry) => (
+                    <span className={cn(
+                      "inline-flex items-center justify-center h-5 px-1.5 rounded-[3px] text-[9px] font-black uppercase tracking-wide",
+                      entry.type === "FR" ? "bg-[#001E18] text-[#00D68F]" : "bg-blue-900 text-blue-200"
+                    )}>
+                      {entry.type}
+                    </span>
+                  ),
+                },
+                {
+                  key: "name",
+                  header: "Name / Plate",
+                  width: "1fr",
+                  render: (entry, hovered) => (
+                    <div>
+                      <InterCell hovered={hovered} isPrimary>{entry.name}</InterCell>
+                      {entry.plates && entry.plates.includes(",") && (
+                        <div className="text-[9px] text-neutral-400 mt-0.5">+multiple plates</div>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: "reason",
+                  header: "Reason",
+                  width: "1fr",
+                  render: (entry, hovered) => (
+                    <InterCell hovered={hovered} color="#6B7280" hoveredColor="#374151">
+                      {entry.reason || "—"}
+                    </InterCell>
+                  ),
+                },
+                {
+                  key: "severity",
+                  header: "Severity",
+                  width: "100px",
+                  render: (entry) => {
+                    const cfg = SEV_CFG[entry.severity] ?? SEV_CFG.Informational;
+                    return (
+                      <div>
+                        <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide", cfg.badge)}>
+                          {entry.severity}
+                        </span>
+                        {entry.severity === "Critical" && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                            <span className="text-[8px] text-red-600 font-bold">ACTIVE</span>
+                          </div>
                         )}
+                      </div>
+                    );
+                  },
+                },
+                {
+                  key: "cameras",
+                  header: "Cameras",
+                  width: "1fr",
+                  render: (entry, hovered) => (
+                    <div>
+                      <InterCell hovered={hovered} isPrimary>{entry.cameras[0]}</InterCell>
+                      {entry.cameras.length > 1 && (
+                        <div className="text-[10px] text-neutral-400">+{entry.cameras.length - 1} more</div>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: "added",
+                  header: "Added",
+                  width: "80px",
+                  align: "right",
+                  render: (entry, hovered) => (
+                    <MonoCell hovered={hovered}>
+                      {new Date(entry.addedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </MonoCell>
+                  ),
+                },
+                {
+                  key: "actions",
+                  header: "",
+                  width: "64px",
+                  align: "right",
+                  render: (entry, hovered) => (
+                    <GridActions visible={hovered}>
+                      <GridActionButton title="Edit" onClick={(e) => { e.stopPropagation(); setEditingEntry(entry); }}>
+                        <Eye className="w-3 h-3" />
+                      </GridActionButton>
+                      <GridActionButton
+                        title="Remove"
+                        hoverColor="#EF4444"
+                        onClick={(e) => { e.stopPropagation(); onUpdateEntries?.(watchlistEntries.filter(x => x.id !== entry.id)); }}
                       >
-                        <td className="px-4 text-center">
-                          <span className={cn(
-                            "inline-flex items-center justify-center h-5 px-1.5 rounded-[3px] text-[9px] font-black uppercase tracking-wide",
-                            entry.type === "FR" ? "bg-[#001E18] text-[#00D68F]" : "bg-blue-900 text-blue-200"
-                          )}>
-                            {entry.type}
-                          </span>
-                        </td>
-                        <td className="px-4">
-                          <p className="text-[11px] font-bold text-neutral-900 truncate max-w-[140px]">{entry.name}</p>
-                          {entry.plates && entry.plates.includes(",") && (
-                            <p className="text-[9px] text-neutral-400 mt-0.5">+multiple plates</p>
-                          )}
-                        </td>
-                        <td className="px-4">
-                          <p className="text-[11px] text-neutral-600 truncate max-w-[130px]">{entry.reason || "—"}</p>
-                        </td>
-                        <td className="px-4 text-center">
-                          <span className={cn(
-                            "inline-flex items-center justify-center h-5 px-2 rounded-[3px] text-[9px] font-bold uppercase",
-                            entry.severity === "Critical" ? "bg-red-100 text-red-700" :
-                            entry.severity === "High"     ? "bg-amber-100 text-amber-700" :
-                                                            "bg-neutral-100 text-neutral-600"
-                          )}>
-                            {entry.severity}
-                          </span>
-                        </td>
-                        <td className="px-4">
-                          <p className="text-[10px] text-neutral-500 truncate max-w-[120px]">
-                            {entry.cameras.join(", ")}
-                          </p>
-                        </td>
-                        <td className="px-4 text-right">
-                          <span className="text-[10px] font-mono text-neutral-400">
-                            {new Date(entry.addedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </td>
-                        <td className="px-4 text-center" onClick={e => {
-                          e.stopPropagation();
-                          onUpdateEntries?.(watchlistEntries.filter(e => e.id !== entry.id));
-                        }}>
-                          <Trash2 className="w-3.5 h-3.5 text-neutral-300 group-hover:text-red-400 transition-colors" />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
+                        <Trash2 className="w-3 h-3" />
+                      </GridActionButton>
+                    </GridActions>
+                  ),
+                },
+              ];
+              return (
+                <DataGrid<WatchlistEntry>
+                  columns={cols}
+                  data={watchlistEntries}
+                  getRowId={(r) => r.id}
+                  onRowClick={(entry) => setEditingEntry(entry)}
+                />
+              );
+            })()
           )}
         </div>
       </div>

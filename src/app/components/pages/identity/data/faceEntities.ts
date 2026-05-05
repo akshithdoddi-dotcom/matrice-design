@@ -20,7 +20,7 @@ export const FACE_ENTITIES = {
   f1: {
     id: "f1", tracker_id: 3, match_status: "MATCHED" as const,
     display_name: "Marcus Webb", initials: "MW",
-    photo_url: "/people/marcus-webb.jpg",
+    photo_url: "/people/man3.jpg",
     list_membership: "BLACKLIST" as const,
     last_detection: {
       timestamp: "2026-04-06 · 14:31:22 IST",
@@ -55,7 +55,7 @@ export const FACE_ENTITIES = {
   f2: {
     id: "f2", tracker_id: 88, match_status: "UNMATCHED" as const,
     display_name: "Unknown #88", initials: "?",
-    photo_url: "/people/elena-petrov.jpg",
+    photo_url: "/people/face_landmark.png",
     list_membership: "UNKNOWN" as const,
     recognition_attempt: {
       best_match_score: 61.2, threshold: 75.0,
@@ -99,7 +99,7 @@ export const FACE_ENTITIES = {
   f3: {
     id: "f3", tracker_id: 7, match_status: "MATCHED" as const,
     display_name: "Rajesh Mehta", initials: "RM",
-    photo_url: "/people/rajesh-mehta.jpg",
+    photo_url: "/people/man2.webp",
     list_membership: "VIP" as const,
     vip_info: { title: "Chief Executive Officer", protocol: "Notify Chief of Security on arrival. Escort to boardroom required.", escort: true },
     metadata: { employee_id: "EXC-007", department: "Executive", access_level: "L5 — Unrestricted" },
@@ -129,7 +129,7 @@ export const FACE_ENTITIES = {
   f4: {
     id: "f4", tracker_id: 47, match_status: "MATCHED" as const,
     display_name: "John Smith", initials: "JS",
-    photo_url: "/people/john-smith.jpg",
+    photo_url: "/people/man2.webp",
     list_membership: "WHITELIST" as const,
     metadata: { employee_id: "EMP-4821", department: "Engineering", access_level: "L3 — Restricted Zones" },
     last_detection: {
@@ -165,7 +165,7 @@ export const FACE_ENTITIES = {
   f5: {
     id: "f5", tracker_id: 21, match_status: "MATCHED" as const,
     display_name: "Sarah Johnson", initials: "SJ",
-    photo_url: "/people/sarah-johnson.jpg",
+    photo_url: "/people/AI-autism_900x600.jpg",
     list_membership: "WHITELIST" as const,
     metadata: { employee_id: "EMP-2198", department: "Human Resources", access_level: "L2 — Standard Access" },
     last_detection: {
