@@ -5329,7 +5329,7 @@ const V2_3Content = () => {
                     {/* Severity */}
                     <div style={{ position: "relative" }}>
                       <button onClick={() => { setSevOpen(o => !o); setSortOpen(false); setAppOpen(false); setZoneOpen(false); setColPickerOpen(false); }}
-                        style={{ ...(statusFilters.size > 0 ? activeBtnBase : btnBase), width: 128, overflow: "hidden" }}>
+                        style={{ ...(statusFilters.size > 0 ? activeBtnBase : btnBase), width: 104, overflow: "hidden" }}>
                         <Filter style={{ width: 12, height: 12, flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sevLabel}</span>
                       </button>
                       {sevOpen && (
@@ -5353,7 +5353,7 @@ const V2_3Content = () => {
                     {/* Events */}
                     <div style={{ position: "relative" }}>
                       <button onClick={() => { setAppOpen(o => !o); setSortOpen(false); setSevOpen(false); setZoneOpen(false); setColPickerOpen(false); }}
-                        style={{ ...(appFilters.size > 0 ? activeBtnBase : btnBase), width: 128, overflow: "hidden" }}>
+                        style={{ ...(appFilters.size > 0 ? activeBtnBase : btnBase), width: 104, overflow: "hidden" }}>
                         <Filter style={{ width: 12, height: 12, flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appLabel}</span>
                       </button>
                       {appOpen && (
@@ -5376,7 +5376,7 @@ const V2_3Content = () => {
                     {/* Zones */}
                     <div style={{ position: "relative" }}>
                       <button onClick={() => { setZoneOpen(o => !o); setSortOpen(false); setSevOpen(false); setAppOpen(false); setColPickerOpen(false); }}
-                        style={{ ...(zoneFilters.size > 0 ? activeBtnBase : btnBase), width: 128, overflow: "hidden" }}>
+                        style={{ ...(zoneFilters.size > 0 ? activeBtnBase : btnBase), width: 104, overflow: "hidden" }}>
                         <Filter style={{ width: 12, height: 12, flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{zoneLabel}</span>
                       </button>
                       {zoneOpen && (
@@ -5541,10 +5541,10 @@ const V2_3Content = () => {
                         </div>
                       </div>
 
-                      {/* ── Expansion panel ───────────────────────────────── */}
+                      {/* ── Expansion panel — sticky left so it never scrolls with the parent table */}
                       {isExp && expandableRows && (
                         <div style={{
-                          minWidth: hScroll ? totalMinW : undefined,
+                          position: "sticky", left: 0, zIndex: 1,
                           backgroundColor: isDark ? "#080F1C" : "#F8FAFC",
                           borderBottom: isDark ? "1px solid rgba(0,149,109,0.2)" : "1px solid rgba(0,119,91,0.15)",
                           borderLeft: `3px solid ${sevColor}`,
