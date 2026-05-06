@@ -1616,6 +1616,11 @@ interface GridRow {
   camera: string;
   confidence: number;
   timestamp: string;
+  // v2.3 extended columns
+  priority?: string;
+  assignee?: string;
+  duration?: string;
+  riskScore?: number;
 }
 
 const GRID_DATA: GridRow[] = [
@@ -4744,7 +4749,11 @@ const V23_GRID_DATA: GridRow[] = (() => {
     "critical","warning","stable","info","resolved","critical","warning",
     "info","high","low","medium","resolved","critical","warning","stable",
   ];
-  const baseConfs = [97.3,84.1,99.7,76.2,92.8,88.5,95.1,71.4,98.2,89.4,100.0,68.9,91.3,96.7,77.6];
+  const baseConfs  = [97.3,84.1,99.7,76.2,92.8,88.5,95.1,71.4,98.2,89.4,100.0,68.9,91.3,96.7,77.6];
+  const priorities = ["High","Medium","Low","High","Medium","Low","High","Medium","Low","Medium","Low","High","Medium","Low","Medium"];
+  const assignees  = ["A. Kumar","M. Singh","R. Patel","S. Sharma","N. Verma","K. Das","P. Nair","V. Rao","J. Mehta","D. Gupta"];
+  const durations  = ["0h 12m","0h 34m","1h 05m","2h 17m","0h 48m","3h 22m","1h 41m","0h 27m","4h 09m","1h 55m"];
+  const riskScores = [92,74,45,83,61,29,77,56,88,39,68,95,52,71,33];
   const rows: GridRow[] = [];
   for (let i = 0; i < 110; i++) {
     const num = 5110 - i;
@@ -4760,6 +4769,10 @@ const V23_GRID_DATA: GridRow[] = (() => {
       camera: `CAM-${String((i % 38) + 1).padStart(2, "0")}`,
       confidence: Math.max(60, +(baseConfs[i % baseConfs.length] - (i % 7) * 0.4).toFixed(1)),
       timestamp: `2026-04-${String(Math.max(1, day)).padStart(2, "0")} ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+      priority:  priorities[i % priorities.length],
+      assignee:  assignees[i % assignees.length],
+      duration:  durations[i % durations.length],
+      riskScore: riskScores[i % riskScores.length],
     });
   }
   return rows;
@@ -4783,12 +4796,16 @@ V23_GRID_DATA.slice(0, 30).forEach((row) => {
 // Sticky non-hideable: checkbox (44px) + id (160px)
 // Non-hideable right: actions (80px)
 const V23_COL_DEFS = [
-  { key: "status",     label: "Status",     minWidth: 120 },
-  { key: "event",      label: "Event Type", minWidth: 220 },
-  { key: "zone",       label: "Zone",       minWidth: 170 },
-  { key: "camera",     label: "Camera",     minWidth: 90  },
-  { key: "confidence", label: "Conf.",      minWidth: 80  },
-  { key: "timestamp",  label: "Timestamp",  minWidth: 180 },
+  { key: "status",      label: "Status",      minWidth: 120 },
+  { key: "event",       label: "Event Type",  minWidth: 220 },
+  { key: "zone",        label: "Zone",        minWidth: 170 },
+  { key: "camera",      label: "Camera",      minWidth: 90  },
+  { key: "confidence",  label: "Conf.",       minWidth: 80  },
+  { key: "timestamp",   label: "Timestamp",   minWidth: 180 },
+  { key: "priority",    label: "Priority",    minWidth: 100 },
+  { key: "assignee",    label: "Assignee",    minWidth: 140 },
+  { key: "duration",    label: "Duration",    minWidth: 100 },
+  { key: "riskScore",   label: "Risk Score",  minWidth: 100 },
 ] as const;
 type V23ColKey = typeof V23_COL_DEFS[number]["key"];
 
@@ -4999,7 +5016,7 @@ const V2_3Content = () => {
   const visibleCols  = V23_COL_DEFS.filter(c => !hiddenCols.has(c.key));
   const scrollColW   = visibleCols.reduce((s, c) => s + c.minWidth, 0);
   const stickyW      = (selectionMode ? 44 : 0) + 160;
-  const totalMinW    = stickyW + scrollColW + V23_FIXED_R;
+  const totalMinW    = stickyW + scrollColW;
 
   // ── Colour tokens ──────────────────────────────────────────────────────────
   const teal    = isDark ? "#00956D" : "#00775B";
@@ -5064,6 +5081,23 @@ const V2_3Content = () => {
       case "camera":     return <span style={mono}>{row.camera}</span>;
       case "confidence": return <span style={{ ...mono, color: hovered ? (isDark ? "#E2E8F0" : "#0F172A") : (row.confidence >= 95 ? "#00A63E" : row.confidence >= 80 ? sec : "#EA580C") }}>{row.confidence.toFixed(1)}%</span>;
       case "timestamp":  return <span style={mono}>{row.timestamp}</span>;
+      case "priority": {
+        const pCfg: Record<string, { color: string; bg: string }> = {
+          High:   { color: "#E7000B", bg: isDark ? "#E7000B22" : "#FEE2E2" },
+          Medium: { color: "#D97706", bg: isDark ? "#D9770622" : "#FEF3C7" },
+          Low:    { color: "#2563EB", bg: isDark ? "#2563EB22" : "#DBEAFE" },
+        };
+        const pv = row.priority ?? "Medium";
+        const pc = pCfg[pv] ?? { color: "#64748B", bg: isDark ? "#64748B22" : "#F1F5F9" };
+        return <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: pc.color, backgroundColor: pc.bg, padding: "2px 7px", borderRadius: 4 }}>{pv}</span>;
+      }
+      case "assignee":  return <span style={{ ...inter, fontWeight: 500 }}>{row.assignee ?? "—"}</span>;
+      case "duration":  return <span style={mono}>{row.duration ?? "—"}</span>;
+      case "riskScore": {
+        const rs = row.riskScore ?? 0;
+        const rsCol = rs >= 80 ? "#E7000B" : rs >= 60 ? "#D97706" : "#2563EB";
+        return <span style={{ ...mono, fontWeight: 700, color: hovered ? (isDark ? "#E2E8F0" : "#0F172A") : rsCol }}>{rs}</span>;
+      }
     }
   };
 
@@ -5440,8 +5474,6 @@ const V2_3Content = () => {
                   </div>
                 ))}
 
-                {/* Actions header */}
-                <div style={{ ...(hScroll ? { flexShrink: 0, width: V23_FIXED_R } : { flex: V23_FIXED_R }) }} />
               </div>
 
               {/* Rows */}
@@ -5518,26 +5550,44 @@ const V2_3Content = () => {
                           </div>
                         ))}
 
-                        {/* Actions */}
+                        {/* ── Floating CTAs — sticky right, no layout contribution, filled-primary on hover ── */}
                         <div style={{
-                          ...(hScroll ? { flexShrink: 0, width: V23_FIXED_R } : { flex: V23_FIXED_R }),
-                          display: "flex", alignItems: "center", justifyContent: "flex-end",
-                          paddingRight: 12, gap: 4, opacity: isHov ? 1 : 0, transition: "opacity 150ms ease",
+                          position: "sticky", right: 0, zIndex: 4, flexShrink: 0,
+                          height: "100%", minHeight: 44,
+                          display: "flex", alignItems: "center", gap: 4,
+                          paddingLeft: 36, paddingRight: 10,
+                          background: `linear-gradient(to right, ${bg}00 0%, ${bg} 36px)`,
+                          opacity: isHov ? 1 : 0,
+                          pointerEvents: isHov ? "auto" : "none",
+                          transition: "opacity 120ms ease",
                         }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "3px 6px", backgroundColor: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
-                            {[
-                              { Icon: Eye,    title: "View"   },
-                              { Icon: UserPlus, title: "Assign" },
-                              { Icon: Trash2, title: "Delete", hc: "#E7000B" },
-                            ].map(({ Icon, title, hc = teal }) => (
-                              <button key={title} title={title}
-                                onMouseEnter={e => { (e.currentTarget).style.color = hc; (e.currentTarget).style.backgroundColor = `${hc}14`; }}
-                                onMouseLeave={e => { (e.currentTarget).style.color = "#94A3B8"; (e.currentTarget).style.backgroundColor = "transparent"; }}
-                                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 3, border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", transition: "color 120ms ease, background-color 120ms ease" }}>
-                                <Icon style={{ width: 11, height: 11 }} />
-                              </button>
-                            ))}
-                          </div>
+                          {[
+                            { Icon: Eye,      title: "View",   hc: teal      },
+                            { Icon: UserPlus, title: "Assign", hc: teal      },
+                            { Icon: Trash2,   title: "Delete", hc: "#E7000B" },
+                          ].map(({ Icon, title, hc }) => (
+                            <button key={title} title={title}
+                              onMouseEnter={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = hc;
+                                (e.currentTarget as HTMLButtonElement).style.color = "#ffffff";
+                                (e.currentTarget as HTMLButtonElement).style.borderColor = hc;
+                              }}
+                              onMouseLeave={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9";
+                                (e.currentTarget as HTMLButtonElement).style.color = isDark ? "#94A3B8" : "#64748B";
+                                (e.currentTarget as HTMLButtonElement).style.borderColor = isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0";
+                              }}
+                              style={{
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                width: 28, height: 28, borderRadius: 5,
+                                border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0"}`,
+                                backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9",
+                                cursor: "pointer", color: isDark ? "#94A3B8" : "#64748B",
+                                transition: "background-color 100ms ease, color 100ms ease, border-color 100ms ease",
+                              }}>
+                              <Icon style={{ width: 12, height: 12 }} />
+                            </button>
+                          ))}
                         </div>
                       </div>
 
