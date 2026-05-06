@@ -5329,8 +5329,8 @@ const V2_3Content = () => {
                     {/* Severity */}
                     <div style={{ position: "relative" }}>
                       <button onClick={() => { setSevOpen(o => !o); setSortOpen(false); setAppOpen(false); setZoneOpen(false); setColPickerOpen(false); }}
-                        style={statusFilters.size > 0 ? activeBtnBase : btnBase}>
-                        <Filter style={{ width: 12, height: 12 }} />{sevLabel}
+                        style={{ ...(statusFilters.size > 0 ? activeBtnBase : btnBase), width: 128, overflow: "hidden" }}>
+                        <Filter style={{ width: 12, height: 12, flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sevLabel}</span>
                       </button>
                       {sevOpen && (
                         <>
@@ -5353,8 +5353,8 @@ const V2_3Content = () => {
                     {/* Events */}
                     <div style={{ position: "relative" }}>
                       <button onClick={() => { setAppOpen(o => !o); setSortOpen(false); setSevOpen(false); setZoneOpen(false); setColPickerOpen(false); }}
-                        style={appFilters.size > 0 ? activeBtnBase : btnBase}>
-                        <Filter style={{ width: 12, height: 12 }} />{appLabel}
+                        style={{ ...(appFilters.size > 0 ? activeBtnBase : btnBase), width: 128, overflow: "hidden" }}>
+                        <Filter style={{ width: 12, height: 12, flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appLabel}</span>
                       </button>
                       {appOpen && (
                         <>
@@ -5376,8 +5376,8 @@ const V2_3Content = () => {
                     {/* Zones */}
                     <div style={{ position: "relative" }}>
                       <button onClick={() => { setZoneOpen(o => !o); setSortOpen(false); setSevOpen(false); setAppOpen(false); setColPickerOpen(false); }}
-                        style={zoneFilters.size > 0 ? activeBtnBase : btnBase}>
-                        <Filter style={{ width: 12, height: 12 }} />{zoneLabel}
+                        style={{ ...(zoneFilters.size > 0 ? activeBtnBase : btnBase), width: 128, overflow: "hidden" }}>
+                        <Filter style={{ width: 12, height: 12, flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{zoneLabel}</span>
                       </button>
                       {zoneOpen && (
                         <>
@@ -5397,12 +5397,6 @@ const V2_3Content = () => {
                     </div>
                   </div>
 
-                  {/* Master checkbox — standalone, no "All" label */}
-                  {selectionMode && (
-                    <div style={{ display: "flex", alignItems: "center", paddingLeft: 8, borderLeft: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0" }}>
-                      <V23Checkbox checked={allPageSel} indeterminate={someSel} onChange={togglePageAll} isDark={isDark} />
-                    </div>
-                  )}
                 </>
               )}
             </div>
@@ -5551,7 +5545,7 @@ const V2_3Content = () => {
                       {isExp && expandableRows && (
                         <div style={{
                           minWidth: hScroll ? totalMinW : undefined,
-                          backgroundColor: isDark ? "#060B14" : "#F0FDF9",
+                          backgroundColor: isDark ? "#080F1C" : "#F8FAFC",
                           borderBottom: isDark ? "1px solid rgba(0,149,109,0.2)" : "1px solid rgba(0,119,91,0.15)",
                           borderLeft: `3px solid ${sevColor}`,
                         }}>
@@ -5583,9 +5577,10 @@ const V2_3Content = () => {
                             <div style={{ padding: "0 0 8px" }}>
                               {/* Sub-table header */}
                               {/* Sub-table — 12px minimum throughout */}
-                              <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 80px 180px", alignItems: "center", height: 32, padding: "0 16px", backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,119,91,0.04)" }}>
+                              {/* Sub-table — fixed col widths matching parent: ID 160px | Event 1fr | Conf 80px | Timestamp 180px */}
+                              <div style={{ display: "grid", gridTemplateColumns: "160px 1fr 80px 180px", alignItems: "center", height: 32, paddingLeft: 16, paddingRight: 0, backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,119,91,0.04)" }}>
                                 {["Sub-Event ID", "Event Type", "Conf.", "Timestamp"].map(h => (
-                                  <span key={h} style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#64748B" : "#94A3B8", fontFamily: "Inter, sans-serif" }}>{h}</span>
+                                  <span key={h} style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#64748B" : "#94A3B8", fontFamily: "Inter, sans-serif", paddingLeft: 8, paddingRight: 8 }}>{h}</span>
                                 ))}
                               </div>
                               {(V23_SUB_DATA[row.id] ?? [
@@ -5593,11 +5588,11 @@ const V2_3Content = () => {
                                 { id: `${row.id}-S2`, event: "Sensor Threshold Breach",   camera: row.camera, confidence: +(row.confidence - 10.4).toFixed(1), timestamp: row.timestamp },
                                 { id: `${row.id}-S3`, event: "Camera Zone Alert",          camera: row.camera, confidence: +(row.confidence - 15.6).toFixed(1), timestamp: row.timestamp },
                               ]).map((sub, si) => (
-                                <div key={sub.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 80px 180px", alignItems: "center", height: 36, padding: "0 16px", backgroundColor: si % 2 === 1 ? (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,119,91,0.015)") : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.03)" : "1px solid rgba(0,119,91,0.06)" }}>
-                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: isDark ? "#64748B" : "#94A3B8" }}>{sub.id}</span>
-                                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: isDark ? "#CBD5E1" : "#334155" }}>{sub.event}</span>
-                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: Math.max(0, sub.confidence) >= 80 ? "#00A63E" : "#EA580C" }}>{Math.max(0, sub.confidence).toFixed(1)}%</span>
-                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: sec }}>{sub.timestamp}</span>
+                                <div key={sub.id} style={{ display: "grid", gridTemplateColumns: "160px 1fr 80px 180px", alignItems: "center", height: 36, paddingLeft: 16, paddingRight: 0, backgroundColor: si % 2 === 1 ? (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,119,91,0.015)") : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.03)" : "1px solid rgba(0,119,91,0.06)" }}>
+                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: isDark ? "#64748B" : "#94A3B8", paddingLeft: 8, paddingRight: 8 }}>{sub.id}</span>
+                                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: isDark ? "#CBD5E1" : "#334155", paddingLeft: 8, paddingRight: 8 }}>{sub.event}</span>
+                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: Math.max(0, sub.confidence) >= 80 ? "#00A63E" : "#EA580C", paddingLeft: 8, paddingRight: 8 }}>{Math.max(0, sub.confidence).toFixed(1)}%</span>
+                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: sec, paddingLeft: 8, paddingRight: 8 }}>{sub.timestamp}</span>
                                 </div>
                               ))}
                             </div>
