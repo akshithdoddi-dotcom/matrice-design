@@ -4830,8 +4830,8 @@ const V23JsonView = ({ row }: { row: GridRow }) => {
   return (
     <pre style={{
       fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-      fontSize: 11, lineHeight: 1.75, margin: 0,
-      padding: "14px 20px", backgroundColor: "#0D1117", color: "#8B949E",
+      fontSize: 12, lineHeight: 1.7, margin: 0,
+      padding: "16px 20px", backgroundColor: "#0D1117", color: "#8B949E",
       overflowX: "auto", whiteSpace: "pre",
     }}>
       {tokens.map((t, i) => {
@@ -5053,9 +5053,9 @@ const V2_3Content = () => {
     : zoneFilters.size === 1 ? [...zoneFilters][0]
     : `${zoneFilters.size} Zones`;
 
-  // ── Cell renderer ──────────────────────────────────────────────────────────
+  // ── Cell renderer — 12px global minimum ─────────────────────────────────────
   const renderCell = (key: V23ColKey, row: GridRow, hovered: boolean) => {
-    const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono','Fira Code',monospace", fontSize: 11, fontWeight: 500, color: hovered ? (isDark ? "#E2E8F0" : "#0F172A") : sec };
+    const mono: React.CSSProperties  = { fontFamily: "'JetBrains Mono','Fira Code',monospace", fontSize: 12, fontWeight: 500, color: hovered ? (isDark ? "#E2E8F0" : "#0F172A") : sec };
     const inter: React.CSSProperties = { fontFamily: "Inter, sans-serif", fontSize: 12, color: hovered ? (isDark ? "#E2E8F0" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155") };
     switch (key) {
       case "status":     return <V23Pill status={row.status} isDark={isDark} />;
@@ -5067,12 +5067,13 @@ const V2_3Content = () => {
     }
   };
 
-  // ── Row background ─────────────────────────────────────────────────────────
+  // ── Row background — SOLID (opaque) so sticky group never leaks through ──────
+  // Pre-blended: rgba value composited against the base surface colour.
   const rowBg = (idx: number, hovered: boolean, selected: boolean): string => {
-    if (hovered)  return isDark ? "rgba(0,149,109,0.14)" : "rgba(0,119,91,0.07)";
-    if (selected) return isDark ? "rgba(0,149,109,0.08)" : "rgba(0,119,91,0.04)";
-    if (idx % 2 === 1) return isDark ? "rgba(255,255,255,0.015)" : "rgba(0,119,91,0.018)";
-    return surface;
+    if (hovered)       return isDark ? "#0D2922" : "#EBF5F1";  // rgba(0,119,91,0.07) on #fff
+    if (selected)      return isDark ? "#0F2019" : "#F2FAF7";  // rgba(0,119,91,0.04) on #fff
+    if (idx % 2 === 1) return isDark ? "#101B26" : "#F8FDFC";  // rgba(0,119,91,0.018) on #fff
+    return isDark ? "#0F172A" : "#ffffff";
   };
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -5080,12 +5081,22 @@ const V2_3Content = () => {
   // ── Action bar selection handler stub ─────────────────────────────────────
   const selCount = selectedIds.size;
 
+  // ── Inline toggle row (control strip) ────────────────────────────────────
+  const TRow = ({ label, val, set }: { label: string; val: boolean; set: (v: boolean) => void }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ fontSize: 11, fontWeight: 500, fontFamily: "Inter, sans-serif", color: isDark ? "#CBD5E1" : "#334155", whiteSpace: "nowrap" }}>{label}</span>
+      <V23Toggle checked={val} onChange={set} />
+    </div>
+  );
+
+  const divider = <div style={{ width: 1, alignSelf: "stretch", backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "#E2E8F0", flexShrink: 0 }} />;
+
   return (
     <div className="space-y-6">
       <SectionHeader
         icon={Layers}
         title="Seamless HUD v2.3"
-        description="Gmail-style multi-select · row accordion (JSON / sub-table) · column picker · sticky ID · sliding-window pagination · feature sandbox sidebar."
+        description="Gmail-style multi-select · row accordion (JSON / sub-table) · column picker · sticky ID · sliding-window pagination · decoupled sandbox controls."
       />
 
       {/* Spec chips */}
@@ -5094,45 +5105,104 @@ const V2_3Content = () => {
           ["Selection",   "Gmail-logic: 0 → toolbar, 1+ → action bar"],
           ["Accordion",   "Chevron expand · JSON code view · sub-table"],
           ["Columns",     "Per-column toggle · sticky ID · min-widths"],
-          ["Scroll",      "Horizontal overflow · position:sticky left"],
+          ["Scroll",      "H-scroll + position:sticky opaque fill"],
           ["Pagination",  "5-page sliding window · << < [n] > >>"],
-          ["Sidebar",     "Live feature toggles · content-type switch"],
+          ["Controls",    "Decoupled sandbox strip · live stat counters"],
         ].map(([l, v]) => <SpecChip key={l} label={l} value={v} />)}
       </div>
 
-      {/* ── Sandbox container ─────────────────────────────────────────────── */}
-      <div style={{ borderRadius: 8, border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0", overflow: "hidden" }}>
+      {/* ── Sandbox control strip (visually INDEPENDENT from the table) ──── */}
+      <div style={{
+        display: "flex", alignItems: "stretch", flexWrap: "wrap",
+        borderRadius: 8, border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
+        backgroundColor: isDark ? "#070C14" : "#ffffff",
+        overflow: "hidden",
+      }}>
+        {/* Label */}
+        <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 2, backgroundColor: isDark ? "#040810" : "#F8FAFC", borderRight: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid #E2E8F0", flexShrink: 0 }}>
+          <span style={{ fontSize: 8, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: teal, fontFamily: "Inter, sans-serif" }}>Sandbox</span>
+          <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "#94A3B8", letterSpacing: "0.04em" }}>Table v2.3</span>
+        </div>
 
-        {/* Top bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", borderBottom: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0", backgroundColor: isDark ? "#0A0F1A" : "#ffffff" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94A3B8" }}>Component Sandbox</span>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: teal }} />
-            <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "#94A3B8", letterSpacing: "0.04em" }}>Table v2.3</span>
+        {divider}
+
+        {/* Behaviour */}
+        <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>Behaviour</span>
+          <div style={{ display: "flex", gap: 16 }}>
+            <TRow label="Selection Mode"  val={selectionMode}  set={setSelectionMode}  />
+            <TRow label="Expandable Rows" val={expandableRows} set={setExpandableRows} />
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {[
-              { label: "Multi-Select", active: selectionMode,  color: "#2B7FFF" },
-              { label: "Accordion",   active: expandableRows, color: "#8B5CF6" },
-              { label: "Sticky Col",  active: stickyCol,      color: teal      },
-              { label: "H-Scroll",    active: hScroll,        color: "#E19A04" },
-            ].map(({ label, active, color }) => (
-              <span key={label} style={{
-                fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
-                padding: "2px 7px", borderRadius: 3,
-                backgroundColor: active ? `${color}18` : (isDark ? "rgba(255,255,255,0.04)" : "#F1F5F9"),
-                color: active ? color : "#94A3B8",
-                border: active ? `1px solid ${color}30` : "1px solid transparent",
-              }}>{label}</span>
+        </div>
+
+        {divider}
+
+        {/* Layout */}
+        <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>Layout</span>
+          <div style={{ display: "flex", gap: 16 }}>
+            <TRow label="Sticky Col"  val={stickyCol} set={setStickyCol} />
+            <TRow label="H-Scroll"    val={hScroll}   set={setHScroll}   />
+          </div>
+        </div>
+
+        {divider}
+
+        {/* Expand View */}
+        <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>Expand View</span>
+          <div style={{ display: "flex", borderRadius: 4, border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #E2E8F0", overflow: "hidden", height: 26 }}>
+            {(["json", "table"] as const).map(t => (
+              <button key={t} onClick={() => setExpandContent(t)}
+                style={{ flex: 1, width: 52, fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", border: "none", cursor: "pointer", transition: "all 150ms ease", backgroundColor: expandContent === t ? teal : "transparent", color: expandContent === t ? "#fff" : sec }}>
+                {t === "json" ? "JSON" : "Table"}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Body: table area + sidebar */}
-        <div style={{ display: "flex", backgroundColor: isDark ? "#0F172A" : "#F8FAFC" }}>
+        {divider}
 
-          {/* ── Left: table area ──────────────────────────────────────────── */}
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        {/* Column toggles */}
+        <div style={{ padding: "10px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>Columns</span>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {V23_COL_DEFS.map(col => {
+              const vis = !hiddenCols.has(col.key);
+              return (
+                <button key={col.key} onClick={() => setHiddenCols(p => { const n = new Set(p); vis ? n.add(col.key) : n.delete(col.key); return n; })}
+                  style={{ fontSize: 10, fontWeight: 600, fontFamily: "Inter, sans-serif", padding: "3px 8px", borderRadius: 4, border: `1px solid ${vis ? teal + "40" : (isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0")}`, cursor: "pointer", transition: "all 120ms ease", backgroundColor: vis ? (isDark ? `${teal}18` : `${teal}0D`) : "transparent", color: vis ? teal : "#94A3B8", whiteSpace: "nowrap" }}>
+                  {col.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {divider}
+
+        {/* Stats */}
+        <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>Stats</span>
+          <div style={{ display: "flex", gap: 12 }}>
+            {[
+              { n: V23_GRID_DATA.length, label: "Total"    },
+              { n: filteredData.length,  label: "Filtered" },
+              { n: selectedIds.size,     label: "Selected" },
+              { n: totalPages,           label: "Pages"    },
+            ].map(({ n, label }) => (
+              <div key={label} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: teal, lineHeight: 1 }}>{n}</span>
+                <span style={{ fontSize: 9, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Table — full-width standalone (decoupled from controls above) ── */}
+      <div style={{ borderRadius: 8, border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0", overflow: "hidden" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
 
             {/* ── Toolbar ───────────────────────────────────────────────── */}
             <div style={{
@@ -5175,12 +5245,12 @@ const V2_3Content = () => {
               ) : (
                 /* ── Standard Toolbar ─────────────────────────────────── */
                 <>
-                  {/* Search */}
+                  {/* Search — icon at 10px, text starts at 34px */}
                   <div style={{ position: "relative", width: 260, flexShrink: 0 }}>
-                    <Search style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: isDark ? "#374151" : "#94A3B8", pointerEvents: "none" }} />
+                    <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: isDark ? "#374151" : "#94A3B8", pointerEvents: "none" }} />
                     <input type="text" placeholder="Search incidents, zones…" value={searchQ}
                       onChange={e => { setSearchQ(e.target.value); setPage(1); }}
-                      style={{ width: "100%", height: 32, paddingLeft: 22, paddingRight: searchQ ? 24 : 4, fontSize: 12, fontFamily: "Inter, sans-serif", color: isDark ? "#E2E8F0" : "#1E293B", backgroundColor: "transparent", border: "none", borderBottom: isDark ? "2px solid rgba(255,255,255,0.1)" : "2px solid #E2E8F0", borderRadius: 0, outline: "none", transition: "border-bottom-color 200ms ease" }}
+                      style={{ width: "100%", height: 32, paddingLeft: 34, paddingRight: searchQ ? 28 : 4, fontSize: 12, fontFamily: "Inter, sans-serif", color: isDark ? "#E2E8F0" : "#1E293B", backgroundColor: "transparent", border: "none", borderBottom: isDark ? "2px solid rgba(255,255,255,0.1)" : "2px solid #E2E8F0", borderRadius: 0, outline: "none", transition: "border-bottom-color 200ms ease" }}
                       onFocus={e => { e.target.style.borderBottomColor = teal; }}
                       onBlur={e  => { e.target.style.borderBottomColor = isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0"; }}
                     />
@@ -5327,11 +5397,10 @@ const V2_3Content = () => {
                     </div>
                   </div>
 
-                  {/* Master checkbox (when selectionMode, no rows selected) */}
+                  {/* Master checkbox — standalone, no "All" label */}
                   {selectionMode && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 8, borderLeft: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0" }}>
+                    <div style={{ display: "flex", alignItems: "center", paddingLeft: 8, borderLeft: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0" }}>
                       <V23Checkbox checked={allPageSel} indeterminate={someSel} onChange={togglePageAll} isDark={isDark} />
-                      <span style={{ fontSize: 11, color: sec, fontFamily: "Inter, sans-serif" }}>All</span>
                     </div>
                   )}
                 </>
@@ -5358,19 +5427,20 @@ const V2_3Content = () => {
                       <V23Checkbox checked={allPageSel} indeterminate={someSel} onChange={togglePageAll} isDark={isDark} />
                     </div>
                   )}
-                  <div style={{ width: 160, paddingLeft: selectionMode ? 4 : 16, paddingRight: 8, display: "flex", alignItems: "center", gap: expandableRows ? 20 : 0 }}>
-                    {expandableRows && <span style={{ width: 16 }} />}
-                    <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif", color: isDark ? "#94A3B8" : "#1E293B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Incident ID</span>
+                  {/* ID header — gap:6 + width:16 spacer exactly matches data-row chevron button */}
+                  <div style={{ width: 160, paddingLeft: selectionMode ? 4 : 12, paddingRight: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                    {expandableRows && <span style={{ width: 16, height: 16, flexShrink: 0 }} />}
+                    <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", color: isDark ? "#94A3B8" : "#1E293B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Incident ID</span>
                   </div>
                 </div>
 
-                {/* Scrollable column headers */}
+                {/* Scrollable column headers — 12px Inter Bold */}
                 {visibleCols.map(col => (
                   <div key={col.key} style={{
                     ...(hScroll ? { flexShrink: 0, width: col.minWidth } : { flex: col.minWidth }),
                     paddingLeft: 8, paddingRight: 8, display: "flex", alignItems: "center",
                   }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif", color: isDark ? "#94A3B8" : "#1E293B", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", color: isDark ? "#94A3B8" : "#1E293B", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                       {col.label}
                     </span>
                   </div>
@@ -5438,7 +5508,7 @@ const V2_3Content = () => {
                                 <ChevronRight style={{ width: 12, height: 12, transition: "transform 150ms ease", transform: isExp ? "rotate(90deg)" : "none" }} />
                               </button>
                             )}
-                            <span style={{ fontFamily: "'JetBrains Mono','Fira Code',monospace", fontSize: 11, fontWeight: isHov ? 700 : 600, color: isHov ? (isDark ? "#E2E8F0" : "#0F172A") : (isDark ? "#94A3B8" : "#475569"), transition: "color 100ms ease, font-weight 100ms ease", letterSpacing: "0.01em" }}>
+                            <span style={{ fontFamily: "'JetBrains Mono','Fira Code',monospace", fontSize: 12, fontWeight: isHov ? 700 : 600, color: isHov ? (isDark ? "#E2E8F0" : "#0F172A") : (isDark ? "#94A3B8" : "#475569"), transition: "color 100ms ease, font-weight 100ms ease", letterSpacing: "0.01em" }}>
                               {row.id}
                             </span>
                           </div>
@@ -5487,9 +5557,9 @@ const V2_3Content = () => {
                         }}>
                           {/* Expansion header */}
                           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px 6px", borderBottom: isDark ? "1px solid rgba(255,255,255,0.05)" : "1px solid rgba(0,119,91,0.1)" }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: isDark ? "#94A3B8" : "#475569" }}>{row.id}</span>
-                            <span style={{ fontSize: 9, color: sec, fontFamily: "Inter, sans-serif" }}>·</span>
-                            <span style={{ fontSize: 10, color: sec, fontFamily: "Inter, sans-serif" }}>{row.event}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: isDark ? "#94A3B8" : "#475569" }}>{row.id}</span>
+                            <span style={{ fontSize: 11, color: sec, fontFamily: "Inter, sans-serif" }}>·</span>
+                            <span style={{ fontSize: 12, color: sec, fontFamily: "Inter, sans-serif" }}>{row.event}</span>
                             <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
                               <button onClick={() => setExpandContent("json")}
                                 style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", padding: "2px 8px", borderRadius: 3, border: "none", cursor: "pointer", transition: "all 120ms ease", backgroundColor: expandContent === "json" ? teal : (isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0"), color: expandContent === "json" ? "#fff" : sec }}>
@@ -5512,9 +5582,10 @@ const V2_3Content = () => {
                           ) : (
                             <div style={{ padding: "0 0 8px" }}>
                               {/* Sub-table header */}
-                              <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 140px", alignItems: "center", height: 30, padding: "0 16px", backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,119,91,0.04)" }}>
+                              {/* Sub-table — 12px minimum throughout */}
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 80px 180px", alignItems: "center", height: 32, padding: "0 16px", backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,119,91,0.04)" }}>
                                 {["Sub-Event ID", "Event Type", "Conf.", "Timestamp"].map(h => (
-                                  <span key={h} style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#64748B" : "#94A3B8", fontFamily: "Inter, sans-serif" }}>{h}</span>
+                                  <span key={h} style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#64748B" : "#94A3B8", fontFamily: "Inter, sans-serif" }}>{h}</span>
                                 ))}
                               </div>
                               {(V23_SUB_DATA[row.id] ?? [
@@ -5522,11 +5593,11 @@ const V2_3Content = () => {
                                 { id: `${row.id}-S2`, event: "Sensor Threshold Breach",   camera: row.camera, confidence: +(row.confidence - 10.4).toFixed(1), timestamp: row.timestamp },
                                 { id: `${row.id}-S3`, event: "Camera Zone Alert",          camera: row.camera, confidence: +(row.confidence - 15.6).toFixed(1), timestamp: row.timestamp },
                               ]).map((sub, si) => (
-                                <div key={sub.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 140px", alignItems: "center", height: 36, padding: "0 16px", backgroundColor: si % 2 === 1 ? (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,119,91,0.015)") : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.03)" : "1px solid rgba(0,119,91,0.06)" }}>
-                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: isDark ? "#64748B" : "#94A3B8" }}>{sub.id}</span>
-                                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: isDark ? "#CBD5E1" : "#334155" }}>{sub.event}</span>
-                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: Math.max(0, sub.confidence) >= 80 ? "#00A63E" : "#EA580C" }}>{Math.max(0, sub.confidence).toFixed(1)}%</span>
-                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: sec }}>{sub.timestamp}</span>
+                                <div key={sub.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 80px 180px", alignItems: "center", height: 36, padding: "0 16px", backgroundColor: si % 2 === 1 ? (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,119,91,0.015)") : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.03)" : "1px solid rgba(0,119,91,0.06)" }}>
+                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: isDark ? "#64748B" : "#94A3B8" }}>{sub.id}</span>
+                                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: isDark ? "#CBD5E1" : "#334155" }}>{sub.event}</span>
+                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: Math.max(0, sub.confidence) >= 80 ? "#00A63E" : "#EA580C" }}>{Math.max(0, sub.confidence).toFixed(1)}%</span>
+                                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: sec }}>{sub.timestamp}</span>
                                 </div>
                               ))}
                             </div>
@@ -5589,115 +5660,8 @@ const V2_3Content = () => {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* ── Right: Feature Sidebar ─────────────────────────────────── */}
-          <div style={{
-            width: 248, flexShrink: 0,
-            borderLeft: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0",
-            backgroundColor: isDark ? "#070C14" : "#ffffff",
-            padding: "16px", display: "flex", flexDirection: "column", gap: 16,
-            overflowY: "auto",
-          }}>
-            {/* Behaviour */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", marginBottom: 12, fontFamily: "Inter, sans-serif" }}>Behaviour</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[
-                  { label: "Selection Mode",  val: selectionMode,  set: setSelectionMode,  desc: "Gmail-style checkboxes + action bar" },
-                  { label: "Expandable Rows", val: expandableRows, set: setExpandableRows, desc: "Chevron + JSON / sub-table expand" },
-                ].map(({ label, val, set, desc }) => (
-                  <div key={label}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: isDark ? "#CBD5E1" : "#334155", fontFamily: "Inter, sans-serif" }}>{label}</span>
-                      <V23Toggle checked={val} onChange={set} />
-                    </div>
-                    <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "Inter, sans-serif", lineHeight: 1.4 }}>{desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ height: 1, backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9" }} />
-
-            {/* Layout */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", marginBottom: 12, fontFamily: "Inter, sans-serif" }}>Layout</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[
-                  { label: "Sticky Columns",    val: stickyCol, set: setStickyCol, desc: "ID column stays fixed during H-scroll" },
-                  { label: "Horizontal Scroll",  val: hScroll,   set: setHScroll,   desc: "Enable overflow-x scroll with min-widths" },
-                ].map(({ label, val, set, desc }) => (
-                  <div key={label}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: isDark ? "#CBD5E1" : "#334155", fontFamily: "Inter, sans-serif" }}>{label}</span>
-                      <V23Toggle checked={val} onChange={set} />
-                    </div>
-                    <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "Inter, sans-serif", lineHeight: 1.4 }}>{desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ height: 1, backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9" }} />
-
-            {/* Expand Content */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", marginBottom: 10, fontFamily: "Inter, sans-serif" }}>Expand Content</div>
-              <div style={{ display: "flex", borderRadius: 5, overflow: "hidden", border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0" }}>
-                {(["json", "table"] as const).map(t => (
-                  <button key={t} onClick={() => setExpandContent(t)}
-                    style={{ flex: 1, height: 28, fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", border: "none", cursor: "pointer", transition: "all 150ms ease", backgroundColor: expandContent === t ? teal : "transparent", color: expandContent === t ? "#fff" : sec }}>
-                    {t === "json" ? "JSON" : "Table"}
-                  </button>
-                ))}
-              </div>
-              <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "Inter, sans-serif", marginTop: 6, lineHeight: 1.4 }}>
-                {expandContent === "json" ? "Syntax-highlighted JSON payload with metadata" : "Nested sub-event table (3 rows, 36px compact)"}
-              </div>
-            </div>
-
-            <div style={{ height: 1, backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9" }} />
-
-            {/* Column visibility */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94A3B8", marginBottom: 10, fontFamily: "Inter, sans-serif" }}>Visible Columns</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {V23_COL_DEFS.map(col => {
-                  const vis = !hiddenCols.has(col.key);
-                  return (
-                    <div key={col.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 11, color: vis ? (isDark ? "#CBD5E1" : "#334155") : "#94A3B8", fontFamily: "Inter, sans-serif", transition: "color 100ms" }}>{col.label}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 9, color: "#94A3B8", fontFamily: "JetBrains Mono, monospace" }}>{col.minWidth}px</span>
-                        <V23Toggle checked={vis} onChange={() => setHiddenCols(p => { const n = new Set(p); vis ? n.add(col.key) : n.delete(col.key); return n; })} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ height: 1, backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9" }} />
-
-            {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {[
-                { label: "Total Rows",  value: V23_GRID_DATA.length },
-                { label: "Filtered",    value: filteredData.length  },
-                { label: "Selected",    value: selectedIds.size     },
-                { label: "Pages",       value: totalPages            },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ padding: "8px 10px", borderRadius: 4, backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "#F8FAFC", border: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #E2E8F0" }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: teal, lineHeight: 1 }}>{value}</div>
-                  <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "Inter, sans-serif", marginTop: 3 }}>{label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
         </div>
-      </div>
+      </div>{/* end table card */}
 
       {/* Annotations */}
       <div className="grid grid-cols-2 gap-2">
