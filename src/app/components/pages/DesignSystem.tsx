@@ -5486,7 +5486,7 @@ const V2_3Content = () => {
                 </div>
               ) : (
                 paginatedData.map((row, idx) => {
-                  const isHov = hoveredId === row.id;
+                  const isHov = hoveredId === row.id || idx === 0; // idx 0 = always-on demo hover
                   const isSel = selectedIds.has(row.id);
                   const isExp = expandedId === row.id;
                   const bg    = rowBg(idx, isHov, isSel);
@@ -5565,29 +5565,39 @@ const V2_3Content = () => {
                             { Icon: Eye,      title: "View",   hc: teal      },
                             { Icon: UserPlus, title: "Assign", hc: teal      },
                             { Icon: Trash2,   title: "Delete", hc: "#E7000B" },
-                          ].map(({ Icon, title, hc }) => (
-                            <button key={title} title={title}
-                              onMouseEnter={e => {
-                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = hc;
-                                (e.currentTarget as HTMLButtonElement).style.color = "#ffffff";
-                                (e.currentTarget as HTMLButtonElement).style.borderColor = hc;
-                              }}
-                              onMouseLeave={e => {
-                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9";
-                                (e.currentTarget as HTMLButtonElement).style.color = isDark ? "#94A3B8" : "#64748B";
-                                (e.currentTarget as HTMLButtonElement).style.borderColor = isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0";
-                              }}
-                              style={{
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                width: 28, height: 28, borderRadius: 5,
-                                border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0"}`,
-                                backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9",
-                                cursor: "pointer", color: isDark ? "#94A3B8" : "#64748B",
-                                transition: "background-color 100ms ease, color 100ms ease, border-color 100ms ease",
-                              }}>
-                              <Icon style={{ width: 12, height: 12 }} />
-                            </button>
-                          ))}
+                          ].map(({ Icon, title, hc }, btnIdx) => {
+                            // First button on first row is pinned in the filled/active state for the demo
+                            const isPinned = idx === 0 && btnIdx === 0;
+                            return (
+                              <button key={title} title={title}
+                                onMouseEnter={e => {
+                                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = hc;
+                                  (e.currentTarget as HTMLButtonElement).style.color = "#ffffff";
+                                  (e.currentTarget as HTMLButtonElement).style.borderColor = hc;
+                                }}
+                                onMouseLeave={e => {
+                                  if (isPinned) {
+                                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = hc;
+                                    (e.currentTarget as HTMLButtonElement).style.color = "#ffffff";
+                                    (e.currentTarget as HTMLButtonElement).style.borderColor = hc;
+                                  } else {
+                                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9";
+                                    (e.currentTarget as HTMLButtonElement).style.color = isDark ? "#94A3B8" : "#64748B";
+                                    (e.currentTarget as HTMLButtonElement).style.borderColor = isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0";
+                                  }
+                                }}
+                                style={{
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  width: 28, height: 28, borderRadius: 5,
+                                  border: `1px solid ${isPinned ? hc : (isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0")}`,
+                                  backgroundColor: isPinned ? hc : (isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9"),
+                                  cursor: "pointer", color: isPinned ? "#ffffff" : (isDark ? "#94A3B8" : "#64748B"),
+                                  transition: "background-color 100ms ease, color 100ms ease, border-color 100ms ease",
+                                }}>
+                                <Icon style={{ width: 12, height: 12 }} />
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
