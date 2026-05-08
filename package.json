@@ -1,0 +1,10 @@
+{
+  "name": "matrice-platform",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run dev --prefix support",
+    "build": "npm run build --prefix support"
+  }
+}
