@@ -17,6 +17,7 @@ import {
   Layers,
   Settings,
   HelpCircle,
+  Users,
   Bell,
   Sun,
   Moon,
@@ -116,6 +117,7 @@ const mainNavItems: { id: Page; label: string; icon: React.ElementType; badge?: 
   { id: "metrics", label: "Metrics & Rules", icon: Map },
   { id: "compliance", label: "Compliance", icon: ClipboardCheck },
   { id: "design-system", label: "Component Library", icon: Layers },
+  { id: "sample-analytics", label: "Staff Monitoring", icon: Users },
 ];
 
 // Support items for footer

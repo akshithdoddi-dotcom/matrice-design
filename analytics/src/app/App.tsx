@@ -28,6 +28,7 @@ import { Compliance } from "@/app/components/pages/Compliance";
 import { DesignSystem } from "@/app/components/pages/DesignSystem";
 import { ServiceAnalytics } from "@/app/components/pages/ServiceAnalytics";
 import { SettingsPage } from "@/app/components/pages/Settings";
+import { StaffMonitoring } from "@/app/components/pages/StaffMonitoring";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
 import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@/app/components/ui/DataGrid";
 
@@ -454,7 +455,8 @@ export default function App() {
             {activePage === "compliance" && <Compliance />}
             {activePage === "design-system" && <DesignSystem />}
             {activePage === "service" && <ServiceAnalytics />}
-            
+            {activePage === "sample-analytics" && <StaffMonitoring />}
+
             {activePage === "dashboard" && (
               <>
                {activePersona === "director" ? (

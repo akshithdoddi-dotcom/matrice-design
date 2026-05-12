@@ -3,14 +3,14 @@ import { cn } from "@/app/lib/utils";
 import {
   LayoutDashboard, ShieldAlert, Map, TrendingUp, ShoppingBag,
   Settings, HelpCircle, ChevronDown, ChevronUp, Check,
-  ScanFace, CarFront, Video, ClipboardCheck, MapPin, Fingerprint, ShieldCheck, Layers, Timer,
+  ScanFace, CarFront, Video, ClipboardCheck, MapPin, Fingerprint, ShieldCheck, Layers, Timer, Users,
 } from "lucide-react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export type Page =
   | "dashboard" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
   | "facial-recognition" | "license-plates" | "cameras" | "metrics" | "compliance"
-  | "design-system" | "settings" | "service";
+  | "design-system" | "settings" | "service" | "sample-analytics";
 
 interface SidebarProps {
   activePage: Page;
@@ -43,6 +43,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType; badge?: num
   { id: "metrics",            label: "Metrics & Rules",     icon: Map },
   { id: "compliance",         label: "Compliance",          icon: ClipboardCheck },
   { id: "design-system",      label: "Component Library",   icon: Layers },
+  { id: "sample-analytics",  label: "Staff Monitoring",    icon: Users },
 ];
 
 // ─── Matrice icon mark (green dot-grid) ───────────────────────────────────────
