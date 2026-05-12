@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useState, useEffect, useRef, forwardRef } from "react";
 import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -62,6 +62,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
+// Note: DropdownMenu is still used for the avatar/user menu below
 import {
   Popover,
   PopoverContent,
@@ -160,6 +161,9 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
   const [clockTime, setClockTime] = useState(() =>
     new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   );
+  const [platformOpen, setPlatformOpen] = useState(false);
+  const platformBtnRef = useRef<HTMLButtonElement>(null);
+  const platformPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -168,46 +172,71 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
     return () => clearInterval(id);
   }, []);
 
+  // Close platform panel on outside click
+  useEffect(() => {
+    if (!platformOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        !platformBtnRef.current?.contains(e.target as Node) &&
+        !platformPanelRef.current?.contains(e.target as Node)
+      ) {
+        setPlatformOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [platformOpen]);
+
   return (
     <SidebarProvider defaultOpen={true} style={{ "--sidebar-width": "14rem" } as React.CSSProperties}>
       <Sidebar collapsible="icon" variant="sidebar" className="border-r border-[#00775B]/15 bg-[#021d18]">
         <SidebarHeader>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton size="lg" className="data-[state=open]:bg-white/5 hover:bg-white/5">
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[#001410] border border-[#00775B]/30 p-1">
-                      <MatriceIcon />
-                    </div>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold text-white">Matrice AI</span>
-                      <span className="truncate text-xs text-white/50">Analytics Platform</span>
-                    </div>
-                    <ChevronsUpDown className="ml-auto size-4 text-white/40" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" align="start" side="right" sideOffset={4}>
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">Platforms</DropdownMenuLabel>
+            <SidebarMenuItem className="relative">
+              {/* Custom platform switcher — avoids Radix positioning bugs inside fixed sidebar */}
+              <SidebarMenuButton
+                ref={platformBtnRef}
+                size="lg"
+                className={cn("hover:bg-white/5", platformOpen && "bg-white/5")}
+                onClick={() => setPlatformOpen(o => !o)}
+              >
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[#001410] border border-[#00775B]/30 p-1">
+                  <MatriceIcon />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold text-white">Matrice AI</span>
+                  <span className="truncate text-xs text-white/50">Analytics Platform</span>
+                </div>
+                <ChevronsUpDown className="ml-auto size-4 text-white/40" />
+              </SidebarMenuButton>
+
+              {platformOpen && (
+                <div
+                  ref={platformPanelRef}
+                  className="absolute left-0 top-full mt-1 z-[200] w-56 rounded-lg border border-border bg-popover text-popover-foreground shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100"
+                >
+                  <p className="px-2 py-1.5 text-xs text-muted-foreground font-medium">Platforms</p>
                   {platforms.map((platform) => (
-                    <DropdownMenuItem
+                    <button
                       key={platform.shortcut}
-                      className="gap-2 p-2 cursor-pointer"
-                      onClick={() => platform.app && onPlatformSwitch?.(platform.app)}
+                      className="flex w-full items-center gap-2 px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-sm transition-colors"
+                      onClick={() => {
+                        setPlatformOpen(false);
+                        if (platform.app) onPlatformSwitch?.(platform.app);
+                      }}
                     >
-                      <div className="flex size-6 items-center justify-center rounded-sm border">
+                      <div className="flex size-6 items-center justify-center rounded-sm border bg-background">
                         <platform.icon className="size-4 shrink-0" />
                       </div>
-                      <span className="flex-1">{platform.label}</span>
+                      <span className="flex-1 text-left">{platform.label}</span>
                       {platform.active && <Check className="size-4 text-primary" />}
-                      <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
-                        <span className="text-xs">⌘</span>
-                        {platform.shortcut}
+                      <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
+                        <span className="text-xs">⌘</span>{platform.shortcut}
                       </kbd>
-                    </DropdownMenuItem>
+                    </button>
                   ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+              )}
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
