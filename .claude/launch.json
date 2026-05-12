@@ -2,6 +2,18 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "Analytics Dev Server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:analytics"],
+      "port": 5177
+    },
+    {
+      "name": "Training Dev Server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:training"],
+      "port": 5174
+    },
+    {
       "name": "Support Dev Server",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],

@@ -23,8 +23,10 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@training/*": ["../training/src/*"],
+      "@marketplace/*": ["../marketplace/src/*"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts", "../training/src", "../marketplace/src"]
 }

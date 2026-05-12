@@ -5,6 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "npm run dev --prefix support",
-    "build": "npm run build --prefix support"
+    "build": "npm run build --prefix support",
+    "dev:training": "npm run dev --prefix training",
+    "build:training": "npm run build --prefix training",
+    "dev:analytics": "npm run dev --prefix analytics",
+    "build:analytics": "npm run build --prefix analytics",
+    "dev:marketplace": "npm run dev --prefix marketplace",
+    "build:marketplace": "npm run build --prefix marketplace"
   }
 }

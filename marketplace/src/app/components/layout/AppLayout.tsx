@@ -1,23 +1,8 @@
 import { useState, useEffect, forwardRef } from "react";
-import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
-  ShieldAlert,
-  TrendingUp,
-  MapPin,
-  ShoppingBag,
-  ShieldCheck,
-  Fingerprint,
-  Timer,
-  ScanFace,
-  CarFront,
-  Video,
-  Map,
-  ClipboardCheck,
-  Layers,
   Settings,
   HelpCircle,
-  Users,
   Bell,
   Sun,
   Moon,
@@ -26,17 +11,21 @@ import {
   Check,
   Monitor,
   BarChart3,
-  Cpu,
-  Store,
   Wrench,
   Shield,
   LogOut,
   User,
   Clock,
-  Filter,
-  ChevronDown,
   PanelLeft,
   PanelLeftClose,
+  BookOpen,
+  GraduationCap,
+  Layers,
+  Users,
+  Upload,
+  Store,
+  Server,
+  Box,
 } from "lucide-react";
 import {
   Sidebar,
@@ -44,6 +33,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -62,15 +52,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/app/components/ui/popover";
 import { cn } from "@/app/lib/utils";
-import { Page } from "@/app/components/layout/Sidebar";
 
-// Matrice icon SVG component
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type Page = "dashboard" | "services" | "partners" | "publish" | "appstore" | "compute" | "byom" | "settings" | "docs" | "tutorials" | "help";
+
+// ─── Matrice SVG icon ─────────────────────────────────────────────────────────
+
 const MatriceIcon = () => (
   <svg viewBox="0 0 113.7 109.945" fill="none" className="w-full h-full">
     <path d="M9.58511 9.56419H24.6545V0H0V109.932H24.6545V100.367H9.58511V9.56419Z" fill="#00956D" />
@@ -95,60 +84,44 @@ const MatriceIcon = () => (
   </svg>
 );
 
-// Platform options for switcher
-type AppKey = "analytics" | "training" | "marketplace";
-const platforms: { icon: React.ElementType; label: string; shortcut: string; app?: AppKey; active?: boolean }[] = [
+// ─── Platform switcher options ────────────────────────────────────────────────
+
+const platforms: { icon: React.ElementType; label: string; shortcut: string; app?: string; active?: boolean }[] = [
   { icon: Monitor,   label: "Matrice VMS",         shortcut: "1" },
-  { icon: BarChart3, label: "Matrice Analytics",   shortcut: "2", app: "analytics",   active: true },
-  { icon: Cpu,       label: "Matrice Training",    shortcut: "3", app: "training" },
-  { icon: Store,     label: "Matrice Marketplace", shortcut: "4", app: "marketplace" },
-  { icon: Wrench,    label: "Matrice Support",     shortcut: "5" },
-  { icon: Shield,    label: "Matrice Internal",    shortcut: "6" },
+  { icon: BarChart3, label: "Matrice Analytics",   shortcut: "2", app: "analytics" },
+  { icon: Store,     label: "Matrice Marketplace", shortcut: "3", app: "marketplace", active: true },
+  { icon: Wrench,    label: "Matrice Support",     shortcut: "4" },
+  { icon: Shield,    label: "Matrice Internal",    shortcut: "5" },
 ];
 
-// Navigation items - matching original sidebar
-const mainNavItems: { id: Page; label: string; icon: React.ElementType; badge?: number }[] = [
+// ─── Top-level nav ────────────────────────────────────────────────────────────
+
+const MAIN_NAV: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "volume", label: "Volume Analytics", icon: TrendingUp },
-  { id: "incident", label: "Incident Analytics", icon: ShieldAlert, badge: 3 },
-  { id: "zone", label: "Zone Analytics", icon: MapPin },
-  { id: "quality", label: "Quality Analytics", icon: ShoppingBag },
-  { id: "safety", label: "Safety Analytics", icon: ShieldCheck },
-  { id: "identity", label: "Identity Analytics", icon: Fingerprint },
-  { id: "service", label: "Service Analytics", icon: Timer },
-  { id: "facial-recognition", label: "Facial Recognition", icon: ScanFace },
-  { id: "license-plates", label: "License Plates", icon: CarFront },
-  { id: "cameras", label: "Cameras", icon: Video },
-  { id: "metrics", label: "Metrics & Rules", icon: Map },
-  { id: "compliance", label: "Compliance", icon: ClipboardCheck },
-  { id: "design-system", label: "Component Library", icon: Layers },
-  { id: "sample-analytics", label: "Staff Monitoring", icon: Users },
+  { id: "services",  label: "Services",  icon: Layers },
+  { id: "partners",  label: "Partners",  icon: Users },
+  { id: "publish",   label: "Publish",   icon: Upload },
+  { id: "appstore",  label: "App Store", icon: Store },
+  { id: "compute",   label: "Compute",   icon: Server },
+  { id: "byom",      label: "BYOM",      icon: Box },
 ];
 
-// Support items for footer
-const supportNavItems: { id: Page; label: string; icon: React.ElementType }[] = [
-  { id: "settings", label: "Settings", icon: Settings },
+const FOOTER_NAV: { id: Page; label: string; icon: React.ElementType }[] = [
+  { id: "docs",      label: "Docs",          icon: BookOpen },
+  { id: "tutorials", label: "Tutorials",     icon: GraduationCap },
+  { id: "help",      label: "Help & Support",icon: HelpCircle },
+  { id: "settings",  label: "Settings",      icon: Settings },
 ];
 
-// Forwardref wrapper for Link to work with Slot
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const ForwardedLink = forwardRef<HTMLAnchorElement, React.ComponentProps<"a"> & { to?: string }>(
   (props, ref) => <a ref={ref} {...props} href={props.to} onClick={(e) => { e.preventDefault(); props.onClick?.(e); }} />
 );
 ForwardedLink.displayName = "ForwardedLink";
 
-interface AppLayoutProps {
-  activePage: Page;
-  onPageChange: (page: Page) => void;
-  children: React.ReactNode;
-  isDark?: boolean;
-  onToggleDark?: () => void;
-  onPlatformSwitch?: (app: AppKey) => void;
-}
-
-// Custom Sidebar Trigger Component
 function CustomSidebarTrigger() {
   const { open } = useSidebar();
-
   return (
     <SidebarTrigger className="text-white/70 hover:text-white hover:bg-white/5 h-7 w-7">
       {open ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
@@ -156,11 +129,30 @@ function CustomSidebarTrigger() {
   );
 }
 
-export function AppLayout({ activePage, onPageChange, children, isDark = false, onToggleDark, onPlatformSwitch }: AppLayoutProps) {
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+interface AppLayoutProps {
+  activePage: Page;
+  onPageChange: (page: Page) => void;
+  children: React.ReactNode;
+  isDark?: boolean;
+  onToggleDark?: () => void;
+  onPlatformSwitch?: (app: string) => void;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function AppLayout({
+  activePage,
+  onPageChange,
+  children,
+  isDark = false,
+  onToggleDark,
+  onPlatformSwitch,
+}: AppLayoutProps) {
   const [clockTime, setClockTime] = useState(() =>
     new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   );
-
   useEffect(() => {
     const id = setInterval(() => {
       setClockTime(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
@@ -168,9 +160,15 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
     return () => clearInterval(id);
   }, []);
 
+  const pageLabel = MAIN_NAV.find(i => i.id === activePage)?.label
+    ?? FOOTER_NAV.find(i => i.id === activePage)?.label
+    ?? "Dashboard";
+
   return (
     <SidebarProvider defaultOpen={true} style={{ "--sidebar-width": "14rem" } as React.CSSProperties}>
       <Sidebar collapsible="icon" variant="sidebar" className="border-r border-[#00775B]/15 bg-[#021d18]">
+
+        {/* ── Brand / Platform Switcher ── */}
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -182,27 +180,26 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
                     </div>
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-semibold text-white">Matrice AI</span>
-                      <span className="truncate text-xs text-white/50">Analytics Platform</span>
+                      <span className="truncate text-xs text-white/50">Marketplace</span>
                     </div>
                     <ChevronsUpDown className="ml-auto size-4 text-white/40" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" align="start" side="right" sideOffset={4}>
                   <DropdownMenuLabel className="text-xs text-muted-foreground">Platforms</DropdownMenuLabel>
-                  {platforms.map((platform) => (
+                  {platforms.map((p) => (
                     <DropdownMenuItem
-                      key={platform.shortcut}
+                      key={p.shortcut}
                       className="gap-2 p-2 cursor-pointer"
-                      onClick={() => platform.app && onPlatformSwitch?.(platform.app)}
+                      onClick={() => p.app && onPlatformSwitch?.(p.app)}
                     >
                       <div className="flex size-6 items-center justify-center rounded-sm border">
-                        <platform.icon className="size-4 shrink-0" />
+                        <p.icon className="size-4 shrink-0" />
                       </div>
-                      <span className="flex-1">{platform.label}</span>
-                      {platform.active && <Check className="size-4 text-primary" />}
+                      <span className="flex-1">{p.label}</span>
+                      {p.active && <Check className="size-4 text-primary" />}
                       <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
-                        <span className="text-xs">⌘</span>
-                        {platform.shortcut}
+                        <span className="text-xs">⌘</span>{p.shortcut}
                       </kbd>
                     </DropdownMenuItem>
                   ))}
@@ -216,15 +213,22 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {mainNavItems.map((item) => {
+                {MAIN_NAV.map((item) => {
                   const isActive = activePage === item.id;
                   return (
                     <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.label} className={cn(isActive && "bg-[#00775B] text-white hover:bg-[#00775B] hover:text-white", !isActive && "text-white/70 hover:text-white hover:bg-white/5")}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.label}
+                        className={cn(
+                          isActive && "bg-[#00775B] text-white hover:bg-[#00775B] hover:text-white",
+                          !isActive && "text-white/70 hover:text-white hover:bg-white/5"
+                        )}
+                      >
                         <ForwardedLink to={`#${item.id}`} onClick={() => onPageChange(item.id)}>
                           <item.icon className="size-4" />
                           <span>{item.label}</span>
-                          {item.badge && <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">{item.badge}</span>}
                         </ForwardedLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -235,15 +239,24 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
           </SidebarGroup>
         </SidebarContent>
 
+        {/* ── Footer nav (always shown) ── */}
         <SidebarFooter>
           <SidebarGroup className="p-0">
             <SidebarGroupContent>
               <SidebarMenu>
-                {supportNavItems.map((item) => {
+                {FOOTER_NAV.map((item) => {
                   const isActive = activePage === item.id;
                   return (
                     <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.label} className={cn(isActive && "bg-[#00775B] text-white hover:bg-[#00775B] hover:text-white", !isActive && "text-white/70 hover:text-white hover:bg-white/5")}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.label}
+                        className={cn(
+                          isActive && "bg-[#00775B] text-white hover:bg-[#00775B] hover:text-white",
+                          !isActive && "text-white/70 hover:text-white hover:bg-white/5"
+                        )}
+                      >
                         <ForwardedLink to={`#${item.id}`} onClick={() => onPageChange(item.id)}>
                           <item.icon className="size-4" />
                           <span>{item.label}</span>
@@ -252,14 +265,6 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
                     </SidebarMenuItem>
                   );
                 })}
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Help & Support" className="text-white/70 hover:text-white hover:bg-white/5">
-                    <ForwardedLink to="#help">
-                      <HelpCircle className="size-4" />
-                      <span>Help & Support</span>
-                    </ForwardedLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -274,28 +279,13 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
           <CustomSidebarTrigger />
           <div className="h-4 w-px bg-white/10" />
 
-          {/* Breadcrumb / page title */}
+          {/* Breadcrumb */}
           <div className="flex-1 flex items-center gap-2 text-sm">
-            <span className="text-white/40 font-normal">
-              {activePage === "settings" ? "Settings" : mainNavItems.find(i => i.id === activePage)?.label ?? "Dashboard"}
-            </span>
+            <span className="text-white/70 font-medium text-xs">{pageLabel}</span>
           </div>
 
-          {/* Right side actions */}
+          {/* Right side */}
           <div className="flex items-center gap-2">
-            {/* LIVE indicator */}
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-[#00775B] rounded-full text-white text-xs font-semibold shadow-md shadow-[#00775B]/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              LIVE
-            </div>
-
-            {/* Global Filter */}
-            <button className="hidden md:flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/8 border border-white/10 transition-all">
-              <Filter className="w-3.5 h-3.5" />
-              Global Filter
-              <ChevronDown className="w-3 h-3 opacity-60" />
-            </button>
-
             {/* Clock */}
             <div className="hidden md:flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/10 text-xs font-mono text-white/60">
               <Clock className="w-3.5 h-3.5 text-white/30" />
@@ -318,7 +308,7 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-[#021d18]" />
             </button>
 
-            {/* User profile dropdown */}
+            {/* User */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="h-8 w-8 rounded-full bg-[#00775B] flex items-center justify-center text-white text-xs font-bold shadow-md hover:bg-[#006649] transition-colors ring-2 ring-transparent hover:ring-[#00775B]/40">
@@ -336,17 +326,7 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
                   <span>Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onToggleDark}>
-                  {isDark ? (
-                    <>
-                      <Sun className="size-4" />
-                      <span>Light Mode</span>
-                    </>
-                  ) : (
-                    <>
-                      <Moon className="size-4" />
-                      <span>Dark Mode</span>
-                    </>
-                  )}
+                  {isDark ? <><Sun className="size-4" /><span>Light Mode</span></> : <><Moon className="size-4" /><span>Dark Mode</span></>}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
@@ -358,11 +338,8 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
           </div>
         </header>
 
-        {/* Main content */}
-        <div className={cn(
-          "flex flex-1 flex-col overflow-auto",
-          activePage === "settings" ? "p-0 min-h-0" : "gap-4 p-6"
-        )}>
+        {/* Content */}
+        <div className="flex flex-1 flex-col overflow-auto gap-4 p-6">
           {children}
         </div>
       </SidebarInset>

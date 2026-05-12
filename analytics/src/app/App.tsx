@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import TrainingApp from "@training/app/App";
+import MarketplaceApp from "@marketplace/app/App";
 import { SeverityIcon } from "@/app/components/ui/SeverityIcon";
 import { Page } from "@/app/components/layout/Sidebar";
 import { AppLayout } from "@/app/components/layout/AppLayout";
@@ -206,7 +208,20 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
+type ActiveApp = "analytics" | "training" | "marketplace";
+
+/** Root switcher — picks which app to render based on platform selection */
 export default function App() {
+  const [activeApp, setActiveApp] = useState<ActiveApp>("analytics");
+  const handleSwitch = (app: string) => setActiveApp(app as ActiveApp);
+
+  if (activeApp === "training")    return <TrainingApp    onPlatformSwitch={handleSwitch} />;
+  if (activeApp === "marketplace") return <MarketplaceApp onPlatformSwitch={handleSwitch} />;
+  return <AnalyticsApp onPlatformSwitch={handleSwitch} />;
+}
+
+/** Analytics app — all existing UI lives here */
+function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) => void }) {
   const [activePersona, setActivePersona] = useState<Persona>("monitoring");
   const [activePage, setActivePage] = useState<Page>("dashboard");
 
@@ -434,7 +449,7 @@ export default function App() {
   };
 
   return (
-    <AppLayout activePage={activePage} onPageChange={setActivePage} isDark={isDark} onToggleDark={() => setIsDark(d => !d)}>
+    <AppLayout activePage={activePage} onPageChange={setActivePage} isDark={isDark} onToggleDark={() => setIsDark(d => !d)} onPlatformSwitch={onPlatformSwitch}>
       {activePage === "settings" ? (
         <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
       ) : null}
