@@ -405,7 +405,7 @@ export function AppLayout({
         </header>
 
         {/* Content */}
-        <div className="flex flex-1 flex-col overflow-auto gap-4 p-6">
+        <div className="flex flex-1 flex-col overflow-auto">
           {children}
         </div>
       </SidebarInset>

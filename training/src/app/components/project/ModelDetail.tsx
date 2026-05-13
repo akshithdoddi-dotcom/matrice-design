@@ -1,0 +1,1345 @@
+import { useState, useMemo } from "react";
+import {
+  ArrowLeft, ChevronRight, ExternalLink, Download, CloudUpload,
+  Play, Search, RefreshCw, CheckCircle, AlertCircle, Info,
+  AlertTriangle, XCircle, Terminal, Copy, LayoutGrid, List,
+  FileDown, Cpu, Zap, Package, Settings2, ChevronDown, X,
+} from "lucide-react";
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend, Cell,
+} from "recharts";
+import { Label }  from "@/app/components/ui/label";
+import { Input }  from "@/app/components/ui/Input";
+import { Slider } from "@/app/components/ui/slider";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/app/components/ui/select";
+import { TrainingJob } from "@/app/data/mockData";
+import { cn } from "@/app/lib/utils";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const TEAL = "#00775B";
+
+// ─── Mock model data ──────────────────────────────────────────────────────────
+
+const MODEL = {
+  name:          "Skin-Cancer-Classification-Experiment-1-1",
+  dataset:       "Skin Cancer Classification",
+  datasetVer:    "v1.0",
+  trainCount:    2639,
+  testCount:     329,
+  valCount:      329,
+  framework:     "PyTorch",
+  targetRuntime: "PyTorch",
+  metric:        "acc@1",
+  performance:   0.841945,
+  status:        "Trained",
+  updatedAt:     "11/10/2024",
+  createdBy:     "Mohned Moneam",
+  params: {
+    batch_size:     "4",
+    epochs:         "50",
+    learning_rate:  "0.001",
+    lr_gamma:       "0.1",
+    lr_min:         "0.00001",
+    lr_scheduler:   "StepLR",
+    lr_step_size:   "10",
+    min_delta:      "0.0001",
+    momentum:       "0.95",
+    optimizer:      "AdamW",
+    patience:       "5",
+    primary_metric: "acc@1",
+    target_runtime: "PyTorch",
+    weight_decay:   "0.0001",
+  },
+  modelInfo: {
+    key:       "efficientnet_v2_s",
+    name:      "EfficientNetV2 Small",
+    paramsM:   "21.5",
+    runtime:   "N/A",
+  },
+  familyInfo: {
+    familyName:   "EfficientNet_V2",
+    input:        "image",
+    output:       "classification",
+    exportFmts:   ["ONNX", "OpenVINO", "PyTorch", "TensorRT"],
+    benchmarks:   "N/A",
+    metrics:      ["acc@1", "acc@5", "f1_score", "precision", "recall", "specificity"],
+    dockerImg:    "N/A",
+    trainFW:      "PyTorch",
+    dataProc:     "ImageNet",
+    pruning:      "False",
+    private:      "False",
+    references:   ["https://arxiv.org/abs/2104.00298"],
+    repoLink:     "N/A",
+    description:  "EfficientNetV2 is a family of convolutional neural networks, with variants including Large, Medium, and Small. These models are built upon a concept called 'compound scaling,' addressing the trade-off between model size, accuracy, and computational efficiency. EfficientNetV2 is optimized for image classification tasks.",
+  },
+  architectures: [
+    { name: "EfficientNetV2-S", key: "efficientnet_v2_s", paramsM: 21.5 },
+    { name: "EfficientNetV2-M", key: "efficientnet_v2_m", paramsM: 54.1 },
+    { name: "EfficientNetV2-L", key: "efficientnet_v2_l", paramsM: 118.5 },
+  ],
+};
+
+// Performance chart mock
+const PERF_DATA = [
+  { category: "all",       val: 0.861, test: 0.842 },
+  { category: "benign",    val: 0.883, test: 0.859 },
+  { category: "malignant", val: 0.841, test: 0.824 },
+];
+
+// Training curves mock
+const EPOCH_DATA = Array.from({ length: 50 }, (_, i) => {
+  const epoch = i + 1;
+  return {
+    epoch,
+    train_loss: Math.max(0.08, 1.2 * Math.exp(-epoch * 0.06) + (Math.random() - 0.5) * 0.03),
+    val_loss:   Math.max(0.12, 1.4 * Math.exp(-epoch * 0.055) + (Math.random() - 0.5) * 0.04),
+    train_acc:  Math.min(0.97, 0.45 + 0.52 * (1 - Math.exp(-epoch * 0.07)) + (Math.random() - 0.5) * 0.01),
+    val_acc:    Math.min(0.93, 0.42 + 0.49 * (1 - Math.exp(-epoch * 0.065)) + (Math.random() - 0.5) * 0.015),
+  };
+});
+
+// Confusion matrix mock (benign vs malignant)
+const CONFUSION = {
+  labels: ["benign", "malignant"],
+  matrix: [[270, 59], [18, 311]],
+};
+
+// ROC curve mock
+const ROC_DATA = (() => {
+  const pts = [{ fpr: 0, tpr: 0 }];
+  for (let i = 1; i <= 20; i++) {
+    const fpr = i / 20;
+    const tpr = Math.min(1, Math.sqrt(fpr) * 0.97 + (Math.random() - 0.5) * 0.03);
+    pts.push({ fpr: +fpr.toFixed(3), tpr: +tpr.toFixed(3) });
+  }
+  pts.push({ fpr: 1, tpr: 1 });
+  return pts;
+})();
+
+// Logs mock
+type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
+const MOCK_LOGS: { ts: string; level: LogLevel; source: string; msg: string }[] = [
+  { ts: "2024-11-10 14:30:01", level: "INFO",  source: "trainer",   msg: "Starting training job: Skin-Cancer-Classification-Experiment-1-1" },
+  { ts: "2024-11-10 14:30:02", level: "INFO",  source: "loader",    msg: "Dataset loaded: 2639 train / 329 val / 329 test items" },
+  { ts: "2024-11-10 14:30:03", level: "DEBUG", source: "model",     msg: "Initialising EfficientNetV2-S (21.5M params, pretrained=True)" },
+  { ts: "2024-11-10 14:30:05", level: "INFO",  source: "optimizer", msg: "Optimizer: AdamW | lr=0.001 | weight_decay=0.0001 | momentum=0.95" },
+  { ts: "2024-11-10 14:30:05", level: "INFO",  source: "scheduler", msg: "Scheduler: StepLR | step_size=10 | gamma=0.1 | lr_min=0.00001" },
+  { ts: "2024-11-10 14:30:10", level: "INFO",  source: "epoch",     msg: "Epoch  1/50 | train_loss=1.182 | val_loss=1.347 | val_acc=0.423" },
+  { ts: "2024-11-10 14:31:22", level: "INFO",  source: "epoch",     msg: "Epoch  5/50 | train_loss=0.741 | val_loss=0.883 | val_acc=0.621" },
+  { ts: "2024-11-10 14:32:45", level: "INFO",  source: "epoch",     msg: "Epoch 10/50 | train_loss=0.482 | val_loss=0.591 | val_acc=0.744" },
+  { ts: "2024-11-10 14:34:10", level: "WARN",  source: "lr",        msg: "Learning rate stepped: 0.001 → 0.0001 at epoch 10" },
+  { ts: "2024-11-10 14:35:15", level: "INFO",  source: "epoch",     msg: "Epoch 15/50 | train_loss=0.334 | val_loss=0.421 | val_acc=0.813" },
+  { ts: "2024-11-10 14:36:40", level: "INFO",  source: "epoch",     msg: "Epoch 20/50 | train_loss=0.282 | val_loss=0.371 | val_acc=0.841" },
+  { ts: "2024-11-10 14:36:40", level: "INFO",  source: "checkpoint",msg: "Best model saved: val_acc=0.841 at epoch 20" },
+  { ts: "2024-11-10 14:38:05", level: "WARN",  source: "lr",        msg: "Learning rate stepped: 0.0001 → 0.00001 at epoch 20" },
+  { ts: "2024-11-10 14:42:30", level: "INFO",  source: "epoch",     msg: "Epoch 30/50 | train_loss=0.214 | val_loss=0.308 | val_acc=0.852" },
+  { ts: "2024-11-10 14:47:55", level: "INFO",  source: "epoch",     msg: "Epoch 40/50 | train_loss=0.189 | val_loss=0.294 | val_acc=0.859" },
+  { ts: "2024-11-10 14:51:30", level: "INFO",  source: "epoch",     msg: "Epoch 50/50 | train_loss=0.174 | val_loss=0.288 | val_acc=0.861" },
+  { ts: "2024-11-10 14:51:45", level: "INFO",  source: "eval",      msg: "Test evaluation: test_acc=0.842 | test_loss=0.301" },
+  { ts: "2024-11-10 14:51:48", level: "INFO",  source: "trainer",   msg: "Training complete. Status: TRAINED" },
+];
+
+// ─── Shared primitives ────────────────────────────────────────────────────────
+
+const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn("bg-white rounded-md border border-neutral-200 shadow-sm", className)}>{children}</div>
+);
+
+const SectionHead = ({ title, sub, action }: { title: string; sub?: string; action?: React.ReactNode }) => (
+  <div className="px-5 py-4 border-b border-neutral-100 flex items-start justify-between">
+    <div>
+      <h3 className="text-[13px] font-semibold text-neutral-800">{title}</h3>
+      {sub && <p className="text-[11px] text-neutral-400 mt-0.5">{sub}</p>}
+    </div>
+    {action}
+  </div>
+);
+
+// Chip tag
+const Chip = ({ children, color }: { children: React.ReactNode; color?: string }) => (
+  <span className="inline-flex items-center h-6 px-2.5 rounded-md border text-[10px] font-semibold"
+    style={{ color: color ?? "#475569", borderColor: color ? `${color}40` : "#E2E8F0", backgroundColor: color ? `${color}10` : "#F8FAFC" }}>
+    {children}
+  </span>
+);
+
+// Key-value pair with label on top
+const KVCell = ({ k, v, chip }: { k: string; v: React.ReactNode; chip?: boolean }) => (
+  <div className="flex flex-col gap-1 py-4 px-4 border-r border-b border-neutral-100 last:border-r-0">
+    <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{k}</span>
+    {chip ? (
+      <div className="flex flex-wrap gap-1 mt-0.5">
+        {Array.isArray(v) ? v.map((tag) => (
+          <span key={tag} className="inline-flex items-center h-5 px-2 rounded border border-neutral-200 text-[10px] font-medium text-neutral-600 bg-neutral-50">{tag}</span>
+        )) : <span className="inline-flex items-center h-5 px-2 rounded border border-neutral-200 text-[10px] font-medium text-neutral-600 bg-neutral-50">{v}</span>}
+      </div>
+    ) : (
+      <span className="text-[13px] font-semibold text-neutral-800 leading-snug">{v}</span>
+    )}
+  </div>
+);
+
+// Multi-select chip input (simulated)
+type MultiChipState = string[];
+const MultiChipSelect = ({ label, values, onRemove, placeholder, options, onAdd }: {
+  label: string; values: MultiChipState; onRemove: (v: string) => void;
+  placeholder?: string; options: string[]; onAdd: (v: string) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-col gap-1 relative">
+      <span className="text-[10px] font-semibold text-neutral-500 px-1 -mb-1">{label}</span>
+      <div onClick={() => setOpen(!open)}
+        className="min-h-[36px] w-full border border-neutral-200 rounded-md px-2.5 py-1.5 flex flex-wrap gap-1 items-center cursor-pointer hover:border-neutral-300 transition-colors bg-white">
+        {values.map((v) => (
+          <span key={v} className="inline-flex items-center gap-1 h-5 px-2 rounded bg-[#E5FFF9] text-[#00775B] text-[10px] font-semibold">
+            {v}
+            <button onClick={(e) => { e.stopPropagation(); onRemove(v); }} className="hover:text-red-500"><X className="w-2.5 h-2.5" /></button>
+          </span>
+        ))}
+        {values.length === 0 && <span className="text-[11px] text-neutral-400">{placeholder}</span>}
+        <ChevronDown className="w-3 h-3 text-neutral-400 ml-auto" />
+      </div>
+      {open && (
+        <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-neutral-200 rounded-md shadow-lg py-1 max-h-40 overflow-y-auto">
+          {options.filter((o) => !values.includes(o)).map((o) => (
+            <button key={o} onClick={() => { onAdd(o); setOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-[11px] text-neutral-700 hover:bg-[#E5FFF9] hover:text-[#00775B] transition-colors">
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Tab bar ─────────────────────────────────────────────────────────────────
+
+type MTab = "summary" | "hyperparams" | "analysis" | "model-test" | "evaluation" | "export" | "logs";
+const MTABS: { id: MTab; label: string }[] = [
+  { id: "summary",    label: "Summary"          },
+  { id: "hyperparams",label: "Hyperparameters"  },
+  { id: "analysis",   label: "Training Analysis"},
+  { id: "model-test", label: "Model Test"       },
+  { id: "evaluation", label: "Evaluation"       },
+  { id: "export",     label: "Export"           },
+  { id: "logs",       label: "Logs"             },
+];
+
+// ─── Header info bar ─────────────────────────────────────────────────────────
+
+function ModelHeaderBar() {
+  return (
+    <div className="flex items-center gap-3 px-5 py-2 border-b border-neutral-200 bg-white flex-wrap text-[11px]">
+      <div className="flex items-center gap-3">
+        <span className="text-neutral-400">Last Updated: <span className="font-medium text-neutral-600">{MODEL.updatedAt}</span></span>
+        <span className="text-neutral-200">|</span>
+        <span className="text-neutral-400">Created By: <span className="font-medium text-neutral-600">{MODEL.createdBy}</span></span>
+      </div>
+      <div className="ml-auto flex items-center gap-2">
+        <span className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-neutral-300 text-neutral-700 text-[10px] font-semibold bg-white">
+          <CheckCircle className="w-3 h-3 text-[#00775B]" /> {MODEL.status}
+        </span>
+        <span className="text-[11px] font-mono font-medium text-neutral-500 bg-neutral-100 h-6 px-2.5 rounded flex items-center truncate max-w-[160px]">
+          {MODEL.name.slice(0, 32)}…
+        </span>
+        <button className="h-6 px-3 rounded text-[11px] font-semibold text-neutral-700 border border-neutral-200 hover:bg-neutral-50 transition-colors">
+          Optimize/Export
+        </button>
+        <button className="h-6 px-3 rounded bg-[#00775B] text-white text-[11px] font-semibold hover:bg-[#006649] transition-colors">
+          Deploy
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 1 — SUMMARY
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function SummaryTab() {
+  const [splitFilter, setSplitFilter] = useState<string[]>(["test", "val"]);
+  const [metricFilter, setMetricFilter] = useState("acc@1");
+  const [labelFilter,  setLabelFilter]  = useState<string[]>(["all", "benign", "malignant"]);
+  const [modelsFilter, setModelsFilter] = useState<string[]>(["Skin-Cancer-Exp-1-1"]);
+  const [classRange,   setClassRange]   = useState<number[]>([0, 20]);
+  const [viewMode,     setViewMode]     = useState<"grid" | "list">("grid");
+
+  return (
+    <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
+
+      {/* ── Top info panels ── */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <div className="grid grid-cols-2 divide-x divide-neutral-100">
+            <KVCell k="Dataset Name"      v={<span className="text-[#00775B] font-semibold">{MODEL.dataset}</span>} />
+            <KVCell k="Dataset Version"   v={<span className="text-[#00775B] font-semibold">{MODEL.datasetVer}</span>} />
+          </div>
+          <div className="grid grid-cols-1 border-t border-neutral-100">
+            <KVCell k="Train / Test / Val Count"
+              v={<span className="text-[#00775B] font-semibold">{MODEL.trainCount}/{MODEL.testCount}/{MODEL.valCount}</span>} />
+          </div>
+        </Card>
+
+        <Card>
+          <div className="grid grid-cols-2 divide-x divide-neutral-100">
+            <KVCell k="Training Framework" v={<span className="text-[#00775B] font-semibold">{MODEL.framework}</span>} />
+            <KVCell k="Target Runtime"     v={<span className="text-[#00775B] font-semibold">{MODEL.targetRuntime}</span>} />
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-neutral-100 border-t border-neutral-100">
+            <KVCell k="Primary Metric"     v={<span className="text-[#00775B] font-semibold">{MODEL.metric}</span>} />
+            <KVCell k="Performance (Test)" v={<span className="text-[#00775B] font-semibold">{MODEL.performance}</span>} />
+          </div>
+        </Card>
+      </div>
+
+      {/* ── Model Performance ── */}
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+          <h3 className="text-[14px] font-semibold text-neutral-800">Model Performance</h3>
+          <div className="flex items-center gap-1 bg-neutral-100 rounded-md p-0.5">
+            <button onClick={() => setViewMode("grid")}
+              className={cn("p-1.5 rounded transition-colors", viewMode === "grid" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setViewMode("list")}
+              className={cn("p-1.5 rounded transition-colors", viewMode === "list" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
+              <List className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex">
+          {/* Filter sidebar */}
+          <div className="w-72 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-4 bg-neutral-50/30">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Filters</p>
+            <MultiChipSelect label="Select Split Type"
+              values={splitFilter} onRemove={(v) => setSplitFilter(p => p.filter(x => x !== v))}
+              options={["train", "test", "val"]} onAdd={(v) => setSplitFilter(p => [...p, v])}
+              placeholder="Select splits…" />
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs text-neutral-600">Select Metric</Label>
+              <Select value={metricFilter} onValueChange={setMetricFilter}>
+                <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["acc@1", "acc@5", "f1_score", "precision", "recall"].map((m) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <MultiChipSelect label="Select Labels"
+              values={labelFilter} onRemove={(v) => setLabelFilter(p => p.filter(x => x !== v))}
+              options={["all", "benign", "malignant"]} onAdd={(v) => setLabelFilter(p => [...p, v])}
+              placeholder="Select labels…" />
+            <MultiChipSelect label="Select Models (max 3)"
+              values={modelsFilter} onRemove={(v) => setModelsFilter(p => p.filter(x => x !== v))}
+              options={["Skin-Cancer-Exp-1-1", "RegNet-Y-timm_1280"]}
+              onAdd={(v) => modelsFilter.length < 3 && setModelsFilter(p => [...p, v])}
+              placeholder="Select models…" />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-neutral-600">Number of Classes (Max 20)</Label>
+              </div>
+              <Slider value={classRange} onValueChange={setClassRange} min={0} max={20} step={1}
+                className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
+            </div>
+            <button className="h-9 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#006649] transition-colors">
+              Apply Filters
+            </button>
+          </div>
+
+          {/* Chart */}
+          <div className="flex-1 p-5">
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={PERF_DATA} layout="vertical" margin={{ top: 8, right: 32, bottom: 24, left: 56 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                <XAxis type="number" domain={[0, 0.9]} tick={{ fontSize: 10, fill: "#94A3B8" }}
+                  label={{ value: metricFilter, position: "insideBottom", offset: -14, fontSize: 10, fill: "#94A3B8" }} />
+                <YAxis type="category" dataKey="category" tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} width={60} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div className="bg-white border border-neutral-200 rounded px-3 py-2 shadow text-[11px]">
+                        <p className="font-semibold text-neutral-800 capitalize mb-1">{label}</p>
+                        {payload.map((p) => (
+                          <p key={p.dataKey} className="font-mono" style={{ color: p.fill }}>
+                            {String(p.dataKey)}: {Number(p.value).toFixed(4)}
+                          </p>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
+                <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+                <Bar dataKey="val"  name={`${MODEL.name.slice(0, 22)}… (val)`}  fill="#06B6D4" barSize={22} />
+                <Bar dataKey="test" name={`${MODEL.name.slice(0, 22)}… (test)`} fill={TEAL}     barSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 2 — HYPERPARAMETERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function HyperparametersTab() {
+  const chipParams = ["target_runtime"];
+  const params = Object.entries(MODEL.params);
+
+  return (
+    <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
+
+      {/* Model Parameters */}
+      <Card className="overflow-hidden">
+        <SectionHead title="Model Parameters" sub={`${params.length} configuration values`} />
+        <div className="grid grid-cols-3 divide-y divide-neutral-100">
+          {params.map(([k, v]) => (
+            <div key={k} className={cn("flex flex-col gap-1.5 px-5 py-4 border-r border-neutral-100",
+              "[&:nth-child(3n)]:border-r-0")}>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{k}</span>
+              {chipParams.includes(k) ? (
+                <span className="inline-flex items-center h-5 px-2 rounded bg-neutral-100 text-neutral-700 text-[11px] font-semibold w-fit">{v}</span>
+              ) : (
+                <span className="text-[13px] font-mono font-semibold text-neutral-800">{v}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Model Information */}
+      <Card className="overflow-hidden">
+        <SectionHead title="Model Information" />
+        <div className="grid grid-cols-4 divide-x divide-neutral-100">
+          <KVCell k="Model Key"              v={MODEL.modelInfo.key}    />
+          <KVCell k="Model Name"             v={MODEL.modelInfo.name}   />
+          <KVCell k="Parameters (Million)"   v={MODEL.modelInfo.paramsM}/>
+          <KVCell k="Recommended Runtime"    v={MODEL.modelInfo.runtime}/>
+        </div>
+      </Card>
+
+      {/* Benchmark Results */}
+      <Card className="overflow-hidden">
+        <SectionHead title="Benchmark Results" />
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr className="bg-neutral-50 border-b border-neutral-100">
+              {["Benchmark Dataset", "Metric", "Split Type", "Value"].map((h) => (
+                <th key={h} className={cn("py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500",
+                  h === "Value" ? "text-right pr-5" : "text-left pl-5")}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-neutral-50">
+              <td className="pl-5 py-3 font-semibold text-neutral-700">ImageNet</td>
+              <td className="pl-5 py-3 font-mono text-neutral-500">acc@1</td>
+              <td className="pl-5 py-3 text-neutral-500">val</td>
+              <td className="pr-5 py-3 text-right font-mono font-semibold text-neutral-800">84.23</td>
+            </tr>
+          </tbody>
+        </table>
+      </Card>
+
+      {/* Model Family Info */}
+      <Card className="overflow-hidden">
+        <SectionHead title="Model Family Info" />
+        <div className="grid grid-cols-3 divide-x divide-neutral-100 border-b border-neutral-100">
+          <KVCell k="Model Family Name" v={MODEL.familyInfo.familyName} />
+          <KVCell k="Model Input"  v={MODEL.familyInfo.input}  chip />
+          <KVCell k="Model Output" v={MODEL.familyInfo.output} chip />
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-neutral-100 border-b border-neutral-100">
+          <KVCell k="Export Formats"     v={MODEL.familyInfo.exportFmts}  chip />
+          <KVCell k="Benchmark Datasets" v={MODEL.familyInfo.benchmarks}       />
+          <KVCell k="Supported Metrics"  v={MODEL.familyInfo.metrics}     chip />
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-neutral-100 border-b border-neutral-100">
+          <KVCell k="Training Docker Container" v={MODEL.familyInfo.dockerImg} />
+          <KVCell k="Training Framework"        v={MODEL.familyInfo.trainFW}   />
+          <KVCell k="Data Processing"           v={MODEL.familyInfo.dataProc}  />
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-neutral-100 border-b border-neutral-100">
+          <KVCell k="Pruning Support" v={MODEL.familyInfo.pruning} />
+          <KVCell k="Keep Private"    v={MODEL.familyInfo.private} />
+          <KVCell k="References" v={
+            <a href={MODEL.familyInfo.references[0]} target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1 h-5 px-2 rounded border border-neutral-200 bg-neutral-50 text-[10px] font-medium text-[#0284C7] hover:underline">
+              arxiv.org <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          } />
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-neutral-100">
+          <KVCell k="Code Repository Link" v={MODEL.familyInfo.repoLink} />
+          <div className="col-span-2 px-5 py-4">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-1.5">Description</span>
+            <p className="text-[12px] text-neutral-600 leading-relaxed">{MODEL.familyInfo.description}</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Model Architectures */}
+      <Card className="overflow-hidden">
+        <SectionHead title="Model Architectures" sub="Available variants within this model family" />
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr className="bg-neutral-50 border-b border-neutral-100">
+              {[["Model Name", "left"], ["Model Key", "left"], ["Params (Millions)", "right"]].map(([h, a]) => (
+                <th key={h} className={cn("py-2.5 px-5 text-[10px] font-bold uppercase tracking-wider text-neutral-500",
+                  a === "right" ? "text-right" : "text-left")}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {MODEL.architectures.map((arch, i) => (
+              <tr key={arch.key} className={cn("border-b border-neutral-50 hover:bg-neutral-50 transition-colors",
+                i % 2 === 0 ? "bg-white" : "bg-neutral-50/30")}>
+                <td className="px-5 py-3 font-semibold text-neutral-800">{arch.name}</td>
+                <td className="px-5 py-3 font-mono text-neutral-500">{arch.key}</td>
+                <td className="px-5 py-3 text-right font-mono font-semibold text-neutral-700">{arch.paramsM}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 3 — TRAINING ANALYSIS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function AnalysisSection({
+  title, metric, color, data,
+}: { title: string; metric: "loss" | "acc"; color: string; data: typeof EPOCH_DATA }) {
+  const [models,    setModels]    = useState<string[]>(["Skin-Cancer-Exp-1-1"]);
+  const [splits,    setSplits]    = useState<string[]>(["train", "val"]);
+  const [epochRange,setEpochRange]= useState<number[]>([0, 50]);
+  const [selMetric, setSelMetric] = useState(metric === "loss" ? "loss" : "acc@1");
+
+  const trimmed = data.filter((d) => d.epoch >= epochRange[0] && d.epoch <= epochRange[1]);
+
+  return (
+    <Card className="overflow-hidden">
+      <SectionHead title={title} />
+      <div className="flex">
+        {/* Filter sidebar */}
+        <div className="w-64 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-4 bg-neutral-50/30">
+          <MultiChipSelect label="Select Models (Max 3)"
+            values={models} onRemove={(v) => setModels(p => p.filter(x => x !== v))}
+            options={["Skin-Cancer-Exp-1-1", "RegNet-Y-timm_1280"]}
+            onAdd={(v) => models.length < 3 && setModels(p => [...p, v])}
+            placeholder="Add models…" />
+          <MultiChipSelect label="Select Split"
+            values={splits} onRemove={(v) => setSplits(p => p.filter(x => x !== v))}
+            options={["train", "val", "test"]} onAdd={(v) => setSplits(p => [...p, v])}
+            placeholder="Select splits…" />
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs text-neutral-600">Select Metric</Label>
+            <Select value={selMetric} onValueChange={setSelMetric}>
+              <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {["loss", "acc@1", "acc@5", "f1_score", "precision"].map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-neutral-600">Epoch Range</Label>
+              <span className="text-[10px] font-mono text-neutral-400">{epochRange[0]}–{epochRange[1]}</span>
+            </div>
+            <Slider value={epochRange} onValueChange={setEpochRange} min={0} max={50} step={5}
+              className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
+          </div>
+        </div>
+
+        {/* Chart */}
+        <div className="flex-1 p-5">
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={trimmed} margin={{ top: 8, right: 24, bottom: 24, left: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+              <XAxis dataKey="epoch" tick={{ fontSize: 10, fill: "#94A3B8" }}
+                label={{ value: "Epoch", position: "insideBottom", offset: -14, fontSize: 10, fill: "#94A3B8" }} />
+              <YAxis tick={{ fontSize: 10, fill: "#94A3B8", fontFamily: "JetBrains Mono, monospace" }}
+                domain={metric === "loss" ? ["auto", "auto"] : [0, 1]}
+                tickFormatter={(v) => metric === "loss" ? v.toFixed(2) : v.toFixed(2)} />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className="bg-white border border-neutral-200 rounded px-3 py-2 shadow text-[11px]">
+                      <p className="font-semibold text-neutral-700 mb-1">Epoch {label}</p>
+                      {payload.map((p) => (
+                        <p key={p.dataKey} className="font-mono" style={{ color: p.color }}>
+                          {p.name}: {Number(p.value).toFixed(4)}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                }}
+              />
+              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+              {splits.includes("train") && (
+                <Line dataKey={metric === "loss" ? "train_loss" : "train_acc"} name="train" stroke={color}
+                  dot={false} strokeWidth={2} activeDot={{ r: 4 }} />
+              )}
+              {splits.includes("val") && (
+                <Line dataKey={metric === "loss" ? "val_loss" : "val_acc"} name="val" stroke="#0284C7"
+                  dot={false} strokeWidth={2} strokeDasharray="5 3" activeDot={{ r: 4 }} />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function TrainingAnalysisTab() {
+  return (
+    <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
+      <AnalysisSection title="Model Training Analysis for Loss"        metric="loss" color="#EF4444" data={EPOCH_DATA} />
+      <AnalysisSection title="Model Training Analysis for Performance" metric="acc"  color={TEAL}    data={EPOCH_DATA} />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 4 — MODEL TEST
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function ModelTestTab() {
+  const [uploadMode, setUploadMode] = useState<"upload" | "url">("upload");
+  const [imageUrl,   setImageUrl]   = useState("");
+  const [dragging,   setDragging]   = useState(false);
+  const [predicted,  setPredicted]  = useState<null | { cls: string; confidence: number }>(null);
+  const [loading,    setLoading]    = useState(false);
+
+  const handlePredict = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setPredicted({ cls: "benign", confidence: 0.9231 });
+      setLoading(false);
+    }, 1800);
+  };
+
+  return (
+    <div className="p-6 bg-[#F8FAFC] min-w-0">
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+          <button className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#021d18] text-white text-[12px] font-semibold hover:bg-[#032b22] transition-colors">
+            Create Deployment <ExternalLink className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Sub-tabs */}
+        <div className="flex border-b border-neutral-100">
+          {(["upload", "url"] as const).map((m) => (
+            <button key={m} onClick={() => setUploadMode(m)}
+              className={cn("px-5 py-3 text-[12px] font-semibold border-b-2 transition-colors",
+                uploadMode === m ? "text-[#00775B] border-[#00775B]" : "text-neutral-500 border-transparent hover:text-neutral-700")}>
+              {m === "upload" ? "Upload Image" : "Image URL"}
+            </button>
+          ))}
+        </div>
+
+        <div className="p-6 flex flex-col gap-5">
+          {uploadMode === "upload" && (
+            <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => { e.preventDefault(); setDragging(false); }}
+              className={cn("flex flex-col items-center justify-center gap-4 py-16 rounded-md border-2 border-dashed transition-colors cursor-pointer",
+                dragging ? "border-[#00775B] bg-[#00775B]/5" : "border-neutral-300 bg-neutral-50 hover:border-[#00775B]/50 hover:bg-neutral-100/50")}>
+              <div className="w-14 h-14 rounded-full bg-[#00775B] flex items-center justify-center shadow-lg">
+                <CloudUpload className="w-7 h-7 text-white" />
+              </div>
+              <div className="text-center">
+                <p className="text-[14px] font-semibold text-neutral-700">Drag &amp; Drop image here or Browse</p>
+                <p className="text-[12px] text-neutral-400 mt-1">Supported formats: .jpeg, .png</p>
+              </div>
+            </div>
+          )}
+
+          {uploadMode === "url" && (
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs text-neutral-600">Image URL</Label>
+              <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg" className="h-10 text-sm" />
+              <p className="text-[10px] text-neutral-400">Paste a direct URL to a publicly accessible image file</p>
+            </div>
+          )}
+
+          <button onClick={handlePredict} disabled={loading}
+            className={cn("w-full h-12 rounded-md text-[14px] font-bold text-white transition-all",
+              loading ? "bg-[#006649]" : "bg-[#021d18] hover:bg-[#032b22]")}>
+            {loading ? <span className="flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Running Inference…</span> : "Predict"}
+          </button>
+
+          {/* Prediction result */}
+          {predicted && (
+            <div className="flex items-start gap-4 p-5 rounded-md bg-[#E5FFF9] border border-[#00775B]/20">
+              <div className="w-10 h-10 rounded-full bg-[#00775B] flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold text-[#00775B]">Prediction Result</p>
+                <div className="flex items-center gap-4 mt-2">
+                  <div>
+                    <p className="text-[10px] text-[#00775B]/70 uppercase tracking-wide">Class</p>
+                    <p className="text-[20px] font-bold text-[#021d18] capitalize">{predicted.cls}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#00775B]/70 uppercase tracking-wide">Confidence</p>
+                    <p className="text-[20px] font-bold text-[#021d18]">{(predicted.confidence * 100).toFixed(2)}%</p>
+                  </div>
+                  <div className="flex-1">
+                    <div className="h-2 bg-[#00775B]/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#00775B] rounded-full" style={{ width: `${predicted.confidence * 100}%` }} />
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#00775B]/60 mt-2">Model: {MODEL.modelInfo.name} · Metric: {MODEL.metric}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 5 — EVALUATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// AUC ≈ 0.924
+const AUC = 0.924;
+
+// Classification report data
+const CLASS_REPORT = [
+  { cls: "benign",    precision: 0.937, recall: 0.821, f1: 0.875, support: 329 },
+  { cls: "malignant", precision: 0.840, recall: 0.945, f1: 0.889, support: 329 },
+  { cls: "macro avg", precision: 0.888, recall: 0.883, f1: 0.882, support: 658, isAvg: true },
+];
+
+function EvaluationTab() {
+  const [splitSel, setSplitSel] = useState("test");
+  const [thresh,   setThresh]   = useState(0.5);
+
+  const cm = CONFUSION.matrix;
+  const maxVal = Math.max(...cm.flat());
+
+  const cellHeat = (v: number) => {
+    const t = v / maxVal;
+    return `rgba(0, 119, 91, ${0.1 + t * 0.7})`;
+  };
+
+  return (
+    <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
+
+      {/* Filter bar */}
+      <Card className="p-4 flex items-end gap-4">
+        <div className="flex flex-col gap-1.5 w-40">
+          <Label className="text-xs text-neutral-600">Evaluation Split</Label>
+          <Select value={splitSel} onValueChange={setSplitSel}>
+            <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="test">Test Set</SelectItem>
+              <SelectItem value="val">Validation Set</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-2 flex-1">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-neutral-600">Decision Threshold</Label>
+            <span className="text-[11px] font-mono font-semibold text-[#00775B]">{thresh.toFixed(2)}</span>
+          </div>
+          <Slider value={[thresh]} onValueChange={([v]) => setThresh(v)} min={0.1} max={0.9} step={0.05}
+            className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
+        </div>
+        <div className="flex items-center gap-3 text-[11px]">
+          {[
+            { label: "Accuracy",  value: "84.19%", color: TEAL },
+            { label: "Macro F1",  value: "0.882",  color: "#0284C7" },
+            { label: "AUC-ROC",   value: AUC.toFixed(3), color: "#7C3AED" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="flex flex-col items-center px-4 py-2 rounded-md bg-neutral-50 border border-neutral-200">
+              <span className="text-neutral-400 text-[10px] uppercase tracking-wide">{label}</span>
+              <span className="font-bold font-mono text-[16px]" style={{ color }}>{value}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Main evaluation grid */}
+      <div className="grid grid-cols-2 gap-5">
+
+        {/* Confusion Matrix */}
+        <Card className="overflow-hidden">
+          <SectionHead title="Confusion Matrix" sub={`${splitSel === "test" ? "Test" : "Validation"} split · ${CONFUSION.labels.length} classes`} />
+          <div className="p-6 flex flex-col items-center gap-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 self-start ml-16">Predicted →</p>
+            <div className="flex gap-2">
+              {/* Y label */}
+              <div className="flex items-center pr-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400"
+                  style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actual ↓</p>
+              </div>
+              <div className="flex flex-col gap-0">
+                {/* Header row */}
+                <div className="flex items-center mb-1">
+                  <div className="w-20 h-7" />
+                  {CONFUSION.labels.map((l) => (
+                    <div key={l} className="w-28 h-7 flex items-center justify-center">
+                      <span className="text-[11px] font-semibold text-neutral-600 capitalize">{l}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Matrix rows */}
+                {cm.map((row, ri) => (
+                  <div key={ri} className="flex items-center">
+                    <div className="w-20 h-20 flex items-center justify-end pr-3">
+                      <span className="text-[11px] font-semibold text-neutral-600 capitalize">{CONFUSION.labels[ri]}</span>
+                    </div>
+                    {row.map((val, ci) => (
+                      <div key={ci} className="w-28 h-20 flex flex-col items-center justify-center rounded-sm m-0.5 relative"
+                        style={{ backgroundColor: ri === ci ? cellHeat(val) : `rgba(239,68,68,${0.05 + (val / maxVal) * 0.35})` }}>
+                        <span className="text-[20px] font-bold font-mono" style={{ color: ri === ci ? "#00775B" : "#DC2626" }}>{val}</span>
+                        <span className="text-[9px] text-neutral-500 mt-0.5">
+                          {((val / CONFUSION.matrix[ri].reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%
+                        </span>
+                        {ri === ci && (
+                          <span className="absolute top-1 right-1 text-[7px] font-bold text-[#00775B] uppercase">TP/TN</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-4 mt-2 text-[10px]">
+              <div className="flex items-center gap-1"><div className="w-4 h-4 rounded-sm bg-[#00775B]/40" /> <span className="text-neutral-500">Correct</span></div>
+              <div className="flex items-center gap-1"><div className="w-4 h-4 rounded-sm bg-red-200" /> <span className="text-neutral-500">Incorrect</span></div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Classification Report */}
+        <Card className="overflow-hidden">
+          <SectionHead title="Classification Report" sub="Per-class precision, recall, and F1-score" />
+          <div className="p-5 flex flex-col gap-4">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="border-b border-neutral-100">
+                  {["Class", "Precision", "Recall", "F1-Score", "Support"].map((h) => (
+                    <th key={h} className={cn("py-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400",
+                      h === "Class" ? "text-left" : "text-right")}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {CLASS_REPORT.map((r) => (
+                  <tr key={r.cls} className={cn("border-b border-neutral-50", r.isAvg ? "bg-neutral-50/50 font-semibold" : "")}>
+                    <td className="py-3 capitalize text-neutral-700 font-medium">{r.cls}</td>
+                    {[r.precision, r.recall, r.f1].map((v, i) => (
+                      <td key={i} className="py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {!r.isAvg && (
+                            <div className="w-12 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${v * 100}%`, backgroundColor: v > 0.88 ? TEAL : v > 0.82 ? "#F59E0B" : "#EF4444" }} />
+                            </div>
+                          )}
+                          <span className="font-mono text-neutral-700">{v.toFixed(3)}</span>
+                        </div>
+                      </td>
+                    ))}
+                    <td className="py-3 text-right font-mono text-neutral-500">{r.support}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+
+      {/* ROC Curve */}
+      <Card className="overflow-hidden">
+        <SectionHead title="ROC Curve" sub={`AUC = ${AUC.toFixed(3)} · ${splitSel === "test" ? "Test" : "Val"} split`} />
+        <div className="p-5 grid grid-cols-2 gap-6">
+          <div>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={ROC_DATA} margin={{ top: 8, right: 24, bottom: 28, left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                <XAxis dataKey="fpr" type="number" domain={[0, 1]}
+                  tick={{ fontSize: 10, fill: "#94A3B8" }}
+                  label={{ value: "False Positive Rate", position: "insideBottom", offset: -16, fontSize: 10, fill: "#94A3B8" }} />
+                <YAxis dataKey="tpr" type="number" domain={[0, 1]}
+                  tick={{ fontSize: 10, fill: "#94A3B8" }}
+                  label={{ value: "True Positive Rate", angle: -90, position: "insideLeft", offset: 12, fontSize: 10, fill: "#94A3B8" }} />
+                <Tooltip content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0].payload;
+                  return (
+                    <div className="bg-white border border-neutral-200 rounded px-2.5 py-1.5 shadow text-[11px]">
+                      <p className="font-mono">FPR: {d.fpr.toFixed(3)} · TPR: {d.tpr.toFixed(3)}</p>
+                    </div>
+                  );
+                }} />
+                <Line dataKey="tpr" stroke={TEAL} dot={false} strokeWidth={2.5} />
+                {/* Diagonal reference line – manual line via two-point data trick */}
+                <Line data={[{ fpr: 0, tpr: 0 }, { fpr: 1, tpr: 1 }]} dataKey="tpr"
+                  stroke="#E2E8F0" strokeDasharray="4 4" dot={false} strokeWidth={1.5} />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="flex items-center justify-center gap-4 mt-1 text-[11px]">
+              <div className="flex items-center gap-1.5"><div className="w-4 h-0.5 bg-[#00775B]" /> <span className="text-neutral-500">ROC (AUC = {AUC.toFixed(3)})</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-4 h-0.5 bg-neutral-200 border-dashed border-t" /> <span className="text-neutral-500">Random Classifier</span></div>
+            </div>
+          </div>
+
+          {/* Metrics summary */}
+          <div className="flex flex-col gap-4 justify-center">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Detailed Metrics</p>
+            {[
+              { label: "AUC-ROC",          value: AUC.toFixed(4),   color: "#7C3AED", bar: AUC },
+              { label: "Accuracy",          value: "0.8419",         color: TEAL,      bar: 0.842 },
+              { label: "Macro Precision",   value: "0.8885",         color: "#0284C7", bar: 0.889 },
+              { label: "Macro Recall",      value: "0.8830",         color: "#0284C7", bar: 0.883 },
+              { label: "Macro F1",          value: "0.8822",         color: "#D97706", bar: 0.882 },
+              { label: "Cohen's Kappa",     value: "0.684",          color: "#475569", bar: 0.684 },
+            ].map(({ label, value, color, bar }) => (
+              <div key={label} className="flex items-center gap-3">
+                <span className="text-[11px] text-neutral-500 w-36 shrink-0">{label}</span>
+                <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${bar * 100}%`, backgroundColor: color }} />
+                </div>
+                <span className="text-[11px] font-mono font-semibold w-14 text-right" style={{ color }}>{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 6 — EXPORT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const EXPORT_FORMATS = [
+  { id: "pytorch",     label: "PyTorch",     ext: ".pt",   desc: "Native format, best for further training",     icon: "🔥", color: "#EF4444" },
+  { id: "onnx",        label: "ONNX",        ext: ".onnx", desc: "Cross-platform, works on most runtimes",       icon: "⚙️", color: "#0284C7" },
+  { id: "tensorrt",    label: "TensorRT",    ext: ".engine",desc: "NVIDIA GPU optimised, best inference speed",  icon: "⚡", color: "#22C55E" },
+  { id: "openvino",    label: "OpenVINO",    ext: ".xml",  desc: "Intel CPU, VPU and iGPU acceleration",         icon: "🔵", color: "#0EA5E9" },
+  { id: "coreml",      label: "Core ML",     ext: ".mlmodel",desc: "Apple silicon and iPhone deployment",         icon: "🍎", color: "#6B7280" },
+  { id: "tflite",      label: "TFLite",      ext: ".tflite",desc: "Mobile and embedded edge devices",            icon: "📱", color: "#F59E0B" },
+];
+
+const HARDWARE_TARGETS = ["NVIDIA GPU (V100)", "NVIDIA Jetson", "Intel CPU", "Apple M-Series", "Raspberry Pi", "Mobile (Android)", "Mobile (iOS)"];
+
+const QUANT_OPTIONS = [
+  { id: "none",  label: "None",        desc: "No quantization, full float32 precision" },
+  { id: "fp16",  label: "FP16",        desc: "Half precision, ~2× speedup with minimal accuracy loss" },
+  { id: "int8",  label: "INT8",        desc: "Integer quantization, ~4× smaller model, hardware specific" },
+  { id: "dynamic",label: "Dynamic",    desc: "Runtime quantization, best compatibility" },
+];
+
+const PAST_EXPORTS = [
+  { fmt: "ONNX",    hw: "NVIDIA GPU",    date: "2024-11-10", size: "83.2 MB", status: "ready"   },
+  { fmt: "PyTorch", hw: "—",             date: "2024-11-10", size: "86.0 MB", status: "ready"   },
+  { fmt: "TFLite",  hw: "Mobile",        date: "2024-11-09", size: "21.5 MB", status: "failed"  },
+];
+
+function ExportTab() {
+  const [format, setFormat]       = useState("onnx");
+  const [hardware, setHardware]   = useState<string[]>(["NVIDIA GPU (V100)"]);
+  const [quant, setQuant]         = useState("none");
+  const [pruning, setPruning]     = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [done, setDone]           = useState(false);
+
+  const handleExport = () => {
+    setExporting(true);
+    setDone(false);
+    setTimeout(() => { setExporting(false); setDone(true); }, 2500);
+  };
+
+  return (
+    <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
+
+      {/* Format selection */}
+      <Card className="p-5 flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <Package className="w-4 h-4 text-neutral-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Export Format</h3>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {EXPORT_FORMATS.map(({ id, label, ext, desc, icon, color }) => (
+            <button key={id} onClick={() => setFormat(id)}
+              className={cn("flex items-start gap-3 p-4 rounded-md border text-left transition-all",
+                format === id
+                  ? "border-[#00775B] bg-[#00775B]/5 shadow-sm"
+                  : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50")}>
+              <span className="text-2xl mt-0.5 flex-shrink-0">{icon}</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className={cn("text-[12px] font-bold", format === id ? "text-[#00775B]" : "text-neutral-800")}>{label}</p>
+                  <span className="text-[9px] font-mono bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500">{ext}</span>
+                </div>
+                <p className="text-[10px] text-neutral-400 mt-0.5 leading-relaxed">{desc}</p>
+              </div>
+              {format === id && (
+                <div className="ml-auto">
+                  <div className="w-4 h-4 rounded-full bg-[#00775B] flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-[9px] font-bold">✓</span>
+                  </div>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-5">
+
+        {/* Target Hardware */}
+        <Card className="p-5 flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-neutral-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Target Hardware</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {HARDWARE_TARGETS.map((hw) => {
+              const active = hardware.includes(hw);
+              return (
+                <button key={hw} onClick={() => setHardware(p => active ? p.filter(x => x !== hw) : [...p, hw])}
+                  className={cn("h-8 px-3 rounded-md border text-[11px] font-medium transition-all",
+                    active ? "border-[#00775B] bg-[#00775B]/10 text-[#00775B]" : "border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50")}>
+                  {hw}
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Optimisation */}
+        <Card className="p-5 flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-neutral-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Optimisation</h3>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label className="text-xs text-neutral-600">Quantization</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {QUANT_OPTIONS.map(({ id, label, desc }) => (
+                <button key={id} onClick={() => setQuant(id)}
+                  className={cn("flex flex-col items-start gap-0.5 p-3 rounded-md border text-left transition-all",
+                    quant === id ? "border-[#00775B] bg-[#00775B]/5" : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50")}>
+                  <span className={cn("text-[11px] font-semibold", quant === id ? "text-[#00775B]" : "text-neutral-700")}>{label}</span>
+                  <span className="text-[9px] text-neutral-400 leading-relaxed">{desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-neutral-100">
+            <div>
+              <p className="text-[12px] font-semibold text-neutral-700">Apply Pruning</p>
+              <p className="text-[10px] text-neutral-400">Removes ~30% of weights with minimal accuracy loss</p>
+            </div>
+            <button onClick={() => setPruning(!pruning)}
+              className={cn("w-10 h-5 rounded-full transition-colors relative", pruning ? "bg-[#00775B]" : "bg-neutral-200")}>
+              <span className={cn("absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all", pruning ? "left-5" : "left-0.5")} />
+            </button>
+          </div>
+        </Card>
+      </div>
+
+      {/* Export action */}
+      <div className="flex items-center gap-4">
+        <button onClick={handleExport} disabled={exporting || hardware.length === 0}
+          className={cn("flex items-center gap-2 h-10 px-6 rounded-md text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+            done ? "bg-emerald-600" : "bg-[#00775B] hover:bg-[#006649]")}>
+          {exporting
+            ? <><RefreshCw className="w-4 h-4 animate-spin" /> Exporting…</>
+            : done
+            ? <><CheckCircle className="w-4 h-4" /> Export Complete</>
+            : <><FileDown className="w-4 h-4" /> Start Export</>}
+        </button>
+        {done && (
+          <button className="flex items-center gap-2 h-10 px-5 rounded-md border border-[#00775B] text-[#00775B] text-sm font-semibold hover:bg-[#00775B]/5 transition-colors">
+            <Download className="w-4 h-4" /> Download Model
+          </button>
+        )}
+        <p className="text-[11px] text-neutral-400">
+          Format: <span className="font-semibold text-neutral-600">{EXPORT_FORMATS.find(f => f.id === format)?.label}</span> ·
+          Quantization: <span className="font-semibold text-neutral-600">{QUANT_OPTIONS.find(q => q.id === quant)?.label}</span>
+        </p>
+      </div>
+
+      {/* Past exports */}
+      <Card className="overflow-hidden">
+        <SectionHead title="Export History" sub="Previous export jobs for this model" />
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr className="bg-neutral-50 border-b border-neutral-100">
+              {["Format", "Target Hardware", "Date", "Size", "Status", ""].map((h) => (
+                <th key={h} className={cn("py-2.5 px-5 text-[10px] font-bold uppercase tracking-wider text-neutral-500",
+                  h === "" ? "text-right" : "text-left")}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {PAST_EXPORTS.map((ex, i) => (
+              <tr key={i} className="border-b border-neutral-50 hover:bg-neutral-50 transition-colors">
+                <td className="px-5 py-3 font-semibold text-neutral-800">{ex.fmt}</td>
+                <td className="px-5 py-3 text-neutral-500">{ex.hw}</td>
+                <td className="px-5 py-3 font-mono text-neutral-400 text-[10px]">{ex.date}</td>
+                <td className="px-5 py-3 font-mono text-neutral-500">{ex.size}</td>
+                <td className="px-5 py-3">
+                  <span className={cn("inline-flex items-center gap-1 h-5 px-2 rounded-full text-[10px] font-semibold",
+                    ex.status === "ready"  ? "bg-[#E5FFF9] text-[#00775B]"  : "bg-red-50 text-red-600")}>
+                    {ex.status === "ready" ? <CheckCircle className="w-2.5 h-2.5" /> : <XCircle className="w-2.5 h-2.5" />}
+                    {ex.status}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-right">
+                  {ex.status === "ready" && (
+                    <button className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00775B] hover:underline">
+                      <Download className="w-3 h-3" /> Download
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 7 — LOGS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const LOG_LEVEL_CONFIG: Record<LogLevel, { color: string; bg: string; icon: typeof Info }> = {
+  INFO:  { color: "#0284C7", bg: "#EFF6FF", icon: Info          },
+  WARN:  { color: "#D97706", bg: "#FFFBEB", icon: AlertTriangle  },
+  ERROR: { color: "#DC2626", bg: "#FEF2F2", icon: XCircle        },
+  DEBUG: { color: "#64748B", bg: "#F8FAFC", icon: Settings2      },
+};
+
+function LogsTab() {
+  const [levelFilter, setLevelFilter] = useState<LogLevel[]>(["INFO", "WARN", "ERROR", "DEBUG"]);
+  const [search,      setSearch]      = useState("");
+  const [autoScroll,  setAutoScroll]  = useState(true);
+  const [wrap,        setWrap]        = useState(false);
+
+  const filtered = useMemo(() =>
+    MOCK_LOGS.filter((l) =>
+      levelFilter.includes(l.level) &&
+      (search === "" || l.msg.toLowerCase().includes(search.toLowerCase()) || l.source.toLowerCase().includes(search.toLowerCase()))
+    ), [levelFilter, search]);
+
+  const toggleLevel = (l: LogLevel) =>
+    setLevelFilter(p => p.includes(l) ? p.filter(x => x !== l) : [...p, l]);
+
+  return (
+    <div className="flex flex-col h-[640px] bg-[#F8FAFC] min-w-0">
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-neutral-200 bg-white flex-wrap">
+        {/* Level filters */}
+        <div className="flex items-center gap-1.5">
+          {(["INFO", "WARN", "ERROR", "DEBUG"] as LogLevel[]).map((l) => {
+            const cfg = LOG_LEVEL_CONFIG[l];
+            const active = levelFilter.includes(l);
+            const LIcon = cfg.icon;
+            return (
+              <button key={l} onClick={() => toggleLevel(l)}
+                className={cn("flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[10px] font-bold transition-all",
+                  active ? "border-current" : "border-neutral-200 text-neutral-400 hover:border-neutral-300")}
+                style={active ? { color: cfg.color, backgroundColor: cfg.bg, borderColor: `${cfg.color}40` } : {}}>
+                <LIcon className="w-3 h-3" />
+                {l}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search */}
+        <div className="relative flex-1 max-w-xs">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search logs…" className="pl-8 h-7 text-[11px]" />
+        </div>
+
+        <div className="ml-auto flex items-center gap-3 text-[11px]">
+          <label className="flex items-center gap-1.5 cursor-pointer text-neutral-500 hover:text-neutral-700">
+            <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} className="w-3 h-3 accent-[#00775B]" />
+            Wrap lines
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer text-neutral-500 hover:text-neutral-700">
+            <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} className="w-3 h-3 accent-[#00775B]" />
+            Auto-scroll
+          </label>
+          <button className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors">
+            <Copy className="w-3 h-3" /> Copy All
+          </button>
+          <button className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors">
+            <Download className="w-3 h-3" /> Download
+          </button>
+        </div>
+      </div>
+
+      {/* Log count summary */}
+      <div className="flex items-center gap-4 px-5 py-1.5 bg-neutral-50 border-b border-neutral-100 text-[10px]">
+        <span className="text-neutral-400">Showing <span className="font-semibold text-neutral-700">{filtered.length}</span> of {MOCK_LOGS.length} entries</span>
+        {(["INFO", "WARN", "ERROR", "DEBUG"] as LogLevel[]).map((l) => {
+          const count = MOCK_LOGS.filter(x => x.level === l).length;
+          const cfg = LOG_LEVEL_CONFIG[l];
+          return (
+            <span key={l} className="font-semibold" style={{ color: cfg.color }}>{count} {l}</span>
+          );
+        })}
+      </div>
+
+      {/* Log stream */}
+      <div className="flex-1 overflow-y-auto font-mono text-[11px] bg-[#0C1B16]">
+        {filtered.map((log, i) => {
+          const cfg = LOG_LEVEL_CONFIG[log.level];
+          const LIcon = cfg.icon;
+          return (
+            <div key={i}
+              className={cn("flex items-start gap-0 border-b transition-colors group",
+                log.level === "ERROR" ? "border-red-900/30 bg-red-950/30 hover:bg-red-950/50" :
+                log.level === "WARN"  ? "border-amber-900/20 bg-amber-950/20 hover:bg-amber-950/30" :
+                log.level === "DEBUG" ? "border-neutral-800/50 hover:bg-white/3" :
+                "border-neutral-800/40 hover:bg-white/3")}>
+              {/* Line number */}
+              <span className="w-10 flex-shrink-0 text-center py-2 text-neutral-600 select-none border-r border-neutral-800/50 text-[10px]">
+                {i + 1}
+              </span>
+              {/* Timestamp */}
+              <span className="flex-shrink-0 w-36 py-2 px-3 text-neutral-500 border-r border-neutral-800/30">
+                {log.ts.split(" ")[1]}
+              </span>
+              {/* Level badge */}
+              <span className="flex-shrink-0 w-14 py-2 flex items-center justify-center" style={{ color: cfg.color }}>
+                <LIcon className="w-3 h-3" />
+              </span>
+              {/* Source */}
+              <span className="flex-shrink-0 w-20 py-2 px-1 text-[#4CAF7D] border-r border-neutral-800/30 truncate">
+                [{log.source}]
+              </span>
+              {/* Message */}
+              <span className={cn("py-2 px-3 text-neutral-300 flex-1",
+                wrap ? "whitespace-pre-wrap break-all" : "whitespace-nowrap overflow-hidden text-ellipsis",
+                log.level === "ERROR" ? "text-red-300" :
+                log.level === "WARN"  ? "text-amber-300" : "")}>
+                {log.msg}
+              </span>
+              {/* Copy row button (shows on hover) */}
+              <button className="opacity-0 group-hover:opacity-100 transition-opacity py-2 px-2 text-neutral-500 hover:text-white">
+                <Copy className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        })}
+        {/* Terminal cursor */}
+        <div className="flex items-center gap-2 px-4 py-2 text-neutral-600">
+          <Terminal className="w-3 h-3" />
+          <span className="animate-pulse">█</span>
+        </div>
+      </div>
+
+      {/* Status bar */}
+      <div className="flex items-center gap-3 px-5 py-1.5 bg-[#021d18] border-t border-neutral-800 text-[10px]">
+        <span className="flex items-center gap-1.5 text-[#00775B]">
+          <CheckCircle className="w-3 h-3" /> Training Complete
+        </span>
+        <span className="text-neutral-500">Job: {MODEL.name.slice(0, 28)}…</span>
+        <span className="ml-auto text-neutral-500">{MOCK_LOGS.length} log entries · 2h 21m 47s total</span>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN — ModelDetail
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface ModelDetailProps {
+  job: TrainingJob;
+  onBack: () => void;
+}
+
+export function ModelDetail({ job, onBack }: ModelDetailProps) {
+  const [activeTab, setActiveTab] = useState<MTab>("summary");
+
+  return (
+    <div className="flex flex-col h-full min-w-0">
+
+      {/* Breadcrumb + tab bar */}
+      <div className="bg-white border-b border-neutral-200">
+        {/* Back + name */}
+        <div className="flex items-center gap-3 px-5 py-2.5 border-b border-neutral-100">
+          <button onClick={onBack}
+            className="flex items-center gap-1.5 text-[12px] text-neutral-500 hover:text-[#00775B] transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Training</span>
+          </button>
+          <ChevronRight className="w-3.5 h-3.5 text-neutral-300" />
+          <span className="text-[12px] font-semibold text-neutral-800 truncate max-w-xs">{MODEL.name}</span>
+          <span className="font-mono text-[10px] bg-neutral-100 text-neutral-500 h-5 px-2 rounded inline-flex items-center ml-1 flex-shrink-0">
+            {job.id}
+          </span>
+        </div>
+
+        {/* Tab bar */}
+        <div className="flex items-center overflow-x-auto px-2">
+          {MTABS.map(({ id, label }) => (
+            <button key={id} onClick={() => setActiveTab(id)}
+              className={cn("relative flex-shrink-0 px-4 py-3 text-[12px] font-semibold transition-colors whitespace-nowrap",
+                activeTab === id ? "text-[#00775B]" : "text-neutral-500 hover:text-neutral-700")}>
+              {label}
+              {activeTab === id && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00775B] rounded-t-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Context bar */}
+      <ModelHeaderBar />
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto min-w-0">
+        {activeTab === "summary"     && <SummaryTab />}
+        {activeTab === "hyperparams" && <HyperparametersTab />}
+        {activeTab === "analysis"    && <TrainingAnalysisTab />}
+        {activeTab === "model-test"  && <ModelTestTab />}
+        {activeTab === "evaluation"  && <EvaluationTab />}
+        {activeTab === "export"      && <ExportTab />}
+        {activeTab === "logs"        && <LogsTab />}
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,7 @@ import { ServicesPage } from "@/app/components/pages/ServicesPage";
 import { PartnersPage } from "@/app/components/pages/PartnersPage";
 import { ComputePage } from "@/app/components/pages/ComputePage";
 import { BYOMPage } from "@/app/components/pages/BYOMPage";
+import { PublishPage } from "@/app/components/pages/PublishPage";
 
 interface MarketplaceAppProps {
   onPlatformSwitch?: (app: string) => void;
@@ -27,6 +28,7 @@ export default function App({ onPlatformSwitch }: MarketplaceAppProps = {}) {
       case "dashboard": return <MarketplaceDashboard />;
       case "services":  return <ServicesPage />;
       case "partners":  return <PartnersPage />;
+      case "publish":   return <PublishPage />;
       case "compute":   return <ComputePage />;
       case "byom":      return <BYOMPage />;
       default: return (

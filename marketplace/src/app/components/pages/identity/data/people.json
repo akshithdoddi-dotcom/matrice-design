@@ -1,0 +1,206 @@
+{
+  "_note": "Save photos to /public/people/ — filenames listed per person below.",
+  "people": [
+    {
+      "id": "f1",
+      "photo_file": "marcus-webb.jpg",
+      "display_name": "Marcus Webb",
+      "initials": "MW",
+      "tracker_id": 3,
+      "match_status": "MATCHED",
+      "list_membership": "BLACKLIST",
+      "edge_case": "Known threat — multi-camera journey, unauthorised entry, active blacklist alert",
+      "last_detection": {
+        "timestamp": "2026-04-06 · 14:31:22 IST",
+        "camera_id": "CAM-LB-01",
+        "camera_label": "Main Lobby",
+        "match_confidence": 94.7,
+        "detection_confidence": 96.0,
+        "duration_in_frame_sec": 6.1,
+        "frame_number": "22,134"
+      },
+      "metadata": null,
+      "vip_info": null,
+      "enrollment": {
+        "enrolled_date": "2025-02-10",
+        "enrolled_by": "security@hq.com",
+        "last_seen_before": "2026-03-12 · 11:14 · South Entrance",
+        "total_appearances": 7,
+        "monthly_appearances": 3
+      },
+      "journey": [
+        { "seq": 1, "camera": "Parking Garage", "camera_id": "CAM-PG-01", "time": "08:52", "confidence": 89.2, "duration": 3.8,  "direction": "Entered via vehicle drop-off",        "alerts": [] },
+        { "seq": 2, "camera": "South Entrance", "camera_id": "CAM-SE-01", "time": "08:58", "confidence": 91.8, "duration": 38.0, "direction": "Entered building through side door",   "alerts": ["UNAUTHORISED ENTRY"] },
+        { "seq": 3, "camera": "North Entrance", "camera_id": "CAM-NE-01", "time": "14:11", "confidence": 92.3, "duration": 2.2,  "direction": "Re-entered via north corridor",        "alerts": [] },
+        { "seq": 4, "camera": "Main Lobby",     "camera_id": "CAM-LB-01", "time": "14:31", "confidence": 94.7, "duration": 6.1,  "direction": "Currently active in main lobby",      "alerts": ["BLACKLIST ACTIVE"] }
+      ],
+      "journey_transit": ["6 min", "5h 13min", "20 min"],
+      "journey_summary": { "start_time": "08:52", "end_time": "14:31", "total_duration_min": 339 }
+    },
+    {
+      "id": "f2",
+      "photo_file": "elena-petrov.jpg",
+      "display_name": "Unknown #88",
+      "initials": "?",
+      "tracker_id": 88,
+      "match_status": "UNMATCHED",
+      "list_membership": "UNKNOWN",
+      "edge_case": "Recurring unidentified individual — 11 appearances over 4 days, high-dwell pattern, not enrolled",
+      "last_detection": {
+        "timestamp": "2026-04-06 · 14:30:55 IST",
+        "camera_id": "CAM-SE-01",
+        "camera_label": "South Entrance",
+        "match_confidence": 0,
+        "detection_confidence": 63.1,
+        "duration_in_frame_sec": 38.0,
+        "frame_number": "18,441"
+      },
+      "metadata": null,
+      "vip_info": null,
+      "enrollment": null,
+      "recognition_attempt": {
+        "best_match_score": 61.2,
+        "threshold": 75.0,
+        "possible_reasons": [
+          "Person not enrolled in the system",
+          "Sub-optimal face angle at South Entrance",
+          "Possible partial occlusion detected"
+        ]
+      },
+      "appearance_summary": {
+        "total_appearances": 11,
+        "days_seen": 4,
+        "cameras_seen": ["South Entrance (×9)", "Main Lobby (×2)"],
+        "avg_dwell_sec": 38,
+        "typical_time_window": "08:30–09:20",
+        "recurring_badge": true
+      },
+      "journey": [
+        { "seq": 1, "camera": "South Entrance", "camera_id": "CAM-SE-01", "time": "08:41", "confidence": 62.0, "duration": 31.0, "direction": "Arrived at south entrance",  "alerts": [] },
+        { "seq": 2, "camera": "Main Lobby",     "camera_id": "CAM-LB-01", "time": "09:05", "confidence": 61.4, "duration": 18.0, "direction": "Entered main lobby area",     "alerts": [] },
+        { "seq": 3, "camera": "South Entrance", "camera_id": "CAM-SE-01", "time": "14:30", "confidence": 63.1, "duration": 38.0, "direction": "Returned — prolonged dwell",  "alerts": ["HIGH DWELL"] }
+      ],
+      "journey_transit": ["24 min", "5h 25min"],
+      "journey_summary": { "start_time": "08:41", "end_time": "14:30", "total_duration_min": 349 }
+    },
+    {
+      "id": "f3",
+      "photo_file": "rajesh-mehta.jpg",
+      "display_name": "Rajesh Mehta",
+      "initials": "RM",
+      "tracker_id": 7,
+      "match_status": "MATCHED",
+      "list_membership": "VIP",
+      "edge_case": "VIP executive — escort protocol required, single entry, notify security on detection",
+      "last_detection": {
+        "timestamp": "2026-04-06 · 14:31:10 IST",
+        "camera_id": "CAM-NE-01",
+        "camera_label": "North Entrance",
+        "match_confidence": 97.3,
+        "detection_confidence": 98.1,
+        "duration_in_frame_sec": 3.2,
+        "frame_number": "31,042"
+      },
+      "metadata": {
+        "employee_id": "EXC-007",
+        "department": "Executive",
+        "access_level": "L5 — Unrestricted"
+      },
+      "vip_info": {
+        "title": "Chief Executive Officer",
+        "protocol": "Notify Chief of Security on arrival. Escort to boardroom required.",
+        "escort": true
+      },
+      "enrollment": {
+        "enrolled_date": "2024-01-05",
+        "enrolled_by": "security@hq.com",
+        "last_seen_before": "2026-04-04 · 09:22 · North Entrance",
+        "total_appearances": 201,
+        "monthly_appearances": 18
+      },
+      "journey": [
+        { "seq": 1, "camera": "North Entrance", "camera_id": "CAM-NE-01", "time": "14:31", "confidence": 97.3, "duration": 3.2, "direction": "Arrived — escort protocol active", "alerts": ["VIP ARRIVAL"] }
+      ],
+      "journey_transit": [],
+      "journey_summary": { "start_time": "14:31", "end_time": "14:31", "total_duration_min": 0 }
+    },
+    {
+      "id": "f4",
+      "photo_file": "john-smith.jpg",
+      "display_name": "John Smith",
+      "initials": "JS",
+      "tracker_id": 47,
+      "match_status": "MATCHED",
+      "list_membership": "WHITELIST",
+      "edge_case": "Authorised employee — multi-camera journey, tailgate alert (authorised person can still trigger incidents), linked LPR plate",
+      "last_detection": {
+        "timestamp": "2026-04-06 · 14:29:45 IST",
+        "camera_id": "CAM-LB-01",
+        "camera_label": "Main Lobby",
+        "match_confidence": 96.1,
+        "detection_confidence": 97.2,
+        "duration_in_frame_sec": 8.3,
+        "frame_number": "14,402"
+      },
+      "metadata": {
+        "employee_id": "EMP-4821",
+        "department": "Engineering",
+        "access_level": "L3 — Restricted Zones"
+      },
+      "vip_info": null,
+      "enrollment": {
+        "enrolled_date": "2025-08-14",
+        "enrolled_by": "hr@hq.com",
+        "last_seen_before": "2026-04-05 · 17:41 · North Entrance",
+        "total_appearances": 312,
+        "monthly_appearances": 22
+      },
+      "journey": [
+        { "seq": 1, "camera": "Parking Garage", "camera_id": "CAM-PG-01", "time": "08:52", "confidence": 91.8, "duration": 4.2,  "direction": "Entering from street level",  "alerts": [],                     "lpr": "KA05MJ4421" },
+        { "seq": 2, "camera": "South Entrance", "camera_id": "CAM-SE-01", "time": "08:58", "confidence": 93.2, "duration": 42.0, "direction": "Entering building — tailgate", "alerts": ["TAILGATE DETECTED"] },
+        { "seq": 3, "camera": "North Entrance", "camera_id": "CAM-NE-01", "time": "14:11", "confidence": 95.8, "duration": 2.1,  "direction": "Moving toward main lobby",    "alerts": [] },
+        { "seq": 4, "camera": "Main Lobby",     "camera_id": "CAM-LB-01", "time": "14:29", "confidence": 96.1, "duration": 8.3,  "direction": "In main lobby area",          "alerts": [] }
+      ],
+      "journey_transit": ["6 min", "5h 13min", "18 min"],
+      "journey_summary": { "start_time": "08:52", "end_time": "14:29", "total_duration_min": 337 }
+    },
+    {
+      "id": "f5",
+      "photo_file": "sarah-johnson.jpg",
+      "display_name": "Sarah Johnson",
+      "initials": "SJ",
+      "tracker_id": 21,
+      "match_status": "MATCHED",
+      "list_membership": "WHITELIST",
+      "edge_case": "Authorised employee — clean two-stop journey, no incidents, standard access",
+      "last_detection": {
+        "timestamp": "2026-04-06 · 14:27:14 IST",
+        "camera_id": "CAM-RC-01",
+        "camera_label": "Reception",
+        "match_confidence": 95.4,
+        "detection_confidence": 97.2,
+        "duration_in_frame_sec": 12.1,
+        "frame_number": "28,809"
+      },
+      "metadata": {
+        "employee_id": "EMP-2198",
+        "department": "Human Resources",
+        "access_level": "L2 — Standard Access"
+      },
+      "vip_info": null,
+      "enrollment": {
+        "enrolled_date": "2024-03-20",
+        "enrolled_by": "hr@hq.com",
+        "last_seen_before": "2026-04-05 · 08:51 · North Entrance",
+        "total_appearances": 187,
+        "monthly_appearances": 22
+      },
+      "journey": [
+        { "seq": 1, "camera": "North Entrance", "camera_id": "CAM-NE-01", "time": "14:06", "confidence": 94.8, "duration": 2.4,  "direction": "Entering building", "alerts": [] },
+        { "seq": 2, "camera": "Reception",      "camera_id": "CAM-RC-01", "time": "14:27", "confidence": 95.4, "duration": 12.1, "direction": "At reception desk",  "alerts": [] }
+      ],
+      "journey_transit": ["21 min"],
+      "journey_summary": { "start_time": "14:06", "end_time": "14:27", "total_duration_min": 21 }
+    }
+  ]
+}
