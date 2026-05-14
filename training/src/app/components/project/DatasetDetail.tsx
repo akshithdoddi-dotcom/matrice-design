@@ -3,7 +3,7 @@ import {
   ArrowLeft, RefreshCw, ChevronDown, ChevronRight,
   Search, X, Play, CloudUpload, HardDrive, Zap, Plus,
   LayoutGrid, List, Tag, Wand2, Layers, Shuffle,
-  SlidersHorizontal, CheckCircle, Clock, AlertCircle,
+  SlidersHorizontal, CheckCircle,
   Trash2, ImageIcon, Cpu, Settings2, Sparkles,
   FlipHorizontal, Download,
 } from "lucide-react";
@@ -148,189 +148,240 @@ const SPLIT_COLORS: Record<string, string> = {
 const CAT_COLORS = [TEAL, "#F59E0B", "#22C55E", "#7C3AED"];
 
 function SummaryTab({ dataset }: { dataset: Dataset }) {
-  const { split, categories, recentActions } = DETAIL;
+  const { split, categories } = DETAIL;
   const total = dataset.itemCount;
+  const labeled = split.train + split.test + split.val;
+  const labelPct = Math.round((labeled / total) * 100);
 
-  const splitBarData = [
-    { name: "train",      count: split.train      },
-    { name: "test",       count: split.test       },
-    { name: "validation", count: split.val        },
-    { name: "unassigned", count: split.unassigned },
+  // Proportional split segments (CSS-based visual bar)
+  const splitSegments = [
+    { key: "train",      count: split.train,      label: "Train",      color: TEAL,      pct: Math.round((split.train / total) * 100) },
+    { key: "test",       count: split.test,        label: "Test",       color: "#F59E0B", pct: Math.round((split.test  / total) * 100) },
+    { key: "val",        count: split.val,         label: "Validation", color: "#22C55E", pct: Math.round((split.val   / total) * 100) },
+    { key: "unassigned", count: split.unassigned,  label: "Unassigned", color: "#CBD5E1", pct: Math.round((split.unassigned / total) * 100) },
   ];
 
   const catBarData = categories.map((c) => ({
     name: c.name,
-    train: c.train,
-    test:  c.test,
-    val:   c.val,
-    unassigned: c.unassigned,
+    Train: c.train,
+    Test:  c.test,
+    Val:   c.val,
   }));
 
-  const [catSearch, setCatSearch]   = useState("");
-  const [catDist,   setCatDist]     = useState("all");
-  const [catSplit,  setCatSplit]    = useState("all");
-  const [classRange, setClassRange] = useState<number[]>([0, 2]);
+  const [catSearch, setCatSearch] = useState("");
+
+  const filteredCatData = catBarData.filter((c) =>
+    c.name.toLowerCase().includes(catSearch.toLowerCase())
+  );
 
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
-      {/* ── Top row: info cards + split chart + recent actions ── */}
-      <div className="grid grid-cols-12 gap-4">
-
-        {/* Info metrics (3 stacked cards) */}
-        <div className="col-span-3 flex flex-col gap-3">
-          {[
-            { label: "Version", value: DETAIL.version, icon: <Layers className="w-5 h-5 text-[#00775B]" />, color: "#00775B", bg: "#E5FFF9" },
-            { label: "Total",   value: total.toLocaleString(), icon: <ImageIcon className="w-5 h-5 text-[#0284C7]" />, color: "#0284C7", bg: "#E0F2FE" },
-            { label: "Classes", value: String(DETAIL.classes), icon: <Tag className="w-5 h-5 text-[#7C3AED]" />, color: "#7C3AED", bg: "#F3EEFF" },
-          ].map(({ label, value, icon, color, bg }) => (
-            <Card key={label} className="flex items-center gap-4 px-4 py-4">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
-                {icon}
-              </div>
-              <div>
-                <p className="text-[11px] text-neutral-400 font-medium uppercase tracking-wide">{label}</p>
-                <p className="text-[22px] font-bold font-mono leading-tight" style={{ color }}>{value}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* Split Distribution chart */}
-        <Card className="col-span-5 overflow-hidden">
-          <SectionHead title="Split Distribution" />
-          <div className="p-4">
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={splitBarData} margin={{ top: 4, right: 16, bottom: 24, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#94A3B8" }}
-                  label={{ value: "Split Type", position: "insideBottom", offset: -14, fontSize: 10, fill: "#94A3B8" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#94A3B8", fontFamily: "JetBrains Mono, monospace" }}
-                  label={{ value: "Count", angle: -90, position: "insideLeft", offset: 12, fontSize: 10, fill: "#94A3B8" }} />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const d = payload[0].payload;
-                    return (
-                      <div className="bg-white border border-neutral-200 rounded px-3 py-1.5 shadow text-[11px]">
-                        <p className="font-semibold text-neutral-800 capitalize">{d.name}</p>
-                        <p className="font-mono text-neutral-500">{d.count.toLocaleString()} items</p>
-                      </div>
-                    );
-                  }}
-                />
-                <Bar dataKey="count" radius={[2, 2, 0, 0]}>
-                  {splitBarData.map((entry) => (
-                    <Cell key={entry.name} fill={SPLIT_COLORS[entry.name] ?? "#CBD5E1"} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Recent Actions */}
-        <Card className="col-span-4">
-          <SectionHead title="Recent Actions" />
-          {recentActions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-neutral-300" />
-              </div>
-              <p className="text-[12px] text-neutral-400">No recent actions found</p>
+      {/* ── Stat strip ── */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          {
+            label: "Total Images", value: total.toLocaleString(),
+            icon: <ImageIcon className="w-4 h-4" />, color: "#0284C7", bg: "#E0F2FE",
+            sub: `${DETAIL.classes} classes`,
+          },
+          {
+            label: "Labeled", value: `${labelPct}%`,
+            icon: <Tag className="w-4 h-4" />, color: TEAL, bg: "#E5FFF9",
+            sub: `${labeled.toLocaleString()} of ${total.toLocaleString()}`,
+          },
+          {
+            label: "Version", value: DETAIL.version,
+            icon: <Layers className="w-4 h-4" />, color: "#7C3AED", bg: "#F3EEFF",
+            sub: "Current version",
+          },
+          {
+            label: "Status", value: DETAIL.status,
+            icon: <CheckCircle className="w-4 h-4" />, color: "#059669", bg: "#ECFDF5",
+            sub: `by ${DETAIL.createdBy}`,
+          },
+        ].map(({ label, value, icon, color, bg, sub }) => (
+          <Card key={label} className="flex items-center gap-4 px-5 py-4">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg, color }}>
+              {icon}
             </div>
-          ) : (
-            <div className="divide-y divide-neutral-100">
-              {recentActions.map((a, i) => (
-                <div key={i} className="flex items-start gap-3 px-4 py-3.5">
-                  <div className={cn("w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
-                    a.icon === "ok" ? "bg-[#E5FFF9]" : "bg-amber-50")}>
-                    {a.icon === "ok"
-                      ? <CheckCircle className="w-3 h-3 text-[#00775B]" />
-                      : <Clock className="w-3 h-3 text-amber-500" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] text-neutral-700 font-medium leading-tight">{a.msg}</p>
-                    <p className="text-[10px] text-neutral-400 mt-0.5">{a.time}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">{label}</p>
+              <p className="text-[20px] font-bold leading-tight font-mono" style={{ color }}>{value}</p>
+              <p className="text-[10px] text-neutral-400 mt-0.5 truncate">{sub}</p>
             </div>
-          )}
-        </Card>
+          </Card>
+        ))}
       </div>
 
-      {/* ── Category Split Distribution ── */}
+      {/* ── Split Overview (full-width visual bar) ── */}
       <Card className="overflow-hidden">
-        <SectionHead title="Category Split Distribution" />
-        <div className="flex">
-          {/* Filter sidebar */}
-          <div className="w-64 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Filters</p>
-            <Input placeholder="Search Category" className="h-9 text-sm"
-              value={catSearch} onChange={(e) => setCatSearch(e.target.value)} />
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-500">Select Distribution</Label>
-              <Select value={catDist} onValueChange={setCatDist}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="train">Train</SelectItem>
-                  <SelectItem value="test">Test</SelectItem>
-                  <SelectItem value="val">Validation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-500">Select Split</Label>
-              <Select value={catSplit} onValueChange={setCatSplit}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="stratified">Stratified</SelectItem>
-                  <SelectItem value="random">Random</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label className="text-xs text-neutral-500">Number of Classes</Label>
-              <Slider
-                value={classRange} onValueChange={setClassRange}
-                min={0} max={DETAIL.classes} step={1}
-                className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]"
-              />
-            </div>
+        <div className="px-5 pt-4 pb-3 border-b border-neutral-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-[13px] font-semibold text-neutral-800">Split Overview</h3>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Proportional distribution across all splits</p>
+          </div>
+          <span className="text-[11px] font-mono text-neutral-500">{total.toLocaleString()} total images</span>
+        </div>
+
+        <div className="p-5 flex flex-col gap-4">
+          {/* CSS proportional bar */}
+          <div className="flex h-8 rounded-md overflow-hidden gap-px">
+            {splitSegments.map((s) => (
+              <div
+                key={s.key}
+                className="flex items-center justify-center transition-all duration-300 group relative"
+                style={{ width: `${s.pct}%`, backgroundColor: s.color, minWidth: s.pct > 0 ? "2px" : 0 }}
+                title={`${s.label}: ${s.count.toLocaleString()} (${s.pct}%)`}
+              >
+                {s.pct >= 8 && (
+                  <span className="text-[10px] font-bold text-white drop-shadow-sm select-none">{s.pct}%</span>
+                )}
+              </div>
+            ))}
           </div>
 
-          {/* Horizontal stacked bar chart */}
-          <div className="flex-1 p-5">
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={catBarData} layout="vertical" margin={{ top: 8, right: 24, bottom: 8, left: 16 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "#94A3B8" }}
-                  label={{ value: "Image Count", position: "insideBottom", offset: -2, fontSize: 10, fill: "#94A3B8" }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} width={70} />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null;
-                    return (
-                      <div className="bg-white border border-neutral-200 rounded px-3 py-2 shadow text-[11px]">
-                        <p className="font-semibold text-neutral-800 capitalize mb-1">{label}</p>
-                        {payload.map((p) => (
-                          <p key={p.dataKey} className="font-mono text-neutral-500">
-                            <span style={{ color: p.fill }} className="font-medium">{p.dataKey}: </span>{p.value}
-                          </p>
-                        ))}
+          {/* Legend cards */}
+          <div className="grid grid-cols-4 gap-3">
+            {splitSegments.map((s) => (
+              <div key={s.key} className="flex flex-col gap-1 p-3 rounded-lg bg-neutral-50 border border-neutral-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                  <span className="text-[11px] font-semibold text-neutral-600">{s.label}</span>
+                </div>
+                <p className="text-[20px] font-bold font-mono leading-tight" style={{ color: s.color }}>
+                  {s.count.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-neutral-400">{s.pct}% of total</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      {/* ── Category Distribution ── */}
+      <Card className="overflow-hidden">
+        <div className="px-5 pt-4 pb-3 border-b border-neutral-100 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="text-[13px] font-semibold text-neutral-800">Category Distribution</h3>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Images per class across train / test / validation splits</p>
+          </div>
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              className="h-8 pl-8 pr-3 text-[12px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B] w-44"
+              placeholder="Search class…"
+              value={catSearch}
+              onChange={(e) => setCatSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="p-5">
+          <ResponsiveContainer width="100%" height={Math.max(filteredCatData.length * 60 + 40, 140)}>
+            <BarChart
+              data={filteredCatData}
+              layout="vertical"
+              margin={{ top: 4, right: 24, bottom: 20, left: 16 }}
+              barCategoryGap="30%"
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 10, fill: "#94A3B8" }}
+                label={{ value: "Image Count", position: "insideBottom", offset: -10, fontSize: 10, fill: "#94A3B8" }}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                width={80}
+              />
+              <Tooltip
+                cursor={{ fill: "#F8FAFC" }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const total = payload.reduce((s, p) => s + (Number(p.value) || 0), 0);
+                  return (
+                    <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2.5 shadow-lg text-[11px] min-w-[140px]">
+                      <p className="font-bold text-neutral-800 capitalize mb-2 text-[12px]">{label}</p>
+                      {payload.map((p) => (
+                        <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: p.fill as string }} />
+                            <span className="text-neutral-500 capitalize">{p.dataKey}</span>
+                          </div>
+                          <span className="font-mono font-semibold text-neutral-700">{Number(p.value).toLocaleString()}</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-neutral-100 mt-2 pt-1.5 flex justify-between">
+                        <span className="text-neutral-400">Total</span>
+                        <span className="font-mono font-bold text-neutral-700">{total.toLocaleString()}</span>
                       </div>
+                    </div>
+                  );
+                }}
+              />
+              <Legend
+                iconType="square"
+                iconSize={9}
+                wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                formatter={(val) => <span className="text-neutral-500 capitalize">{val}</span>}
+              />
+              <Bar dataKey="Train" stackId="a" fill={TEAL}      name="Train"  />
+              <Bar dataKey="Test"  stackId="a" fill="#F59E0B"   name="Test"   />
+              <Bar dataKey="Val"   stackId="a" fill="#22C55E"   name="Val"    radius={[0, 3, 3, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* Per-class mini stats table */}
+          <div className="mt-4 border border-neutral-100 rounded-lg overflow-hidden">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="bg-neutral-50 border-b border-neutral-100">
+                  <th className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Class</th>
+                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Train</th>
+                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Test</th>
+                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Val</th>
+                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Total</th>
+                  <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories
+                  .filter((c) => c.name.toLowerCase().includes(catSearch.toLowerCase()))
+                  .map((c, i) => {
+                    const rowTotal = c.train + c.test + c.val;
+                    const trainPct = Math.round((c.train / rowTotal) * 100);
+                    const catColor = CAT_COLORS[i % CAT_COLORS.length];
+                    return (
+                      <tr key={c.name} className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50/60 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-neutral-700 capitalize">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: catColor }} />
+                            {c.name}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.train.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.test.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.val.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold text-neutral-800">{rowTotal.toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${trainPct}%`, backgroundColor: catColor }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono text-neutral-400 w-8 text-right">{trainPct}%</span>
+                          </div>
+                        </td>
+                      </tr>
                     );
-                  }}
-                />
-                <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                <Bar dataKey="train" stackId="a" fill={TEAL}      name="train"      />
-                <Bar dataKey="test"  stackId="a" fill="#F59E0B"   name="test"       />
-                <Bar dataKey="val"   stackId="a" fill="#22C55E"   name="val"        radius={[0, 2, 2, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+                  })}
+              </tbody>
+            </table>
           </div>
         </div>
       </Card>
