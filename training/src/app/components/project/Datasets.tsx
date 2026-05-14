@@ -332,6 +332,7 @@ function AllDatasetsTab({ onView }: { onView: (d: Dataset) => void }) {
           )},
         ]}
         data={MOCK_PROJECT_DATASETS}
+        onRowClick={(row) => onView(row)}
       />
     </div>
   );
@@ -342,7 +343,7 @@ function AllDatasetsTab({ onView }: { onView: (d: Dataset) => void }) {
 interface DatasetsProps { project: TrainingProject; }
 
 export function Datasets({ project: _project }: DatasetsProps) {
-  const [tab,     setTab]     = useState<DTab>("upload");
+  const [tab,     setTab]     = useState<DTab>("datasets");
   const [selected, setSelected] = useState<Dataset | null>(null);
 
   if (selected) {
