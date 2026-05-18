@@ -637,7 +637,7 @@ function ModelTestTab() {
     <div className="p-6 bg-[#F8FAFC] min-w-0">
       <Card className="overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-          <button className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#021d18] text-white text-[12px] font-semibold hover:bg-[#032b22] transition-colors">
+          <button className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#004e3d] transition-colors">
             Create Deployment <ExternalLink className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -681,7 +681,7 @@ function ModelTestTab() {
 
           <button onClick={handlePredict} disabled={loading}
             className={cn("w-full h-12 rounded-md text-[14px] font-bold text-white transition-all",
-              loading ? "bg-[#006649]" : "bg-[#021d18] hover:bg-[#032b22]")}>
+              loading ? "bg-[#004e3d]" : "bg-[#00775B] hover:bg-[#004e3d]")}>
             {loading ? <span className="flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Running Inference…</span> : "Predict"}
           </button>
 
