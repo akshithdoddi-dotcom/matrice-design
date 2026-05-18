@@ -6,6 +6,7 @@ import { PartnersPage } from "@/app/components/pages/PartnersPage";
 import { ComputePage } from "@/app/components/pages/ComputePage";
 import { BYOMPage } from "@/app/components/pages/BYOMPage";
 import { PublishPage } from "@/app/components/pages/PublishPage";
+import { SettingsPage } from "@/app/components/pages/Settings";
 
 interface MarketplaceAppProps {
   onPlatformSwitch?: (app: string) => void;
@@ -31,6 +32,7 @@ export default function App({ onPlatformSwitch }: MarketplaceAppProps = {}) {
       case "publish":   return <PublishPage />;
       case "compute":   return <ComputePage />;
       case "byom":      return <BYOMPage />;
+      case "settings":  return <SettingsPage isDark={isDark} onToggleDark={() => setIsDark((d) => !d)} />;
       default: return (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <p className="text-sm font-semibold text-neutral-600 capitalize">{activePage}</p>

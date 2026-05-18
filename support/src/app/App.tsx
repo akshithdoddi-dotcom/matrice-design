@@ -4,6 +4,7 @@ import { AppLayout } from "@/app/components/layout/AppLayout";
 import { SupportDesk } from "@/app/components/pages/SupportDesk";
 import { Projects } from "@/app/components/pages/Projects";
 import { ComingSoon } from "@/app/components/pages/ComingSoon";
+import { SettingsPage } from "@/app/components/pages/Settings";
 import { Account } from "@/data/mockData";
 
 const FULL_BLEED_PAGES: Page[] = ["projects"];
@@ -41,7 +42,10 @@ export default function App({ onPlatformSwitch }: AppProps = {}) {
       {activePage === "projects" && (
         <Projects account={selectedAccount} onBack={handleBack} />
       )}
-      {activePage !== "support-desk" && activePage !== "projects" && (
+      {activePage === "settings" && (
+        <SettingsPage isDark={isDark} onToggleDark={() => setIsDark((v) => !v)} />
+      )}
+      {activePage !== "support-desk" && activePage !== "projects" && activePage !== "settings" && (
         <ComingSoon page={activePage} />
       )}
     </AppLayout>
