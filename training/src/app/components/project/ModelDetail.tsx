@@ -17,6 +17,8 @@ import {
 } from "@/app/components/ui/select";
 import { DataTable, type ColumnDef } from "@/app/components/ui/DataTable";
 import { Switch } from "@/app/components/ui/switch";
+import { Select as FESelect } from "@fe-common/components/ui/ui-select";
+import { Input as FEInput } from "@fe-common/components/ui/ui-input";
 import { TrainingJob } from "@/app/data/mockData";
 import { cn } from "@/app/lib/utils";
 
@@ -1196,45 +1198,40 @@ function ExportTab() {
         <h3 className="text-[15px] font-semibold text-neutral-800">Export Model</h3>
 
         {/* Model name */}
-        <Input
-          placeholder="Export Model Name"
+        <FEInput
+          label="Export Model Name"
+          placeholder="e.g. resnet50-export-v1"
           value={modelName}
           onChange={(e) => setModelName(e.target.value)}
-          className="h-11 text-[13px]"
         />
 
         {/* Export format select */}
-        <Select value={format} onValueChange={setFormat}>
-          <SelectTrigger className="h-11 text-[13px]">
-            <SelectValue placeholder="Export Formats" />
-          </SelectTrigger>
-          <SelectContent>
-            {EXPORT_FORMATS.map(({ id, label, ext }) => (
-              <SelectItem key={id} value={id}>
-                <span className="flex items-center gap-2">
-                  {label}
-                  <span className="text-[10px] font-mono text-neutral-400">{ext}</span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FESelect
+          label="Export Format"
+          placeholder="Select a format…"
+          value={format || null}
+          onChange={(v) => setFormat((v as string) ?? "")}
+          options={EXPORT_FORMATS.map(({ id, label, ext }) => ({
+            value: id,
+            label: `${label} (${ext})`,
+          }))}
+          searchable={false}
+        />
 
         {/* Compute select */}
-        <div className="relative">
-          <Label className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-neutral-500 z-10">Compute</Label>
-          <Select value={compute} onValueChange={setCompute}>
-            <SelectTrigger className="h-11 text-[13px] pt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">Automatically launch a new instance</SelectItem>
-              <SelectItem value="v100">NVIDIA V100</SelectItem>
-              <SelectItem value="a100">NVIDIA A100</SelectItem>
-              <SelectItem value="cpu">CPU only</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <FESelect
+          label="Compute"
+          placeholder="Select compute target…"
+          value={compute}
+          onChange={(v) => setCompute((v as string) ?? "auto")}
+          options={[
+            { value: "auto", label: "Automatically launch a new instance" },
+            { value: "v100", label: "NVIDIA V100" },
+            { value: "a100", label: "NVIDIA A100" },
+            { value: "cpu",  label: "CPU only" },
+          ]}
+          searchable={false}
+        />
 
         {/* Pruning toggle */}
         <div className="flex items-center justify-between py-1 border-t border-neutral-100">
