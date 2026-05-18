@@ -274,11 +274,6 @@ export function AppShell({
         {/* ── Main nav ── */}
         <SidebarContent className="[&::-webkit-scrollbar]:w-0">
           <SidebarGroup>
-            {navGroupLabel && (
-              <SidebarGroupLabel className="text-white/30 text-[9px] uppercase tracking-widest px-2 truncate">
-                {navGroupLabel}
-              </SidebarGroupLabel>
-            )}
             <SidebarGroupContent>
               <SidebarMenu>
                 {navItems.map((item) => {
