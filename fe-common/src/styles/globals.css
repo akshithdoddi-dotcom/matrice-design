@@ -3,6 +3,9 @@
    Import this file in your app's main CSS entry (before Tailwind utilities).
    ============================================================================ */
 
+/* ── Base tokens required by component CSS ───────────────────────────────── */
+@import "./component-tokens.css";
+
 /* ── Component-level CSS modules ────────────────────────────────────────── */
 @import "../components/ui/badge/badge.css";
 @import "../components/ui/loader/loader.css";
