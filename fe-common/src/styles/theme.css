@@ -4,9 +4,9 @@
    Matrice AI Design System v1.1 — Primitives Theme
    Principles: Trust, Precision, High-Tech, Clarity
 
-   Single source of truth — imported by all platform apps.
-   Changes here propagate to analytics, training, marketplace,
-   support, and the fe-common preview.
+   This file provides clean design tokens for the
+   primitives component system. It does NOT affect
+   the existing ui/ components which use globals.css.
    ============================================ */
 
 :root {
@@ -296,8 +296,8 @@
   /* --- Radii (4px base per design system) --- */
   --radius-sm: 2px;
   --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: 6px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
 
   /* --- Typography --- */
   --font-sans:
@@ -314,38 +314,71 @@
    ============================================ */
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--primary-glow); }
-  50%       { box-shadow: 0 0 12px 4px var(--primary-glow); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--primary-glow);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px var(--primary-glow);
+  }
 }
 
 @keyframes accordion-down {
-  from { height: 0; }
-  to   { height: var(--radix-accordion-content-height); }
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
 }
 
 @keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to   { height: 0; }
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
 }
 
 /* ============================================
@@ -379,7 +412,9 @@
    ============================================ */
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
