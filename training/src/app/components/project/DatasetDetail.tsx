@@ -3,10 +3,11 @@ import {
   ArrowLeft, RefreshCw, ChevronDown, ChevronRight,
   Search, X, Play, CloudUpload, HardDrive, Zap, Plus,
   LayoutGrid, List, Tag, Wand2, Layers, Shuffle,
-  SlidersHorizontal, CheckCircle,
+  SlidersHorizontal, CheckCircle, AlertCircle,
   Trash2, ImageIcon, Cpu, Settings2, Sparkles,
-  FlipHorizontal, Download,
+  FlipHorizontal, Download, BarChart2, Table2,
 } from "lucide-react";
+import { SegmentedControl } from "@/app/components/ui/segmented-control";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Legend,
@@ -22,6 +23,7 @@ import {
 } from "@/app/components/ui/select";
 import { Dataset } from "@/app/data/mockData";
 import { cn } from "@/app/lib/utils";
+import { DataTable, type ColumnDef } from "@/app/components/ui/DataTable";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -168,7 +170,8 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
     Val:   c.val,
   }));
 
-  const [catSearch, setCatSearch] = useState("");
+  const [catSearch, setCatSearch]   = useState("");
+  const [catView,   setCatView]     = useState<"graph" | "table">("graph");
 
   const filteredCatData = catBarData.filter((c) =>
     c.name.toLowerCase().includes(catSearch.toLowerCase())
@@ -266,123 +269,129 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
             <h3 className="text-[13px] font-semibold text-neutral-800">Category Distribution</h3>
             <p className="text-[11px] text-neutral-400 mt-0.5">Images per class across train / test / validation splits</p>
           </div>
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              className="h-8 pl-8 pr-3 text-[12px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B] w-44"
-              placeholder="Search class…"
-              value={catSearch}
-              onChange={(e) => setCatSearch(e.target.value)}
+          <div className="flex items-center gap-2">
+            {/* Graph / Table toggle */}
+            <SegmentedControl
+              size="sm"
+              value={catView}
+              onChange={(v) => setCatView(v as "graph" | "table")}
+              ariaLabel="Category distribution view"
+              options={[
+                { value: "graph", icon: <BarChart2 className="w-3.5 h-3.5" />, ariaLabel: "Graph view" },
+                { value: "table", icon: <Table2    className="w-3.5 h-3.5" />, ariaLabel: "Table view" },
+              ]}
             />
+            {/* Search */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                className="h-7 pl-8 pr-3 text-[12px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B] w-40"
+                placeholder="Search class…"
+                value={catSearch}
+                onChange={(e) => setCatSearch(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
         <div className="p-5">
-          <ResponsiveContainer width="100%" height={Math.max(filteredCatData.length * 60 + 40, 140)}>
-            <BarChart
-              data={filteredCatData}
-              layout="vertical"
-              margin={{ top: 4, right: 24, bottom: 20, left: 16 }}
-              barCategoryGap="30%"
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-              <XAxis
-                type="number"
-                tick={{ fontSize: 10, fill: "#94A3B8" }}
-                label={{ value: "Image Count", position: "insideBottom", offset: -10, fontSize: 10, fill: "#94A3B8" }}
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
-                width={80}
-              />
-              <Tooltip
-                cursor={{ fill: "#F8FAFC" }}
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null;
-                  const total = payload.reduce((s, p) => s + (Number(p.value) || 0), 0);
-                  return (
-                    <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2.5 shadow-lg text-[11px] min-w-[140px]">
-                      <p className="font-bold text-neutral-800 capitalize mb-2 text-[12px]">{label}</p>
-                      {payload.map((p) => (
-                        <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: p.fill as string }} />
-                            <span className="text-neutral-500 capitalize">{p.dataKey}</span>
-                          </div>
-                          <span className="font-mono font-semibold text-neutral-700">{Number(p.value).toLocaleString()}</span>
-                        </div>
-                      ))}
-                      <div className="border-t border-neutral-100 mt-2 pt-1.5 flex justify-between">
-                        <span className="text-neutral-400">Total</span>
-                        <span className="font-mono font-bold text-neutral-700">{total.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  );
-                }}
-              />
-              <Legend
-                iconType="square"
-                iconSize={9}
-                wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
-                formatter={(val) => <span className="text-neutral-500 capitalize">{val}</span>}
-              />
-              <Bar dataKey="Train" stackId="a" fill={TEAL}      name="Train"  />
-              <Bar dataKey="Test"  stackId="a" fill="#F59E0B"   name="Test"   />
-              <Bar dataKey="Val"   stackId="a" fill="#22C55E"   name="Val"    radius={[0, 3, 3, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-
-          {/* Per-class mini stats table */}
-          <div className="mt-4 border border-neutral-100 rounded-lg overflow-hidden">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-100">
-                  <th className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Class</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Train</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Test</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Val</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Total</th>
-                  <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories
-                  .filter((c) => c.name.toLowerCase().includes(catSearch.toLowerCase()))
-                  .map((c, i) => {
-                    const rowTotal = c.train + c.test + c.val;
-                    const trainPct = Math.round((c.train / rowTotal) * 100);
-                    const catColor = CAT_COLORS[i % CAT_COLORS.length];
+          {catView === "graph" ? (
+            <ResponsiveContainer width="100%" height={Math.max(filteredCatData.length * 60 + 40, 140)}>
+              <BarChart
+                data={filteredCatData}
+                layout="vertical"
+                margin={{ top: 4, right: 24, bottom: 20, left: 16 }}
+                barCategoryGap="30%"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 10, fill: "#94A3B8" }}
+                  label={{ value: "Image Count", position: "insideBottom", offset: -10, fontSize: 10, fill: "#94A3B8" }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                  width={80}
+                />
+                <Tooltip
+                  cursor={{ fill: "#F8FAFC" }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    const total = payload.reduce((s, p) => s + (Number(p.value) || 0), 0);
                     return (
-                      <tr key={c.name} className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50/60 transition-colors">
-                        <td className="px-4 py-3 font-semibold text-neutral-700 capitalize">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: catColor }} />
-                            {c.name}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.train.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.test.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.val.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-mono font-bold text-neutral-800">{rowTotal.toLocaleString()}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{ width: `${trainPct}%`, backgroundColor: catColor }}
-                              />
+                      <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2.5 shadow-lg text-[11px] min-w-[140px]">
+                        <p className="font-bold text-neutral-800 capitalize mb-2 text-[12px]">{label}</p>
+                        {payload.map((p) => (
+                          <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: p.fill as string }} />
+                              <span className="text-neutral-500 capitalize">{p.dataKey}</span>
                             </div>
-                            <span className="text-[10px] font-mono text-neutral-400 w-8 text-right">{trainPct}%</span>
+                            <span className="font-mono font-semibold text-neutral-700">{Number(p.value).toLocaleString()}</span>
                           </div>
-                        </td>
-                      </tr>
+                        ))}
+                        <div className="border-t border-neutral-100 mt-2 pt-1.5 flex justify-between">
+                          <span className="text-neutral-400">Total</span>
+                          <span className="font-mono font-bold text-neutral-700">{total.toLocaleString()}</span>
+                        </div>
+                      </div>
                     );
-                  })}
-              </tbody>
-            </table>
-          </div>
+                  }}
+                />
+                <Legend
+                  iconType="square"
+                  iconSize={9}
+                  wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                  formatter={(val) => <span className="text-neutral-500 capitalize">{val}</span>}
+                />
+                <Bar dataKey="Train" stackId="a" fill={TEAL}      name="Train"  />
+                <Bar dataKey="Test"  stackId="a" fill="#F59E0B"   name="Test"   />
+                <Bar dataKey="Val"   stackId="a" fill="#22C55E"   name="Val"    radius={[0, 3, 3, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            /* ── Table view ── */
+            <DataTable<{ id: string; name: string; train: number; test: number; val: number; total: number; trainPct: number; colorIdx: number }>
+              columns={[
+                { id: "name",  header: "Class", accessorKey: "name",
+                  cell: ({ row }) => (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
+                      <span className="font-semibold text-neutral-700 capitalize">{row.name}</span>
+                    </div>
+                  ) },
+                { id: "train", header: "Train", accessorKey: "train", align: "right",
+                  cell: ({ row }) => <span className="font-mono text-neutral-600">{row.train.toLocaleString()}</span> },
+                { id: "test",  header: "Test",  accessorKey: "test",  align: "right",
+                  cell: ({ row }) => <span className="font-mono text-neutral-600">{row.test.toLocaleString()}</span>  },
+                { id: "val",   header: "Val",   accessorKey: "val",   align: "right",
+                  cell: ({ row }) => <span className="font-mono text-neutral-600">{row.val.toLocaleString()}</span>   },
+                { id: "total", header: "Total", accessorKey: "total", align: "right",
+                  cell: ({ row }) => <span className="font-mono font-bold text-neutral-800">{row.total.toLocaleString()}</span> },
+                { id: "balance", header: "Balance", accessorKey: "trainPct",
+                  cell: ({ row }) => (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${row.trainPct}%`, backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
+                      </div>
+                      <span className="text-[10px] font-mono text-neutral-400 w-8 text-right">{row.trainPct}%</span>
+                    </div>
+                  ) },
+              ]}
+              data={categories
+                .filter((c) => c.name.toLowerCase().includes(catSearch.toLowerCase()))
+                .map((c, i) => {
+                  const total = c.train + c.test + c.val;
+                  return { id: c.name, name: c.name, train: c.train, test: c.test, val: c.val, total, trainPct: Math.round((c.train / total) * 100), colorIdx: i };
+                })}
+              rowIdKey="id"
+              pagination="none"
+              toolbar={false}
+              showRowCue={false}
+            />
+          )}
         </div>
       </Card>
     </div>
@@ -883,55 +892,53 @@ function DataSplittingTab({ dataset }: { dataset: Dataset }) {
 
       {/* Class distribution preview */}
       <Card className="overflow-hidden">
-        <SectionHead title="Class Distribution Preview" sub="Estimated item counts per class after applying the new split" />
-        <table className="w-full text-[12px]">
-          <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-100">
-              {["Class", "Total Items", `Train (${train}%)`, `Val (${val}%)`, `Test (${test}%)`].map((h) => (
-                <th key={h} className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {preview.map((row, i) => (
-              <tr key={row.name} className={cn("border-b border-neutral-50", i % 2 === 0 ? "bg-white" : "bg-neutral-50/30")}>
-                <td className="px-5 py-3 font-medium text-neutral-800 capitalize">{row.name}</td>
-                <td className="px-5 py-3 font-mono text-neutral-500">{row.total.toLocaleString()}</td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${train}%`, backgroundColor: TEAL }} />
-                    </div>
-                    <span className="font-mono text-neutral-600 w-12 text-right">{row.train.toLocaleString()}</span>
+        <DataTable<{ id: string; name: string; total: number; train: number; val: number; test: number }>
+          columns={[
+            { id: "name",  header: "Class",       accessorKey: "name",  cell: ({ row }) => <span className="font-medium text-neutral-800 capitalize">{row.name}</span> },
+            { id: "total", header: "Total Items",  accessorKey: "total", cell: ({ row }) => <span className="font-mono text-neutral-500">{row.total.toLocaleString()}</span> },
+            { id: "train", header: `Train (${train}%)`, accessorKey: "train",
+              cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${train}%`, backgroundColor: TEAL }} />
                   </div>
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${val}%`, backgroundColor: "#0284C7" }} />
-                    </div>
-                    <span className="font-mono text-neutral-600 w-12 text-right">{row.val.toLocaleString()}</span>
+                  <span className="font-mono text-neutral-600 w-12 text-right">{row.train.toLocaleString()}</span>
+                </div>
+              ) },
+            { id: "val",   header: `Val (${val}%)`,   accessorKey: "val",
+              cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${val}%`, backgroundColor: "#0284C7" }} />
                   </div>
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${test}%`, backgroundColor: "#7C3AED" }} />
-                    </div>
-                    <span className="font-mono text-neutral-600 w-12 text-right">{row.test.toLocaleString()}</span>
+                  <span className="font-mono text-neutral-600 w-12 text-right">{row.val.toLocaleString()}</span>
+                </div>
+              ) },
+            { id: "test",  header: `Test (${test}%)`,  accessorKey: "test",
+              cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${test}%`, backgroundColor: "#7C3AED" }} />
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="flex justify-end px-5 py-4 border-t border-neutral-100 bg-neutral-50/50">
-          <button onClick={handleSave}
-            className={cn("flex items-center gap-2 h-9 px-5 rounded-md text-sm font-semibold text-white transition-all",
-              saved ? "bg-emerald-500" : "bg-[#00775B] hover:bg-[#006649]")}>
-            {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : "Save Split Configuration"}
-          </button>
-        </div>
+                  <span className="font-mono text-neutral-600 w-12 text-right">{row.test.toLocaleString()}</span>
+                </div>
+              ) },
+          ]}
+          data={preview.map((row) => ({ id: row.name, ...row }))}
+          rowIdKey="id"
+          pagination="none"
+          toolbar={false}
+          showRowCue={false}
+          cardTitle="Class Distribution Preview"
+          cardSubTitle="Estimated item counts per class after applying the new split"
+          cardAction={
+            <button onClick={handleSave}
+              className={cn("flex items-center gap-2 h-9 px-5 rounded-md text-sm font-semibold text-white transition-all",
+                saved ? "bg-emerald-500" : "bg-[#00775B] hover:bg-[#006649]")}>
+              {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : "Save Split Configuration"}
+            </button>
+          }
+        />
       </Card>
     </div>
   );
@@ -1030,49 +1037,33 @@ function PreviewTab() {
             ))}
           </div>
         ) : (
-          <Card className="overflow-hidden">
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-100">
-                  {["#", "Filename", "Class", "Split", "Dimensions", "Size"].map((h) => (
-                    <th key={h} className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((item, i) => (
-                  <tr key={item.id} className={cn("border-b border-neutral-50 hover:bg-neutral-50 transition-colors", i % 2 === 0 ? "bg-white" : "bg-neutral-50/30")}>
-                    <td className="px-5 py-2.5 font-mono text-[10px] text-neutral-400">{item.id + 1}</td>
-                    <td className="px-5 py-2.5 font-mono text-[11px] text-neutral-600">IMG_{String(item.id + 1).padStart(4, "0")}.jpg</td>
-                    <td className="px-5 py-2.5">
-                      <span className={cn("inline-flex items-center h-5 px-2 rounded-full text-[10px] font-semibold",
-                        item.label === "benign" ? "bg-[#E5FFF9] text-[#00775B]" : "bg-amber-50 text-amber-700")}>
-                        {item.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-2.5 text-[11px] text-neutral-500 capitalize">{item.split}</td>
-                    <td className="px-5 py-2.5 font-mono text-[10px] text-neutral-400">224×224</td>
-                    <td className="px-5 py-2.5 font-mono text-[10px] text-neutral-400">48 KB</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          <DataTable<{ id: number; idx: number; label: string; split: string }>
+            columns={[
+              { id: "idx",       header: "#",          accessorKey: "idx",
+                cell: ({ row }) => <span className="font-mono text-[10px] text-neutral-400">{row.idx}</span> },
+              { id: "filename",  header: "Filename",   accessorKey: "id",
+                cell: ({ row }) => <span className="font-mono text-[11px] text-neutral-600">IMG_{String(row.idx).padStart(4, "0")}.jpg</span> },
+              { id: "class",     header: "Class",      accessorKey: "label",
+                cell: ({ row }) => (
+                  <span className={cn("inline-flex items-center h-5 px-2 rounded-full text-[10px] font-semibold",
+                    row.label === "benign" ? "bg-[#E5FFF9] text-[#00775B]" : "bg-amber-50 text-amber-700")}>
+                    {row.label}
+                  </span>
+                ) },
+              { id: "split",     header: "Split",      accessorKey: "split",
+                cell: ({ row }) => <span className="text-[11px] text-neutral-500 capitalize">{row.split}</span> },
+              { id: "dims",      header: "Dimensions", accessorKey: "id",
+                cell: () => <span className="font-mono text-[10px] text-neutral-400">224×224</span> },
+              { id: "size",      header: "Size",       accessorKey: "id",
+                cell: () => <span className="font-mono text-[10px] text-neutral-400">48 KB</span> },
+            ]}
+            data={filtered.map((item) => ({ ...item, idx: item.id + 1 }))}
+            rowIdKey="id"
+            pagination="client"
+            pageSize={24}
+            showRowCue={false}
+          />
         )}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-200 bg-white text-[11px] text-neutral-500">
-        <span>Showing {filtered.length} of {PREVIEW_ITEMS.length} items</span>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, "...", 12].map((p, i) => (
-            <button key={i}
-              className={cn("h-7 w-7 rounded text-[11px] font-medium transition-colors",
-                p === 1 ? "bg-[#00775B] text-white" : "text-neutral-500 hover:bg-neutral-100")}>
-              {p}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

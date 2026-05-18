@@ -78,6 +78,7 @@ export default function App({ onPlatformSwitch }: TrainingAppProps = {}) {
       isDark={isDark}
       onToggleDark={() => setIsDark((d) => !d)}
       onPlatformSwitch={onPlatformSwitch}
+      contentClassName="flex flex-1 flex-col overflow-hidden p-0"
     >
       {renderContent()}
     </AppLayout>

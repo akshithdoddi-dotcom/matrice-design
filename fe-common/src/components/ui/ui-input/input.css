@@ -1,0 +1,199 @@
+/* ============================================================================
+   INPUT COMPONENT
+   ============================================================================ */
+
+/* Root wrapper */
+.mui-input-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Label */
+.mui-input-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+.mui-input-required-star {
+  color: var(--color-error);
+  margin-left: var(--space-1);
+  font-weight: 500;
+}
+
+/* Base field */
+.mui-input-field {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: var(--leading-normal);
+  color: var(--input-text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-snappy),
+    box-shadow var(--duration-fast) var(--ease-snappy);
+  -webkit-font-smoothing: antialiased;
+}
+
+.mui-input-field::placeholder {
+  color: var(--input-placeholder);
+  font-size: 13px;
+}
+
+/* Hover - only when not disabled and not error */
+.mui-input-field:hover:not(:disabled):not([aria-invalid="true"]) {
+  border-color: var(--primary-main);
+}
+
+/* Focus - box-shadow trick avoids layout shift vs border-width change */
+.mui-input-field:focus:not(:disabled) {
+  border-color: var(--primary-main);
+  box-shadow: 0 0 0 1px var(--primary-main);
+}
+
+/* Error state */
+.mui-input-field[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.mui-input-field[aria-invalid="true"]:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 1px var(--color-error);
+}
+
+/* Disabled */
+.mui-input-field:disabled {
+  background-color: var(--bg-disabled);
+  border-color: var(--neutral-200);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .mui-input-field:disabled {
+  background-color: var(--bg-disabled);
+  border-color: var(--neutral-600);
+}
+
+/* -- Size variants -- */
+.mui-input-field-sm {
+  height: 32px;
+  font-size: var(--text-xs);
+  padding: 0 12px;
+}
+
+.mui-input-field-lg {
+  height: 48px;
+  font-size: var(--text-base);
+  padding: 0 16px;
+}
+
+/* -- Icon adornment padding -- */
+.mui-input-field.mui-has-start-icon {
+  padding-left: 40px;
+}
+
+.mui-input-field.mui-has-end-icon {
+  padding-right: 40px;
+}
+
+.mui-input-field-sm.mui-has-start-icon {
+  padding-left: 36px;
+}
+
+.mui-input-field-sm.mui-has-end-icon {
+  padding-right: 36px;
+}
+
+/* -- Icon elements -- */
+.mui-input-icon-adornment {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--neutral-500);
+  pointer-events: none;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+.mui-input-icon-adornment > svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mui-input-icon-adornment-start {
+  left: 12px;
+}
+
+.mui-input-icon-adornment-end {
+  right: 12px;
+}
+
+/* -- Password toggle -- */
+.mui-input-password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--neutral-500);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast) var(--ease-snappy);
+  line-height: 0;
+}
+
+.mui-input-password-toggle:hover {
+  color: var(--text-primary);
+}
+
+.mui-input-password-toggle:focus-visible {
+  outline: 2px solid var(--primary-main);
+  outline-offset: 2px;
+}
+
+/* -- Helper & Error text -- */
+.mui-input-helper-text {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+  line-height: var(--leading-normal);
+}
+
+.mui-input-error-text {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--color-error);
+  margin-top: var(--space-1);
+  line-height: var(--leading-normal);
+}
+
+/* -- Webkit autofill fix -- */
+.mui-input-field:-webkit-autofill,
+.mui-input-field:-webkit-autofill:hover,
+.mui-input-field:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px var(--input-bg) inset !important;
+  -webkit-text-fill-color: var(--input-text) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}

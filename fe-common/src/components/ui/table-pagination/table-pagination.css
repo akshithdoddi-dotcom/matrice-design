@@ -1,0 +1,26 @@
+/* Range summary: labels (Showing / of) vs numbers — design typography */
+.mui-table-pagination-summary {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0;
+  color: #64748b;
+}
+
+.mui-table-pagination-summary-reg {
+  font-weight: 400;
+}
+
+.mui-table-pagination-summary-num {
+  font-weight: 600;
+}
+
+/* Prev/next when there is no adjacent page (disabled control) */
+.mui-table-pagination-nav .mui-btn:disabled,
+.mui-table-pagination-nav .mui-btn[disabled] {
+  background-color: #e2e8f0;
+  color: #94a3b8;
+  opacity: 1;
+}

@@ -14,6 +14,7 @@ import {
   HelpCircle,
   Monitor,
   BarChart3,
+  Store,
   Wrench,
   Shield,
   Check,
@@ -68,10 +69,12 @@ const MatriceIcon = () => (
 
 // ── Platform switcher data ─────────────────────────────────────────────────
 const platforms = [
-  { icon: Monitor,  label: "Matrice VMS",       shortcut: "1" },
-  { icon: BarChart3,label: "Matrice Analytics",  shortcut: "2" },
-  { icon: Wrench,   label: "Matrice Support",    shortcut: "3", active: true },
-  { icon: Shield,   label: "Matrice Internal",   shortcut: "4" },
+  { id: "vms",         icon: Monitor,  label: "Matrice VMS",         shortcut: "1" },
+  { id: "analytics",   icon: BarChart3,label: "Matrice Analytics",   shortcut: "2" },
+  { id: "training",    icon: Cpu,      label: "Matrice Training",    shortcut: "3" },
+  { id: "marketplace", icon: Store,    label: "Matrice Marketplace", shortcut: "4" },
+  { id: "support",     icon: Wrench,   label: "Matrice Support",     shortcut: "5", active: true },
+  { id: "internal",    icon: Shield,   label: "Matrice Internal",    shortcut: "6" },
 ];
 
 // ── Nav items ──────────────────────────────────────────────────────────────
@@ -94,6 +97,7 @@ interface AppSidebarProps {
   onToggleCollapse: () => void;
   isDark: boolean;
   onToggleDark: () => void;
+  onPlatformSwitch?: (app: string) => void;
 }
 
 export function AppSidebar({
@@ -103,6 +107,7 @@ export function AppSidebar({
   onToggleCollapse,
   isDark,
   onToggleDark,
+  onPlatformSwitch,
 }: AppSidebarProps) {
   const [platformOpen, setPlatformOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -144,7 +149,7 @@ export function AppSidebar({
               <button
                 key={p.shortcut}
                 className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-white/5 transition-colors"
-                onClick={() => setPlatformOpen(false)}
+                onClick={() => { setPlatformOpen(false); onPlatformSwitch?.(p.id); }}
               >
                 <div className="w-5 h-5 rounded border border-white/15 flex items-center justify-center flex-shrink-0">
                   <p.icon className="w-3 h-3 text-white/60" />

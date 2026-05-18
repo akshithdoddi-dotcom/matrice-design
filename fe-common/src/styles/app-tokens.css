@@ -1,0 +1,98 @@
+/* ============================================================================
+   APP-SPECIFIC TOKENS
+   ============================================================================
+   These tokens belong to consuming applications (e.g., fe-internal), not the
+   design library. They were extracted from globals.css to keep the library
+   focused on design-system primitives.
+
+   USAGE:
+   Import this file in your app's globals.css AFTER the library import:
+
+     @import "@matrice-ai/ui/styles.css" layer(components);
+     @import "@matrice-ai/ui/styles/app-tokens.css" layer(app);
+
+   Or copy these tokens into your own :root and customise as needed.
+   ============================================================================ */
+
+:root {
+  /* --- APPSTORE --- */
+  --appstore-card-gradient: linear-gradient(300deg, #ddfdf7 0%, #baf7eb 100%);
+
+  /* --- PROJECT CARDS --- */
+  --project-card-bg: var(--bg-body);
+  --project-card-border: var(--neutral-200);
+  --project-card-hover-border: var(--primary-main);
+  --project-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --project-card-hover-shadow: 0 4px 16px rgba(0, 119, 91, 0.15);
+  --project-card-gradient-active: linear-gradient(
+    135deg,
+    var(--neutral-white) 0%,
+    var(--primary-subtle) 100%
+  );
+  --project-card-gradient-disabled: linear-gradient(
+    135deg,
+    var(--neutral-100) 0%,
+    var(--neutral-200) 100%
+  );
+  --project-chip-text: var(--neutral-white);
+
+  /* --- PROJECT TYPE COLORS --- */
+  --project-role-monitor: #6366f1;
+  --project-type-classification: #8b5cf6;
+  --project-type-detection: #ec4899;
+  --project-type-segmentation: #f59e0b;
+  --project-type-tracking: #10b981;
+  --project-type-activity: #3b82f6;
+  --project-type-pose: #ef4444;
+  --project-type-ocr: #14b8a6;
+  --project-type-similarity: #f97316;
+
+  /* --- PROJECT LAYOUT --- */
+  --color-bg-soft: #f7fafa;
+  --color-bg-teal: rgba(200, 249, 239, 0.5);
+  --project-sidebar-bg: var(--neutral-white);
+  --project-content-bg: #ecfdf5;
+  --project-panel-bg: #f0fdf9;
+  --project-section-border: #00956d;
+
+  /* --- COLLAPSE BUTTON --- */
+  --collapse-btn-bg: #00775b;
+  --collapse-btn-hover-bg: #004e3d;
+  --collapse-btn-icon: #ffffff;
+}
+
+[data-theme="dark"] {
+  /* --- APPSTORE --- */
+  --appstore-card-gradient: linear-gradient(300deg, #0f2a24 0%, #132f27 100%);
+
+  /* --- PROJECT CARDS --- */
+  --project-card-bg: var(--bg-body);
+  --project-card-border: #334155;
+  --project-card-hover-border: #00775b;
+  --project-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --project-card-hover-shadow: 0 4px 20px rgba(0, 119, 91, 0.25);
+  --project-card-gradient-active: linear-gradient(
+    135deg,
+    #1e293b 0%,
+    #0a2922 50%,
+    #0f3d32 100%
+  );
+  --project-card-gradient-disabled: linear-gradient(
+    135deg,
+    #1e293b 0%,
+    #334155 100%
+  );
+
+  /* --- PROJECT LAYOUT --- */
+  --color-bg-soft: #0f1d1a;
+  --color-bg-teal: rgba(0, 119, 91, 0.1);
+  --project-sidebar-bg: #0a1614;
+  --project-content-bg: #0d1f1a;
+  --project-panel-bg: #0a1916;
+  --project-section-border: #00775b;
+
+  /* --- COLLAPSE BUTTON --- */
+  --collapse-btn-bg: #00775b;
+  --collapse-btn-hover-bg: #004e3d;
+  --collapse-btn-icon: #ffffff;
+}

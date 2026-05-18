@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import TrainingApp from "@training/app/App";
 import MarketplaceApp from "@marketplace/app/App";
+import SupportApp from "@support/app/App";
+import FeCommonApp from "@fe-common/preview/App";
 import { SeverityIcon } from "@/app/components/ui/SeverityIcon";
 import { Page } from "@/app/components/layout/Sidebar";
 import { AppLayout } from "@/app/components/layout/AppLayout";
@@ -208,16 +211,41 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
-type ActiveApp = "analytics" | "training" | "marketplace";
-
-/** Root switcher — picks which app to render based on platform selection */
+/** Root — URL-driven platform router */
 export default function App() {
-  const [activeApp, setActiveApp] = useState<ActiveApp>("analytics");
-  const handleSwitch = (app: string) => setActiveApp(app as ActiveApp);
+  const navigate = useNavigate();
+  const handleSwitch = (app: string) => navigate(app === "analytics" ? "/" : `/${app}`);
 
-  if (activeApp === "training")    return <TrainingApp    onPlatformSwitch={handleSwitch} />;
-  if (activeApp === "marketplace") return <MarketplaceApp onPlatformSwitch={handleSwitch} />;
-  return <AnalyticsApp onPlatformSwitch={handleSwitch} />;
+  return (
+    <Routes>
+      <Route path="/"             element={<AnalyticsApp   onPlatformSwitch={handleSwitch} />} />
+      <Route path="/analytics/*"  element={<AnalyticsApp   onPlatformSwitch={handleSwitch} />} />
+      <Route path="/training/*"   element={<TrainingApp    onPlatformSwitch={handleSwitch} />} />
+      <Route path="/marketplace/*" element={<MarketplaceApp onPlatformSwitch={handleSwitch} />} />
+      <Route path="/support/*"    element={<SupportApp     onPlatformSwitch={handleSwitch} />} />
+      <Route path="/fe-common/*"   element={<FeCommonApp        onPlatformSwitch={handleSwitch} />} />
+      <Route path="/vms"          element={<PlatformPlaceholder platform="VMS"      onPlatformSwitch={handleSwitch} />} />
+      <Route path="/internal"     element={<PlatformPlaceholder platform="Internal" onPlatformSwitch={handleSwitch} />} />
+    </Routes>
+  );
+}
+
+function PlatformPlaceholder({ platform, onPlatformSwitch }: { platform: string; onPlatformSwitch: (app: string) => void }) {
+  return (
+    <div className="flex h-screen items-center justify-center bg-[#021d18]">
+      <div className="text-center space-y-3">
+        <div className="text-white/30 text-xs font-bold uppercase tracking-widest">Matrice {platform}</div>
+        <div className="text-white text-2xl font-bold">Coming Soon</div>
+        <p className="text-white/50 text-sm">This platform is under construction.</p>
+        <button
+          onClick={() => onPlatformSwitch("analytics")}
+          className="mt-4 px-4 py-2 rounded-lg bg-[#00775B] text-white text-sm font-medium hover:bg-[#00956D] transition-colors"
+        >
+          Back to Analytics
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /** Analytics app — all existing UI lives here */
