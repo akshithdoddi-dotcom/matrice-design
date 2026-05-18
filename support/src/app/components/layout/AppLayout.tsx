@@ -51,7 +51,7 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
       onPlatformSwitch={onPlatformSwitch}
       isDark={isDark}
       onToggleDark={onToggleDark}
-      contentClassName={fullBleed ? "p-0 min-h-0" : "p-6"}
+      contentClassName={fullBleed || activePage === "settings" ? "p-0 min-h-0" : "p-6"}
     >
       {children}
     </AppShell>

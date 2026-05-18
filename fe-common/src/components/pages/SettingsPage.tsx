@@ -1877,7 +1877,7 @@ export function SettingsPage({ isDark, onToggleDark }: SettingsPageProps) {
 
         {/* Section content */}
         <main className={cn("flex-1 overflow-y-auto", isDark ? "bg-[#020617]" : "bg-[#F1F5F9]")}>
-          <div>
+          <div className="px-6 py-6">
             {renderContent()}
           </div>
         </main>
