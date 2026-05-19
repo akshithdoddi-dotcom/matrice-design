@@ -21,7 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/app/components/ui/select";
 import { Dataset } from "@/app/data/mockData";
-import { KpiCard } from "@fe-common/components/ui/kpi-card";
+import { StatCard, type StatCardData } from "@fe-common/components/ui/StatCard";
 import { Select as FESelect } from "@fe-common/components/ui/ui-select";
 import { Textarea } from "@/app/components/ui/textarea";
 import { cn } from "@/app/lib/utils";
@@ -185,39 +185,16 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
 
       {/* ── Row: Stat Cards (2×2) + Split Overview ── */}
       <div className="grid grid-cols-3 gap-4">
-        {/* 4 KPI stat cards in a 2×2 grid */}
+        {/* 4 StatCards in a 2×2 grid */}
         <div className="col-span-2 grid grid-cols-2 gap-4">
-          <KpiCard
-            type="stat" size="small"
-            label="Total Images"
-            value={total.toLocaleString()}
-            subtitle={`${DETAIL.classes} classes`}
-            badge={{ text: "ALL TIME", variant: "info" }}
-            colorTheme="blue"
-          />
-          <KpiCard
-            type="stat" size="small"
-            label="Labeled"
-            value={`${labelPct}%`}
-            subtitle={`${labeled.toLocaleString()} of ${total.toLocaleString()}`}
-            badge={{ text: "LABELED", variant: "success" }}
-            colorTheme="success"
-          />
-          <KpiCard
-            type="stat" size="small"
-            label="Version"
-            value={DETAIL.version}
-            subtitle="Current version"
-            badge={{ text: "CURRENT", variant: "neutral" }}
-          />
-          <KpiCard
-            type="stat" size="small"
-            label="Status"
-            value={DETAIL.status}
-            subtitle={`by ${DETAIL.createdBy}`}
-            badge={{ text: "LIVE", variant: "success" }}
-            colorTheme="success"
-          />
+          {([
+            { label: "Total Images", value: total.toLocaleString(),      sublabel: `${DETAIL.classes} classes`,                        num: "+2",  ref_: "vs Last Upload", dir: "up",     chip: "IMAGES",   color: "#0284C7", bgColor: "#E0F2FE" },
+            { label: "Labeled",      value: `${labelPct}%`,              sublabel: `${labeled.toLocaleString()} of ${total.toLocaleString()}`, num: "+5%", ref_: "vs Last Version", dir: "up", chip: "LABELED",  color: "#00775B", bgColor: "#E5FFF9" },
+            { label: "Version",      value: DETAIL.version,              sublabel: "Current version",                                  num: "—",   ref_: "—",              dir: "neutral", chip: "VERSION",  color: "#D97706", bgColor: "#FFFBEB" },
+            { label: "Status",       value: DETAIL.status,               sublabel: `by ${DETAIL.createdBy}`,                           num: "—",   ref_: "—",              dir: "neutral", chip: "STATUS",   color: "#059669", bgColor: "#ECFDF5" },
+          ] as StatCardData[]).map((d) => (
+            <StatCard key={d.label} d={d} compact />
+          ))}
         </div>
 
         {/* Split Overview */}
@@ -467,44 +444,43 @@ function AddDataTab() {
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC]">
 
-      {/* Row 1: Storage & Compute */}
-      <Card className="p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <HardDrive className="w-4 h-4 text-neutral-400" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Storage &amp; Compute</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-5">
-          <div className="flex flex-col gap-1.5">
-            <FESelect
-              label="Storage / Bucket Alias"
-              options={STORAGE_OPTIONS}
-              value={storage}
-              onChange={(v) => setStorage(v as string)}
-              searchable
-            />
-            <p className="text-xs text-neutral-400">Configure your bucket or use auto{" "}
-              <button className="text-[#00775B] font-medium hover:underline">+ Add Bucket</button></p>
+      {/* Row 1: Storage & Compute + Data Format — side by side */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <HardDrive className="w-4 h-4 text-neutral-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Storage &amp; Compute</h3>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <FESelect
-              label="Compute"
-              options={COMPUTE_OPTIONS}
-              value={compute}
-              onChange={(v) => setCompute(v as string)}
-            />
-            <p className="text-xs text-neutral-400">Configure your compute or use auto{" "}
-              <button className="text-[#00775B] font-medium hover:underline">+ Add Compute</button></p>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <FESelect
+                label="Storage / Bucket Alias"
+                options={STORAGE_OPTIONS}
+                value={storage}
+                onChange={(v) => setStorage(v as string)}
+                searchable
+              />
+              <p className="text-xs text-neutral-400">Configure your bucket or use auto{" "}
+                <button className="text-[#00775B] font-medium hover:underline">+ Add Bucket</button></p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <FESelect
+                label="Compute"
+                options={COMPUTE_OPTIONS}
+                value={compute}
+                onChange={(v) => setCompute(v as string)}
+              />
+              <p className="text-xs text-neutral-400">Configure your compute or use auto{" "}
+                <button className="text-[#00775B] font-medium hover:underline">+ Add Compute</button></p>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Row 2: Data Format + URL Type (2 per row) */}
-      <Card className="p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Zap className="w-4 h-4 text-neutral-400" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Data Configuration</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-5">
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-4 h-4 text-neutral-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Data Configuration</h3>
+          </div>
           <FESelect
             label="Data Format"
             options={DATA_FORMAT_OPTIONS}
@@ -514,20 +490,10 @@ function AddDataTab() {
             searchable
             clearable
           />
-          <FESelect
-            label="URL Type"
-            options={[
-              { label: "Private (using bucket alias)", value: "private" },
-              { label: "Public URL",                   value: "public"  },
-              { label: "S3 URI",                       value: "s3-uri"  },
-            ]}
-            value={urlType}
-            onChange={(v) => setUrlType(v as string)}
-          />
-        </div>
-      </Card>
+        </Card>
+      </div>
 
-      {/* Row 3: Upload / Cloud */}
+      {/* Row 2: Upload / Cloud */}
       <Card className="overflow-hidden">
         <div className="flex border-b border-neutral-100">
           {(["local", "cloud"] as const).map((m) => (
@@ -562,19 +528,29 @@ function AddDataTab() {
         )}
 
         {uploadMode === "cloud" && (
-          <div className="p-6 flex flex-col gap-5">
-            <div className="grid grid-cols-2 gap-5">
+          <div className="p-6 flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <FESelect
                 label="Cloud Provider"
                 options={CLOUD_OPTIONS}
                 value={cloudProv}
                 onChange={(v) => setCloudProv(v as string | null)}
               />
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-neutral-600">Cloud Path</label>
-                <Input placeholder="e.g. datasets/my-project/v3/" value={cloudPath}
-                  onChange={(e) => setCloudPath(e.target.value)} className="h-9 text-sm" />
-              </div>
+              <FESelect
+                label="URL Type"
+                options={[
+                  { label: "Private (using bucket alias)", value: "private" },
+                  { label: "Public URL",                   value: "public"  },
+                  { label: "S3 URI",                       value: "s3-uri"  },
+                ]}
+                value={urlType}
+                onChange={(v) => setUrlType(v as string)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-neutral-600">Cloud Path</label>
+              <Input placeholder="e.g. datasets/my-project/v3/" value={cloudPath}
+                onChange={(e) => setCloudPath(e.target.value)} className="h-9 text-sm" />
             </div>
           </div>
         )}
