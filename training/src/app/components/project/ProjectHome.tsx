@@ -70,8 +70,8 @@ function DatasetsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => voi
             className="flex items-center justify-between px-5 py-3.5 hover:bg-neutral-50/60 transition-colors group"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-[4px] bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
-                <Layers className="w-3.5 h-3.5 text-purple-500" />
+              <div className="w-8 h-8 rounded-[4px] bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                <Layers className="w-3.5 h-3.5 text-blue-500" />
               </div>
               <div className="min-w-0">
                 <p className="text-[12px] font-semibold text-neutral-800 truncate">{ds.name}</p>
@@ -86,7 +86,7 @@ function DatasetsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => voi
                 <div className="flex h-1.5 w-20 rounded-full overflow-hidden bg-neutral-100">
                   <div className="bg-[#00775B]"   style={{ width: `${ds.trainSplit}%` }} />
                   <div className="bg-[#0284C7]"   style={{ width: `${ds.valSplit}%` }} />
-                  <div className="bg-[#7C3AED]"   style={{ width: `${ds.testSplit}%` }} />
+                  <div className="bg-[#F59E0B]"   style={{ width: `${ds.testSplit}%` }} />
                 </div>
                 <span className="text-[10px] text-neutral-400 font-mono whitespace-nowrap">
                   {ds.trainSplit}/{ds.valSplit}/{ds.testSplit}
@@ -243,7 +243,7 @@ interface ProjectHomeProps {
 
 export function ProjectHome({ project, onNavigate }: ProjectHomeProps) {
   const STATS: StatCardData[] = [
-    { label: "Datasets",      value: "3",     sublabel: "Attached",       num: "+1",    ref_: "vs Last Week",  dir: "up",     chip: "DATASETS",  color: "#7C3AED", bgColor: "#F3EEFF" },
+    { label: "Datasets",      value: "3",     sublabel: "Attached",       num: "+1",    ref_: "vs Last Week",  dir: "up",     chip: "DATASETS",  color: "#0284C7", bgColor: "#E0F2FE" },
     { label: "Training Runs", value: "4",     sublabel: "All Runs",       num: "+2",    ref_: "vs Last Month", dir: "up",     chip: "RUNS",      color: "#0284C7", bgColor: "#E0F2FE" },
     { label: "Deployments",   value: "1",     sublabel: "Live Endpoints", num: "0",     ref_: "No Change",     dir: "neutral",chip: "DEPLOYED",  color: "#059669", bgColor: "#ECFDF5" },
     { label: "Best Accuracy", value: "94.2%", sublabel: "Top Run",        num: "+1.3%", ref_: "vs Prev Run",   dir: "up",     chip: "ACCURACY",  color: "#D97706", bgColor: "#FFFBEB" },

@@ -11,7 +11,7 @@ import { cn } from "@/app/lib/utils";
 const DASHBOARD_STATS: StatCardData[] = [
   { label: "Total Projects",      value: "8",  sublabel: "Build & Deploy · All Time",  num: "+2", ref_: "vs Last Month", dir: "up",     chip: "ALL TIME", color: "#00775B", bgColor: "#E5FFF9" },
   { label: "Active Training Jobs",value: "3",  sublabel: "Currently Running · Live",   num: "+1", ref_: "vs Yesterday",  dir: "up",     chip: "LIVE",     color: "#0284C7", bgColor: "#E0F2FE" },
-  { label: "Datasets",            value: "12", sublabel: "Across All Projects",         num: "0",  ref_: "No Change",     dir: "neutral",chip: "STORED",   color: "#7C3AED", bgColor: "#F3EEFF" },
+  { label: "Datasets",            value: "12", sublabel: "Across All Projects",         num: "0",  ref_: "No Change",     dir: "neutral",chip: "STORED",   color: "#0284C7", bgColor: "#E0F2FE" },
   { label: "Models Deployed",     value: "3",  sublabel: "Live API Endpoints",          num: "+1", ref_: "vs Last Week",  dir: "up",     chip: "DEPLOYED", color: "#059669", bgColor: "#ECFDF5" },
 ];
 
