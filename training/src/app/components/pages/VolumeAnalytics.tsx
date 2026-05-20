@@ -19,7 +19,7 @@ import {
   PEOPLE_COUNTING_COMPARISON_DATA
 } from "@/app/data/mockData";
 import { AnalyticsHeader } from "./AnalyticsHeader";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@fe-common/components/ui/Button";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Collapsible from "@radix-ui/react-collapsible";
 

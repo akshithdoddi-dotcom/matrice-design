@@ -4,7 +4,7 @@ import { ZONE_DATA } from "../../data/mockData";
 import type { QualityTerminology, ZoneMetric } from "../../data/types";
 import { cn } from "@/app/lib/utils";
 import { ZoneDetailPanel } from "../panels/ZoneDetailPanel";
-import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@fe-common/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;

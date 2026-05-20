@@ -1,8 +1,8 @@
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@fe-common/components/ui/Button";
 import { cn } from "@/app/lib/utils";
 import { Video, Check, User, Info, CheckCircle2 } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
-import { SeverityIcon } from "@/app/components/ui/SeverityIcon";
+import { SeverityIcon } from "@fe-common/components/ui/SeverityIcon";
 
 // Custom Filled MapPin with Centered Dot
 const FilledMapPin = ({ className, dotColor = "white" }: { className?: string; dotColor?: string }) => (

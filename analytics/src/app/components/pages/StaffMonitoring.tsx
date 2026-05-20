@@ -7,7 +7,7 @@ import {
   ShieldAlert, Users, Bell, Shield,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
-import { FilterDropdown } from "@/app/components/ui/FilterDropdown";
+import { FilterDropdown } from "@fe-common/components/ui/FilterDropdown";
 import {
   AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid,
 } from "recharts";

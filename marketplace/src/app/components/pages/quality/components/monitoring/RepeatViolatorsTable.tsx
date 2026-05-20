@@ -4,7 +4,7 @@ import { REPEAT_VIOLATORS } from "../../data/mockData";
 import type { QualityTerminology, RepeatViolator } from "../../data/types";
 import { cn } from "@/app/lib/utils";
 import { ViolatorDetailPanel } from "../panels/ViolatorDetailPanel";
-import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
+import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;

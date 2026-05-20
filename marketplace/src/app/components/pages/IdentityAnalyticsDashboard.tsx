@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import type { Persona } from "@/app/components/dashboard/PersonaSwitcher";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, Cell, PieChart, Pie, Legend,

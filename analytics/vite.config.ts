@@ -50,7 +50,7 @@ function crossAppAliasPlugin() {
 
 export default defineConfig({
   server: {
-    port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5177,
     strictPort: false,
     hmr: { overlay: false },
     watch: {
@@ -77,9 +77,7 @@ export default defineConfig({
       // Pin react/react-dom to analytics' own copies to prevent duplicate instances
       'react': path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
-      // Alias @ to the analytics src directory
       '@': path.resolve(__dirname, './src'),
-      // Cross-app aliases – allow analytics to import from sibling apps
       '@training': trainingRoot,
       '@marketplace': marketplaceRoot,
       '@support': supportRoot,

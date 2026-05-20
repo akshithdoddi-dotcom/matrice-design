@@ -7,7 +7,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { cn } from "@/app/lib/utils";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 
 interface Props { terminology: IdentityTerminology }
 

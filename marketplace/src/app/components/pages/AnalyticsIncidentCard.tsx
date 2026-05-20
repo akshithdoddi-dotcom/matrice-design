@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { Incident } from "@/app/data/mockData";
-import { SeverityIcon } from "@/app/components/ui/SeverityIcon";
+import { SeverityIcon } from "@fe-common/components/ui/SeverityIcon";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 
 // Extended incident type with analytics

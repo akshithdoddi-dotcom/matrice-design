@@ -5,7 +5,7 @@ import { IDENTITY_ALERTS } from "../../data/mockData";
 import type { IdentityAlert, IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
 import { IdentityEvidenceMedia } from "../shared/IdentityEvidenceMedia";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
 
 type FilterKey = "ALL" | "CRITICAL" | "HIGH" | "UNKNOWNS";
 

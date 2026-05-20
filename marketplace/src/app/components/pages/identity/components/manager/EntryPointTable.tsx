@@ -4,7 +4,7 @@ import { DoorOpen, ChevronUp, ChevronDown } from "lucide-react";
 import { ENTRY_POINTS } from "../../data/mockData";
 import type { EntryPoint, IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 
 interface Props { terminology: IdentityTerminology }
 

@@ -5,12 +5,12 @@ import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from "recharts";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
-import { DataGrid, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@/app/components/ui/DataGrid";
-import { Label } from "@/app/components/ui/label";
-import { Input } from "@/app/components/ui/Input";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/app/components/ui/select";
-import { Switch } from "@/app/components/ui/switch";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
+import { DataGrid, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@fe-common/components/ui/DataGrid";
+import { Label } from "@fe-common/components/ui/label";
+import { Input } from "@fe-common/components/ui/Input";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@fe-common/components/ui/select";
+import { Switch } from "@fe-common/components/ui/switch";
 import { TrainingJob, TrainingProject } from "@/app/data/mockData";
 import { cn } from "@/app/lib/utils";
 

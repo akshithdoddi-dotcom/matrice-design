@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { LayoutGrid, List, Plus, RefreshCw, Pencil, Power, Trash2, Key, ArrowUpRight } from "lucide-react";
-import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/app/components/ui/accordion";
+import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@fe-common/components/ui/accordion";
 import { cn } from "@/app/lib/utils";
 
 // ─── Shared primitives ────────────────────────────────────────────────────────

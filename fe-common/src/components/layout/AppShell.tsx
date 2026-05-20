@@ -246,22 +246,26 @@ export function AppShell({
                 <div
                   ref={platformPanelRef}
                   style={{ position: "fixed", top: dropdownPos.top, left: dropdownPos.left, zIndex: 9999 }}
-                  className="w-52 rounded-lg border border-[#00775B]/20 bg-[#021d18] shadow-2xl py-1.5 animate-in fade-in zoom-in-95 duration-100"
+                  className="w-56 rounded-lg border border-border bg-popover text-popover-foreground shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100"
                 >
-                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/30">Platforms</p>
+                  <p className="px-2 py-1.5 text-xs text-muted-foreground font-medium">Platforms</p>
                   {PLATFORMS.map((p) => (
                     <button
                       key={p.id}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] hover:bg-white/5 cursor-pointer transition-colors"
+                      className="flex w-full items-center gap-2 px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-sm transition-colors"
                       onClick={() => {
                         setPlatformOpen(false);
                         onPlatformSwitch?.(p.id);
                       }}
                     >
-                      <p.icon className={cn("size-4 shrink-0", p.id === activePlatformId ? "text-[#00956D]" : "text-white/50")} />
-                      <span className={cn("flex-1 text-left", p.id === activePlatformId ? "text-white" : "text-white/70")}>{p.label}</span>
-                      {p.id === activePlatformId && <Check className="size-3.5 text-[#00956D]" />}
-                      <kbd className="text-[10px] font-mono text-white/50 border border-white/15 rounded px-1.5 py-0.5 bg-white/5">⌘{p.shortcut}</kbd>
+                      <div className="flex size-6 items-center justify-center rounded-sm border bg-background">
+                        <p.icon className="size-3.5 shrink-0" />
+                      </div>
+                      <span className="flex-1 text-left">{p.label}</span>
+                      {p.id === activePlatformId && <Check className="size-3.5 text-primary" />}
+                      <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
+                        <span className="text-xs">⌘</span>{p.shortcut}
+                      </kbd>
                     </button>
                   ))}
                 </div>,

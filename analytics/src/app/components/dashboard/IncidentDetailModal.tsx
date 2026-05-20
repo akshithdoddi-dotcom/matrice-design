@@ -1,5 +1,5 @@
 import { X, MapPin, Video, Clock } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@fe-common/components/ui/Button";
 import { cn } from "@/app/lib/utils";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { Incident } from "@/app/data/mockData";

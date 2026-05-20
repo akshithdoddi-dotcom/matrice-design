@@ -1,6 +1,6 @@
 import { Database, Cpu, Rocket, Calendar, Tag, Globe } from "lucide-react";
 import { TrainingProject } from "@/app/data/mockData";
-import { StatusCapsule } from "@/app/components/ui/DataGrid";
+import { StatusCapsule } from "@fe-common/components/ui/DataGrid";
 import { cn } from "@/app/lib/utils";
 
 const STATUS_KEY: Record<TrainingProject["status"], string> = {

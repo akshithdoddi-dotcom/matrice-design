@@ -5,8 +5,8 @@ import {
 } from "lucide-react";
 import { TrainingProject, MOCK_DATASETS, MOCK_TRAINING_JOBS, MOCK_DEPLOYMENTS } from "@/app/data/mockData";
 import { ProjectPage } from "@/app/components/layout/AppLayout";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
-import { StatusCapsule } from "@/app/components/ui/DataGrid";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
+import { StatusCapsule } from "@fe-common/components/ui/DataGrid";
 import { cn } from "@/app/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

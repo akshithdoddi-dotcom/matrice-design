@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { CloudUpload, Eye, Trash2, Plus, HardDrive, Zap } from "lucide-react";
 import { DatasetDetail } from "@/app/components/project/DatasetDetail";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
-import { DataGrid, MonoCell, InterCell, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
-import { Input } from "@/app/components/ui/Input";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
+import { DataGrid, MonoCell, InterCell, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
+import { Input } from "@fe-common/components/ui/Input";
 import { Select as FESelect } from "@fe-common/components/ui/ui-select";
 import { Dataset, TrainingProject } from "@/app/data/mockData";
 import { cn } from "@/app/lib/utils";

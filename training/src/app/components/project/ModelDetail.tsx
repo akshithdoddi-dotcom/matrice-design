@@ -9,14 +9,14 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend, Cell,
 } from "recharts";
-import { Label }  from "@/app/components/ui/label";
-import { Input }  from "@/app/components/ui/Input";
-import { Slider } from "@/app/components/ui/slider";
+import { Label }  from "@fe-common/components/ui/label";
+import { Input }  from "@fe-common/components/ui/Input";
+import { Slider } from "@fe-common/components/ui/slider";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/app/components/ui/select";
-import { DataTable, type ColumnDef } from "@/app/components/ui/DataTable";
-import { Switch } from "@/app/components/ui/switch";
+} from "@fe-common/components/ui/select";
+import { DataTable, type ColumnDef } from "@fe-common/components/ui/data-table";
+import { Switch } from "@fe-common/components/ui/switch";
 import { Select as FESelect } from "@fe-common/components/ui/ui-select";
 import { Input as FEInput } from "@fe-common/components/ui/ui-input";
 import { TrainingJob } from "@/app/data/mockData";

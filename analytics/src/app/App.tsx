@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 const TrainingApp = lazy(() => import("@training/app/App"));
 const MarketplaceApp = lazy(() => import("@marketplace/app/App"));
-import { SeverityIcon } from "@/app/components/ui/SeverityIcon";
+const FEComponentsApp = lazy(() => import("@fe-common/preview/App"));
+import { SeverityIcon } from "@fe-common/components/ui/SeverityIcon";
 import { Page } from "@/app/components/layout/Sidebar";
 import { AppLayout } from "@/app/components/layout/AppLayout";
 import { IncidentCard } from "@/app/components/dashboard/IncidentCard";
 import { IncidentDetailModal } from "@/app/components/dashboard/IncidentDetailModal";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@fe-common/components/ui/Button";
 import { GridBackground } from "@/app/components/layout/GridBackground";
 import { Bell, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Clock, Filter, LayoutGrid, List, Check, User, Video, MapPin, X, ChevronDown, Info, Trash2, Copy, ImageIcon, Activity, ExternalLink, Search, ShieldCheck, Hexagon, Zap, Shield, PanelLeft, Command, Sun, Moon, LogOut, Settings } from "lucide-react";
 import { cn } from "@/app/lib/utils";
-import { Checkbox } from "@/app/components/ui/Checkbox";
+import { Checkbox } from "@fe-common/components/ui/Checkbox";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { PersonaSwitcher, Persona } from "@/app/components/dashboard/PersonaSwitcher";
 import { MonitoringWidgets } from "@/app/components/dashboard/MonitoringWidgets";
@@ -34,7 +35,7 @@ import { SettingsPage } from "@/app/components/pages/Settings";
 import { StaffMonitoring } from "@/app/components/pages/StaffMonitoring";
 import { MicroservicesPage } from "@/app/components/pages/MicroservicesPage";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 
 // Main App Component
 function useGridColumns() {
@@ -210,7 +211,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
-type ActiveApp = "analytics" | "training" | "marketplace" | "vms";
+type ActiveApp = "analytics" | "training" | "marketplace" | "fe-common" | "vms";
 
 /** Root switcher — picks which app to render based on platform selection */
 export default function App() {
@@ -218,8 +219,9 @@ export default function App() {
   const handleSwitch = (app: string) => setActiveApp(app as ActiveApp);
 
   if (activeApp === "vms")         return <VMSPlatform onPlatformSwitch={handleSwitch} />;
-  if (activeApp === "training")    return <Suspense fallback={null}><TrainingApp    onPlatformSwitch={handleSwitch} /></Suspense>;
-  if (activeApp === "marketplace") return <Suspense fallback={null}><MarketplaceApp onPlatformSwitch={handleSwitch} /></Suspense>;
+  if (activeApp === "training")    return <Suspense fallback={null}><TrainingApp      onPlatformSwitch={handleSwitch} /></Suspense>;
+  if (activeApp === "marketplace") return <Suspense fallback={null}><MarketplaceApp   onPlatformSwitch={handleSwitch} /></Suspense>;
+  if (activeApp === "fe-common")   return <Suspense fallback={null}><FEComponentsApp  onPlatformSwitch={handleSwitch} /></Suspense>;
   return <AnalyticsApp onPlatformSwitch={handleSwitch} />;
 }
 

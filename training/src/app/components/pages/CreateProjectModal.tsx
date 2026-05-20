@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@fe-common/components/ui/Button";
 import { cn } from "@/app/lib/utils";
 import { TrainingProject, OutputType } from "@/app/data/mockData";
 

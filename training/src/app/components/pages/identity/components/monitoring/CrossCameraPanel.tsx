@@ -3,7 +3,7 @@ import { Waypoints, Map, ArrowRight } from "lucide-react";
 import { CROSS_CAMERA_TRACKS } from "../../data/mockData";
 import type { IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
 
 interface Props {
   terminology: IdentityTerminology;

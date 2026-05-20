@@ -3,12 +3,12 @@ import {
   LayoutGrid, List, Plus, ArrowLeft, ChevronDown, ChevronRight,
   Upload, X, AlertCircle, ExternalLink, Eye, Trash2, RefreshCw,
 } from "lucide-react";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
-import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
-import { Label } from "@/app/components/ui/label";
-import { Input } from "@/app/components/ui/Input";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/app/components/ui/select";
-import { Textarea } from "@/app/components/ui/textarea";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
+import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
+import { Label } from "@fe-common/components/ui/label";
+import { Input } from "@fe-common/components/ui/Input";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@fe-common/components/ui/select";
+import { Textarea } from "@fe-common/components/ui/textarea";
 import { cn } from "@/app/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

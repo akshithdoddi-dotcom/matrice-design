@@ -3,7 +3,7 @@ import { UserX, MapPin, Radio, Eye, ShieldPlus, AlertTriangle } from "lucide-rea
 import { UNKNOWN_TRACKERS } from "../../data/mockData";
 import type { IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
 
 interface Props {
   terminology: IdentityTerminology;

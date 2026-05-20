@@ -1,6 +1,6 @@
 import { TrendingUp } from "lucide-react";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
-import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
+import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 import { MOCK_PROJECTS, MOCK_TRAINING_JOBS, TrainingProject, TrainingJob } from "@/app/data/mockData";
 import { cn } from "@/app/lib/utils";
 
