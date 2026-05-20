@@ -490,54 +490,59 @@ function CameraGridCell({
             style={{ background: "repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.013) 3px,rgba(255,255,255,0.013) 4px)" }}
           />
 
-          {/* Hover state: animated tracking bounding box + playing indicators */}
+          {/* AI tracking bounding box — always visible on every search result */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              top:    `calc(22% + ${boxPos.y}px)`,
+              left:   `calc(28% + ${boxPos.x}px)`,
+              width:  "44%",
+              height: "56%",
+              border: isHovered
+                ? "1.5px solid #00e676"
+                : "1.5px solid rgba(0,230,118,0.5)",
+              boxShadow: isHovered
+                ? "0 0 10px rgba(0,230,118,0.35), inset 0 0 8px rgba(0,230,118,0.08)"
+                : "0 0 5px rgba(0,230,118,0.12)",
+              transition: "top 80ms linear, left 80ms linear, border 150ms, box-shadow 150ms",
+            }}
+          >
+            {/* Corner markers */}
+            {[
+              { top: -2, left: -2,   right: "auto", bottom: "auto" },
+              { top: -2, right: -2,  left: "auto",  bottom: "auto" },
+              { bottom: -2, left: -2, top: "auto",  right: "auto"  },
+              { bottom: -2, right: -2, top: "auto", left: "auto"   },
+            ].map((pos, i) => (
+              <div
+                key={i}
+                className="absolute w-2.5 h-2.5 border-[#00e676]"
+                style={{
+                  ...pos,
+                  opacity: isHovered ? 1 : 0.5,
+                  borderTop:    i < 2  ? "2.5px solid" : "none",
+                  borderBottom: i >= 2 ? "2.5px solid" : "none",
+                  borderLeft:   i % 2 === 0 ? "2.5px solid" : "none",
+                  borderRight:  i % 2 === 1 ? "2.5px solid" : "none",
+                }}
+              />
+            ))}
+
+            {/* Confidence + match label — always visible */}
+            <div
+              className="absolute -top-6 left-0 flex items-center gap-1 px-1.5 py-0.5 rounded-sm"
+              style={{ background: isHovered ? "rgba(0,230,118,0.92)" : "rgba(0,230,118,0.72)" }}
+            >
+              <span className="text-[9px] font-bold text-black" style={MONO}>{searchResult.confidence}%</span>
+              <span className="text-[9px] text-black/70" style={INTER}>match</span>
+            </div>
+          </div>
+
+          {/* Hover-only overlays */}
           {isHovered && (
             <>
-              {/* Dark vignette on hover */}
+              {/* Dark vignette */}
               <div className="absolute inset-0 bg-black/20 pointer-events-none" />
-
-              {/* Animated AI tracking bounding box */}
-              <div
-                className="absolute pointer-events-none"
-                style={{
-                  top:    `calc(22% + ${boxPos.y}px)`,
-                  left:   `calc(28% + ${boxPos.x}px)`,
-                  width:  "44%",
-                  height: "56%",
-                  border: "1.5px solid #00e676",
-                  boxShadow: "0 0 10px rgba(0,230,118,0.35), inset 0 0 8px rgba(0,230,118,0.08)",
-                  transition: "top 80ms linear, left 80ms linear",
-                }}
-              >
-                {/* Corner markers */}
-                {[
-                  { top: -2, left: -2,   right: "auto", bottom: "auto" },
-                  { top: -2, right: -2,  left: "auto",  bottom: "auto" },
-                  { bottom: -2, left: -2, top: "auto",  right: "auto"  },
-                  { bottom: -2, right: -2, top: "auto", left: "auto"   },
-                ].map((pos, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-2.5 h-2.5 border-[#00e676]"
-                    style={{
-                      ...pos,
-                      borderTop:    i < 2 ? "2.5px solid" : "none",
-                      borderBottom: i >= 2 ? "2.5px solid" : "none",
-                      borderLeft:   i % 2 === 0 ? "2.5px solid" : "none",
-                      borderRight:  i % 2 === 1 ? "2.5px solid" : "none",
-                    }}
-                  />
-                ))}
-
-                {/* Confidence label above box */}
-                <div
-                  className="absolute -top-6 left-0 flex items-center gap-1 px-1.5 py-0.5 rounded-sm"
-                  style={{ background: "rgba(0,230,118,0.9)" }}
-                >
-                  <span className="text-[9px] font-bold text-black" style={MONO}>{searchResult.confidence}%</span>
-                  <span className="text-[9px] text-black/70" style={INTER}>match</span>
-                </div>
-              </div>
 
               {/* PLAYING badge top-right */}
               <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded bg-black/70 border border-white/10">
