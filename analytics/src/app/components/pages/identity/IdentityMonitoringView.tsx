@@ -3229,34 +3229,124 @@ export const IdentityMonitoringView = ({
         <div className="flex-1 overflow-auto">
           {filtered.length === 0 ? (
             <div className="py-12 text-center text-[11px] text-neutral-400 dark:text-slate-500">No events</div>
-          ) : (
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-neutral-100 sticky top-0 z-10 border-b border-neutral-200">
-                <tr className="text-[9px] uppercase tracking-widest font-bold text-neutral-500 h-8">
-                  <th className="px-3 py-2 w-16">ID</th>
-                  <th className="px-3 py-2 w-16">Snapshot</th>
-                  <th className="px-3 py-2">Identity</th>
-                  <th className="px-3 py-2 w-28">Status</th>
-                  <th className="px-3 py-2">Zone</th>
-                  <th className="px-3 py-2 w-28">Camera</th>
-                  <th className="px-3 py-2 w-20 text-right">Match %</th>
-                  <th className="px-3 py-2 w-20 text-right">Dwell</th>
-                  <th className="px-3 py-2 w-24 text-right">Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paged.map((p, i) => (
-                  <FeedTableRow
-                    key={p.id}
-                    person={p}
-                    rowIndex={safePage * PAGE_SIZE + i}
-                    onClick={() => openEntity(p)}
-                    isLPR={isLPR}
-                  />
-                ))}
-              </tbody>
-            </table>
-          )}
+          ) : (() => {
+            type FeedRow = FeedPerson & { _rowIdx: number };
+            const gridData: FeedRow[] = paged.map((p, i) => ({ ...p, _rowIdx: safePage * PAGE_SIZE + i }));
+            const isLPRLocal = isLPR;
+            const feedColumns: DataGridColumn<FeedRow>[] = [
+              {
+                key: "id",
+                header: "ID",
+                width: "70px",
+                render: (row) => {
+                  const id = `${isLPRLocal ? "LP" : "FR"}-${String(row._rowIdx + 1).padStart(3, "0")}`;
+                  return <span className="text-[10px] font-mono font-bold text-neutral-500">{id}</span>;
+                },
+              },
+              {
+                key: "snapshot",
+                header: "Snapshot",
+                width: "80px",
+                render: (row) => {
+                  const isActive = (row.status === "BLACKLIST" || row.status === "BOLO" || row.status === "UNKNOWN" || row.status === "UNREGISTERED") && (row.severity === "CRITICAL" || row.severity === "HIGH");
+                  const isPlate = isLPRLocal || row.identType === "PLATE";
+                  const stamp = getAlertStamp(row);
+                  return (
+                    <div className="h-10 w-[60px] rounded-[2px] overflow-hidden relative shrink-0 border border-neutral-200 bg-neutral-100">
+                      {isPlate
+                        ? <IdentityEvidenceMedia kind="PLATE" seed={row.id} plateText={row.plateText} imageSrc={row.imageSrc} className="h-full w-full" />
+                        : <IdentityEvidenceMedia kind="FACE" seed={row.id} imageSrc={row.imageSrc} live={isActive} className="h-full w-full" />
+                      }
+                      {stamp && (
+                        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center" style={{ background: stamp.color, paddingTop: 2, paddingBottom: 2 }}>
+                          <span className="text-[5.5px] font-black uppercase tracking-[0.12em] text-white leading-none">{stamp.headline}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                },
+              },
+              {
+                key: "displayName",
+                header: "Identity",
+                width: "2fr",
+                render: (row) => {
+                  const isThreat = row.status === "BLACKLIST" || row.status === "BOLO" || row.status === "UNKNOWN" || row.status === "UNREGISTERED";
+                  const stamp = getAlertStamp(row);
+                  return (
+                    <div className="max-w-[180px]">
+                      <p className="text-[11px] font-bold text-neutral-900 truncate leading-tight">{row.displayName}</p>
+                      {stamp
+                        ? <p className="text-[9px] font-bold truncate mt-0.5 leading-snug" style={{ color: stamp.color }}>{stamp.reason}</p>
+                        : row.subLabel
+                          ? <p className={cn("text-[9px] truncate mt-0.5 leading-snug", isThreat ? "text-red-500 font-semibold" : "text-neutral-400")}>{row.subLabel}</p>
+                          : null
+                      }
+                    </div>
+                  );
+                },
+              },
+              {
+                key: "status",
+                header: "Status",
+                width: "110px",
+                render: (row) => {
+                  const cfg = STATUS_CFG[row.status];
+                  const isActive = (row.status === "BLACKLIST" || row.status === "BOLO" || row.status === "UNKNOWN" || row.status === "UNREGISTERED") && (row.severity === "CRITICAL" || row.severity === "HIGH");
+                  return (
+                    <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-[2px] uppercase tracking-wide whitespace-nowrap", cfg.bg, cfg.text, isActive && "animate-pulse")}>
+                      {cfg.label}
+                    </span>
+                  );
+                },
+              },
+              {
+                key: "zone",
+                header: "Zone",
+                width: "1fr",
+                render: (row, h) => <InterCell hovered={h} fontSize={11}>{row.zone}</InterCell>,
+              },
+              {
+                key: "camera",
+                header: "Camera",
+                width: "110px",
+                render: (row, h) => <MonoCell hovered={h} color="#94A3B8" fontSize={11}>{row.camera}</MonoCell>,
+              },
+              {
+                key: "confidence",
+                header: "Match %",
+                width: "70px",
+                align: "right",
+                render: (row) => row.confidence != null
+                  ? <span className={cn("text-[11px] font-mono font-bold tabular-nums", row.confidence >= 90 ? "text-emerald-500" : "text-amber-500")}>{row.confidence.toFixed(1)}%</span>
+                  : <span className="text-[11px] text-neutral-300 font-mono">—</span>,
+              },
+              {
+                key: "dwell",
+                header: "Dwell",
+                width: "70px",
+                align: "right",
+                render: (row) => row.dwell != null
+                  ? <span className={cn("text-[11px] font-mono font-bold tabular-nums", row.dwell > 180 ? "text-amber-500" : "text-neutral-500")}>{fmtDwell(row.dwell)}</span>
+                  : <span className="text-[11px] text-neutral-300 font-mono">—</span>,
+              },
+              {
+                key: "time",
+                header: "Time",
+                width: "80px",
+                align: "right",
+                render: (row) => <MonoCell hovered={false} color="#94A3B8" fontSize={10}>{row.time}</MonoCell>,
+              },
+            ];
+            return (
+              <DataGrid
+                columns={feedColumns}
+                data={gridData}
+                onRowClick={(row) => openEntity(row)}
+                compact
+              />
+            );
+          })()}
         </div>
 
         {/* ── Pagination footer ── */}

@@ -1,0 +1,482 @@
+/* ============================================================================
+   DATA TABLE COMPONENT (MODULAR VISUAL LAYER)
+   ============================================================================ */
+
+.mui-datatable {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+.mui-datatable-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-surface);
+}
+
+.mui-datatable-popover {
+  z-index: 1600;
+  min-width: 240px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-2);
+}
+
+.mui-datatable-popover-title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.mui-datatable-popover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mui-datatable-popover-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.mui-datatable-popover-item:hover {
+  background: var(--bg-hover);
+}
+
+.mui-datatable-filter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.mui-datatable-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.mui-datatable-clear:hover {
+  color: var(--text-primary);
+}
+
+.mui-datatable-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mui-datatable-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mui-datatable-filter-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.mui-datatable-filter-input {
+  height: 32px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: var(--text-sm);
+  padding: 0 8px;
+}
+
+.mui-datatable-filter-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.mui-datatable-filter-input:focus {
+  outline: none;
+  border-color: var(--primary-main);
+}
+
+.mui-datatable-scroll {
+  overflow-x: auto;
+}
+
+.mui-datatable-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.mui-datatable-header {
+  background: #f8fafc;
+}
+
+.mui-datatable-body {
+  background: var(--bg-surface);
+}
+
+.mui-datatable-row {
+  transition: background-color var(--duration-fast) var(--ease-snappy);
+}
+
+.mui-datatable-th {
+  padding: 12px 16px;
+  border-bottom: 2px solid #00775b;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16.5px;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.mui-datatable-th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.mui-datatable-th-select {
+  width: 44px;
+  padding: 8px;
+}
+
+.mui-datatable-th-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mui-datatable-th-sorted {
+  border-bottom: 2px solid #00775b;
+  color: var(--primary-main);
+}
+
+.mui-datatable-td {
+  padding: 12px 16px;
+  border-bottom: none;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.mui-datatable-body .mui-datatable-td {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mui-datatable-body .mui-datatable-td.mui-datatable-empty-cell {
+  border-bottom: none;
+}
+
+/* First data column (e.g. Name) — design typography */
+.mui-datatable-td-lead {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: 0;
+  color: #334155;
+}
+
+/* Body cells except first column & status (JetBrains Mono data style) */
+.mui-datatable-td-body {
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16.5px;
+  letter-spacing: 0;
+  color: #64748b;
+}
+
+.mui-datatable-td-select,
+.mui-datatable-select-cell {
+  width: 44px;
+  padding: 4px 0 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mui-datatable-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-main);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color-strong);
+}
+
+.mui-datatable-row-even {
+  background: #ffffff;
+}
+
+.mui-datatable-row-odd {
+  background: #00775b05;
+}
+
+[data-theme="dark"] .mui-datatable-row-even {
+  background: var(--bg-surface);
+}
+
+[data-theme="dark"] .mui-datatable-row-odd {
+  background: var(--bg-elevated);
+}
+
+.mui-datatable-row-selected {
+  background: var(--primary-subtle);
+}
+
+.mui-datatable-row-clickable {
+  cursor: pointer;
+}
+
+.mui-datatable-row-clickable:hover {
+  background: var(--bg-hover);
+}
+
+.mui-datatable-footer-cell {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border-color);
+  border-bottom: none;
+}
+
+.mui-datatable-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.mui-datatable-footer-text {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.mui-datatable-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.mui-datatable-page-size {
+  height: 32px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: var(--text-sm);
+  padding: 0 8px;
+}
+
+.mui-datatable-page-size:focus {
+  outline: none;
+  border-color: var(--primary-main);
+}
+
+.mui-datatable-page-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mui-datatable-page-button {
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    color var(--duration-fast) var(--ease-snappy);
+}
+
+.mui-datatable-page-button:hover {
+  background: var(--bg-hover);
+}
+
+.mui-datatable-page-button-active {
+  background: var(--primary-subtle);
+  color: var(--primary-main);
+}
+
+.mui-datatable-loading {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+
+.mui-datatable-loading-bar-wrap {
+  position: relative;
+  height: 4px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.mui-datatable-loading-bar {
+  position: absolute;
+  inset-block: 0;
+  width: 35%;
+  background: var(--primary-main);
+  animation: slideInLeft 1s linear infinite;
+}
+
+.mui-datatable-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .mui-datatable-loading-overlay {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+/* Leading row cue column (decorative chevron; expand control when expandable) */
+.mui-datatable-th-rowcue,
+.mui-datatable-td-rowcue {
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  padding: 8px 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.mui-datatable-rowcue-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 20px;
+}
+
+.mui-datatable-rowcue-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+}
+
+.mui-datatable-rowcue-chevron {
+  display: block;
+  flex-shrink: 0;
+  color: #cbd5e1;
+}
+
+.mui-datatable-expand-cell {
+  width: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mui-datatable-expand-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-snappy),
+    background-color var(--duration-fast) var(--ease-snappy),
+    color var(--duration-fast) var(--ease-snappy);
+}
+
+.mui-datatable-expand-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.mui-datatable-expand-toggle:focus-visible {
+  outline: 2px solid var(--primary-main);
+  outline-offset: 2px;
+}
+
+.mui-datatable-expand-toggle-open {
+  transform: rotate(90deg);
+  color: var(--primary-main);
+}
+
+/* Expanded panel row */
+.mui-datatable-expanded-row {
+  background: var(--bg-elevated, var(--neutral-50));
+}
+
+.mui-datatable-expanded-cell {
+  padding: 0;
+  border-bottom: none;
+  border-top: 0;
+  background: inherit;
+  border-left: 3px solid #00775b;
+  box-sizing: border-box;
+}
+
+/* Nested inner table: green accent lives on the inner shell so it stops with the table */
+.mui-datatable-expanded-cell:has(
+  > .mui-datatable-expanded-content > .mui-datatable
+) {
+  border-left: none;
+}
+
+.mui-datatable-expanded-content {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--space-3) 0 var(--space-4);
+}
+
+.mui-datatable-expanded-content:has(> .mui-datatable) {
+  padding: 0;
+}
+
+/* Nested DataTable — full width, square corners, brand left + bottom edge */
+.mui-datatable-expanded-content > .mui-datatable {
+  width: 100%;
+  max-width: none;
+  border-radius: 0;
+  border-left: 3px solid #00775b;
+  border-bottom: 1px solid #00775b;
+}
+
+/* Inner DataTable inside expanded row — header tint only */
+.mui-datatable-expanded-content .mui-datatable .mui-datatable-header {
+  background: #00000009;
+}
+
+.mui-datatable-expanded-content > .mui-datatable .mui-datatable-th,
+.mui-datatable-expanded-content > .mui-datatable .mui-datatable-th-sorted {
+  border-bottom: none;
+}
+
+.mui-datatable-table tr.mui-datatable-row-expanded > td:first-of-type {
+  border-left: 3px solid #00775b;
+  box-sizing: border-box;
+}

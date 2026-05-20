@@ -3,10 +3,11 @@ import {
   ArrowLeft, RefreshCw, ChevronDown, ChevronRight,
   Search, X, Play, CloudUpload, HardDrive, Zap, Plus,
   LayoutGrid, List, Tag, Wand2, Layers, Shuffle,
-  SlidersHorizontal, CheckCircle,
+  SlidersHorizontal, CheckCircle, AlertCircle,
   Trash2, ImageIcon, Cpu, Settings2, Sparkles,
-  FlipHorizontal, Download,
+  FlipHorizontal, Download, BarChart2, Table2,
 } from "lucide-react";
+import { SegmentedControl } from "@/app/components/ui/segmented-control";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Legend,
@@ -16,12 +17,15 @@ import { Label }  from "@/app/components/ui/label";
 import { Input }  from "@/app/components/ui/Input";
 import { Switch } from "@/app/components/ui/switch";
 import { Slider } from "@/app/components/ui/slider";
-import { Textarea } from "@/app/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/app/components/ui/select";
 import { Dataset } from "@/app/data/mockData";
+import { StatCard, type StatCardData } from "@fe-common/components/ui/StatCard";
+import { Select as FESelect } from "@fe-common/components/ui/ui-select";
+import { Textarea } from "@/app/components/ui/textarea";
 import { cn } from "@/app/lib/utils";
+import { DataTable, type ColumnDef } from "@/app/components/ui/DataTable";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -121,7 +125,7 @@ function StatusBar({ dataset }: { dataset: Dataset }) {
           <CheckCircle className="w-3 h-3" /> {DETAIL.status}
         </span>
         <Select defaultValue="v1.0">
-          <SelectTrigger className="h-7 w-20 text-[11px] font-mono">
+          <SelectTrigger className="h-8 w-20 text-[11px] font-mono">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -129,7 +133,7 @@ function StatusBar({ dataset }: { dataset: Dataset }) {
             <SelectItem value="v1.1">v1.1</SelectItem>
           </SelectContent>
         </Select>
-        <button className="flex items-center gap-1.5 h-7 px-3 rounded-md text-[11px] font-semibold text-white"
+        <button className="flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-semibold text-white"
           style={{ backgroundColor: TEAL }}>
           <Play className="w-3 h-3 fill-white" /> Train Model
         </button>
@@ -145,7 +149,7 @@ function StatusBar({ dataset }: { dataset: Dataset }) {
 const SPLIT_COLORS: Record<string, string> = {
   train: TEAL, test: "#F59E0B", val: "#22C55E", unassigned: "#E2E8F0",
 };
-const CAT_COLORS = [TEAL, "#F59E0B", "#22C55E", "#7C3AED"];
+const CAT_COLORS = [TEAL, "#F59E0B", "#22C55E", "#0284C7"];
 
 function SummaryTab({ dataset }: { dataset: Dataset }) {
   const { split, categories } = DETAIL;
@@ -153,7 +157,6 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
   const labeled = split.train + split.test + split.val;
   const labelPct = Math.round((labeled / total) * 100);
 
-  // Proportional split segments (CSS-based visual bar)
   const splitSegments = [
     { key: "train",      count: split.train,      label: "Train",      color: TEAL,      pct: Math.round((split.train / total) * 100) },
     { key: "test",       count: split.test,        label: "Test",       color: "#F59E0B", pct: Math.round((split.test  / total) * 100) },
@@ -168,96 +171,70 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
     Val:   c.val,
   }));
 
-  const [catSearch, setCatSearch] = useState("");
+  const [catSearch, setCatSearch]   = useState("");
+  const [catView,   setCatView]     = useState<"graph" | "table">("graph");
+  const [catSplit,  setCatSplit]    = useState("all");
 
-  const filteredCatData = catBarData.filter((c) =>
-    c.name.toLowerCase().includes(catSearch.toLowerCase())
-  );
+  const filteredCatData = catBarData.filter((c) => {
+    if (!c.name.toLowerCase().includes(catSearch.toLowerCase())) return false;
+    return true;
+  });
 
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
-      {/* ── Stat strip ── */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          {
-            label: "Total Images", value: total.toLocaleString(),
-            icon: <ImageIcon className="w-4 h-4" />, color: "#0284C7", bg: "#E0F2FE",
-            sub: `${DETAIL.classes} classes`,
-          },
-          {
-            label: "Labeled", value: `${labelPct}%`,
-            icon: <Tag className="w-4 h-4" />, color: TEAL, bg: "#E5FFF9",
-            sub: `${labeled.toLocaleString()} of ${total.toLocaleString()}`,
-          },
-          {
-            label: "Version", value: DETAIL.version,
-            icon: <Layers className="w-4 h-4" />, color: "#7C3AED", bg: "#F3EEFF",
-            sub: "Current version",
-          },
-          {
-            label: "Status", value: DETAIL.status,
-            icon: <CheckCircle className="w-4 h-4" />, color: "#059669", bg: "#ECFDF5",
-            sub: `by ${DETAIL.createdBy}`,
-          },
-        ].map(({ label, value, icon, color, bg, sub }) => (
-          <Card key={label} className="flex items-center gap-4 px-5 py-4">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg, color }}>
-              {icon}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">{label}</p>
-              <p className="text-[20px] font-bold leading-tight font-mono" style={{ color }}>{value}</p>
-              <p className="text-[10px] text-neutral-400 mt-0.5 truncate">{sub}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {/* ── Row: Stat Cards (2×2) + Split Overview ── */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* 4 StatCards in a 2×2 grid */}
+        <div className="col-span-2 grid grid-cols-2 gap-4">
+          {([
+            { label: "Total Images", value: total.toLocaleString(),      sublabel: `${DETAIL.classes} classes`,                        num: "+2",  ref_: "vs Last Upload", dir: "up",     chip: "IMAGES",   color: "#0284C7", bgColor: "#E0F2FE" },
+            { label: "Labeled",      value: `${labelPct}%`,              sublabel: `${labeled.toLocaleString()} of ${total.toLocaleString()}`, num: "+5%", ref_: "vs Last Version", dir: "up", chip: "LABELED",  color: "#00775B", bgColor: "#E5FFF9" },
+            { label: "Version",      value: DETAIL.version,              sublabel: "Current version",                                  num: "—",   ref_: "—",              dir: "neutral", chip: "VERSION",  color: "#D97706", bgColor: "#FFFBEB" },
+            { label: "Status",       value: DETAIL.status,               sublabel: `by ${DETAIL.createdBy}`,                           num: "—",   ref_: "—",              dir: "neutral", chip: "STATUS",   color: "#059669", bgColor: "#ECFDF5" },
+          ] as StatCardData[]).map((d) => (
+            <StatCard key={d.label} d={d} compact />
+          ))}
+        </div>
 
-      {/* ── Split Overview (full-width visual bar) ── */}
-      <Card className="overflow-hidden">
-        <div className="px-5 pt-4 pb-3 border-b border-neutral-100 flex items-center justify-between">
-          <div>
+        {/* Split Overview */}
+        <Card className="overflow-hidden flex flex-col">
+          <div className="px-5 pt-4 pb-3 border-b border-neutral-100">
             <h3 className="text-[13px] font-semibold text-neutral-800">Split Overview</h3>
-            <p className="text-[11px] text-neutral-400 mt-0.5">Proportional distribution across all splits</p>
+            <p className="text-[11px] text-neutral-400 mt-0.5">{total.toLocaleString()} total images</p>
           </div>
-          <span className="text-[11px] font-mono text-neutral-500">{total.toLocaleString()} total images</span>
-        </div>
-
-        <div className="p-5 flex flex-col gap-4">
-          {/* CSS proportional bar */}
-          <div className="flex h-8 rounded-md overflow-hidden gap-px">
-            {splitSegments.map((s) => (
-              <div
-                key={s.key}
-                className="flex items-center justify-center transition-all duration-300 group relative"
-                style={{ width: `${s.pct}%`, backgroundColor: s.color, minWidth: s.pct > 0 ? "2px" : 0 }}
-                title={`${s.label}: ${s.count.toLocaleString()} (${s.pct}%)`}
-              >
-                {s.pct >= 8 && (
-                  <span className="text-[10px] font-bold text-white drop-shadow-sm select-none">{s.pct}%</span>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Legend cards */}
-          <div className="grid grid-cols-4 gap-3">
-            {splitSegments.map((s) => (
-              <div key={s.key} className="flex flex-col gap-1 p-3 rounded-lg bg-neutral-50 border border-neutral-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                  <span className="text-[11px] font-semibold text-neutral-600">{s.label}</span>
+          <div className="p-5 flex flex-col gap-4 flex-1">
+            {/* Proportional bar */}
+            <div className="flex h-3 rounded-full overflow-hidden gap-px">
+              {splitSegments.map((s) => (
+                <div
+                  key={s.key}
+                  className="transition-all"
+                  style={{ width: `${s.pct}%`, backgroundColor: s.color, minWidth: s.pct > 0 ? "2px" : 0 }}
+                  title={`${s.label}: ${s.count.toLocaleString()} (${s.pct}%)`}
+                />
+              ))}
+            </div>
+            {/* Legend */}
+            <div className="flex flex-col gap-2.5">
+              {splitSegments.map((s) => (
+                <div key={s.key} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="text-[12px] text-neutral-600 font-medium">{s.label}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[13px] font-bold font-mono" style={{ color: s.color }}>
+                      {s.count.toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-neutral-400 ml-1.5">{s.pct}%</span>
+                  </div>
                 </div>
-                <p className="text-[20px] font-bold font-mono leading-tight" style={{ color: s.color }}>
-                  {s.count.toLocaleString()}
-                </p>
-                <p className="text-[10px] text-neutral-400">{s.pct}% of total</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
 
       {/* ── Category Distribution ── */}
       <Card className="overflow-hidden">
@@ -266,122 +243,154 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
             <h3 className="text-[13px] font-semibold text-neutral-800">Category Distribution</h3>
             <p className="text-[11px] text-neutral-400 mt-0.5">Images per class across train / test / validation splits</p>
           </div>
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              className="h-8 pl-8 pr-3 text-[12px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B] w-44"
-              placeholder="Search class…"
-              value={catSearch}
-              onChange={(e) => setCatSearch(e.target.value)}
-            />
-          </div>
+          <SegmentedControl
+            size="sm"
+            value={catView}
+            onChange={(v) => setCatView(v as "graph" | "table")}
+            ariaLabel="Category distribution view"
+            options={[
+              { value: "graph", icon: <BarChart2 className="w-3.5 h-3.5" />, ariaLabel: "Graph view" },
+              { value: "table", icon: <Table2    className="w-3.5 h-3.5" />, ariaLabel: "Table view" },
+            ]}
+          />
         </div>
 
-        <div className="p-5">
-          <ResponsiveContainer width="100%" height={Math.max(filteredCatData.length * 60 + 40, 140)}>
-            <BarChart
-              data={filteredCatData}
-              layout="vertical"
-              margin={{ top: 4, right: 24, bottom: 20, left: 16 }}
-              barCategoryGap="30%"
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-              <XAxis
-                type="number"
-                tick={{ fontSize: 10, fill: "#94A3B8" }}
-                label={{ value: "Image Count", position: "insideBottom", offset: -10, fontSize: 10, fill: "#94A3B8" }}
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
-                width={80}
-              />
-              <Tooltip
-                cursor={{ fill: "#F8FAFC" }}
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null;
-                  const total = payload.reduce((s, p) => s + (Number(p.value) || 0), 0);
-                  return (
-                    <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2.5 shadow-lg text-[11px] min-w-[140px]">
-                      <p className="font-bold text-neutral-800 capitalize mb-2 text-[12px]">{label}</p>
-                      {payload.map((p) => (
-                        <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: p.fill as string }} />
-                            <span className="text-neutral-500 capitalize">{p.dataKey}</span>
-                          </div>
-                          <span className="font-mono font-semibold text-neutral-700">{Number(p.value).toLocaleString()}</span>
-                        </div>
-                      ))}
-                      <div className="border-t border-neutral-100 mt-2 pt-1.5 flex justify-between">
-                        <span className="text-neutral-400">Total</span>
-                        <span className="font-mono font-bold text-neutral-700">{total.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  );
-                }}
-              />
-              <Legend
-                iconType="square"
-                iconSize={9}
-                wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
-                formatter={(val) => <span className="text-neutral-500 capitalize">{val}</span>}
-              />
-              <Bar dataKey="Train" stackId="a" fill={TEAL}      name="Train"  />
-              <Bar dataKey="Test"  stackId="a" fill="#F59E0B"   name="Test"   />
-              <Bar dataKey="Val"   stackId="a" fill="#22C55E"   name="Val"    radius={[0, 3, 3, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="flex">
+          {/* Filter sidebar */}
+          <div className="w-52 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Filters</p>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-medium text-neutral-500">Split</label>
+              <Select value={catSplit} onValueChange={setCatSplit}>
+                <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Splits</SelectItem>
+                  <SelectItem value="train">Train</SelectItem>
+                  <SelectItem value="test">Test</SelectItem>
+                  <SelectItem value="val">Validation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-medium text-neutral-500">Search Class</label>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  className="h-8 w-full pl-8 pr-3 text-[12px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]"
+                  placeholder="Search class…"
+                  value={catSearch}
+                  onChange={(e) => setCatSearch(e.target.value)}
+                />
+              </div>
+            </div>
+            {(catSearch || catSplit !== "all") && (
+              <button
+                onClick={() => { setCatSearch(""); setCatSplit("all"); }}
+                className="flex items-center justify-center gap-1.5 h-8 rounded-md border border-neutral-200 text-neutral-500 hover:bg-neutral-50 text-[11px] font-medium transition-colors"
+              >
+                <X className="w-3 h-3" /> Clear Filters
+              </button>
+            )}
+          </div>
 
-          {/* Per-class mini stats table */}
-          <div className="mt-4 border border-neutral-100 rounded-lg overflow-hidden">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-100">
-                  <th className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Class</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Train</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Test</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Val</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Total</th>
-                  <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories
+          {/* Chart / Table */}
+          <div className="flex-1 p-5">
+            {catView === "graph" ? (
+              <ResponsiveContainer width="100%" height={Math.max(filteredCatData.length * 60 + 40, 140)}>
+                <BarChart
+                  data={filteredCatData}
+                  layout="vertical"
+                  margin={{ top: 4, right: 24, bottom: 20, left: 16 }}
+                  barCategoryGap="30%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 10, fill: "#94A3B8" }}
+                    label={{ value: "Image Count", position: "insideBottom", offset: -10, fontSize: 10, fill: "#94A3B8" }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                    width={80}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "#F8FAFC" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const total = payload.reduce((s, p) => s + (Number(p.value) || 0), 0);
+                      return (
+                        <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2.5 shadow-lg text-[11px] min-w-[140px]">
+                          <p className="font-bold text-neutral-800 capitalize mb-2 text-[12px]">{label}</p>
+                          {payload.map((p) => (
+                            <div key={p.dataKey as string} className="flex items-center justify-between gap-4 py-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: p.fill as string }} />
+                                <span className="text-neutral-500 capitalize">{p.dataKey as string}</span>
+                              </div>
+                              <span className="font-mono font-semibold text-neutral-700">{Number(p.value).toLocaleString()}</span>
+                            </div>
+                          ))}
+                          <div className="border-t border-neutral-100 mt-2 pt-1.5 flex justify-between">
+                            <span className="text-neutral-400">Total</span>
+                            <span className="font-mono font-bold text-neutral-700">{total.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend
+                    iconType="square"
+                    iconSize={9}
+                    wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                    formatter={(val) => <span className="text-neutral-500 capitalize">{val}</span>}
+                  />
+                  <Bar dataKey="Train" stackId="a" fill={TEAL}      name="Train"  />
+                  <Bar dataKey="Test"  stackId="a" fill="#F59E0B"   name="Test"   />
+                  <Bar dataKey="Val"   stackId="a" fill="#22C55E"   name="Val"    radius={[0, 3, 3, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <DataTable<{ id: string; name: string; train: number; test: number; val: number; total: number; trainPct: number; colorIdx: number }>
+                columns={[
+                  { id: "name",  header: "Class", accessorKey: "name",
+                    cell: ({ row }) => (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
+                        <span className="font-semibold text-neutral-700 capitalize">{row.name}</span>
+                      </div>
+                    ) },
+                  { id: "train", header: "Train", accessorKey: "train", align: "right",
+                    cell: ({ row }) => <span className="font-mono text-neutral-600">{row.train.toLocaleString()}</span> },
+                  { id: "test",  header: "Test",  accessorKey: "test",  align: "right",
+                    cell: ({ row }) => <span className="font-mono text-neutral-600">{row.test.toLocaleString()}</span>  },
+                  { id: "val",   header: "Val",   accessorKey: "val",   align: "right",
+                    cell: ({ row }) => <span className="font-mono text-neutral-600">{row.val.toLocaleString()}</span>   },
+                  { id: "total", header: "Total", accessorKey: "total", align: "right",
+                    cell: ({ row }) => <span className="font-mono font-bold text-neutral-800">{row.total.toLocaleString()}</span> },
+                  { id: "balance", header: "Balance", accessorKey: "trainPct",
+                    cell: ({ row }) => (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${row.trainPct}%`, backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
+                        </div>
+                        <span className="text-[10px] font-mono text-neutral-400 w-8 text-right">{row.trainPct}%</span>
+                      </div>
+                    ) },
+                ]}
+                data={categories
                   .filter((c) => c.name.toLowerCase().includes(catSearch.toLowerCase()))
                   .map((c, i) => {
-                    const rowTotal = c.train + c.test + c.val;
-                    const trainPct = Math.round((c.train / rowTotal) * 100);
-                    const catColor = CAT_COLORS[i % CAT_COLORS.length];
-                    return (
-                      <tr key={c.name} className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50/60 transition-colors">
-                        <td className="px-4 py-3 font-semibold text-neutral-700 capitalize">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: catColor }} />
-                            {c.name}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.train.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.test.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-mono text-neutral-600">{c.val.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-mono font-bold text-neutral-800">{rowTotal.toLocaleString()}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{ width: `${trainPct}%`, backgroundColor: catColor }}
-                              />
-                            </div>
-                            <span className="text-[10px] font-mono text-neutral-400 w-8 text-right">{trainPct}%</span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
+                    const total = c.train + c.test + c.val;
+                    return { id: c.name, name: c.name, train: c.train, test: c.test, val: c.val, total, trainPct: Math.round((c.train / total) * 100), colorIdx: i };
                   })}
-              </tbody>
-            </table>
+                rowIdKey="id"
+                pagination="none"
+                toolbar={false}
+                showRowCue={false}
+              />
+            )}
           </div>
         </div>
       </Card>
@@ -411,85 +420,80 @@ const CLOUD_PROVIDERS = [
 function AddDataTab() {
   const [storage,    setStorage]    = useState("Auto");
   const [compute,    setCompute]    = useState("auto");
-  const [dataFormat, setDataFormat] = useState("");
+  const [dataFormat, setDataFormat] = useState<string | null>(null);
+  const [cloudProv,  setCloudProv]  = useState<string | null>("aws");
   const [uploadMode, setUploadMode] = useState<"local" | "cloud">("local");
   const [urlType,    setUrlType]    = useState("private");
   const [cloudPath,  setCloudPath]  = useState("");
-  const [cloudProv,  setCloudProv]  = useState("aws-s3");
-  const [selCloud,   setSelCloud]   = useState("aws");
   const [dragging,   setDragging]   = useState(false);
   const canUpload = !!dataFormat;
 
+  const DATA_FORMAT_OPTIONS = DATA_FORMATS.map(({ id, desc }) => ({ label: `${id} — ${desc}`, value: id }));
+  const CLOUD_OPTIONS = CLOUD_PROVIDERS.map(({ id, label }) => ({ label, value: id }));
+  const STORAGE_OPTIONS = [
+    { label: "Auto", value: "Auto" },
+    { label: "matrice-default-bucket", value: "matrice-default-bucket" },
+    { label: "s3://my-bucket", value: "s3://my-bucket" },
+  ];
+  const COMPUTE_OPTIONS = [
+    { label: "Automatically launch a new instance", value: "auto" },
+    { label: "Matrice Cloud GPU", value: "matrice-gpu" },
+    { label: "AWS p3.2xlarge", value: "aws-p3" },
+  ];
+
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC]">
-      {/* Storage & Compute */}
-      <Card className="p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <HardDrive className="w-4 h-4 text-neutral-400" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Storage &amp; Compute</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-5">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Storage / Bucket Alias</Label>
-              <Select value={storage} onValueChange={setStorage}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Auto">Auto</SelectItem>
-                  <SelectItem value="matrice-default-bucket">matrice-default-bucket</SelectItem>
-                  <SelectItem value="s3://my-bucket">s3://my-bucket</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="text-xs text-neutral-400">Configure your bucket or use auto{" "}
-              <button className="text-[#00775B] font-medium hover:underline">+ Add Bucket</button></p>
-          </div>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Compute</Label>
-              <Select value={compute} onValueChange={setCompute}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">Automatically launch a new instance</SelectItem>
-                  <SelectItem value="matrice-gpu">Matrice Cloud GPU</SelectItem>
-                  <SelectItem value="aws-p3">AWS p3.2xlarge</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="text-xs text-neutral-400">Configure your compute or use auto{" "}
-              <button className="text-[#00775B] font-medium hover:underline">+ Add Compute</button></p>
-          </div>
-        </div>
-      </Card>
 
-      {/* Data Format */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+      {/* Row 1: Storage & Compute + Data Format — side by side */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <HardDrive className="w-4 h-4 text-neutral-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Storage &amp; Compute</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <FESelect
+                label="Storage / Bucket Alias"
+                options={STORAGE_OPTIONS}
+                value={storage}
+                onChange={(v) => setStorage(v as string)}
+                searchable
+              />
+              <p className="text-xs text-neutral-400">Configure your bucket or use auto{" "}
+                <button className="text-[#00775B] font-medium hover:underline">+ Add Bucket</button></p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <FESelect
+                label="Compute"
+                options={COMPUTE_OPTIONS}
+                value={compute}
+                onChange={(v) => setCompute(v as string)}
+              />
+              <p className="text-xs text-neutral-400">Configure your compute or use auto{" "}
+                <button className="text-[#00775B] font-medium hover:underline">+ Add Compute</button></p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-4">
             <Zap className="w-4 h-4 text-neutral-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Data Format</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Data Configuration</h3>
           </div>
-          {dataFormat && (
-            <button onClick={() => setDataFormat("")} className="text-xs text-neutral-400 hover:text-red-500 transition-colors">Clear</button>
-          )}
-        </div>
-        <div className="grid grid-cols-6 gap-2">
-          {DATA_FORMATS.map(({ id, desc }) => {
-            const active = dataFormat === id;
-            return (
-              <button key={id} onClick={() => setDataFormat(active ? "" : id)}
-                className={cn("flex flex-col items-center gap-1.5 px-3 py-3 rounded-md border text-center transition-all",
-                  active ? "border-[#00775B] bg-[#00775B]/8 shadow-sm" : "border-neutral-200 hover:border-[#00775B]/40 hover:bg-neutral-50")}>
-                <span className={cn("text-xs font-bold", active ? "text-[#00775B]" : "text-neutral-700")}>{id}</span>
-                <span className="text-[9px] text-neutral-400 leading-tight">{desc}</span>
-                {active && <span className="w-4 h-4 rounded-full bg-[#00775B] flex items-center justify-center"><span className="text-white text-[8px] font-bold">✓</span></span>}
-              </button>
-            );
-          })}
-        </div>
-      </Card>
+          <FESelect
+            label="Data Format"
+            options={DATA_FORMAT_OPTIONS}
+            value={dataFormat}
+            onChange={(v) => setDataFormat(v as string | null)}
+            placeholder="Select format…"
+            searchable
+            clearable
+          />
+        </Card>
+      </div>
 
-      {/* Upload / Cloud */}
+      {/* Row 2: Upload / Cloud */}
       <Card className="overflow-hidden">
         <div className="flex border-b border-neutral-100">
           {(["local", "cloud"] as const).map((m) => (
@@ -524,48 +528,29 @@ function AddDataTab() {
         )}
 
         {uploadMode === "cloud" && (
-          <div className="p-6 flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Select Provider</p>
-              <div className="grid grid-cols-4 gap-3">
-                {CLOUD_PROVIDERS.map(({ id, label, logo }) => (
-                  <button key={id} onClick={() => setSelCloud(id)}
-                    className={cn("flex flex-col items-center gap-2 p-3 rounded-md border transition-all",
-                      selCloud === id ? "border-[#00775B] bg-[#00775B]/6 shadow-sm" : "border-neutral-200 hover:border-[#00775B]/40 hover:bg-neutral-50")}>
-                    <div className={cn("w-10 h-10 rounded-md border flex items-center justify-center bg-white",
-                      selCloud === id ? "border-[#00775B]/30" : "border-neutral-200")}>{logo}</div>
-                    <span className={cn("text-[10px] font-semibold", selCloud === id ? "text-[#00775B]" : "text-neutral-500")}>{label}</span>
-                  </button>
-                ))}
-              </div>
+          <div className="p-6 flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FESelect
+                label="Cloud Provider"
+                options={CLOUD_OPTIONS}
+                value={cloudProv}
+                onChange={(v) => setCloudProv(v as string | null)}
+              />
+              <FESelect
+                label="URL Type"
+                options={[
+                  { label: "Private (using bucket alias)", value: "private" },
+                  { label: "Public URL",                   value: "public"  },
+                  { label: "S3 URI",                       value: "s3-uri"  },
+                ]}
+                value={urlType}
+                onChange={(v) => setUrlType(v as string)}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">URL Type</Label>
-              <Select value={urlType} onValueChange={setUrlType}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private">Private (using bucket alias)</SelectItem>
-                  <SelectItem value="public">Public URL</SelectItem>
-                  <SelectItem value="s3-uri">S3 URI</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Cloud Path</Label>
+              <label className="text-xs font-medium text-neutral-600">Cloud Path</label>
               <Input placeholder="e.g. datasets/my-project/v3/" value={cloudPath}
                 onChange={(e) => setCloudPath(e.target.value)} className="h-9 text-sm" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Cloud Provider</Label>
-              <Select value={cloudProv} onValueChange={setCloudProv}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aws-s3">AWS S3</SelectItem>
-                  <SelectItem value="gcs">Google Cloud Storage</SelectItem>
-                  <SelectItem value="oracle">Oracle Object Storage</SelectItem>
-                  <SelectItem value="azure">Azure Blob</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         )}
@@ -741,198 +726,115 @@ function DataSplittingTab({ dataset }: { dataset: Dataset }) {
 
   const handleTrain = (v: number[]) => {
     const t = v[0];
-    const remaining = 100 - t;
     setTrain(t);
-    setVal(Math.min(val, remaining));
+    setVal(Math.min(val, 100 - t));
   };
-  const handleVal = (v: number[]) => {
-    const maxVal = 100 - train;
-    setVal(Math.min(v[0], maxVal));
-  };
-
+  const handleVal = (v: number[]) => setVal(Math.min(v[0], 100 - train));
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
-  const preview = DETAIL.categories.map((c) => {
-    const total = c.train + c.test + c.val + c.unassigned;
-    return {
-      name:  c.name,
-      total,
-      train: Math.round(total * train / 100),
-      val:   Math.round(total * val / 100),
-      test:  Math.round(total * test / 100),
-    };
-  });
+  const SPLIT_SEGMENTS = [
+    { key: "train", label: "Train",      value: train, color: TEAL,      onChange: handleTrain, max: 90 },
+    { key: "val",   label: "Validation", value: val,   color: "#0284C7", onChange: handleVal,   max: 100 - train },
+    { key: "test",  label: "Test",       value: test,  color: "#F59E0B", onChange: null,        max: 0 },
+  ];
 
   return (
     <div className="p-6 bg-[#F8FAFC] flex flex-col gap-5 min-w-0">
-
-      {/* Current split visual + sliders */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-3 gap-5">
 
         {/* Sliders card */}
-        <Card className="p-5 flex flex-col gap-5">
+        <Card className="col-span-2 p-5 flex flex-col gap-5">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-4 h-4 text-neutral-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Adjust Split Ratios</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Split Ratios</h3>
           </div>
 
-          {/* Visual bar */}
+          {/* Proportional bar */}
           <div className="flex h-3 rounded-full overflow-hidden gap-px">
             <div className="transition-all" style={{ width: `${train}%`, backgroundColor: TEAL }} />
             <div className="transition-all" style={{ width: `${val}%`, backgroundColor: "#0284C7" }} />
-            <div className="transition-all" style={{ width: `${test}%`, backgroundColor: "#7C3AED" }} />
-          </div>
-          <div className="flex items-center gap-4 text-[11px]">
-            {[
-              { label: "Train", value: train, color: TEAL },
-              { label: "Val",   value: val,   color: "#0284C7" },
-              { label: "Test",  value: test,  color: "#7C3AED" },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-neutral-500">{label}</span>
-                <span className="font-bold font-mono" style={{ color }}>{value}%</span>
-              </div>
-            ))}
-            <span className="ml-auto text-neutral-400">Must sum to 100%</span>
+            <div className="transition-all" style={{ width: `${test}%`, backgroundColor: "#F59E0B" }} />
           </div>
 
-          {/* Train slider */}
+          {/* Legend */}
+          <div className="flex items-center gap-6">
+            {SPLIT_SEGMENTS.map(({ key, label, value, color }) => (
+              <div key={key} className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-[11px] text-neutral-500">{label}</span>
+                <span className="text-[12px] font-bold font-mono" style={{ color }}>{value}%</span>
+              </div>
+            ))}
+            <span className="ml-auto text-[10px] text-neutral-400">Must sum to 100%</span>
+          </div>
+
+          {/* Sliders */}
           <div className="flex flex-col gap-3">
-            {[
-              { label: "Train", value: [train], onChange: handleTrain, color: TEAL, max: 90 },
-              { label: "Val",   value: [val],   onChange: handleVal,   color: "#0284C7", max: 100 - train },
-            ].map(({ label, value, onChange, color, max }) => (
-              <div key={label} className="flex items-center gap-3">
-                <span className="text-xs font-medium text-neutral-600 w-10">{label}</span>
+            {SPLIT_SEGMENTS.filter(s => s.onChange).map(({ key, label, value, color, onChange, max }) => (
+              <div key={key} className="flex items-center gap-3">
+                <span className="text-[11px] font-medium text-neutral-600 w-20">{label}</span>
                 <div className="flex-1">
-                  <Slider value={value} onValueChange={onChange} min={0} max={max} step={5}
+                  <Slider value={[value]} onValueChange={onChange!} min={0} max={max!} step={5}
                     className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
                 </div>
-                <span className="text-[11px] font-mono font-semibold w-8 text-right" style={{ color }}>{value[0]}%</span>
+                <span className="text-[12px] font-mono font-bold w-8 text-right" style={{ color }}>{value}%</span>
               </div>
             ))}
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-neutral-400 w-10">Test</span>
-              <div className="flex-1 h-4 flex items-center">
-                <div className="h-2 rounded-full flex-1 bg-neutral-100 relative">
-                  <div className="absolute left-0 top-0 h-full rounded-full" style={{ width: `${(test / 40) * 100}%`, backgroundColor: "#7C3AED", opacity: 0.4 }} />
-                </div>
+              <span className="text-[11px] font-medium text-neutral-400 w-20">Test (auto)</span>
+              <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${test}%`, backgroundColor: "#F59E0B" }} />
               </div>
-              <span className="text-[11px] font-mono font-semibold w-8 text-right text-[#7C3AED]">{test}%</span>
+              <span className="text-[12px] font-mono font-bold w-8 text-right text-[#F59E0B]">{test}%</span>
             </div>
             <p className="text-[10px] text-neutral-400">Test split is calculated automatically (100 − Train − Val)</p>
           </div>
 
           {/* Seed */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs text-neutral-600">Random Seed</Label>
-            <Input value={seed} onChange={(e) => setSeed(e.target.value)} className="h-9 text-sm font-mono" placeholder="42" />
-            <p className="text-[10px] text-neutral-400">Ensures reproducible splits across runs</p>
+          <div className="grid grid-cols-2 gap-4 pt-1 border-t border-neutral-100">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-neutral-600">Random Seed</label>
+              <Input value={seed} onChange={(e) => setSeed(e.target.value)} className="h-9 text-sm font-mono" placeholder="42" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-neutral-600">Strategy</label>
+              <Select value={strategy} onValueChange={(v) => setStrategy(v as typeof strategy)}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="random">Random Split</SelectItem>
+                  <SelectItem value="stratified">Stratified Split</SelectItem>
+                  <SelectItem value="sequential">Sequential Split</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </Card>
 
-        {/* Strategy card */}
-        <div className="flex flex-col gap-5">
-          <Card className="p-5 flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <Shuffle className="w-4 h-4 text-neutral-400" />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Splitting Strategy</h3>
+        {/* Summary card */}
+        <Card className="p-5 flex flex-col gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Configuration</p>
+          {[
+            { label: "Strategy",    value: strategy.charAt(0).toUpperCase() + strategy.slice(1) },
+            { label: "Seed",        value: seed || "42" },
+            { label: "Total Items", value: dataset.itemCount.toLocaleString() },
+            { label: "Est. Train",  value: Math.round(dataset.itemCount * train / 100).toLocaleString() },
+            { label: "Est. Val",    value: Math.round(dataset.itemCount * val   / 100).toLocaleString() },
+            { label: "Est. Test",   value: Math.round(dataset.itemCount * test  / 100).toLocaleString() },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex items-center justify-between py-1.5 border-b border-neutral-50 last:border-0">
+              <span className="text-[11px] text-neutral-500">{label}</span>
+              <span className="text-[11px] font-mono font-semibold text-neutral-800">{value}</span>
             </div>
-            <div className="flex flex-col gap-3">
-              {([
-                { id: "random",      label: "Random Split",      desc: "Randomly assign items across sets. Best for balanced datasets." },
-                { id: "stratified",  label: "Stratified Split",  desc: "Maintains class proportion in each split. Recommended." },
-                { id: "sequential", label: "Sequential Split",  desc: "Splits in order of data entry. Useful for time-series data." },
-              ] as const).map(({ id, label, desc }) => (
-                <button key={id} onClick={() => setStrategy(id)}
-                  className={cn("flex items-start gap-3 p-3 rounded-md border text-left transition-all",
-                    strategy === id ? "border-[#00775B] bg-[#00775B]/5 shadow-sm" : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50")}>
-                  <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                    strategy === id ? "border-[#00775B]" : "border-neutral-300")}>
-                    {strategy === id && <div className="w-2 h-2 rounded-full bg-[#00775B]" />}
-                  </div>
-                  <div>
-                    <p className={cn("text-[12px] font-semibold", strategy === id ? "text-[#00775B]" : "text-neutral-700")}>{label}</p>
-                    <p className="text-[10px] text-neutral-400 mt-0.5 leading-relaxed">{desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </Card>
-
-          {/* Stats */}
-          <Card className="p-4 flex flex-col gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 mb-1">Current Configuration</p>
-            {[
-              { label: "Strategy",    value: strategy.charAt(0).toUpperCase() + strategy.slice(1) },
-              { label: "Seed",        value: seed || "42" },
-              { label: "Total Items", value: dataset.itemCount.toLocaleString() },
-              { label: "Est. Train",  value: Math.round(dataset.itemCount * train / 100).toLocaleString() },
-              { label: "Est. Val",    value: Math.round(dataset.itemCount * val   / 100).toLocaleString() },
-              { label: "Est. Test",   value: Math.round(dataset.itemCount * test  / 100).toLocaleString() },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between py-1 border-b border-neutral-50 last:border-0">
-                <span className="text-[11px] text-neutral-500">{label}</span>
-                <span className="text-[11px] font-mono font-medium text-neutral-800">{value}</span>
-              </div>
-            ))}
-          </Card>
-        </div>
-      </div>
-
-      {/* Class distribution preview */}
-      <Card className="overflow-hidden">
-        <SectionHead title="Class Distribution Preview" sub="Estimated item counts per class after applying the new split" />
-        <table className="w-full text-[12px]">
-          <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-100">
-              {["Class", "Total Items", `Train (${train}%)`, `Val (${val}%)`, `Test (${test}%)`].map((h) => (
-                <th key={h} className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {preview.map((row, i) => (
-              <tr key={row.name} className={cn("border-b border-neutral-50", i % 2 === 0 ? "bg-white" : "bg-neutral-50/30")}>
-                <td className="px-5 py-3 font-medium text-neutral-800 capitalize">{row.name}</td>
-                <td className="px-5 py-3 font-mono text-neutral-500">{row.total.toLocaleString()}</td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${train}%`, backgroundColor: TEAL }} />
-                    </div>
-                    <span className="font-mono text-neutral-600 w-12 text-right">{row.train.toLocaleString()}</span>
-                  </div>
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${val}%`, backgroundColor: "#0284C7" }} />
-                    </div>
-                    <span className="font-mono text-neutral-600 w-12 text-right">{row.val.toLocaleString()}</span>
-                  </div>
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${test}%`, backgroundColor: "#7C3AED" }} />
-                    </div>
-                    <span className="font-mono text-neutral-600 w-12 text-right">{row.test.toLocaleString()}</span>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="flex justify-end px-5 py-4 border-t border-neutral-100 bg-neutral-50/50">
-          <button onClick={handleSave}
-            className={cn("flex items-center gap-2 h-9 px-5 rounded-md text-sm font-semibold text-white transition-all",
-              saved ? "bg-emerald-500" : "bg-[#00775B] hover:bg-[#006649]")}>
-            {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : "Save Split Configuration"}
+          ))}
+          <button
+            onClick={handleSave}
+            className={cn("mt-auto flex items-center justify-center gap-2 h-9 px-5 rounded-md text-sm font-semibold text-white transition-all",
+              saved ? "bg-emerald-500" : "bg-[#00775B] hover:bg-[#006649]")}
+          >
+            {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : "Save Configuration"}
           </button>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -1030,49 +932,33 @@ function PreviewTab() {
             ))}
           </div>
         ) : (
-          <Card className="overflow-hidden">
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-100">
-                  {["#", "Filename", "Class", "Split", "Dimensions", "Size"].map((h) => (
-                    <th key={h} className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((item, i) => (
-                  <tr key={item.id} className={cn("border-b border-neutral-50 hover:bg-neutral-50 transition-colors", i % 2 === 0 ? "bg-white" : "bg-neutral-50/30")}>
-                    <td className="px-5 py-2.5 font-mono text-[10px] text-neutral-400">{item.id + 1}</td>
-                    <td className="px-5 py-2.5 font-mono text-[11px] text-neutral-600">IMG_{String(item.id + 1).padStart(4, "0")}.jpg</td>
-                    <td className="px-5 py-2.5">
-                      <span className={cn("inline-flex items-center h-5 px-2 rounded-full text-[10px] font-semibold",
-                        item.label === "benign" ? "bg-[#E5FFF9] text-[#00775B]" : "bg-amber-50 text-amber-700")}>
-                        {item.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-2.5 text-[11px] text-neutral-500 capitalize">{item.split}</td>
-                    <td className="px-5 py-2.5 font-mono text-[10px] text-neutral-400">224×224</td>
-                    <td className="px-5 py-2.5 font-mono text-[10px] text-neutral-400">48 KB</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          <DataTable<{ id: number; idx: number; label: string; split: string }>
+            columns={[
+              { id: "idx",       header: "#",          accessorKey: "idx",
+                cell: ({ row }) => <span className="font-mono text-[10px] text-neutral-400">{row.idx}</span> },
+              { id: "filename",  header: "Filename",   accessorKey: "id",
+                cell: ({ row }) => <span className="font-mono text-[11px] text-neutral-600">IMG_{String(row.idx).padStart(4, "0")}.jpg</span> },
+              { id: "class",     header: "Class",      accessorKey: "label",
+                cell: ({ row }) => (
+                  <span className={cn("inline-flex items-center h-5 px-2 rounded-full text-[10px] font-semibold",
+                    row.label === "benign" ? "bg-[#E5FFF9] text-[#00775B]" : "bg-amber-50 text-amber-700")}>
+                    {row.label}
+                  </span>
+                ) },
+              { id: "split",     header: "Split",      accessorKey: "split",
+                cell: ({ row }) => <span className="text-[11px] text-neutral-500 capitalize">{row.split}</span> },
+              { id: "dims",      header: "Dimensions", accessorKey: "id",
+                cell: () => <span className="font-mono text-[10px] text-neutral-400">224×224</span> },
+              { id: "size",      header: "Size",       accessorKey: "id",
+                cell: () => <span className="font-mono text-[10px] text-neutral-400">48 KB</span> },
+            ]}
+            data={filtered.map((item) => ({ ...item, idx: item.id + 1 }))}
+            rowIdKey="id"
+            pagination="client"
+            pageSize={24}
+            showRowCue={false}
+          />
         )}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-200 bg-white text-[11px] text-neutral-500">
-        <span>Showing {filtered.length} of {PREVIEW_ITEMS.length} items</span>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, "...", 12].map((p, i) => (
-            <button key={i}
-              className={cn("h-7 w-7 rounded text-[11px] font-medium transition-colors",
-                p === 1 ? "bg-[#00775B] text-white" : "text-neutral-500 hover:bg-neutral-100")}>
-              {p}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

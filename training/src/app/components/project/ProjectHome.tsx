@@ -1,11 +1,15 @@
-import { Calendar, Cpu, Globe, Tag, Check, ChevronRight, Database, Rocket, ArrowRight } from "lucide-react";
-import { TrainingProject } from "@/app/data/mockData";
+import {
+  Calendar, Cpu, Globe, Tag, Database, Rocket,
+  ArrowUpRight, HardDrive, Layers, Radio, Square,
+  Clock, TrendingUp,
+} from "lucide-react";
+import { TrainingProject, MOCK_DATASETS, MOCK_TRAINING_JOBS, MOCK_DEPLOYMENTS } from "@/app/data/mockData";
 import { ProjectPage } from "@/app/components/layout/AppLayout";
-import { StatCard, StatCardData, hex2rgba } from "@/app/components/ui/StatCard";
+import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
 import { StatusCapsule } from "@/app/components/ui/DataGrid";
 import { cn } from "@/app/lib/utils";
 
-const TEAL = "#00775B";
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_KEY: Record<TrainingProject["status"], string> = {
   draft: "draft", training: "active", complete: "success", failed: "critical", paused: "pending",
@@ -14,113 +18,214 @@ const STATUS_LABEL: Record<TrainingProject["status"], string> = {
   draft: "Draft", training: "Training", complete: "Complete", failed: "Failed", paused: "Paused",
 };
 
-// ─── Pipeline Stepper ─────────────────────────────────────────────────────────
-
-type StepStatus = "complete" | "active" | "pending";
-
-interface PipelineStep {
-  id: ProjectPage;
-  num: number;
+function SectionHeader({
+  title,
+  count,
+  icon: Icon,
+  onViewAll,
+}: {
   title: string;
-  desc: string;
+  count?: number;
   icon: React.ElementType;
-  stat: string;
-  status: StepStatus;
-  color: string;
-  bgColor: string;
+  onViewAll?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100">
+      <div className="flex items-center gap-2">
+        <Icon className="w-3.5 h-3.5 text-neutral-400" />
+        <h2 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">{title}</h2>
+        {count !== undefined && (
+          <span className="text-[10px] font-semibold text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">
+            {count}
+          </span>
+        )}
+      </div>
+      {onViewAll && (
+        <button
+          onClick={onViewAll}
+          className="flex items-center gap-1 text-[10px] font-semibold text-[#00775B] hover:text-[#004e3d] transition-colors"
+        >
+          View all <ArrowUpRight className="w-3 h-3" />
+        </button>
+      )}
+    </div>
+  );
 }
 
-const STEPS: PipelineStep[] = [
-  {
-    id: "datasets",    num: 1, title: "Prepare Data",   desc: "Upload & configure training datasets",
-    icon: Database,    stat: "3 datasets",              status: "complete",
-    color: "#059669",  bgColor: "#ECFDF5",
-  },
-  {
-    id: "training",    num: 2, title: "Train Model",    desc: "Run jobs & tune model accuracy",
-    icon: Cpu,         stat: "4 runs · 94.2% best",    status: "active",
-    color: TEAL,       bgColor: "#E5FFF9",
-  },
-  {
-    id: "deployments", num: 3, title: "Deploy",         desc: "Serve inference via live endpoints",
-    icon: Rocket,      stat: "1 live endpoint",         status: "complete",
-    color: "#7C3AED",  bgColor: "#F3EEFF",
-  },
-];
+// ─── Datasets panel ───────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<StepStatus, { ring: string; fill: string; text: string }> = {
-  complete: { ring: "#059669", fill: "#059669", text: "#fff" },
-  active:   { ring: TEAL,     fill: TEAL,       text: "#fff" },
-  pending:  { ring: "#CBD5E1", fill: "#fff",     text: "#94A3B8" },
-};
-
-function PipelineStepper({ onNavigate }: { onNavigate?: (page: ProjectPage) => void }) {
+function DatasetsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => void }) {
   return (
-    <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-[13px] font-semibold text-neutral-800">Project Pipeline</h2>
-          <p className="text-[11px] text-neutral-400 mt-0.5">Click any step to navigate</p>
-        </div>
-        <div className="flex items-center gap-4 text-[10px] font-semibold uppercase tracking-wider">
-          {(["complete", "active", "pending"] as StepStatus[]).map((s) => (
-            <div key={s} className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_CONFIG[s].ring }} />
-              <span className="text-neutral-400 capitalize">{s}</span>
+    <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
+      <SectionHeader
+        title="Datasets"
+        count={MOCK_DATASETS.length}
+        icon={Database}
+        onViewAll={() => onNavigate?.("datasets")}
+      />
+      <div className="divide-y divide-neutral-100">
+        {MOCK_DATASETS.map((ds) => (
+          <div
+            key={ds.id}
+            className="flex items-center justify-between px-5 py-3.5 hover:bg-neutral-50/60 transition-colors group"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-[4px] bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                <Layers className="w-3.5 h-3.5 text-blue-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold text-neutral-800 truncate">{ds.name}</p>
+                <p className="text-[10px] text-neutral-400 mt-0.5">
+                  {ds.itemCount.toLocaleString()} items · {(ds.sizeMb / 1024).toFixed(1)} GB
+                </p>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex items-start">
-        {STEPS.map((step, idx) => {
-          const cfg = STATUS_CONFIG[step.status];
-          return (
-            <div key={step.id} className="flex items-start flex-1">
-              {/* Step card */}
-              <button
-                onClick={() => onNavigate?.(step.id)}
-                className="flex-1 flex flex-col items-center gap-3 px-4 py-5 rounded-[6px] transition-all duration-150 hover:bg-neutral-50 group cursor-pointer text-left"
-              >
-                {/* Circle node */}
-                <div
-                  className="w-12 h-12 rounded-full border-2 flex items-center justify-center transition-transform duration-150 group-hover:scale-110 shrink-0"
-                  style={{ borderColor: cfg.ring, backgroundColor: cfg.fill }}
-                >
-                  {step.status === "complete" ? (
-                    <Check className="w-5 h-5" style={{ color: cfg.text }} />
-                  ) : step.status === "active" ? (
-                    <step.icon className="w-5 h-5" style={{ color: cfg.text }} />
-                  ) : (
-                    <span className="text-[13px] font-bold" style={{ color: cfg.text }}>{step.num}</span>
-                  )}
+            <div className="flex items-center gap-4 shrink-0 ml-4">
+              {/* Split bar */}
+              <div className="hidden sm:flex items-center gap-1.5">
+                <div className="flex h-1.5 w-20 rounded-full overflow-hidden bg-neutral-100">
+                  <div className="bg-[#00775B]"   style={{ width: `${ds.trainSplit}%` }} />
+                  <div className="bg-[#0284C7]"   style={{ width: `${ds.valSplit}%` }} />
+                  <div className="bg-[#F59E0B]"   style={{ width: `${ds.testSplit}%` }} />
                 </div>
-
-                {/* Step info */}
-                <div className="text-center flex flex-col items-center gap-1.5">
-                  <p className="text-[13px] font-semibold text-neutral-800 group-hover:text-[#00775B] transition-colors">{step.title}</p>
-                  <p className="text-[11px] text-neutral-400 leading-snug">{step.desc}</p>
-                  <div
-                    className="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold"
-                    style={{ backgroundColor: hex2rgba(step.color, 0.12), color: step.color }}
-                  >
-                    {step.stat}
-                  </div>
-                </div>
-
-                {/* Navigate hint */}
-                <span className="flex items-center gap-1 text-[10px] text-neutral-300 group-hover:text-[#00775B] transition-colors font-medium">
-                  View <ArrowRight className="w-3 h-3" />
+                <span className="text-[10px] text-neutral-400 font-mono whitespace-nowrap">
+                  {ds.trainSplit}/{ds.valSplit}/{ds.testSplit}
                 </span>
-              </button>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] text-neutral-400 font-mono">
+                <Clock className="w-3 h-3" />{ds.createdAt}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-              {/* Connector arrow */}
-              {idx < STEPS.length - 1 && (
-                <div className="flex-none flex items-center mt-6 px-1">
-                  <div className="w-8 h-px bg-neutral-200" />
-                  <ChevronRight className="w-4 h-4 text-neutral-300 -ml-1" />
+// ─── Training Jobs panel ──────────────────────────────────────────────────────
+
+const JOB_STATUS_COLOR = {
+  running: { bg: "bg-blue-50",   text: "text-blue-600",   dot: "bg-blue-500",   label: "Running" },
+  queued:  { bg: "bg-amber-50",  text: "text-amber-600",  dot: "bg-amber-500",  label: "Queued"  },
+  paused:  { bg: "bg-neutral-100", text: "text-neutral-500", dot: "bg-neutral-400", label: "Paused" },
+} as const;
+
+function TrainingJobsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => void }) {
+  const jobs = MOCK_TRAINING_JOBS.slice(0, 4);
+  return (
+    <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
+      <SectionHeader
+        title="Training Jobs"
+        count={MOCK_TRAINING_JOBS.length}
+        icon={Cpu}
+        onViewAll={() => onNavigate?.("training")}
+      />
+      <div className="divide-y divide-neutral-100">
+        {jobs.map((job) => {
+          const sc = JOB_STATUS_COLOR[job.status];
+          return (
+            <div key={job.id} className="px-5 py-3.5 hover:bg-neutral-50/60 transition-colors">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-[4px] bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                    <Cpu className="w-3 h-3 text-blue-500" />
+                  </div>
+                  <p className="text-[12px] font-semibold text-neutral-800 truncate">{job.projectName}</p>
                 </div>
-              )}
+                <span className={cn(
+                  "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ml-2",
+                  sc.bg, sc.text,
+                )}>
+                  <span className={cn("w-1.5 h-1.5 rounded-full", sc.dot, job.status === "running" && "animate-pulse")} />
+                  {sc.label}
+                </span>
+              </div>
+              {/* Progress bar */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-full transition-all", job.status === "running" ? "bg-[#00775B]" : "bg-neutral-300")}
+                    style={{ width: `${job.progress}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-mono text-neutral-500 shrink-0 w-7 text-right">{job.progress}%</span>
+              </div>
+              {/* Meta */}
+              <div className="flex items-center gap-3 mt-1.5 text-[10px] text-neutral-400">
+                <span className="font-mono">{job.gpuModel}</span>
+                <span>·</span>
+                <span>Ep {job.currentEpoch}/{job.epochs}</span>
+                {job.duration !== "—" && (
+                  <>
+                    <span>·</span>
+                    <span className="flex items-center gap-1">
+                      <TrendingUp className="w-2.5 h-2.5" />{job.duration}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Deployments panel ────────────────────────────────────────────────────────
+
+const DEP_STATUS_COLOR = {
+  live:    { bg: "bg-[#E5FFF9]", text: "text-[#00775B]", dot: "bg-[#00775B]", label: "Live"    },
+  stopped: { bg: "bg-neutral-100", text: "text-neutral-500", dot: "bg-neutral-400", label: "Stopped" },
+  error:   { bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-500",    label: "Error"   },
+} as const;
+
+function DeploymentsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => void }) {
+  return (
+    <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
+      <SectionHeader
+        title="Deployments"
+        count={MOCK_DEPLOYMENTS.length}
+        icon={Rocket}
+        onViewAll={() => onNavigate?.("deployments")}
+      />
+      <div className="divide-y divide-neutral-100">
+        {MOCK_DEPLOYMENTS.map((dep) => {
+          const sc = DEP_STATUS_COLOR[dep.status];
+          return (
+            <div key={dep.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-neutral-50/60 transition-colors gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={cn(
+                  "w-8 h-8 rounded-[4px] flex items-center justify-center shrink-0",
+                  dep.status === "live" ? "bg-[#E5FFF9] border border-[#00775B]/20" : "bg-neutral-100 border border-neutral-200",
+                )}>
+                  {dep.status === "live"
+                    ? <Radio  className="w-3.5 h-3.5 text-[#00775B]" />
+                    : <Square className="w-3.5 h-3.5 text-neutral-400" />
+                  }
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[12px] font-semibold text-neutral-800 truncate">{dep.modelName}</p>
+                  <p className="text-[10px] text-neutral-400 font-mono truncate mt-0.5">{dep.endpoint}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                {dep.status === "live" && (
+                  <div className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-neutral-500">
+                    <HardDrive className="w-3 h-3" />
+                    {dep.latencyMs}ms
+                  </div>
+                )}
+                <span className="text-[10px] text-neutral-400 font-mono hidden sm:block">{dep.region}</span>
+                <span className={cn(
+                  "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                  sc.bg, sc.text,
+                )}>
+                  <span className={cn("w-1.5 h-1.5 rounded-full", sc.dot, dep.status === "live" && "animate-pulse")} />
+                  {sc.label}
+                </span>
+              </div>
             </div>
           );
         })}
@@ -138,7 +243,7 @@ interface ProjectHomeProps {
 
 export function ProjectHome({ project, onNavigate }: ProjectHomeProps) {
   const STATS: StatCardData[] = [
-    { label: "Datasets",      value: "3",     sublabel: "Attached",       num: "+1",    ref_: "vs Last Week",  dir: "up",     chip: "DATASETS",  color: "#7C3AED", bgColor: "#F3EEFF" },
+    { label: "Datasets",      value: "3",     sublabel: "Attached",       num: "+1",    ref_: "vs Last Week",  dir: "up",     chip: "DATASETS",  color: "#0284C7", bgColor: "#E0F2FE" },
     { label: "Training Runs", value: "4",     sublabel: "All Runs",       num: "+2",    ref_: "vs Last Month", dir: "up",     chip: "RUNS",      color: "#0284C7", bgColor: "#E0F2FE" },
     { label: "Deployments",   value: "1",     sublabel: "Live Endpoints", num: "0",     ref_: "No Change",     dir: "neutral",chip: "DEPLOYED",  color: "#059669", bgColor: "#ECFDF5" },
     { label: "Best Accuracy", value: "94.2%", sublabel: "Top Run",        num: "+1.3%", ref_: "vs Prev Run",   dir: "up",     chip: "ACCURACY",  color: "#D97706", bgColor: "#FFFBEB" },
@@ -146,6 +251,7 @@ export function ProjectHome({ project, onNavigate }: ProjectHomeProps) {
 
   return (
     <div className="flex flex-col gap-6 p-6">
+
       {/* Project header */}
       <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm p-6">
         <div className="flex items-start justify-between gap-4">
@@ -169,14 +275,18 @@ export function ProjectHome({ project, onNavigate }: ProjectHomeProps) {
             )}
           </div>
           <div className="flex flex-col gap-2 shrink-0 items-end">
-            <span className={cn("text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-[4px]",
-              project.type === "build" ? "bg-[#00775B]/10 text-[#00775B]" : "bg-[#0284C7]/10 text-[#0284C7]")}>
+            <span className={cn(
+              "text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-[4px]",
+              project.type === "build" ? "bg-[#00775B]/10 text-[#00775B]" : "bg-[#0284C7]/10 text-[#0284C7]",
+            )}>
               {project.type}
             </span>
             <span className="text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-3 py-1 rounded-[4px] capitalize">
               {project.outputType.replace("_", " ")}
             </span>
-            <span className="text-[10px] text-neutral-400 bg-neutral-50 px-3 py-1 rounded-[4px]">Input: {project.inputType}</span>
+            <span className="text-[10px] text-neutral-400 bg-neutral-50 px-3 py-1 rounded-[4px]">
+              Input: {project.inputType}
+            </span>
           </div>
         </div>
       </div>
@@ -186,8 +296,23 @@ export function ProjectHome({ project, onNavigate }: ProjectHomeProps) {
         {STATS.map((d) => <StatCard key={d.label} d={d} />)}
       </div>
 
-      {/* Pipeline stepper */}
-      <PipelineStepper onNavigate={onNavigate} />
+      {/* Activity panels */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Datasets — full width on first row */}
+        <div className="xl:col-span-3">
+          <DatasetsPanel onNavigate={onNavigate} />
+        </div>
+
+        {/* Training Jobs — 2/3 */}
+        <div className="xl:col-span-2">
+          <TrainingJobsPanel onNavigate={onNavigate} />
+        </div>
+
+        {/* Deployments — 1/3 */}
+        <div className="xl:col-span-1">
+          <DeploymentsPanel onNavigate={onNavigate} />
+        </div>
+      </div>
 
       {/* Config details */}
       <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm p-6">
@@ -210,6 +335,7 @@ export function ProjectHome({ project, onNavigate }: ProjectHomeProps) {
           ))}
         </div>
       </div>
+
     </div>
   );
 }

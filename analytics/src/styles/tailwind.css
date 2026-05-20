@@ -1,4 +1,8 @@
 @import 'tailwindcss' source(none);
 @source '../**/*.{js,ts,jsx,tsx}';
+@source '../../../fe-common/src/**/*.{js,ts,jsx,tsx}';
+@source '../../../training/src/**/*.{js,ts,jsx,tsx}';
+@source '../../../marketplace/src/**/*.{js,ts,jsx,tsx}';
+@source '../../../support/src/**/*.{js,ts,jsx,tsx}';
 
 @import 'tw-animate-css';

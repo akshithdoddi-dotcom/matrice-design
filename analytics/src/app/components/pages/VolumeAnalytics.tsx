@@ -20,6 +20,7 @@ import {
 } from "@/app/data/mockData";
 import { AnalyticsHeader } from "./AnalyticsHeader";
 import { Button } from "@/app/components/ui/Button";
+import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@/app/components/ui/DataGrid";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Collapsible from "@radix-ui/react-collapsible";
 
@@ -307,6 +308,59 @@ const AnomalyTable = () => {
         status: c.change < -5 ? "Check" : "Normal"
     })).sort((a,b) => a.change - b.change);
 
+    type AnomalyRow = typeof anomalies[0];
+
+    const columns: DataGridColumn<AnomalyRow>[] = [
+        {
+            key: "camera",
+            header: "Camera",
+            width: "1fr",
+            render: (row, h) => <InterCell hovered={h} isPrimary>{row.camera}</InterCell>,
+        },
+        {
+            key: "app",
+            header: "Active App",
+            width: "1fr",
+            render: (row, h) => <InterCell hovered={h} color="#64748B">{row.app}</InterCell>,
+        },
+        {
+            key: "current",
+            header: "Current",
+            width: "80px",
+            align: "right",
+            render: (row, h) => <MonoCell hovered={h}>{String(Math.max(0, row.current))}</MonoCell>,
+        },
+        {
+            key: "diff",
+            header: "Diff %",
+            width: "80px",
+            align: "right",
+            render: (row, h) => {
+                const diffPercent = ((row.current - row.baseline) / row.baseline) * 100;
+                const color = diffPercent < 0 ? "#D97706" : "#00956D";
+                return (
+                    <MonoCell hovered={h} color={color} hoveredColor={color}>
+                        {diffPercent > 0 ? "+" : ""}{diffPercent.toFixed(1)}%
+                    </MonoCell>
+                );
+            },
+        },
+        {
+            key: "status",
+            header: "Status",
+            width: "80px",
+            align: "center",
+            render: (row) => {
+                const diffPercent = ((row.current - row.baseline) / row.baseline) * 100;
+                const isSevereDrop = diffPercent <= -50;
+                const isAbnormal = isSevereDrop || row.change < -2;
+                if (isSevereDrop) return <StatusCapsule status="critical" label="CRITICAL" />;
+                if (isAbnormal) return <StatusCapsule status="warning" label="Check" />;
+                return <span className="text-[10px] text-neutral-400">OK</span>;
+            },
+        },
+    ];
+
     return (
         <div className="rounded-sm border border-neutral-200 bg-white overflow-hidden">
             <div className="bg-neutral-50 px-3 py-2 border-b border-neutral-200 flex justify-between items-center">
@@ -315,54 +369,12 @@ const AnomalyTable = () => {
                     Anomaly Detection
                 </h3>
             </div>
-            <table className="w-full text-left text-[10px]">
-                <thead className="bg-neutral-50/50 border-b border-neutral-100 text-neutral-500">
-                    <tr>
-                        <th className="px-3 py-1.5 font-bold uppercase">Camera</th>
-                        <th className="px-3 py-1.5 font-bold uppercase">Active App</th>
-                        <th className="px-3 py-1.5 font-bold uppercase text-right">Current</th>
-                        <th className="px-3 py-1.5 font-bold uppercase text-right">Diff %</th>
-                        <th className="px-3 py-1.5 font-bold uppercase text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                    {anomalies.map((row, i) => {
-                        const diffPercent = ((row.current - row.baseline) / row.baseline) * 100;
-                        const isSevereDrop = diffPercent <= -50;
-                        const isAbnormal = isSevereDrop || row.change < -2;
-                        
-                        return (
-                            <tr key={i} className={cn(
-                                "hover:bg-neutral-50 transition-colors",
-                                isAbnormal && "bg-[#E5FFF9]"
-                            )}>
-                                <td className="px-3 py-1.5 font-medium text-neutral-900">{row.camera}</td>
-                                <td className="px-3 py-1.5 text-neutral-500">{row.app}</td>
-                                <td className="px-3 py-1.5 text-neutral-900 font-mono text-right">{Math.max(0, row.current)}</td>
-                                <td className={cn(
-                                    "px-3 py-1.5 font-mono font-bold text-right",
-                                    diffPercent < 0 ? "text-amber-600" : "text-[#00956D]"
-                                )}>
-                                    {diffPercent > 0 ? "+" : ""}{diffPercent.toFixed(1)}%
-                                </td>
-                                <td className="px-3 py-1.5 text-center">
-                                    {isAbnormal ? (
-                                        <span className={cn(
-                                            "inline-flex items-center gap-1 font-bold px-1.5 rounded-[2px]",
-                                            isSevereDrop ? "bg-red-100 text-red-600 animate-pulse" : "bg-amber-50 text-amber-600"
-                                        )}>
-                                            <AlertTriangle className="w-2.5 h-2.5" /> 
-                                            {isSevereDrop ? "CRITICAL" : "Check"}
-                                        </span>
-                                    ) : (
-                                        <span className="text-neutral-400">OK</span>
-                                    )}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+            <DataGrid
+                columns={columns}
+                data={anomalies}
+                getRowId={(row) => row.camera}
+                compact
+            />
         </div>
     );
 }
@@ -1805,32 +1817,50 @@ const HeatmapGrid = ({ compact = false }: { compact?: boolean }) => {
   );
 };
 
-const CameraPerformanceTable = () => (
-  <div className="overflow-x-auto rounded-sm border border-neutral-200">
-    <table className="w-full text-left text-xs">
-      <thead className="bg-neutral-50 border-b border-neutral-200">
-        <tr>
-          <th className="px-4 py-2 font-bold text-neutral-600 uppercase tracking-wider text-[10px]">Camera Name</th>
-          <th className="px-4 py-2 font-bold text-neutral-600 uppercase tracking-wider text-[10px]">Application</th>
-          <th className="px-4 py-2 font-bold text-neutral-600 uppercase tracking-wider text-[10px] text-right">Volume (24h)</th>
-          <th className="px-4 py-2 font-bold text-neutral-600 uppercase tracking-wider text-[10px] text-right">WoW Change</th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-neutral-100">
-        {CAMERA_PERFORMANCE_DATA.map((row) => (
-          <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
-            <td className="px-4 py-2.5 font-medium text-neutral-900">{row.camera}</td>
-            <td className="px-4 py-2.5 text-neutral-600">{row.app}</td>
-            <td className="px-4 py-2.5 font-mono text-neutral-900 text-right">{row.volume.toLocaleString()}</td>
-            <td className={cn("px-4 py-2.5 font-mono font-bold text-right", row.change > 0 ? "text-[#00956D]" : "text-red-500")}>
-              {row.change > 0 ? "+" : ""}{row.change}%
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
+const CameraPerformanceTable = () => {
+  type CamRow = typeof CAMERA_PERFORMANCE_DATA[0];
+  const columns: DataGridColumn<CamRow>[] = [
+    {
+      key: "camera",
+      header: "Camera Name",
+      width: "2fr",
+      render: (row, h) => <MonoCell hovered={h} isPrimary>{row.camera}</MonoCell>,
+    },
+    {
+      key: "app",
+      header: "Application",
+      width: "1fr",
+      render: (row, h) => <InterCell hovered={h} color="#64748B">{row.app}</InterCell>,
+    },
+    {
+      key: "volume",
+      header: "Volume (24h)",
+      width: "100px",
+      align: "right",
+      render: (row, h) => <MonoCell hovered={h}>{row.volume.toLocaleString()}</MonoCell>,
+    },
+    {
+      key: "change",
+      header: "WoW Change",
+      width: "90px",
+      align: "right",
+      sortable: true,
+      render: (row, h) => {
+        const color = row.change > 0 ? "#00956D" : "#EF4444";
+        return (
+          <MonoCell hovered={h} color={color} hoveredColor={color}>
+            {(row.change > 0 ? "+" : "") + row.change + "%"}
+          </MonoCell>
+        );
+      },
+    },
+  ];
+  return (
+    <div className="overflow-x-auto rounded-sm border border-neutral-200">
+      <DataGrid columns={columns} data={CAMERA_PERFORMANCE_DATA} compact />
+    </div>
+  );
+};
 
 const DirectorKPICard = ({ kpi }: { kpi: any }) => (
   <div className="bg-white p-6 rounded-sm border border-neutral-200 shadow-sm hover:border-[#00775B]/30 transition-all group relative overflow-hidden">
@@ -2060,6 +2090,64 @@ const ZoneROITable = () => {
       { zone: "North Gate", dwell: "1m 45s", peak: "1,890", status: "Understaffed", trend: [30, 35, 40, 45, 50, 55, 60] },
       { zone: "South Gate", dwell: "2m 10s", peak: "1,120", status: "Optimal", trend: [20, 22, 21, 23, 22, 24, 25] },
    ];
+   const gridData = data.map((r, i) => ({ ...r, id: i }));
+   type ZoneRow = typeof gridData[0];
+
+   const columns: DataGridColumn<ZoneRow>[] = [
+      {
+         key: "zone",
+         header: "Zone Name",
+         width: "2fr",
+         render: (row, h) => <MonoCell hovered={h} isPrimary>{row.zone}</MonoCell>,
+      },
+      {
+         key: "dwell",
+         header: "Avg Dwell",
+         width: "80px",
+         align: "right",
+         render: (row, h) => <MonoCell hovered={h} color="#64748B">{row.dwell}</MonoCell>,
+      },
+      {
+         key: "peak",
+         header: "Peak Count",
+         width: "80px",
+         align: "right",
+         render: (row, h) => <MonoCell hovered={h}>{row.peak}</MonoCell>,
+      },
+      {
+         key: "status",
+         header: "Staffing Status",
+         width: "110px",
+         align: "right",
+         render: (row) => {
+            const capsuleStatus = row.status === "Optimal" ? "stable" : row.status === "Understaffed" ? "critical" : "warning";
+            return <StatusCapsule status={capsuleStatus} label={row.status} />;
+         },
+      },
+      {
+         key: "trend",
+         header: "7-Day Trend",
+         width: "90px",
+         render: (row) => (
+            <div className="h-6 w-20">
+               <LineChart width={80} height={24} data={row.trend.map((v, idx) => ({ idx, v }))} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+                  <Line type="monotone" dataKey="v" stroke="#00956D" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+               </LineChart>
+            </div>
+         ),
+      },
+      {
+         key: "action",
+         header: "Action",
+         width: "110px",
+         align: "center",
+         render: () => (
+            <Button variant="ghost" size="sm" className="h-6 w-full text-[10px] text-neutral-500 hover:text-[#00775B] hover:bg-[#E5FFF9] border border-transparent hover:border-[#00775B]/20 gap-1.5">
+               <Bell className="w-3 h-3" /> Manage Alerts
+            </Button>
+         ),
+      },
+   ];
 
    return (
       <div className="rounded-sm border border-neutral-200 bg-white overflow-hidden shadow-sm h-full flex flex-col">
@@ -2073,50 +2161,7 @@ const ZoneROITable = () => {
             </Button>
          </div>
          <div className="overflow-auto min-h-0 flex-1">
-            <table className="w-full text-left text-[11px] relative">
-                <thead className="bg-neutral-50/50 border-b border-neutral-100 text-neutral-500 sticky top-0 z-10 backdrop-blur-sm">
-                   <tr>
-                      <th className="px-4 py-2 font-bold uppercase tracking-wider">Zone Name</th>
-                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-right">Avg Dwell</th>
-                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-right">Peak Count</th>
-                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-right">Staffing Status</th>
-                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-right">7-Day Trend</th>
-                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-center">Action</th>
-                   </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                   {data.map((row, i) => (
-                      <tr key={i} className="hover:bg-neutral-50 transition-colors group cursor-default">
-                         <td className="px-4 py-3 font-medium text-neutral-900">{row.zone}</td>
-                         <td className="px-4 py-3 text-neutral-600 font-mono text-right">{row.dwell}</td>
-                         <td className="px-4 py-3 text-neutral-900 font-mono text-right font-bold">{row.peak}</td>
-                         <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                               <span className={cn(
-                                  "font-mono font-bold px-1.5 py-0.5 rounded-[2px] text-[10px]", 
-                                  row.status === "Optimal" ? "text-[#00956D] bg-[#E5FFF9]" : 
-                                  row.status === "Understaffed" ? "text-red-600 bg-red-50" : "text-amber-600 bg-amber-50"
-                               )}>
-                                  {row.status}
-                               </span>
-                            </div>
-                         </td>
-                         <td className="px-4 py-3 w-24">
-                            <div className="h-6 w-20 ml-auto">
-                               <LineChart width={80} height={24} data={row.trend.map((v, idx) => ({ idx, v }))} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-                                  <Line type="monotone" dataKey="v" stroke="#00956D" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                               </LineChart>
-                            </div>
-                         </td>
-                         <td className="px-4 py-3 text-center">
-                            <Button variant="ghost" size="sm" className="h-6 w-full text-[10px] text-neutral-500 hover:text-[#00775B] hover:bg-[#E5FFF9] border border-transparent hover:border-[#00775B]/20 gap-1.5">
-                               <Bell className="w-3 h-3" /> Manage Alerts
-                            </Button>
-                         </td>
-                      </tr>
-                   ))}
-                </tbody>
-            </table>
+            <DataGrid columns={columns} data={gridData} compact />
          </div>
       </div>
    );

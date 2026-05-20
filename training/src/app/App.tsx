@@ -3,6 +3,7 @@ import { AppLayout, Page, ProjectPage } from "@/app/components/layout/AppLayout"
 import { TrainingDashboard } from "@/app/components/pages/TrainingDashboard";
 import { AllProjects } from "@/app/components/pages/AllProjects";
 import { ComputePage } from "@/app/components/pages/ComputePage";
+import { SettingsPage } from "@/app/components/pages/Settings";
 import { ProjectHome } from "@/app/components/project/ProjectHome";
 import { Datasets } from "@/app/components/project/Datasets";
 import { TrainingJobs } from "@/app/components/project/TrainingJobs";
@@ -58,6 +59,7 @@ export default function App({ onPlatformSwitch }: TrainingAppProps = {}) {
         />
       );
       case "compute":   return <ComputePage />;
+      case "settings":  return <SettingsPage isDark={isDark} onToggleDark={() => setIsDark((d) => !d)} />;
       default:          return (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <p className="text-sm font-semibold text-neutral-600 capitalize">{activePage}</p>
@@ -78,6 +80,7 @@ export default function App({ onPlatformSwitch }: TrainingAppProps = {}) {
       isDark={isDark}
       onToggleDark={() => setIsDark((d) => !d)}
       onPlatformSwitch={onPlatformSwitch}
+      contentClassName="flex flex-1 flex-col overflow-hidden p-0"
     >
       {renderContent()}
     </AppLayout>

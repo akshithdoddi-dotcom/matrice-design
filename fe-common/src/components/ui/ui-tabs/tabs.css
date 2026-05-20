@@ -1,0 +1,14 @@
+/* ============================================================================
+   TABS COMPONENT
+   ============================================================================ */
+
+/* Hides the scrollbar on the tab list while keeping horizontal scroll
+   functional. Cannot be expressed with Tailwind alone. */
+.mui-tabs-list-scrollable {
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge */
+}
+.mui-tabs-list-scrollable::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
+}

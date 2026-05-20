@@ -1,0 +1,336 @@
+/* ============================================================================
+   SELECT COMPONENT
+   ============================================================================ */
+
+/* -------------------------------------------------------------------------- */
+/*  Trigger                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-trigger {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-snappy),
+    box-shadow var(--duration-fast) var(--ease-snappy),
+    background-color var(--duration-fast) var(--ease-snappy);
+}
+
+.mui-select-trigger[data-size="sm"] {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.mui-select-trigger:hover:not(:disabled):not([data-error="true"]) {
+  border-color: var(--primary-main);
+}
+
+.mui-select-trigger:focus-visible,
+.mui-select-trigger[data-open="true"] {
+  outline: none;
+  border-color: var(--primary-main);
+  box-shadow: 0 0 0 2px rgba(0, 119, 91, 0.15);
+}
+
+.mui-select-trigger[data-error="true"] {
+  border-color: var(--color-error);
+}
+
+.mui-select-trigger[data-error="true"]:focus-visible,
+.mui-select-trigger[data-error="true"][data-open="true"] {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+}
+
+.mui-select-trigger:disabled {
+  background: var(--bg-disabled);
+  border-color: var(--border-color);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Value wrap                                                                 */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-value-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mui-select-trigger[data-multiple="false"] .mui-select-value-wrap {
+  flex-wrap: nowrap;
+}
+
+.mui-select-placeholder {
+  color: var(--input-placeholder);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Chips (multi-select)                                                       */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-subtle);
+  color: var(--primary-main);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.mui-select-chip-remove {
+  background: transparent;
+  border: none;
+  color: var(--primary-main);
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: opacity var(--duration-instant) linear;
+}
+
+.mui-select-chip-remove:hover {
+  opacity: 1;
+}
+
+.mui-select-chip-more {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--neutral-200);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Actions (clear, chevron, spinner)                                          */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mui-select-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+}
+
+.mui-select-icon-button:hover {
+  color: var(--text-primary);
+}
+
+.mui-select-chevron {
+  color: var(--text-muted);
+  transition: transform var(--duration-fast) var(--ease-snappy);
+}
+
+.mui-select-chevron-open {
+  transform: rotate(180deg);
+}
+
+.mui-select-spinner {
+  color: var(--text-muted);
+  animation: spin 1s linear infinite;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Popover (dropdown)                                                         */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-popover {
+  z-index: 1400;
+  width: var(--radix-popover-trigger-width);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  animation: fadeInUp var(--duration-fast) var(--ease-snappy);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Search                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-search-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  padding: 6px 8px;
+}
+
+.mui-select-search-inner {
+  position: relative;
+}
+
+.mui-select-search-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.mui-select-search-input {
+  width: 100%;
+  height: 28px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--input-text);
+  font-size: 13px;
+  padding: 0 8px 0 30px;
+}
+
+.mui-select-search-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  List                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-list {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Option                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-instant) linear;
+}
+
+.mui-select-option:hover,
+.mui-select-option[data-highlighted="true"] {
+  background: var(--bg-hover);
+}
+
+.mui-select-option[data-selected="true"][data-multiple="false"] {
+  background: var(--primary-subtle);
+  color: var(--primary-main);
+}
+
+.mui-select-option[data-disabled="true"] {
+  color: var(--text-disabled);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mui-select-option-create {
+  color: var(--primary-main);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Checkbox (multi-select)                                                    */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-checkbox {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mui-select-checkbox[data-checked="true"] {
+  background: var(--primary-main);
+  border-color: var(--primary-main);
+  color: var(--neutral-white);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Divider                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  State rows (loading, empty)                                                */
+/* -------------------------------------------------------------------------- */
+
+.mui-select-state-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: var(--space-6);
+}
+
+.mui-select-empty-state {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: var(--space-6);
+}

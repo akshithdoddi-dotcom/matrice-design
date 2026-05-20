@@ -15,6 +15,10 @@ import { Slider } from "@/app/components/ui/slider";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/app/components/ui/select";
+import { DataTable, type ColumnDef } from "@/app/components/ui/DataTable";
+import { Switch } from "@/app/components/ui/switch";
+import { Select as FESelect } from "@fe-common/components/ui/ui-select";
+import { Input as FEInput } from "@fe-common/components/ui/ui-input";
 import { TrainingJob } from "@/app/data/mockData";
 import { cn } from "@/app/lib/utils";
 
@@ -431,27 +435,24 @@ function HyperparametersTab() {
       </Card>
 
       {/* Benchmark Results */}
-      <Card className="overflow-hidden">
-        <SectionHead title="Benchmark Results" />
-        <table className="w-full text-[12px]">
-          <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-100">
-              {["Benchmark Dataset", "Metric", "Split Type", "Value"].map((h) => (
-                <th key={h} className={cn("py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500",
-                  h === "Value" ? "text-right pr-5" : "text-left pl-5")}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-neutral-50">
-              <td className="pl-5 py-3 font-semibold text-neutral-700">ImageNet</td>
-              <td className="pl-5 py-3 font-mono text-neutral-500">acc@1</td>
-              <td className="pl-5 py-3 text-neutral-500">val</td>
-              <td className="pr-5 py-3 text-right font-mono font-semibold text-neutral-800">84.23</td>
-            </tr>
-          </tbody>
-        </table>
-      </Card>
+      <DataTable<{ id: string; dataset: string; metric: string; split: string; value: number }>
+        columns={[
+          { id: "dataset", header: "Benchmark Dataset", accessorKey: "dataset",
+            cell: ({ row }) => <span className="font-semibold text-neutral-700">{row.dataset}</span> },
+          { id: "metric",  header: "Metric",  accessorKey: "metric",
+            cell: ({ row }) => <span className="font-mono text-neutral-500">{row.metric}</span> },
+          { id: "split",   header: "Split Type", accessorKey: "split",
+            cell: ({ row }) => <span className="text-neutral-500">{row.split}</span> },
+          { id: "value",   header: "Value", accessorKey: "value", align: "right",
+            cell: ({ row }) => <span className="font-mono font-semibold text-neutral-800">{row.value}</span> },
+        ]}
+        data={[{ id: "bm-1", dataset: "ImageNet", metric: "acc@1", split: "val", value: 84.23 }]}
+        rowIdKey="id"
+        pagination="none"
+        toolbar={false}
+        showRowCue={false}
+        cardTitle="Benchmark Results"
+      />
 
       {/* Model Family Info */}
       <Card className="overflow-hidden">
@@ -491,29 +492,23 @@ function HyperparametersTab() {
       </Card>
 
       {/* Model Architectures */}
-      <Card className="overflow-hidden">
-        <SectionHead title="Model Architectures" sub="Available variants within this model family" />
-        <table className="w-full text-[12px]">
-          <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-100">
-              {[["Model Name", "left"], ["Model Key", "left"], ["Params (Millions)", "right"]].map(([h, a]) => (
-                <th key={h} className={cn("py-2.5 px-5 text-[10px] font-bold uppercase tracking-wider text-neutral-500",
-                  a === "right" ? "text-right" : "text-left")}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {MODEL.architectures.map((arch, i) => (
-              <tr key={arch.key} className={cn("border-b border-neutral-50 hover:bg-neutral-50 transition-colors",
-                i % 2 === 0 ? "bg-white" : "bg-neutral-50/30")}>
-                <td className="px-5 py-3 font-semibold text-neutral-800">{arch.name}</td>
-                <td className="px-5 py-3 font-mono text-neutral-500">{arch.key}</td>
-                <td className="px-5 py-3 text-right font-mono font-semibold text-neutral-700">{arch.paramsM}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+      <DataTable<{ id: string; name: string; key: string; paramsM: number }>
+        columns={[
+          { id: "name",   header: "Model Name",       accessorKey: "name",
+            cell: ({ row }) => <span className="font-semibold text-neutral-800">{row.name}</span> },
+          { id: "key",    header: "Model Key",         accessorKey: "key",
+            cell: ({ row }) => <span className="font-mono text-neutral-500">{row.key}</span> },
+          { id: "params", header: "Params (Millions)", accessorKey: "paramsM", align: "right",
+            cell: ({ row }) => <span className="font-mono font-semibold text-neutral-700">{row.paramsM}</span> },
+        ]}
+        data={MODEL.architectures.map((a) => ({ id: a.key, ...a }))}
+        rowIdKey="id"
+        pagination="none"
+        toolbar={false}
+        showRowCue={false}
+        cardTitle="Model Architectures"
+        cardSubTitle="Available variants within this model family"
+      />
     </div>
   );
 }
@@ -642,7 +637,7 @@ function ModelTestTab() {
     <div className="p-6 bg-[#F8FAFC] min-w-0">
       <Card className="overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-          <button className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#021d18] text-white text-[12px] font-semibold hover:bg-[#032b22] transition-colors">
+          <button className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#004e3d] transition-colors">
             Create Deployment <ExternalLink className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -686,7 +681,7 @@ function ModelTestTab() {
 
           <button onClick={handlePredict} disabled={loading}
             className={cn("w-full h-12 rounded-md text-[14px] font-bold text-white transition-all",
-              loading ? "bg-[#006649]" : "bg-[#021d18] hover:bg-[#032b22]")}>
+              loading ? "bg-[#004e3d]" : "bg-[#00775B] hover:bg-[#004e3d]")}>
             {loading ? <span className="flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Running Inference…</span> : "Predict"}
           </button>
 
@@ -737,6 +732,49 @@ const CLASS_REPORT = [
   { cls: "macro avg", precision: 0.888, recall: 0.883, f1: 0.882, support: 658, isAvg: true },
 ];
 
+// Classification report row type for DataTable
+type ClassReportRow = {
+  id: string;
+  cls: string;
+  precision: number;
+  recall: number;
+  f1: number;
+  support: number;
+  isAvg?: boolean;
+  // Per-threshold breakdown for expanded row
+  thresholds: Array<{ threshold: number; precision: number; recall: number; f1: number }>;
+};
+
+const CLASS_REPORT_ROWS: ClassReportRow[] = [
+  {
+    id: "benign",    cls: "benign",    precision: 0.937, recall: 0.821, f1: 0.875, support: 329,
+    thresholds: [
+      { threshold: 0.3, precision: 0.891, recall: 0.964, f1: 0.926 },
+      { threshold: 0.5, precision: 0.937, recall: 0.821, f1: 0.875 },
+      { threshold: 0.7, precision: 0.961, recall: 0.733, f1: 0.832 },
+      { threshold: 0.9, precision: 0.982, recall: 0.612, f1: 0.754 },
+    ],
+  },
+  {
+    id: "malignant", cls: "malignant", precision: 0.840, recall: 0.945, f1: 0.889, support: 329,
+    thresholds: [
+      { threshold: 0.3, precision: 0.795, recall: 0.982, f1: 0.879 },
+      { threshold: 0.5, precision: 0.840, recall: 0.945, f1: 0.889 },
+      { threshold: 0.7, precision: 0.897, recall: 0.903, f1: 0.900 },
+      { threshold: 0.9, precision: 0.941, recall: 0.821, f1: 0.877 },
+    ],
+  },
+  {
+    id: "macro-avg", cls: "macro avg", precision: 0.888, recall: 0.883, f1: 0.882, support: 658, isAvg: true,
+    thresholds: [
+      { threshold: 0.3, precision: 0.843, recall: 0.973, f1: 0.903 },
+      { threshold: 0.5, precision: 0.888, recall: 0.883, f1: 0.882 },
+      { threshold: 0.7, precision: 0.929, recall: 0.818, f1: 0.866 },
+      { threshold: 0.9, precision: 0.962, recall: 0.717, f1: 0.816 },
+    ],
+  },
+];
+
 function EvaluationTab() {
   const [splitSel, setSplitSel] = useState("test");
   const [thresh,   setThresh]   = useState(0.5);
@@ -749,11 +787,75 @@ function EvaluationTab() {
     return `rgba(0, 119, 91, ${0.1 + t * 0.7})`;
   };
 
+  // Classification report DataTable columns
+  const reportColumns: ColumnDef<ClassReportRow>[] = [
+    {
+      id: "cls",
+      header: "Class",
+      accessorKey: "cls",
+      cell: ({ row }) => (
+        <span className={cn("capitalize font-medium text-neutral-700", row.isAvg && "font-semibold text-neutral-900")}>
+          {row.cls}
+        </span>
+      ),
+    },
+    {
+      id: "precision",
+      header: "Precision",
+      accessorKey: "precision",
+      align: "right",
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-2">
+          {!row.isAvg && (
+            <div className="w-12 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${row.precision * 100}%`, backgroundColor: row.precision > 0.88 ? TEAL : row.precision > 0.82 ? "#F59E0B" : "#EF4444" }} />
+            </div>
+          )}
+          <span className="font-mono text-neutral-700">{row.precision.toFixed(3)}</span>
+        </div>
+      ),
+    },
+    {
+      id: "recall",
+      header: "Recall",
+      accessorKey: "recall",
+      align: "right",
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-2">
+          {!row.isAvg && (
+            <div className="w-12 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${row.recall * 100}%`, backgroundColor: row.recall > 0.88 ? TEAL : row.recall > 0.82 ? "#F59E0B" : "#EF4444" }} />
+            </div>
+          )}
+          <span className="font-mono text-neutral-700">{row.recall.toFixed(3)}</span>
+        </div>
+      ),
+    },
+    {
+      id: "f1",
+      header: "F1-Score",
+      accessorKey: "f1",
+      align: "right",
+      cell: ({ row }) => (
+        <span className={cn("font-mono font-semibold", row.f1 > 0.88 ? "text-[#00775B]" : row.f1 > 0.82 ? "text-amber-600" : "text-red-500")}>
+          {row.f1.toFixed(3)}
+        </span>
+      ),
+    },
+    {
+      id: "support",
+      header: "Support",
+      accessorKey: "support",
+      align: "right",
+      cell: ({ row }) => <span className="font-mono text-neutral-500">{row.support.toLocaleString()}</span>,
+    },
+  ];
+
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
-      {/* Filter bar */}
-      <Card className="p-4 flex items-end gap-4">
+      {/* ── Filter / summary bar ── */}
+      <Card className="p-4 flex items-end gap-4 flex-wrap">
         <div className="flex flex-col gap-1.5 w-40">
           <Label className="text-xs text-neutral-600">Evaluation Split</Label>
           <Select value={splitSel} onValueChange={setSplitSel}>
@@ -764,7 +866,7 @@ function EvaluationTab() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-col gap-2 flex-1">
+        <div className="flex flex-col gap-2 flex-1 min-w-[160px]">
           <div className="flex items-center justify-between">
             <Label className="text-xs text-neutral-600">Decision Threshold</Label>
             <span className="text-[11px] font-mono font-semibold text-[#00775B]">{thresh.toFixed(2)}</span>
@@ -772,11 +874,11 @@ function EvaluationTab() {
           <Slider value={[thresh]} onValueChange={([v]) => setThresh(v)} min={0.1} max={0.9} step={0.05}
             className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
         </div>
-        <div className="flex items-center gap-3 text-[11px]">
+        <div className="flex items-center gap-3 text-[11px] ml-auto">
           {[
-            { label: "Accuracy",  value: "84.19%", color: TEAL },
-            { label: "Macro F1",  value: "0.882",  color: "#0284C7" },
-            { label: "AUC-ROC",   value: AUC.toFixed(3), color: "#7C3AED" },
+            { label: "Accuracy", value: "84.19%", color: TEAL },
+            { label: "Macro F1", value: "0.882",  color: "#0284C7" },
+            { label: "AUC-ROC",  value: AUC.toFixed(3), color: "#7C3AED" },
           ].map(({ label, value, color }) => (
             <div key={label} className="flex flex-col items-center px-4 py-2 rounded-md bg-neutral-50 border border-neutral-200">
               <span className="text-neutral-400 text-[10px] uppercase tracking-wide">{label}</span>
@@ -786,22 +888,20 @@ function EvaluationTab() {
         </div>
       </Card>
 
-      {/* Main evaluation grid */}
+      {/* ── Confusion Matrix + ROC side by side ── */}
       <div className="grid grid-cols-2 gap-5">
 
         {/* Confusion Matrix */}
         <Card className="overflow-hidden">
           <SectionHead title="Confusion Matrix" sub={`${splitSel === "test" ? "Test" : "Validation"} split · ${CONFUSION.labels.length} classes`} />
           <div className="p-6 flex flex-col items-center gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 self-start ml-16">Predicted →</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 self-start ml-14">Predicted →</p>
             <div className="flex gap-2">
-              {/* Y label */}
               <div className="flex items-center pr-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400"
                   style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actual ↓</p>
               </div>
               <div className="flex flex-col gap-0">
-                {/* Header row */}
                 <div className="flex items-center mb-1">
                   <div className="w-20 h-7" />
                   {CONFUSION.labels.map((l) => (
@@ -810,22 +910,21 @@ function EvaluationTab() {
                     </div>
                   ))}
                 </div>
-                {/* Matrix rows */}
                 {cm.map((row, ri) => (
                   <div key={ri} className="flex items-center">
-                    <div className="w-20 h-20 flex items-center justify-end pr-3">
+                    <div className="w-20 h-24 flex items-center justify-end pr-3">
                       <span className="text-[11px] font-semibold text-neutral-600 capitalize">{CONFUSION.labels[ri]}</span>
                     </div>
                     {row.map((val, ci) => (
-                      <div key={ci} className="w-28 h-20 flex flex-col items-center justify-center rounded-sm m-0.5 relative"
+                      <div key={ci} className="w-28 h-24 flex flex-col items-center justify-center rounded-md m-0.5 relative"
                         style={{ backgroundColor: ri === ci ? cellHeat(val) : `rgba(239,68,68,${0.05 + (val / maxVal) * 0.35})` }}>
-                        <span className="text-[20px] font-bold font-mono" style={{ color: ri === ci ? "#00775B" : "#DC2626" }}>{val}</span>
-                        <span className="text-[9px] text-neutral-500 mt-0.5">
-                          {((val / CONFUSION.matrix[ri].reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%
+                        <span className="text-[24px] font-bold font-mono" style={{ color: ri === ci ? "#00775B" : "#DC2626" }}>{val}</span>
+                        <span className="text-[10px] text-neutral-500 mt-0.5">
+                          {((val / cm[ri].reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%
                         </span>
-                        {ri === ci && (
-                          <span className="absolute top-1 right-1 text-[7px] font-bold text-[#00775B] uppercase">TP/TN</span>
-                        )}
+                        <span className={cn("absolute top-1.5 right-2 text-[8px] font-bold uppercase", ri === ci ? "text-[#00775B]" : "text-red-400")}>
+                          {ri === ci ? "✓" : "✗"}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -833,56 +932,17 @@ function EvaluationTab() {
               </div>
             </div>
             <div className="flex items-center gap-4 mt-2 text-[10px]">
-              <div className="flex items-center gap-1"><div className="w-4 h-4 rounded-sm bg-[#00775B]/40" /> <span className="text-neutral-500">Correct</span></div>
-              <div className="flex items-center gap-1"><div className="w-4 h-4 rounded-sm bg-red-200" /> <span className="text-neutral-500">Incorrect</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-4 h-4 rounded-md bg-[#00775B]/40" /> <span className="text-neutral-500">Correct (TP / TN)</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-4 h-4 rounded-md bg-red-200" /> <span className="text-neutral-500">Incorrect (FP / FN)</span></div>
             </div>
           </div>
         </Card>
 
-        {/* Classification Report */}
+        {/* ROC Curve */}
         <Card className="overflow-hidden">
-          <SectionHead title="Classification Report" sub="Per-class precision, recall, and F1-score" />
+          <SectionHead title="ROC Curve" sub={`AUC = ${AUC.toFixed(3)} · ${splitSel === "test" ? "Test" : "Val"} split`} />
           <div className="p-5 flex flex-col gap-4">
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className="border-b border-neutral-100">
-                  {["Class", "Precision", "Recall", "F1-Score", "Support"].map((h) => (
-                    <th key={h} className={cn("py-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400",
-                      h === "Class" ? "text-left" : "text-right")}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {CLASS_REPORT.map((r) => (
-                  <tr key={r.cls} className={cn("border-b border-neutral-50", r.isAvg ? "bg-neutral-50/50 font-semibold" : "")}>
-                    <td className="py-3 capitalize text-neutral-700 font-medium">{r.cls}</td>
-                    {[r.precision, r.recall, r.f1].map((v, i) => (
-                      <td key={i} className="py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {!r.isAvg && (
-                            <div className="w-12 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: `${v * 100}%`, backgroundColor: v > 0.88 ? TEAL : v > 0.82 ? "#F59E0B" : "#EF4444" }} />
-                            </div>
-                          )}
-                          <span className="font-mono text-neutral-700">{v.toFixed(3)}</span>
-                        </div>
-                      </td>
-                    ))}
-                    <td className="py-3 text-right font-mono text-neutral-500">{r.support}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </div>
-
-      {/* ROC Curve */}
-      <Card className="overflow-hidden">
-        <SectionHead title="ROC Curve" sub={`AUC = ${AUC.toFixed(3)} · ${splitSel === "test" ? "Test" : "Val"} split`} />
-        <div className="p-5 grid grid-cols-2 gap-6">
-          <div>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={240}>
               <LineChart data={ROC_DATA} margin={{ top: 8, right: 24, bottom: 28, left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                 <XAxis dataKey="fpr" type="number" domain={[0, 1]}
@@ -901,39 +961,88 @@ function EvaluationTab() {
                   );
                 }} />
                 <Line dataKey="tpr" stroke={TEAL} dot={false} strokeWidth={2.5} />
-                {/* Diagonal reference line – manual line via two-point data trick */}
                 <Line data={[{ fpr: 0, tpr: 0 }, { fpr: 1, tpr: 1 }]} dataKey="tpr"
                   stroke="#E2E8F0" strokeDasharray="4 4" dot={false} strokeWidth={1.5} />
               </LineChart>
             </ResponsiveContainer>
-            <div className="flex items-center justify-center gap-4 mt-1 text-[11px]">
-              <div className="flex items-center gap-1.5"><div className="w-4 h-0.5 bg-[#00775B]" /> <span className="text-neutral-500">ROC (AUC = {AUC.toFixed(3)})</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-4 h-0.5 bg-neutral-200 border-dashed border-t" /> <span className="text-neutral-500">Random Classifier</span></div>
+            <div className="flex items-center justify-center gap-4 text-[11px]">
+              <div className="flex items-center gap-1.5"><div className="w-5 h-0.5 bg-[#00775B] rounded" /> <span className="text-neutral-500">ROC (AUC = {AUC.toFixed(3)})</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-5 border-t border-dashed border-neutral-300" /> <span className="text-neutral-500">Random Classifier</span></div>
+            </div>
+            {/* Detailed metrics mini-list */}
+            <div className="pt-3 border-t border-neutral-100 flex flex-col gap-2.5">
+              {[
+                { label: "AUC-ROC",        value: AUC.toFixed(4),  color: "#7C3AED", bar: AUC   },
+                { label: "Accuracy",        value: "0.8419",        color: TEAL,      bar: 0.842 },
+                { label: "Macro Precision", value: "0.8885",        color: "#0284C7", bar: 0.889 },
+                { label: "Macro Recall",    value: "0.8830",        color: "#0284C7", bar: 0.883 },
+                { label: "Macro F1",        value: "0.8822",        color: "#D97706", bar: 0.882 },
+                { label: "Cohen's Kappa",   value: "0.684",         color: "#475569", bar: 0.684 },
+              ].map(({ label, value, color, bar }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="text-[11px] text-neutral-500 w-32 shrink-0">{label}</span>
+                  <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${bar * 100}%`, backgroundColor: color }} />
+                  </div>
+                  <span className="text-[11px] font-mono font-semibold w-12 text-right" style={{ color }}>{value}</span>
+                </div>
+              ))}
             </div>
           </div>
+        </Card>
+      </div>
 
-          {/* Metrics summary */}
-          <div className="flex flex-col gap-4 justify-center">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Detailed Metrics</p>
-            {[
-              { label: "AUC-ROC",          value: AUC.toFixed(4),   color: "#7C3AED", bar: AUC },
-              { label: "Accuracy",          value: "0.8419",         color: TEAL,      bar: 0.842 },
-              { label: "Macro Precision",   value: "0.8885",         color: "#0284C7", bar: 0.889 },
-              { label: "Macro Recall",      value: "0.8830",         color: "#0284C7", bar: 0.883 },
-              { label: "Macro F1",          value: "0.8822",         color: "#D97706", bar: 0.882 },
-              { label: "Cohen's Kappa",     value: "0.684",          color: "#475569", bar: 0.684 },
-            ].map(({ label, value, color, bar }) => (
-              <div key={label} className="flex items-center gap-3">
-                <span className="text-[11px] text-neutral-500 w-36 shrink-0">{label}</span>
-                <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all" style={{ width: `${bar * 100}%`, backgroundColor: color }} />
+      {/* ── Classification Report — DataTable with expandable per-threshold rows ── */}
+      <DataTable<ClassReportRow>
+        columns={reportColumns}
+        data={CLASS_REPORT_ROWS}
+        rowIdKey="id"
+        pagination="none"
+        toolbar={false}
+        expandable
+        expansionMode="single"
+        showRowCue={false}
+        cardTitle="Classification Report"
+        cardSubTitle="Per-class precision, recall & F1-score — expand a row to see per-threshold breakdown"
+        renderExpandedRow={(row) => (
+          <div className="px-6 py-4 bg-neutral-50/60">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-3 capitalize">
+              {row.cls} — per-threshold metrics
+            </p>
+            <div className="grid grid-cols-4 gap-3">
+              {row.thresholds.map((t) => (
+                <div key={t.threshold}
+                  className={cn(
+                    "p-3 rounded-md border text-[11px] flex flex-col gap-1.5",
+                    Math.abs(t.threshold - thresh) < 0.01
+                      ? "border-[#00775B] bg-[#00775B]/5"
+                      : "border-neutral-200 bg-white",
+                  )}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-neutral-700">τ = {t.threshold.toFixed(1)}</span>
+                    {Math.abs(t.threshold - thresh) < 0.01 && (
+                      <span className="text-[9px] font-bold text-[#00775B] uppercase">Active</span>
+                    )}
+                  </div>
+                  {[
+                    { label: "Precision", v: t.precision },
+                    { label: "Recall",    v: t.recall    },
+                    { label: "F1",        v: t.f1        },
+                  ].map(({ label, v }) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="text-neutral-400 w-14 shrink-0">{label}</span>
+                      <div className="flex-1 h-1 bg-neutral-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-[#00775B]" style={{ width: `${v * 100}%` }} />
+                      </div>
+                      <span className="font-mono font-semibold text-neutral-700 w-10 text-right">{v.toFixed(3)}</span>
+                    </div>
+                  ))}
                 </div>
-                <span className="text-[11px] font-mono font-semibold w-14 text-right" style={{ color }}>{value}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </Card>
+        )}
+      />
     </div>
   );
 }
@@ -966,13 +1075,58 @@ const PAST_EXPORTS = [
   { fmt: "TFLite",  hw: "Mobile",        date: "2024-11-09", size: "21.5 MB", status: "failed"  },
 ];
 
+// Inference row type for DataTable
+type InferenceRow = {
+  id: string;
+  name: string;
+  status: "Exported" | "Failed" | "Running";
+  baseModel: string;
+  architecture: string;
+  exportFormat: string;
+  framework: string;
+  lastUpdated: string;
+};
+
+const INFERENCE_ROWS: InferenceRow[] = [
+  {
+    id: "inf-001",
+    name: "—",
+    status: "Exported",
+    baseModel: "Skin-Cancer-Classi...",
+    architecture: "Skin-Cancer-Classi...",
+    exportFormat: "ONNX",
+    framework: "PyTorch",
+    lastUpdated: "Nov 10, 2024 12:29",
+  },
+  {
+    id: "inf-002",
+    name: "—",
+    status: "Exported",
+    baseModel: "Skin-Cancer-Classi...",
+    architecture: "Skin-Cancer-Classi...",
+    exportFormat: "PyTorch",
+    framework: "PyTorch",
+    lastUpdated: "Nov 10, 2024 12:15",
+  },
+  {
+    id: "inf-003",
+    name: "—",
+    status: "Failed",
+    baseModel: "Skin-Cancer-Classi...",
+    architecture: "Skin-Cancer-Classi...",
+    exportFormat: "TFLite",
+    framework: "PyTorch",
+    lastUpdated: "Nov 9, 2024 18:42",
+  },
+];
+
 function ExportTab() {
-  const [format, setFormat]       = useState("onnx");
-  const [hardware, setHardware]   = useState<string[]>(["NVIDIA GPU (V100)"]);
-  const [quant, setQuant]         = useState("none");
-  const [pruning, setPruning]     = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [done, setDone]           = useState(false);
+  const [modelName,  setModelName]  = useState("");
+  const [format,     setFormat]     = useState("");
+  const [compute,    setCompute]    = useState("auto");
+  const [pruning,    setPruning]    = useState(false);
+  const [exporting,  setExporting]  = useState(false);
+  const [done,       setDone]       = useState(false);
 
   const handleExport = () => {
     setExporting(true);
@@ -980,156 +1134,151 @@ function ExportTab() {
     setTimeout(() => { setExporting(false); setDone(true); }, 2500);
   };
 
+  const inferenceColumns: ColumnDef<InferenceRow>[] = [
+    {
+      id: "name",
+      header: "Name",
+      accessorKey: "name",
+      cell: ({ row }) => <span className="text-neutral-600 font-mono text-[11px]">{row.name}</span>,
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessorKey: "status",
+      cell: ({ row }) => (
+        <span className={cn(
+          "inline-flex items-center gap-1 h-5 px-2.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
+          row.status === "Exported" ? "bg-[#E5FFF9] text-[#00775B]"
+            : row.status === "Failed" ? "bg-red-50 text-red-600"
+            : "bg-blue-50 text-blue-600",
+        )}>
+          {row.status}
+        </span>
+      ),
+    },
+    {
+      id: "baseModel",
+      header: "Base Model",
+      accessorKey: "baseModel",
+      cell: ({ row }) => <span className="text-neutral-600 text-[12px] truncate max-w-[140px] block">{row.baseModel}</span>,
+    },
+    {
+      id: "architecture",
+      header: "Architecture",
+      accessorKey: "architecture",
+      cell: ({ row }) => <span className="text-neutral-600 text-[12px] truncate max-w-[140px] block">{row.architecture}</span>,
+    },
+    {
+      id: "exportFormat",
+      header: "Export Format",
+      accessorKey: "exportFormat",
+      cell: ({ row }) => (
+        <span className="font-mono text-[11px] bg-neutral-100 px-2 py-0.5 rounded text-neutral-600">{row.exportFormat}</span>
+      ),
+    },
+    {
+      id: "framework",
+      header: "Training Framework",
+      accessorKey: "framework",
+      cell: ({ row }) => <span className="text-neutral-500 text-[12px]">{row.framework}</span>,
+    },
+    {
+      id: "lastUpdated",
+      header: "Last Updated",
+      accessorKey: "lastUpdated",
+      cell: ({ row }) => <span className="font-mono text-[11px] text-neutral-400">{row.lastUpdated}</span>,
+    },
+  ];
+
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
-      {/* Format selection */}
-      <Card className="p-5 flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <Package className="w-4 h-4 text-neutral-400" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Export Format</h3>
+      {/* ── Export Model form ── */}
+      <Card className="p-6 flex flex-col gap-5">
+        <h3 className="text-[15px] font-semibold text-neutral-800">Export Model</h3>
+
+        {/* Model name */}
+        <FEInput
+          label="Export Model Name"
+          placeholder="e.g. resnet50-export-v1"
+          value={modelName}
+          onChange={(e) => setModelName(e.target.value)}
+        />
+
+        {/* Export format select */}
+        <FESelect
+          label="Export Format"
+          placeholder="Select a format…"
+          value={format || null}
+          onChange={(v) => setFormat((v as string) ?? "")}
+          options={EXPORT_FORMATS.map(({ id, label, ext }) => ({
+            value: id,
+            label: `${label} (${ext})`,
+          }))}
+          searchable={false}
+        />
+
+        {/* Compute select */}
+        <FESelect
+          label="Compute"
+          placeholder="Select compute target…"
+          value={compute}
+          onChange={(v) => setCompute((v as string) ?? "auto")}
+          options={[
+            { value: "auto", label: "Automatically launch a new instance" },
+            { value: "v100", label: "NVIDIA V100" },
+            { value: "a100", label: "NVIDIA A100" },
+            { value: "cpu",  label: "CPU only" },
+          ]}
+          searchable={false}
+        />
+
+        {/* Pruning toggle */}
+        <div className="flex items-center justify-between py-1 border-t border-neutral-100">
+          <div>
+            <p className="text-[12px] font-semibold text-neutral-700">Apply Pruning</p>
+            <p className="text-[10px] text-neutral-400 mt-0.5">Removes ~30% of weights with minimal accuracy loss</p>
+          </div>
+          <Switch checked={pruning} onCheckedChange={setPruning} />
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {EXPORT_FORMATS.map(({ id, label, ext, desc, icon, color }) => (
-            <button key={id} onClick={() => setFormat(id)}
-              className={cn("flex items-start gap-3 p-4 rounded-md border text-left transition-all",
-                format === id
-                  ? "border-[#00775B] bg-[#00775B]/5 shadow-sm"
-                  : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50")}>
-              <span className="text-2xl mt-0.5 flex-shrink-0">{icon}</span>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className={cn("text-[12px] font-bold", format === id ? "text-[#00775B]" : "text-neutral-800")}>{label}</p>
-                  <span className="text-[9px] font-mono bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500">{ext}</span>
-                </div>
-                <p className="text-[10px] text-neutral-400 mt-0.5 leading-relaxed">{desc}</p>
-              </div>
-              {format === id && (
-                <div className="ml-auto">
-                  <div className="w-4 h-4 rounded-full bg-[#00775B] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-[9px] font-bold">✓</span>
-                  </div>
-                </div>
-              )}
+
+        {/* Export button */}
+        <div className="flex justify-end gap-3 pt-1">
+          {done && (
+            <button className="flex items-center gap-2 h-10 px-5 rounded-md border border-[#00775B] text-[#00775B] text-sm font-semibold hover:bg-[#00775B]/5 transition-colors">
+              <Download className="w-4 h-4" /> Download
             </button>
-          ))}
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-5">
-
-        {/* Target Hardware */}
-        <Card className="p-5 flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-neutral-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Target Hardware</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {HARDWARE_TARGETS.map((hw) => {
-              const active = hardware.includes(hw);
-              return (
-                <button key={hw} onClick={() => setHardware(p => active ? p.filter(x => x !== hw) : [...p, hw])}
-                  className={cn("h-8 px-3 rounded-md border text-[11px] font-medium transition-all",
-                    active ? "border-[#00775B] bg-[#00775B]/10 text-[#00775B]" : "border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50")}>
-                  {hw}
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-
-        {/* Optimisation */}
-        <Card className="p-5 flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-neutral-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Optimisation</h3>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label className="text-xs text-neutral-600">Quantization</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {QUANT_OPTIONS.map(({ id, label, desc }) => (
-                <button key={id} onClick={() => setQuant(id)}
-                  className={cn("flex flex-col items-start gap-0.5 p-3 rounded-md border text-left transition-all",
-                    quant === id ? "border-[#00775B] bg-[#00775B]/5" : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50")}>
-                  <span className={cn("text-[11px] font-semibold", quant === id ? "text-[#00775B]" : "text-neutral-700")}>{label}</span>
-                  <span className="text-[9px] text-neutral-400 leading-relaxed">{desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-1 border-t border-neutral-100">
-            <div>
-              <p className="text-[12px] font-semibold text-neutral-700">Apply Pruning</p>
-              <p className="text-[10px] text-neutral-400">Removes ~30% of weights with minimal accuracy loss</p>
-            </div>
-            <button onClick={() => setPruning(!pruning)}
-              className={cn("w-10 h-5 rounded-full transition-colors relative", pruning ? "bg-[#00775B]" : "bg-neutral-200")}>
-              <span className={cn("absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all", pruning ? "left-5" : "left-0.5")} />
-            </button>
-          </div>
-        </Card>
-      </div>
-
-      {/* Export action */}
-      <div className="flex items-center gap-4">
-        <button onClick={handleExport} disabled={exporting || hardware.length === 0}
-          className={cn("flex items-center gap-2 h-10 px-6 rounded-md text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-            done ? "bg-emerald-600" : "bg-[#00775B] hover:bg-[#006649]")}>
-          {exporting
-            ? <><RefreshCw className="w-4 h-4 animate-spin" /> Exporting…</>
-            : done
-            ? <><CheckCircle className="w-4 h-4" /> Export Complete</>
-            : <><FileDown className="w-4 h-4" /> Start Export</>}
-        </button>
-        {done && (
-          <button className="flex items-center gap-2 h-10 px-5 rounded-md border border-[#00775B] text-[#00775B] text-sm font-semibold hover:bg-[#00775B]/5 transition-colors">
-            <Download className="w-4 h-4" /> Download Model
+          )}
+          <button
+            onClick={handleExport}
+            disabled={exporting || !format}
+            className={cn(
+              "flex items-center gap-2 h-10 px-8 rounded-md text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+              done ? "bg-emerald-600" : "bg-[#00775B] hover:bg-[#006649]",
+            )}>
+            {exporting
+              ? <><RefreshCw className="w-4 h-4 animate-spin" /> Exporting…</>
+              : done
+              ? <><CheckCircle className="w-4 h-4" /> Complete</>
+              : "Export"}
           </button>
-        )}
-        <p className="text-[11px] text-neutral-400">
-          Format: <span className="font-semibold text-neutral-600">{EXPORT_FORMATS.find(f => f.id === format)?.label}</span> ·
-          Quantization: <span className="font-semibold text-neutral-600">{QUANT_OPTIONS.find(q => q.id === quant)?.label}</span>
-        </p>
-      </div>
-
-      {/* Past exports */}
-      <Card className="overflow-hidden">
-        <SectionHead title="Export History" sub="Previous export jobs for this model" />
-        <table className="w-full text-[12px]">
-          <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-100">
-              {["Format", "Target Hardware", "Date", "Size", "Status", ""].map((h) => (
-                <th key={h} className={cn("py-2.5 px-5 text-[10px] font-bold uppercase tracking-wider text-neutral-500",
-                  h === "" ? "text-right" : "text-left")}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {PAST_EXPORTS.map((ex, i) => (
-              <tr key={i} className="border-b border-neutral-50 hover:bg-neutral-50 transition-colors">
-                <td className="px-5 py-3 font-semibold text-neutral-800">{ex.fmt}</td>
-                <td className="px-5 py-3 text-neutral-500">{ex.hw}</td>
-                <td className="px-5 py-3 font-mono text-neutral-400 text-[10px]">{ex.date}</td>
-                <td className="px-5 py-3 font-mono text-neutral-500">{ex.size}</td>
-                <td className="px-5 py-3">
-                  <span className={cn("inline-flex items-center gap-1 h-5 px-2 rounded-full text-[10px] font-semibold",
-                    ex.status === "ready"  ? "bg-[#E5FFF9] text-[#00775B]"  : "bg-red-50 text-red-600")}>
-                    {ex.status === "ready" ? <CheckCircle className="w-2.5 h-2.5" /> : <XCircle className="w-2.5 h-2.5" />}
-                    {ex.status}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-right">
-                  {ex.status === "ready" && (
-                    <button className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00775B] hover:underline">
-                      <Download className="w-3 h-3" /> Download
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        </div>
       </Card>
+
+      {/* ── Inferences DataTable ── */}
+      <DataTable<InferenceRow>
+        columns={inferenceColumns}
+        data={INFERENCE_ROWS}
+        rowIdKey="id"
+        pagination="client"
+        pageSize={10}
+        toolbar={false}
+        selectable
+        selectionMode="multi"
+        showRowCue={false}
+        cardTitle="Inferences"
+        cardSubTitle="Export runs for this model version"
+      />
     </div>
   );
 }

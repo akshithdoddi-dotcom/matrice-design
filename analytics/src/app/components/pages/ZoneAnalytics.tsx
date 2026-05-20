@@ -8,6 +8,7 @@ import { AnalyticsHeader } from "./AnalyticsHeader";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { ZoneConfigurationModal } from "../zone-config/ZoneConfigurationModal";
+import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@/app/components/ui/DataGrid";
 
 // Utility: Calculate seconds ago for real-time timestamps
 const getSecondsAgo = (zoneId: string): number => {
@@ -1628,141 +1629,125 @@ const ZoneEfficiencyTable = ({
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-neutral-50 border-b border-neutral-200">
-              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600">Zone Name</th>
-              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600">
-                {showAvgWaitColumn ? "Avg Wait Time" : "Avg Dwell Time"}
-              </th>
-              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600">Peak Count</th>
-              {showStaffingColumn && (
-                <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600">Staffing Status</th>
-              )}
-              {showDetectionColumn && (
-                <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600">Detection Freq</th>
-              )}
-              {showSLAColumn && (
-                <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600">SLA Compliance</th>
-              )}
-              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600">7-Day Trend</th>
-              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredZones.map((zone, index) => {
-              const staffingStatus = getStaffingStatus(zone);
-              const slaCompliance = getSLACompliance(zone);
-              const detectionFreq = getDetectionFrequency(zone);
-              const actionRec = getActionRecommendation(zone);
-              
+        {(() => {
+          const columns: DataGridColumn<ZoneCardType>[] = [
+            {
+              key: "zoneName",
+              header: "Zone Name",
+              width: "2fr",
+              render: (row, h) => (
+                <div className="flex flex-col">
+                  <MonoCell hovered={h} isPrimary>{row.zoneName}</MonoCell>
+                  <InterCell hovered={h} fontSize={9} color="#94A3B8">{row.app}</InterCell>
+                </div>
+              ),
+            },
+            {
+              key: "dwellTime",
+              header: showAvgWaitColumn ? "Avg Wait Time" : "Avg Dwell Time",
+              width: "100px",
+              render: (row, h) => <MonoCell hovered={h} color="#0F172A">{row.dwellTime}</MonoCell>,
+            },
+            {
+              key: "maxCapacity",
+              header: "Peak Count",
+              width: "80px",
+              align: "right",
+              render: (row, h) => <MonoCell hovered={h}>{String(row.maxCapacity)}</MonoCell>,
+            },
+          ];
+
+          if (showStaffingColumn) {
+            columns.push({
+              key: "staffing",
+              header: "Staffing Status",
+              width: "120px",
+              render: (row) => {
+                const s = getStaffingStatus(row);
+                return <StatusCapsule status={s === "Optimal" ? "stable" : s === "Understaffed" ? "critical" : "warning"} label={s} />;
+              },
+            });
+          }
+          if (showDetectionColumn) {
+            columns.push({
+              key: "detection",
+              header: "Detection Freq",
+              width: "110px",
+              render: (row) => {
+                const d = getDetectionFrequency(row);
+                return <StatusCapsule status={d === "High" ? "critical" : "stable"} label={d} />;
+              },
+            });
+          }
+          if (showSLAColumn) {
+            columns.push({
+              key: "sla",
+              header: "SLA Compliance",
+              width: "130px",
+              render: (row, h) => {
+                const sla = getSLACompliance(row);
+                return (
+                  <div className="flex items-center gap-2">
+                    <MonoCell hovered={h}>{`${sla}%`}</MonoCell>
+                    <div className="flex-1 max-w-[60px] bg-neutral-100 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className={sla >= 90 ? "h-full bg-[#00A63E]" : sla >= 75 ? "h-full bg-[#EA580C]" : "h-full bg-[#E7000B]"}
+                        style={{ width: `${sla}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              },
+            });
+          }
+          columns.push({
+            key: "sparkline",
+            header: "7-Day Trend",
+            width: "90px",
+            render: (row) => (
+              <div className="w-20 h-8">
+                <ResponsiveContainer width="100%" height={32} minHeight={32}>
+                  <LineChart data={row.sparklineData.map((v, i) => ({ index: i, value: v }))} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <Line type="monotone" dataKey="value" stroke="#00775B" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ),
+          });
+          columns.push({
+            key: "action",
+            header: "Action",
+            width: "130px",
+            render: (row) => {
+              const actionRec = getActionRecommendation(row);
               return (
-                <tr key={zone.id} className={cn(
-                  "border-b border-neutral-100 hover:bg-neutral-50 transition-colors",
-                  index % 2 === 0 ? "bg-white" : "bg-neutral-50/30"
-                )}>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-neutral-800">{zone.zoneName}</span>
-                      <span className="text-[9px] font-mono text-neutral-500">{zone.app}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs font-mono font-bold text-neutral-900">{zone.dwellTime}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs font-mono font-bold text-neutral-900">{zone.maxCapacity}</span>
-                  </td>
-                  {showStaffingColumn && (
-                    <td className="px-4 py-3">
-                      <span className={cn(
-                        "text-[9px] font-bold uppercase px-2 py-1 rounded",
-                        staffingStatus === "Optimal" && "bg-[#E5FFF9] text-[#00775B]",
-                        staffingStatus === "Understaffed" && "bg-[#FEEFE7] text-[#EA580C]",
-                        staffingStatus === "Over-resourced" && "bg-neutral-100 text-neutral-600"
-                      )}>
-                        {staffingStatus}
-                      </span>
-                    </td>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onZoneClick(row); }}
+                    className={cn("text-[9px] font-bold uppercase hover:underline transition-colors", actionRec.color)}
+                  >
+                    {actionRec.label}
+                  </button>
+                  {actionRec.type === "schedule" && (
+                    <span className="text-[8px] px-1.5 py-0.5 bg-[#FEEFE7] text-[#EA580C] rounded font-bold">⚠️</span>
                   )}
-                  {showDetectionColumn && (
-                    <td className="px-4 py-3">
-                      <span className={cn(
-                        "text-[9px] font-bold uppercase px-2 py-1 rounded",
-                        detectionFreq === "High" && "bg-[#FFE5E7] text-[#E7000B]",
-                        detectionFreq === "Low" && "bg-[#E5FFF9] text-[#00775B]"
-                      )}>
-                        {detectionFreq}
-                      </span>
-                    </td>
+                  {actionRec.type === "security" && (
+                    <span className="text-[8px] px-1.5 py-0.5 bg-[#FFE5E7] text-[#E7000B] rounded font-bold">🚨</span>
                   )}
-                  {showSLAColumn && (
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-neutral-900">{slaCompliance}%</span>
-                        <div className="flex-1 max-w-[60px] bg-neutral-100 h-1.5 rounded-full overflow-hidden">
-                          <div 
-                            className={cn(
-                              "h-full",
-                              slaCompliance >= 90 ? "bg-[#00A63E]" : slaCompliance >= 75 ? "bg-[#EA580C]" : "bg-[#E7000B]"
-                            )}
-                            style={{ width: `${slaCompliance}%` }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                  )}
-                  <td className="px-4 py-3">
-                    <div className="w-20 h-8">
-                      <ResponsiveContainer width="100%" height={32} minHeight={32}>
-                        <LineChart data={zone.sparklineData.map((v, i) => ({ index: i, value: v, time: `${i * 2}m` }))} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                          <RechartsTooltip 
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="bg-neutral-900/95 backdrop-blur-sm text-white px-2 py-1 rounded shadow-lg text-[9px] font-mono">
-                                    <div className="font-bold">{payload[0].payload.time} ago</div>
-                                    <div>Occupancy: <span className="font-bold text-[#00775B]">{payload[0].value}%</span></div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                            cursor={{ stroke: '#64748B', strokeWidth: 1, strokeDasharray: '3 3' }}
-                          />
-                          <Line type="monotone" dataKey="value" stroke="#00775B" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onZoneClick(zone)}
-                        className={cn(
-                          "text-[9px] font-bold uppercase hover:underline transition-colors",
-                          actionRec.color
-                        )}
-                      >
-                        {actionRec.label}
-                      </button>
-                      {actionRec.type === "schedule" && (
-                        <span className="text-[8px] px-1.5 py-0.5 bg-[#FEEFE7] text-[#EA580C] rounded font-bold uppercase">
-                          ⚠️
-                        </span>
-                      )}
-                      {actionRec.type === "security" && (
-                        <span className="text-[8px] px-1.5 py-0.5 bg-[#FFE5E7] text-[#E7000B] rounded font-bold uppercase">
-                          🚨
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                </div>
               );
-            })}
-          </tbody>
-        </table>
+            },
+          });
+
+          return (
+            <DataGrid
+              columns={columns}
+              data={filteredZones}
+              onRowClick={onZoneClick}
+              compact
+            />
+          );
+        })()}
       </div>
       
       {/* Action Summary Footer */}
