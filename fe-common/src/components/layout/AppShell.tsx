@@ -101,9 +101,15 @@ export interface BreadcrumbSegment {
   onClick?: () => void;
 }
 
+export interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
 export interface AppShellProps {
-  // Navigation
+  // Navigation — either flat navItems or grouped navSections (navSections takes priority)
   navItems: NavItem[];
+  navSections?: NavSection[];
   footerNavItems?: NavItem[];
   activePage: string;
   onPageChange: (page: string) => void;
@@ -153,6 +159,7 @@ ForwardedLink.displayName = "ForwardedLink";
 
 export function AppShell({
   navItems,
+  navSections,
   footerNavItems,
   activePage,
   onPageChange,
@@ -203,9 +210,12 @@ export function AppShell({
     return () => document.removeEventListener("mousedown", handler);
   }, [platformOpen]);
 
-  // Default breadcrumb: just the active page label
+  // Default breadcrumb: search flat navItems or across all navSections
+  const allNavItems = navSections
+    ? navSections.flatMap(s => s.items)
+    : navItems;
   const activeLabelFromNav =
-    navItems.find(i => i.id === activePage)?.label ??
+    allNavItems.find(i => i.id === activePage)?.label ??
     footerNavItems?.find(i => i.id === activePage)?.label ??
     activePage;
 
@@ -277,38 +287,83 @@ export function AppShell({
 
         {/* ── Main nav ── */}
         <SidebarContent className="[&::-webkit-scrollbar]:w-0">
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {navItems.map((item) => {
-                  const isActive = activePage === item.id;
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive}
-                        tooltip={item.label}
-                        className={cn(
-                          isActive && "bg-[#00775B] text-white hover:bg-[#00775B] hover:text-white",
-                          !isActive && "text-white/70 hover:text-white hover:bg-white/5"
-                        )}
-                      >
-                        <ForwardedLink to={`#${item.id}`} onClick={() => onPageChange(item.id)}>
-                          <item.icon className="size-4" />
-                          <span>{item.label}</span>
-                          {item.badge && (
-                            <SidebarMenuBadge className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
-                              {item.badge}
-                            </SidebarMenuBadge>
+          {navSections ? (
+            navSections.map((section) => (
+              <SidebarGroup key={section.label}>
+                <SidebarGroupLabel className="text-white/30 text-[10px] font-bold uppercase tracking-widest px-2">
+                  {section.label}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map((item) => {
+                      const isActive = activePage === item.id;
+                      return (
+                        <SidebarMenuItem key={item.id}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
+                            tooltip={item.label}
+                            className={cn(
+                              isActive && "bg-[#00775B] text-white hover:bg-[#00775B] hover:text-white",
+                              !isActive && "text-white/70 hover:text-white hover:bg-white/5"
+                            )}
+                          >
+                            <ForwardedLink to={`#${item.id}`} onClick={() => onPageChange(item.id)}>
+                              <item.icon className="size-4" />
+                              <span>{item.label}</span>
+                              {item.badge && (
+                                <SidebarMenuBadge className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                                  {item.badge}
+                                </SidebarMenuBadge>
+                              )}
+                            </ForwardedLink>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))
+          ) : (
+            <SidebarGroup>
+              {navGroupLabel && (
+                <SidebarGroupLabel className="text-white/30 text-[10px] font-bold uppercase tracking-widest px-2">
+                  {navGroupLabel}
+                </SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navItems.map((item) => {
+                    const isActive = activePage === item.id;
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive}
+                          tooltip={item.label}
+                          className={cn(
+                            isActive && "bg-[#00775B] text-white hover:bg-[#00775B] hover:text-white",
+                            !isActive && "text-white/70 hover:text-white hover:bg-white/5"
                           )}
-                        </ForwardedLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                        >
+                          <ForwardedLink to={`#${item.id}`} onClick={() => onPageChange(item.id)}>
+                            <item.icon className="size-4" />
+                            <span>{item.label}</span>
+                            {item.badge && (
+                              <SidebarMenuBadge className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                                {item.badge}
+                              </SidebarMenuBadge>
+                            )}
+                          </ForwardedLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
         </SidebarContent>
 
         {/* ── Footer nav ── */}

@@ -7,6 +7,8 @@ const trainingRoot = path.resolve(__dirname, '../training/src')
 const marketplaceRoot = path.resolve(__dirname, '../marketplace/src')
 const supportRoot = path.resolve(__dirname, '../support/src')
 const feCommonRoot = path.resolve(__dirname, '../fe-common/src')
+const internalRoot = path.resolve(__dirname, '../internal/src')
+const analyticsRoot = path.resolve(__dirname, './src')
 
 function figmaAssetResolver() {
   return {
@@ -43,6 +45,9 @@ function crossAppAliasPlugin() {
       if (id.startsWith(feCommonRoot + '/')) {
         return { code: code.replace(/(['"])@\//g, '$1@fe-common/'), map: null }
       }
+      if (id.startsWith(internalRoot + '/')) {
+        return { code: code.replace(/(['"])@\//g, '$1@internal/'), map: null }
+      }
       return null
     },
   }
@@ -77,11 +82,13 @@ export default defineConfig({
       // Pin react/react-dom to analytics' own copies to prevent duplicate instances
       'react': path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
-      '@': path.resolve(__dirname, './src'),
+      '@': analyticsRoot,
+      '@analytics': analyticsRoot,
       '@training': trainingRoot,
       '@marketplace': marketplaceRoot,
       '@support': supportRoot,
       '@fe-common': feCommonRoot,
+      '@internal': internalRoot,
     },
   },
   optimizeDeps: {
@@ -110,6 +117,7 @@ export default defineConfig({
               if (importer.startsWith(marketplaceRoot)) root = marketplaceRoot
               if (importer.startsWith(supportRoot))     root = supportRoot
               if (importer.startsWith(feCommonRoot))    root = feCommonRoot
+              if (importer.startsWith(internalRoot))    root = internalRoot
               if (!root) return undefined
               // Return resolved path — mark as external so esbuild stops walking in
               return { path: args.path.replace(/^@\//, root + '/'), external: true }
