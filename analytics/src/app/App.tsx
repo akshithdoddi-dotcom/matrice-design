@@ -209,7 +209,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
-type ActiveApp = "analytics" | "training" | "marketplace";
+type ActiveApp = "analytics" | "training" | "marketplace" | "internal";
 
 /** Root switcher — picks which app to render based on platform selection */
 export default function App() {
@@ -218,7 +218,23 @@ export default function App() {
 
   if (activeApp === "training")    return <Suspense fallback={null}><TrainingApp    onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "marketplace") return <Suspense fallback={null}><MarketplaceApp onPlatformSwitch={handleSwitch} /></Suspense>;
+  if (activeApp === "internal")    return <InternalApp onPlatformSwitch={handleSwitch} />;
   return <AnalyticsApp onPlatformSwitch={handleSwitch} />;
+}
+
+/** Internal platform — Microservices status page */
+function InternalApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) => void }) {
+  const [activePage, setActivePage] = useState<Page>("microservices");
+  return (
+    <AppLayout
+      activePage={activePage}
+      onPageChange={setActivePage}
+      onPlatformSwitch={onPlatformSwitch}
+      activePlatformId="internal"
+    >
+      <MicroservicesPage />
+    </AppLayout>
+  );
 }
 
 /** Analytics app — all existing UI lives here */

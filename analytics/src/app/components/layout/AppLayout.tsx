@@ -99,14 +99,14 @@ const MatriceIcon = () => (
 );
 
 // Platform options for switcher
-type AppKey = "analytics" | "training" | "marketplace";
-const platforms: { icon: React.ElementType; label: string; shortcut: string; app?: AppKey; active?: boolean }[] = [
+export type AppKey = "analytics" | "training" | "marketplace" | "internal";
+const PLATFORMS: { icon: React.ElementType; label: string; shortcut: string; app?: AppKey }[] = [
   { icon: Monitor,   label: "Matrice VMS",         shortcut: "1" },
-  { icon: BarChart3, label: "Matrice Analytics",   shortcut: "2", app: "analytics",   active: true },
+  { icon: BarChart3, label: "Matrice Analytics",   shortcut: "2", app: "analytics" },
   { icon: Cpu,       label: "Matrice Training",    shortcut: "3", app: "training" },
   { icon: Store,     label: "Matrice Marketplace", shortcut: "4", app: "marketplace" },
   { icon: Wrench,    label: "Matrice Support",     shortcut: "5" },
-  { icon: Shield,    label: "Matrice Internal",    shortcut: "6" },
+  { icon: Shield,    label: "Matrice Internal",    shortcut: "6", app: "internal" },
 ];
 
 // Navigation items - matching original sidebar
@@ -150,6 +150,7 @@ interface AppLayoutProps {
   isDark?: boolean;
   onToggleDark?: () => void;
   onPlatformSwitch?: (app: AppKey) => void;
+  activePlatformId?: AppKey;
 }
 
 // Custom Sidebar Trigger Component
@@ -163,7 +164,7 @@ function CustomSidebarTrigger() {
   );
 }
 
-export function AppLayout({ activePage, onPageChange, children, isDark = false, onToggleDark, onPlatformSwitch }: AppLayoutProps) {
+export function AppLayout({ activePage, onPageChange, children, isDark = false, onToggleDark, onPlatformSwitch, activePlatformId = "analytics" }: AppLayoutProps) {
   const [clockTime, setClockTime] = useState(() =>
     new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   );
@@ -219,28 +220,31 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
               {platformOpen && (
                 <div
                   ref={platformPanelRef}
-                  className="absolute left-0 top-full mt-1 z-[200] w-56 rounded-lg border border-border bg-popover text-popover-foreground shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100"
+                  className="absolute left-0 top-full mt-1 z-[200] w-64 rounded-lg border border-border bg-popover text-popover-foreground shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100"
                 >
                   <p className="px-2 py-1.5 text-xs text-muted-foreground font-medium">Platforms</p>
-                  {platforms.map((platform) => (
-                    <button
-                      key={platform.shortcut}
-                      className="flex w-full items-center gap-2 px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-sm transition-colors"
-                      onClick={() => {
-                        setPlatformOpen(false);
-                        if (platform.app) onPlatformSwitch?.(platform.app);
-                      }}
-                    >
-                      <div className="flex size-6 items-center justify-center rounded-sm border bg-background">
-                        <platform.icon className="size-4 shrink-0" />
-                      </div>
-                      <span className="flex-1 text-left">{platform.label}</span>
-                      {platform.active && <Check className="size-4 text-primary" />}
-                      <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
-                        <span className="text-xs">⌘</span>{platform.shortcut}
-                      </kbd>
-                    </button>
-                  ))}
+                  {PLATFORMS.map((platform) => {
+                    const isActive = platform.app === activePlatformId;
+                    return (
+                      <button
+                        key={platform.shortcut}
+                        className="flex w-full items-center gap-2 px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-sm transition-colors"
+                        onClick={() => {
+                          setPlatformOpen(false);
+                          if (platform.app) onPlatformSwitch?.(platform.app);
+                        }}
+                      >
+                        <div className="flex size-6 items-center justify-center rounded-sm border bg-background">
+                          <platform.icon className="size-4 shrink-0" />
+                        </div>
+                        <span className="flex-1 text-left whitespace-nowrap">{platform.label}</span>
+                        {isActive && <Check className="size-4 text-primary" />}
+                        <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
+                          <span className="text-xs">⌘</span>{platform.shortcut}
+                        </kbd>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </SidebarMenuItem>
