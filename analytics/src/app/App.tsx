@@ -1,9 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
-import TrainingApp from "@training/app/App";
-import MarketplaceApp from "@marketplace/app/App";
-import SupportApp from "@support/app/App";
-import FeCommonApp from "@fe-common/preview/App";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
+const TrainingApp = lazy(() => import("@training/app/App"));
+const MarketplaceApp = lazy(() => import("@marketplace/app/App"));
 import { SeverityIcon } from "@/app/components/ui/SeverityIcon";
 import { Page } from "@/app/components/layout/Sidebar";
 import { AppLayout } from "@/app/components/layout/AppLayout";
@@ -34,6 +31,7 @@ import { DesignSystem } from "@/app/components/pages/DesignSystem";
 import { ServiceAnalytics } from "@/app/components/pages/ServiceAnalytics";
 import { SettingsPage } from "@/app/components/pages/Settings";
 import { StaffMonitoring } from "@/app/components/pages/StaffMonitoring";
+import { MicroservicesPage } from "@/app/components/pages/MicroservicesPage";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
 import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@/app/components/ui/DataGrid";
 
@@ -211,41 +209,16 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
-/** Root — URL-driven platform router */
+type ActiveApp = "analytics" | "training" | "marketplace";
+
+/** Root switcher — picks which app to render based on platform selection */
 export default function App() {
-  const navigate = useNavigate();
-  const handleSwitch = (app: string) => navigate(app === "analytics" ? "/" : `/${app}`);
+  const [activeApp, setActiveApp] = useState<ActiveApp>("analytics");
+  const handleSwitch = (app: string) => setActiveApp(app as ActiveApp);
 
-  return (
-    <Routes>
-      <Route path="/"             element={<AnalyticsApp   onPlatformSwitch={handleSwitch} />} />
-      <Route path="/analytics/*"  element={<AnalyticsApp   onPlatformSwitch={handleSwitch} />} />
-      <Route path="/training/*"   element={<TrainingApp    onPlatformSwitch={handleSwitch} />} />
-      <Route path="/marketplace/*" element={<MarketplaceApp onPlatformSwitch={handleSwitch} />} />
-      <Route path="/support/*"    element={<SupportApp     onPlatformSwitch={handleSwitch} />} />
-      <Route path="/fe-common/*"   element={<FeCommonApp        onPlatformSwitch={handleSwitch} />} />
-      <Route path="/vms"          element={<PlatformPlaceholder platform="VMS"      onPlatformSwitch={handleSwitch} />} />
-      <Route path="/internal"     element={<PlatformPlaceholder platform="Internal" onPlatformSwitch={handleSwitch} />} />
-    </Routes>
-  );
-}
-
-function PlatformPlaceholder({ platform, onPlatformSwitch }: { platform: string; onPlatformSwitch: (app: string) => void }) {
-  return (
-    <div className="flex h-screen items-center justify-center bg-[#021d18]">
-      <div className="text-center space-y-3">
-        <div className="text-white/30 text-xs font-bold uppercase tracking-widest">Matrice {platform}</div>
-        <div className="text-white text-2xl font-bold">Coming Soon</div>
-        <p className="text-white/50 text-sm">This platform is under construction.</p>
-        <button
-          onClick={() => onPlatformSwitch("analytics")}
-          className="mt-4 px-4 py-2 rounded-lg bg-[#00775B] text-white text-sm font-medium hover:bg-[#00956D] transition-colors"
-        >
-          Back to Analytics
-        </button>
-      </div>
-    </div>
-  );
+  if (activeApp === "training")    return <Suspense fallback={null}><TrainingApp    onPlatformSwitch={handleSwitch} /></Suspense>;
+  if (activeApp === "marketplace") return <Suspense fallback={null}><MarketplaceApp onPlatformSwitch={handleSwitch} /></Suspense>;
+  return <AnalyticsApp onPlatformSwitch={handleSwitch} />;
 }
 
 /** Analytics app — all existing UI lives here */
@@ -474,6 +447,7 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
     metrics:              "Metrics & Rules",
     compliance:           "Compliance",
     "design-system":      "Component Library",
+    "microservices":      "Microservices",
   };
 
   return (
@@ -499,6 +473,7 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
             {activePage === "design-system" && <DesignSystem />}
             {activePage === "service" && <ServiceAnalytics />}
             {activePage === "sample-analytics" && <StaffMonitoring />}
+            {activePage === "microservices" && <MicroservicesPage />}
 
             {activePage === "dashboard" && (
               <>

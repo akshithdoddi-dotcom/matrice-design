@@ -10,7 +10,7 @@ import {
 export type Page =
   | "dashboard" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
   | "facial-recognition" | "license-plates" | "cameras" | "metrics" | "compliance"
-  | "design-system" | "settings" | "service" | "sample-analytics";
+  | "design-system" | "settings" | "service" | "sample-analytics" | "microservices";
 
 interface SidebarProps {
   activePage: Page;
