@@ -50,9 +50,17 @@ function crossAppAliasPlugin() {
 
 export default defineConfig({
   server: {
-    port: process.env.PORT ? parseInt(process.env.PORT) : 5177,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
     strictPort: false,
     hmr: { overlay: false },
+    watch: {
+      // Watch sibling source directories so HMR fires on fe-common/training/etc changes
+      ignored: (f: string) => f.includes('node_modules') || f.includes('.git'),
+    },
+    fs: {
+      // Allow Vite to serve files from the monorepo root
+      allow: ['..'],
+    },
   },
   plugins: [
     crossAppAliasPlugin(),
@@ -63,7 +71,12 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
+    // Ensure only one copy of React is used across all sibling app imports
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
     alias: {
+      // Pin react/react-dom to analytics' own copies to prevent duplicate instances
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
       // Alias @ to the analytics src directory
       '@': path.resolve(__dirname, './src'),
       // Cross-app aliases – allow analytics to import from sibling apps
@@ -73,14 +86,39 @@ export default defineConfig({
       '@fe-common': feCommonRoot,
     },
   },
-  server: {
-    watch: {
-      // Watch sibling source directories so HMR fires on fe-common/training/etc changes
-      ignored: (f: string) => f.includes('node_modules') || f.includes('.git'),
-    },
-    fs: {
-      // Allow Vite to serve files from the monorepo root
-      allow: ['..'],
+  optimizeDeps: {
+    // Only scan analytics' own entry — sibling apps (training/marketplace/support)
+    // are lazy-loaded and their @/ alias cannot be correctly resolved by esbuild
+    entries: ['./src/main.tsx'],
+    // Explicitly include packages needed for pre-bundling
+    include: [
+      'react', 'react-dom', 'react-router-dom',
+      'recharts', 'lucide-react',
+      '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-tooltip', '@radix-ui/react-checkbox',
+      'class-variance-authority', 'clsx', 'tailwind-merge',
+    ],
+    esbuildOptions: {
+      // Rewrite @/ imports inside sibling-app source files to their correct roots
+      // so the dep scanner doesn't resolve them against analytics/src
+      plugins: [
+        {
+          name: 'cross-app-alias-esbuild',
+          setup(build) {
+            build.onResolve({ filter: /^@\// }, (args) => {
+              const importer = args.importer || ''
+              let root: string | null = null
+              if (importer.startsWith(trainingRoot))    root = trainingRoot
+              if (importer.startsWith(marketplaceRoot)) root = marketplaceRoot
+              if (importer.startsWith(supportRoot))     root = supportRoot
+              if (importer.startsWith(feCommonRoot))    root = feCommonRoot
+              if (!root) return undefined
+              // Return resolved path — mark as external so esbuild stops walking in
+              return { path: args.path.replace(/^@\//, root + '/'), external: true }
+            })
+          },
+        },
+      ],
     },
   },
   build: {
