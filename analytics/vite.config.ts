@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react'
 
 const trainingRoot = path.resolve(__dirname, '../training/src')
 const marketplaceRoot = path.resolve(__dirname, '../marketplace/src')
+const supportRoot = path.resolve(__dirname, '../support/src')
+const feCommonRoot = path.resolve(__dirname, '../fe-common/src')
 
 function figmaAssetResolver() {
   return {
@@ -35,6 +37,12 @@ function crossAppAliasPlugin() {
       if (id.startsWith(marketplaceRoot + '/')) {
         return { code: code.replace(/(['"])@\//g, '$1@marketplace/'), map: null }
       }
+      if (id.startsWith(supportRoot + '/')) {
+        return { code: code.replace(/(['"])@\//g, '$1@support/'), map: null }
+      }
+      if (id.startsWith(feCommonRoot + '/')) {
+        return { code: code.replace(/(['"])@\//g, '$1@fe-common/'), map: null }
+      }
       return null
     },
   }
@@ -56,6 +64,18 @@ export default defineConfig({
       // Cross-app aliases – allow analytics to import from sibling apps
       '@training': trainingRoot,
       '@marketplace': marketplaceRoot,
+      '@support': supportRoot,
+      '@fe-common': feCommonRoot,
+    },
+  },
+  server: {
+    watch: {
+      // Watch sibling source directories so HMR fires on fe-common/training/etc changes
+      ignored: (f: string) => f.includes('node_modules') || f.includes('.git'),
+    },
+    fs: {
+      // Allow Vite to serve files from the monorepo root
+      allow: ['..'],
     },
   },
 })

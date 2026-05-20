@@ -4,6 +4,7 @@ import { ZONE_DATA } from "../../data/mockData";
 import type { QualityTerminology, ZoneMetric } from "../../data/types";
 import { cn } from "@/app/lib/utils";
 import { ZoneDetailPanel } from "../panels/ZoneDetailPanel";
+import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@/app/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;
@@ -35,107 +36,151 @@ export const ZoneCardsPanel = ({ terminology }: Props) => {
         </div>
 
         <div className="p-4">
-          <div className="overflow-x-auto -mx-4 -mb-4">
-            <table className="w-full min-w-[600px] text-xs">
-              <thead>
-                <tr className="border-b border-neutral-100 bg-neutral-50/80">
-                  <th className="pl-4 pr-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Zone</th>
-                  <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">{terminology.primaryMetricLabel}</th>
-                  <th className="px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">{terminology.negativeCountLabel}</th>
-                  <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Top {terminology.negativeEventLabel}</th>
-                  <th className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Trend</th>
-                  <th className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-400">Status</th>
-                  <th className="pl-2 pr-4 py-2 w-8" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-50">
-                {ZONE_DATA.map((zone) => {
+          {(() => {
+            const gridData = ZONE_DATA.map(z => ({ ...z, id: z.zone_id }));
+            const columns: DataGridColumn<typeof gridData[0]>[] = [
+              {
+                key: "zone_name",
+                header: "Zone",
+                width: "2fr",
+                render: (zone, h) => {
+                  const isHighRisk = zone.status === "HIGH_RISK";
+                  return (
+                    <div>
+                      <div className="flex items-center gap-2">
+                        {isHighRisk && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        )}
+                        <MonoCell hovered={h} isPrimary color={isHighRisk ? "#991B1B" : "#1E293B"}>
+                          {zone.zone_name}
+                        </MonoCell>
+                      </div>
+                      {zone.flag && (
+                        <div className="text-[10px] text-amber-600 mt-0.5">{zone.flag}</div>
+                      )}
+                    </div>
+                  );
+                },
+              },
+              {
+                key: "compliance_pct",
+                header: terminology.primaryMetricLabel,
+                width: "90px",
+                align: "right",
+                sortable: true,
+                render: (zone, h) => {
                   const isHighRisk = zone.status === "HIGH_RISK";
                   const isGood = zone.compliance_pct >= 90;
-                  const rateColor = isHighRisk ? "text-red-600" : isGood ? "text-emerald-600" : "text-amber-600";
-                  const statusBg = isHighRisk ? "bg-red-50 border-red-200 text-red-700" : isGood ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700";
-                  const statusLabel = isHighRisk ? "HIGH RISK" : isGood ? "NORMAL" : "WATCH";
-
+                  const color = isHighRisk ? "#DC2626" : isGood ? "#059669" : "#D97706";
                   return (
-                    <tr
-                      key={zone.zone_id}
-                      onClick={() => setSelectedZone(zone)}
-                      className={cn(
-                        "transition-colors group cursor-pointer",
-                        isHighRisk ? "bg-red-50/20 hover:bg-red-50/40 border-l-2 border-l-red-400" : "hover:bg-neutral-50/60 border-l-2 border-l-transparent"
-                      )}
-                    >
-                      <td className="pl-4 pr-2 py-3">
-                        <div className="flex items-center gap-2">
-                          {isHighRisk && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-                          )}
-                          <span className={cn("text-[12px] font-semibold", isHighRisk ? "text-red-800" : "text-neutral-800")}>
-                            {zone.zone_name}
-                          </span>
-                        </div>
-                        {zone.flag && (
-                          <div className="text-[10px] text-amber-600 mt-0.5 pl-0">{zone.flag}</div>
-                        )}
-                      </td>
-                      <td className="px-2 py-3 text-right">
-                        <span className={cn("font-data tabular-nums text-[15px] font-black", rateColor)}>
-                          {zone.compliance_pct.toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="px-2 py-3 text-right font-data tabular-nums text-[13px] font-bold text-neutral-700">
-                        {zone.violation_count}
-                      </td>
-                      <td className="px-2 py-3 text-[11px] text-neutral-500">
-                        {zone.top_violation_type}
-                      </td>
-                      <td className="px-2 py-3 text-center">
-                        {zone.trend === "up" ? (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600">
-                            <TrendingUp className="w-3 h-3" /> +{zone.trend_delta_pct}%
-                          </span>
-                        ) : zone.trend === "down" ? (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-500">
-                            <TrendingDown className="w-3 h-3" /> {zone.trend_delta_pct}%
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-neutral-400">
-                            <Minus className="w-3 h-3" /> Stable
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-2 py-3 text-center">
-                        <span className={cn("inline-flex h-5 items-center rounded-[2px] border px-1.5 text-[9px] font-black uppercase tracking-wide", statusBg)}>
-                          {statusLabel}
-                        </span>
-                      </td>
-                      <td className="pl-2 pr-4 py-3">
-                        {isHighRisk ? (
-                          <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-                            {dispatched.has(zone.zone_id) ? (
-                              <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-1">
-                                <Zap className="w-3 h-3" />Sent
-                              </span>
-                            ) : (
-                              <button
-                                onClick={(e) => handleDispatch(zone.zone_id, e)}
-                                className="inline-flex items-center gap-1 h-6 px-2 rounded-[3px] bg-red-600 text-white text-[9px] font-bold hover:bg-red-700 transition-colors whitespace-nowrap"
-                              >
-                                <UserPlus className="w-2.5 h-2.5" />
-                                Deploy
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-[#00775B] transition-colors" />
-                        )}
-                      </td>
-                    </tr>
+                    <MonoCell hovered={h} color={color} hoveredColor={color} fontSize={13}>
+                      {zone.compliance_pct.toFixed(1)}%
+                    </MonoCell>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
+                },
+              },
+              {
+                key: "violation_count",
+                header: terminology.negativeCountLabel,
+                width: "80px",
+                align: "right",
+                sortable: true,
+                render: (zone, h) => (
+                  <MonoCell hovered={h} color="#374151">{String(zone.violation_count)}</MonoCell>
+                ),
+              },
+              {
+                key: "top_violation_type",
+                header: `Top ${terminology.negativeEventLabel}`,
+                width: "2fr",
+                render: (zone, h) => (
+                  <InterCell hovered={h} color="#6B7280">{zone.top_violation_type}</InterCell>
+                ),
+              },
+              {
+                key: "trend",
+                header: "Trend",
+                width: "100px",
+                align: "center",
+                render: (zone) => {
+                  if (zone.trend === "up") {
+                    return (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600">
+                        <TrendingUp className="w-3 h-3" /> +{zone.trend_delta_pct}%
+                      </span>
+                    );
+                  }
+                  if (zone.trend === "down") {
+                    return (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-500">
+                        <TrendingDown className="w-3 h-3" /> {zone.trend_delta_pct}%
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-neutral-400">
+                      <Minus className="w-3 h-3" /> Stable
+                    </span>
+                  );
+                },
+              },
+              {
+                key: "status",
+                header: "Status",
+                width: "90px",
+                align: "center",
+                render: (zone) => {
+                  const isHighRisk = zone.status === "HIGH_RISK";
+                  const isGood = zone.compliance_pct >= 90;
+                  const capsuleStatus = isHighRisk ? "critical" : isGood ? "stable" : "warning";
+                  const capsuleLabel = isHighRisk ? "HIGH RISK" : isGood ? "NORMAL" : "WATCH";
+                  return <StatusCapsule status={capsuleStatus} label={capsuleLabel} />;
+                },
+              },
+              {
+                key: "actions",
+                header: "",
+                width: "80px",
+                align: "center",
+                render: (zone, h) => {
+                  const isHighRisk = zone.status === "HIGH_RISK";
+                  if (isHighRisk) {
+                    return (
+                      <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                        {dispatched.has(zone.zone_id) ? (
+                          <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-1">
+                            <Zap className="w-3 h-3" />Sent
+                          </span>
+                        ) : (
+                          <button
+                            onClick={(e) => handleDispatch(zone.zone_id, e)}
+                            className="inline-flex items-center gap-1 h-6 px-2 rounded-[3px] bg-red-600 text-white text-[9px] font-bold hover:bg-red-700 transition-colors whitespace-nowrap"
+                          >
+                            <UserPlus className="w-2.5 h-2.5" />
+                            Deploy
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+                  return (
+                    <ChevronRight
+                      className="w-3.5 h-3.5 transition-colors"
+                      style={{ color: h ? "#00775B" : "#D1D5DB" }}
+                    />
+                  );
+                },
+              },
+            ];
+            return (
+              <DataGrid
+                columns={columns}
+                data={gridData}
+                onRowClick={(zone) => setSelectedZone(zone)}
+                compact
+              />
+            );
+          })()}
         </div>
       </div>
 
