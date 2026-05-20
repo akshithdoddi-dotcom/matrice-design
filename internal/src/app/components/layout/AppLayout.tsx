@@ -85,6 +85,7 @@ export function AppLayout({
       onPlatformSwitch={onPlatformSwitch}
       isDark={isDark}
       onToggleDark={onToggleDark}
+      contentClassName="flex flex-1 flex-col overflow-auto p-0"
     >
       {children}
     </AppShell>
