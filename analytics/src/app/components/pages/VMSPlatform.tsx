@@ -1145,11 +1145,32 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
               <PanelLeft className="w-4 h-4" />
             </button>
           )}
-          <div className="h-4 w-px bg-white/10 mr-1" />
 
-          {/* ── Predictive Vision Search — center ───────────────────────── */}
-          <div className="flex-1 flex justify-center px-2 max-w-2xl mx-auto">
-            <div ref={searchWrapRef} className="relative w-full">
+          {/* ── Breadcrumbs ──────────────────────────────────────────────── */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            <span className="text-[11px] text-white/35 hover:text-white/60 cursor-pointer transition-colors px-1" style={INTER}>
+              Projects
+            </span>
+            <ChevronRight className="w-3 h-3 text-white/20 shrink-0" />
+            <button className="flex items-center gap-0.5 px-1 py-0.5 rounded hover:bg-white/5 transition-colors text-[11px] text-white/55 hover:text-white/85" style={INTER}>
+              Project: pratik_ws_pr...
+              <ChevronDown className="w-3 h-3 text-white/25 ml-0.5 shrink-0" />
+            </button>
+            <ChevronRight className="w-3 h-3 text-white/20 shrink-0" />
+            <button className="flex items-center gap-0.5 px-1 py-0.5 rounded hover:bg-white/5 transition-colors text-[11px] text-white/75 font-medium hover:text-white" style={INTER}>
+              Pipeline: pipeline 1
+              <ChevronDown className="w-3 h-3 text-white/30 ml-0.5 shrink-0" />
+            </button>
+            <button className="ml-1.5 w-5 h-5 rounded bg-[#00775B] flex items-center justify-center hover:bg-[#006649] transition-colors shrink-0">
+              <Play className="w-2.5 h-2.5 text-white fill-white" />
+            </button>
+          </div>
+
+          <div className="h-4 w-px bg-white/10 mx-1 shrink-0" />
+
+          {/* ── Predictive Vision Search — right-aligned ─────────────────── */}
+          <div className="flex-1 flex justify-end">
+            <div ref={searchWrapRef} className="relative w-full max-w-lg">
               <div className={cn(
                 "flex items-center gap-2 h-8 rounded-lg border transition-all w-full",
                 searchActive
@@ -1195,39 +1216,6 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
               )}
             </div>
           </div>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-1.5">
-            <div className="hidden lg:flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10" style={MONO}>
-              <Clock className="w-3 h-3 text-white/25" />
-              <span className="text-[11px] text-white/50">{clockTime}</span>
-            </div>
-
-            <button className={cn(
-              "flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold transition-all",
-              flashAlert ? "bg-red-600 text-white shadow-lg shadow-red-900/50" : "bg-red-700/80 text-white"
-            )} style={MONO}>
-              <AlertTriangle className="w-3.5 h-3.5" />
-              {LIVE_ALERTS_COUNT.critical} CRITICAL
-            </button>
-
-            <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold bg-orange-600/80 text-white" style={MONO}>
-              <AlertCircle className="w-3.5 h-3.5" />
-              {LIVE_ALERTS_COUNT.high} HIGH
-            </button>
-
-            <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/15 text-[11px] font-medium text-white/70 hover:text-white hover:bg-white/8 transition-colors" style={INTER}>
-              <Cpu className="w-3.5 h-3.5" /> Assign Apps
-            </button>
-
-            <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#00775B] hover:bg-[#006649] text-[11px] font-medium text-white transition-colors" style={INTER}>
-              <Plus className="w-3.5 h-3.5" /> Create Group
-            </button>
-
-            <button className="h-7 w-7 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-transparent hover:ring-[#00775B]/40 transition-all" style={MONO}>
-              AU
-            </button>
-          </div>
         </header>
 
         {/* ── Grid toolbar ─────────────────────────────────────────────────── */}
@@ -1267,6 +1255,44 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
 
           <div className="flex-1" />
 
+          {/* ── Alert badges + actions (moved from header) ───────────────── */}
+          <button className={cn(
+            "flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-bold transition-all",
+            flashAlert ? "bg-red-600 text-white shadow-lg shadow-red-900/50" : "bg-red-700/80 text-white"
+          )} style={MONO}>
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {LIVE_ALERTS_COUNT.critical} CRITICAL
+          </button>
+
+          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-bold bg-orange-600/80 text-white" style={MONO}>
+            <AlertCircle className="w-3.5 h-3.5" />
+            {LIVE_ALERTS_COUNT.high} HIGH
+          </button>
+
+          <div className="h-4 w-px bg-white/10" />
+
+          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-white/15 text-[11px] font-medium text-white/70 hover:text-white hover:bg-white/8 transition-colors" style={INTER}>
+            <Cpu className="w-3.5 h-3.5" /> Assign Apps
+          </button>
+
+          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-[#00775B] hover:bg-[#006649] text-[11px] font-medium text-white transition-colors" style={INTER}>
+            <Plus className="w-3.5 h-3.5" /> Create Group
+          </button>
+
+          <div className="h-4 w-px bg-white/10" />
+
+          <div className="hidden lg:flex items-center gap-1.5 h-7 px-2 rounded-md border border-white/10" style={MONO}>
+            <Clock className="w-3 h-3 text-white/25" />
+            <span className="text-[11px] text-white/50">{clockTime}</span>
+          </div>
+
+          <button className="h-6 w-6 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[9px] font-bold ring-2 ring-transparent hover:ring-[#00775B]/40 transition-all" style={MONO}>
+            AU
+          </button>
+
+          <div className="h-4 w-px bg-white/10" />
+
+          {/* Pagination */}
           <div className="flex items-center gap-2 text-[11px] text-white/40" style={MONO}>
             <button className="p-1 rounded hover:bg-white/8 disabled:opacity-30 transition-colors" disabled>
               <ChevronLeft className="w-3.5 h-3.5" />
