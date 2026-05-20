@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, forwardRef } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -107,6 +108,7 @@ const PLATFORMS: { icon: React.ElementType; label: string; shortcut: string; app
   { icon: Store,     label: "Matrice Marketplace", shortcut: "4", app: "marketplace" },
   { icon: Wrench,    label: "Matrice Support",     shortcut: "5" },
   { icon: Shield,    label: "Matrice Internal",    shortcut: "6", app: "internal" },
+  { icon: Layers,    label: "FE Components",       shortcut: "7" },
 ];
 
 // Navigation items - matching original sidebar
@@ -171,6 +173,7 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
   const [platformOpen, setPlatformOpen] = useState(false);
   const platformBtnRef = useRef<HTMLButtonElement>(null);
   const platformPanelRef = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -178,6 +181,13 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
     }, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Position the portal panel below the trigger button
+  useEffect(() => {
+    if (!platformOpen || !platformBtnRef.current) return;
+    const rect = platformBtnRef.current.getBoundingClientRect();
+    setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+  }, [platformOpen]);
 
   // Close platform panel on outside click
   useEffect(() => {
@@ -217,35 +227,33 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
                 <ChevronsUpDown className="ml-auto size-4 text-white/40" />
               </SidebarMenuButton>
 
-              {platformOpen && (
+              {platformOpen && createPortal(
                 <div
                   ref={platformPanelRef}
-                  className="absolute left-0 top-full mt-1 z-[200] w-64 rounded-lg border border-border bg-popover text-popover-foreground shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100"
+                  style={{ position: "fixed", top: dropdownPos.top, left: dropdownPos.left, zIndex: 9999 }}
+                  className="w-52 rounded-lg border border-[#00775B]/20 bg-[#021d18] shadow-2xl py-1.5 animate-in fade-in zoom-in-95 duration-100"
                 >
-                  <p className="px-2 py-1.5 text-xs text-muted-foreground font-medium">Platforms</p>
+                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/30">Platforms</p>
                   {PLATFORMS.map((platform) => {
                     const isActive = platform.app === activePlatformId;
                     return (
                       <button
                         key={platform.shortcut}
-                        className="flex w-full items-center gap-2 px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-sm transition-colors"
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] hover:bg-white/5 cursor-pointer transition-colors"
                         onClick={() => {
                           setPlatformOpen(false);
                           if (platform.app) onPlatformSwitch?.(platform.app);
                         }}
                       >
-                        <div className="flex size-6 items-center justify-center rounded-sm border bg-background">
-                          <platform.icon className="size-4 shrink-0" />
-                        </div>
-                        <span className="flex-1 text-left whitespace-nowrap">{platform.label}</span>
-                        {isActive && <Check className="size-4 text-primary" />}
-                        <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
-                          <span className="text-xs">⌘</span>{platform.shortcut}
-                        </kbd>
+                        <platform.icon className={cn("size-4 shrink-0", isActive ? "text-[#00956D]" : "text-white/50")} />
+                        <span className={cn("flex-1 text-left whitespace-nowrap", isActive ? "text-white" : "text-white/70")}>{platform.label}</span>
+                        {isActive && <Check className="size-3.5 text-[#00956D]" />}
+                        <kbd className="text-[10px] font-mono text-white/50 border border-white/15 rounded px-1.5 py-0.5 bg-white/5">⌘{platform.shortcut}</kbd>
                       </button>
                     );
                   })}
-                </div>
+                </div>,
+                document.body
               )}
             </SidebarMenuItem>
           </SidebarMenu>
