@@ -1440,7 +1440,7 @@ const MonitoringTabs = () => {
     <div className="mt-6 pb-16">
       {/* Sticky tab bar */}
       <div className="sticky top-14 z-40 bg-[#F8FAFC] border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center gap-0 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center gap-0 overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -1509,7 +1509,7 @@ const Footer = () => (
 export function MicroservicesContent() {
   const { countdown } = useRefreshCountdown(30);
   return (
-    <div className="font-sans text-neutral-900 -mx-4 lg:-mx-6">
+    <div className="font-sans text-neutral-900 w-full">
       <HeroSection countdown={countdown} />
       <LiveMetricsStrip />
       <MonitoringTabs />
