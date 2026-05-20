@@ -16,6 +16,7 @@ import { PersonaSwitcher, Persona } from "@/app/components/dashboard/PersonaSwit
 import { MonitoringWidgets } from "@/app/components/dashboard/MonitoringWidgets";
 import { ManagerWidgets } from "@/app/components/dashboard/ManagerWidgets";
 import { DirectorDashboard } from "@/app/components/dashboard/DirectorDashboard";
+import { VMSPlatform } from "@/app/components/pages/VMSPlatform";
 import { VolumeAnalytics } from "@/app/components/pages/VolumeAnalytics";
 import { IncidentAnalytics } from "@/app/components/pages/IncidentAnalytics";
 import { ZoneAnalytics } from "@/app/components/pages/ZoneAnalytics";
@@ -209,13 +210,14 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
-type ActiveApp = "analytics" | "training" | "marketplace";
+type ActiveApp = "analytics" | "training" | "marketplace" | "vms";
 
 /** Root switcher — picks which app to render based on platform selection */
 export default function App() {
   const [activeApp, setActiveApp] = useState<ActiveApp>("analytics");
   const handleSwitch = (app: string) => setActiveApp(app as ActiveApp);
 
+  if (activeApp === "vms")         return <VMSPlatform onPlatformSwitch={handleSwitch} />;
   if (activeApp === "training")    return <Suspense fallback={null}><TrainingApp    onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "marketplace") return <Suspense fallback={null}><MarketplaceApp onPlatformSwitch={handleSwitch} /></Suspense>;
   return <AnalyticsApp onPlatformSwitch={handleSwitch} />;
