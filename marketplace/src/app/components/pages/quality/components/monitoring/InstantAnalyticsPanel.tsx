@@ -10,7 +10,7 @@ import {
 import { cn } from "@/app/lib/utils";
 import { QualitySlidePanel as SlidePanel } from "../panels/QualitySlidePanel";
 import type { QualityTerminology } from "../../data/types";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

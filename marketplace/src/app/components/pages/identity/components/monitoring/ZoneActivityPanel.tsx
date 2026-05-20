@@ -3,7 +3,7 @@ import { MapPin, TrendingUp, TrendingDown, Minus, Camera, ShieldAlert, UserRound
 import { IDENTITY_ZONES } from "../../data/mockData";
 import type { IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
-import { DataGrid, DataGridColumn, MonoCell, InterCell } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell } from "@fe-common/components/ui/DataGrid";
 
 interface Props {
   terminology: IdentityTerminology;

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, CheckCircle2, AlertTriangle, XCircle, Activity, ChevronLeft, ChevronRight, Zap, Server, Link2, Clock } from "lucide-react";
 import { CommandGrid, type CGColumn, type CGSortOption } from "./CommandGrid";
 import { cn } from "@/app/lib/utils";
-import { StatusCapsule } from "@/app/components/ui/DataGrid";
+import { StatusCapsule } from "@fe-common/components/ui/DataGrid";
 import {
   SUMMARY, SERVICES, INCIDENTS, CATEGORIES,
   ENDPOINT_METRICS, ENDPOINT_ERRORS, SERVICE_RESOURCES, SERVICE_DEPENDENCIES,

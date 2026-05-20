@@ -1,6 +1,6 @@
 import { Plus, Eye, Trash2 } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
-import { DataGrid, MonoCell, InterCell, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
+import { Button } from "@fe-common/components/ui/Button";
+import { DataGrid, MonoCell, InterCell, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
 import { Dataset } from "@/app/data/mockData";
 import { TrainingProject } from "@/app/data/mockData";
 

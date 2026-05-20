@@ -3,7 +3,7 @@ import { ClipboardList } from "lucide-react";
 import { SCORECARD_DATA } from "../../data/mockData";
 import type { QualityTerminology, ScorecardRow } from "../../data/types";
 import { cn } from "@/app/lib/utils";
-import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 
 interface Props {
   terminology: QualityTerminology;

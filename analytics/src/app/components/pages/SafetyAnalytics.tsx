@@ -3,7 +3,7 @@ import { Persona } from "../dashboard/PersonaSwitcher";
 import { AlertTriangle, TrendingDown, TrendingUp, X, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, Clock } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Dot, Cell, PieChart, Pie } from "recharts";
-import { FilterDropdown } from "@/app/components/ui/FilterDropdown";
+import { FilterDropdown } from "@fe-common/components/ui/FilterDropdown";
 
 // ─── Sparkline component ──────────────────────────────────────────────────────
 const SafetySparkline = ({

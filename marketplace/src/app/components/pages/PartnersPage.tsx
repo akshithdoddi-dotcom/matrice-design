@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { ChevronDown, Plus, RefreshCw, Trash2, Pencil } from "lucide-react";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
 import {
   DataGrid, MonoCell, InterCell, StatusCapsule,
   GridActions, GridActionButton,
-} from "@/app/components/ui/DataGrid";
+} from "@fe-common/components/ui/DataGrid";
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
-} from "@/app/components/ui/accordion";
+} from "@fe-common/components/ui/accordion";
 import { cn } from "@/app/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

@@ -19,8 +19,8 @@ import {
   PEOPLE_COUNTING_COMPARISON_DATA
 } from "@/app/data/mockData";
 import { AnalyticsHeader } from "./AnalyticsHeader";
-import { Button } from "@/app/components/ui/Button";
-import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@/app/components/ui/DataGrid";
+import { Button } from "@fe-common/components/ui/Button";
+import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@fe-common/components/ui/DataGrid";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Collapsible from "@radix-ui/react-collapsible";
 

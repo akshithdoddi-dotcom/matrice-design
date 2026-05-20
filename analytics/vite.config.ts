@@ -53,6 +53,12 @@ export default defineConfig({
     port: process.env.PORT ? parseInt(process.env.PORT) : 5177,
     strictPort: false,
     hmr: { overlay: false },
+    watch: {
+      ignored: (f: string) => f.includes('node_modules') || f.includes('.git'),
+    },
+    fs: {
+      allow: ['..'],
+    },
   },
   plugins: [
     crossAppAliasPlugin(),
@@ -64,23 +70,11 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      // Alias @ to the analytics src directory
       '@': path.resolve(__dirname, './src'),
-      // Cross-app aliases – allow analytics to import from sibling apps
       '@training': trainingRoot,
       '@marketplace': marketplaceRoot,
       '@support': supportRoot,
       '@fe-common': feCommonRoot,
-    },
-  },
-  server: {
-    watch: {
-      // Watch sibling source directories so HMR fires on fe-common/training/etc changes
-      ignored: (f: string) => f.includes('node_modules') || f.includes('.git'),
-    },
-    fs: {
-      // Allow Vite to serve files from the monorepo root
-      allow: ['..'],
     },
   },
   build: {

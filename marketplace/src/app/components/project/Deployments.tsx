@@ -1,6 +1,6 @@
 import { Plus, ExternalLink, StopCircle } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
-import { DataGrid, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { Button } from "@fe-common/components/ui/Button";
+import { DataGrid, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 import { Deployment } from "@/app/data/mockData";
 import { TrainingProject } from "@/app/data/mockData";
 

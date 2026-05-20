@@ -3,8 +3,8 @@ import { Persona } from "../dashboard/PersonaSwitcher";
 import { AlertTriangle, Clock, Timer, TrendingDown, CheckCircle2, Video, ChevronDown, ChevronRight, Flame, Hand, Shield, AlertCircle, Play, Search, X, ChevronLeft } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from "recharts";
-import { StatusBar } from "../ui/StatusBar";
-import { FilterDropdown } from "../ui/FilterDropdown";
+import { StatusBar } from "@fe-common/components/ui/StatusBar";
+import { FilterDropdown } from "@fe-common/components/ui/FilterDropdown";
 
 const INCIDENT_TIME_RANGES: Record<Persona, string[]> = {
   monitoring: ["1H", "6H", "12H", "24H"],

@@ -3,12 +3,12 @@ import {
   Plus, Trash2, ArrowUpRight, FolderOpen,
   LayoutGrid, List, Clock, Cpu, Tag,
 } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@fe-common/components/ui/Button";
 import {
   DataGrid, MonoCell, InterCell, GridActions,
   GridActionButton, StatusCapsule,
-} from "@/app/components/ui/DataGrid";
-import { SegmentedControl } from "@/app/components/ui/segmented-control";
+} from "@fe-common/components/ui/DataGrid";
+import { SegmentedControl } from "@fe-common/components/ui/segmented-control";
 import { TrainingProject } from "@/app/data/mockData";
 import { CreateProjectModal } from "@/app/components/pages/CreateProjectModal";
 import { cn } from "@/app/lib/utils";

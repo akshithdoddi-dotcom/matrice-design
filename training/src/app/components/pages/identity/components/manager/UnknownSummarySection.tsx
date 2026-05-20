@@ -3,7 +3,7 @@ import { UserX } from "lucide-react";
 import { UNKNOWN_TRACKERS } from "../../data/mockData";
 import type { IdentityTerminology } from "../../data/types";
 import { cn } from "@/app/lib/utils";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 
 interface Props { terminology: IdentityTerminology }
 

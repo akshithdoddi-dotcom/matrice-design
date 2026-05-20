@@ -7,25 +7,25 @@ import {
   Trash2, ImageIcon, Cpu, Settings2, Sparkles,
   FlipHorizontal, Download, BarChart2, Table2,
 } from "lucide-react";
-import { SegmentedControl } from "@/app/components/ui/segmented-control";
+import { SegmentedControl } from "@fe-common/components/ui/segmented-control";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Legend,
   ScatterChart, Scatter, ZAxis,
 } from "recharts";
-import { Label }  from "@/app/components/ui/label";
-import { Input }  from "@/app/components/ui/Input";
-import { Switch } from "@/app/components/ui/switch";
-import { Slider } from "@/app/components/ui/slider";
+import { Label }  from "@fe-common/components/ui/label";
+import { Input }  from "@fe-common/components/ui/Input";
+import { Switch } from "@fe-common/components/ui/switch";
+import { Slider } from "@fe-common/components/ui/slider";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/app/components/ui/select";
+} from "@fe-common/components/ui/select";
 import { Dataset } from "@/app/data/mockData";
 import { StatCard, type StatCardData } from "@fe-common/components/ui/StatCard";
 import { Select as FESelect } from "@fe-common/components/ui/ui-select";
-import { Textarea } from "@/app/components/ui/textarea";
+import { Textarea } from "@fe-common/components/ui/textarea";
 import { cn } from "@/app/lib/utils";
-import { DataTable, type ColumnDef } from "@/app/components/ui/DataTable";
+import { DataTable, type ColumnDef } from "@fe-common/components/ui/data-table";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

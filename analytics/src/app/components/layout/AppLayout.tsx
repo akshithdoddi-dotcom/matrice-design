@@ -55,7 +55,7 @@ import {
   SidebarRail,
   SidebarTrigger,
   useSidebar,
-} from "@/app/components/ui/sidebar";
+} from "@fe-common/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,13 +63,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
+} from "@fe-common/components/ui/dropdown-menu";
 // Note: DropdownMenu is still used for the avatar/user menu below
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/app/components/ui/popover";
+} from "@fe-common/components/ui/popover";
 import { cn } from "@/app/lib/utils";
 import { Page } from "@/app/components/layout/Sidebar";
 
@@ -99,7 +99,7 @@ const MatriceIcon = () => (
 );
 
 // Platform options for switcher
-type AppKey = "analytics" | "training" | "marketplace";
+type AppKey = "analytics" | "training" | "marketplace" | "fe-common";
 const platforms: { icon: React.ElementType; label: string; shortcut: string; app?: AppKey; active?: boolean }[] = [
   { icon: Monitor,   label: "Matrice VMS",         shortcut: "1" },
   { icon: BarChart3, label: "Matrice Analytics",   shortcut: "2", app: "analytics",   active: true },
@@ -107,6 +107,7 @@ const platforms: { icon: React.ElementType; label: string; shortcut: string; app
   { icon: Store,     label: "Matrice Marketplace", shortcut: "4", app: "marketplace" },
   { icon: Wrench,    label: "Matrice Support",     shortcut: "5" },
   { icon: Shield,    label: "Matrice Internal",    shortcut: "6" },
+  { icon: Layers,    label: "FE Components",       shortcut: "7", app: "fe-common" },
 ];
 
 // Navigation items - matching original sidebar

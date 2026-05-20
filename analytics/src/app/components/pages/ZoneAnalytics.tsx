@@ -8,7 +8,7 @@ import { AnalyticsHeader } from "./AnalyticsHeader";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { ZoneConfigurationModal } from "../zone-config/ZoneConfigurationModal";
-import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@fe-common/components/ui/DataGrid";
 
 // Utility: Calculate seconds ago for real-time timestamps
 const getSecondsAgo = (zoneId: string): number => {

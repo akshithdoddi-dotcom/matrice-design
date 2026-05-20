@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, ShieldAlert, Clock,
   AlertTriangle, Mail, ChevronDown, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
-import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@/app/components/ui/DataGrid";
+import { DataGrid, MonoCell, InterCell, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 import {
   AreaChart, Area, LineChart, Line, YAxis, ResponsiveContainer,
 } from "recharts";

@@ -4,9 +4,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from "recharts";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
-import { StatusCapsule, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
-import { FilterDropdown } from "@/app/components/ui/FilterDropdown";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
+import { StatusCapsule, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
+import { FilterDropdown } from "@fe-common/components/ui/FilterDropdown";
 import { cn } from "@/app/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

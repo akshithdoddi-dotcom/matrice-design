@@ -10,14 +10,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/app/components/ui/sidebar";
+} from "@fe-common/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
+} from "@fe-common/components/ui/dropdown-menu";
 import {
   LayoutDashboard, ShieldAlert, MapPin, TrendingUp, ShoppingBag,
   Settings, HelpCircle, Check, ChevronsUpDown,

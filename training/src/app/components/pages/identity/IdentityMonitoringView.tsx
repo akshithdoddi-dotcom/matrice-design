@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { IdentityEvidenceMedia } from "./components/shared/IdentityEvidenceMedia";
 import { SlidePanel } from "./components/panels/SlidePanel";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
 import { IDENTITY_LIVE_STATUS, IDENTITY_ZONES, LPR_ZONES, UNKNOWN_TRACKERS } from "./data/mockData";
 import type { IdentityTerminology } from "./data/types";
 import type { IdentityAppOption } from "../IdentityAnalytics";

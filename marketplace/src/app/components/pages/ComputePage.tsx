@@ -4,12 +4,12 @@ import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
-import { StatCard, StatCardData } from "@/app/components/ui/StatCard";
+import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
 import {
   DataGrid, MonoCell, InterCell, StatusCapsule,
   DataGridColumn,
-} from "@/app/components/ui/DataGrid";
-import { Slider } from "@/app/components/ui/slider";
+} from "@fe-common/components/ui/DataGrid";
+import { Slider } from "@fe-common/components/ui/slider";
 import { cn } from "@/app/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

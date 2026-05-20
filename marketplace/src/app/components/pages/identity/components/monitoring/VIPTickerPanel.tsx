@@ -3,7 +3,7 @@ import { Star, ShieldCheck, Eye } from "lucide-react";
 import { VIP_ENTRIES } from "../../data/mockData";
 import type { IdentityTerminology } from "../../data/types";
 import { IdentityEvidenceMedia } from "../shared/IdentityEvidenceMedia";
-import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@/app/components/ui/DataGrid";
+import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
 
 interface Props { terminology: IdentityTerminology }
 
