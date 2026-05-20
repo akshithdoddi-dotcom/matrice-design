@@ -306,7 +306,7 @@ function SearchResultsView({ query, onClear }: { query: string; onClear: () => v
   );
 }
 
-// ── Copilot Chat Drawer ───────────────────────────────────────────────────────
+// ── Matrice Spark Chat Drawer ─────────────────────────────────────────────────
 const COPILOT_SUGGESTIONS = [
   "Summarize critical incidents today",
   "Show compliance gaps this week",
@@ -319,7 +319,7 @@ function CopilotDrawer({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      text: "Hello! I'm Matrice Copilot. I can analyze incidents, query camera feeds, identify compliance gaps, and generate reports across your surveillance infrastructure.",
+      text: "Hello! I'm Matrice Spark. I can analyze incidents, query camera feeds, identify compliance gaps, and generate reports across your surveillance infrastructure.",
     },
   ]);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -346,7 +346,7 @@ function CopilotDrawer({ onClose }: { onClose: () => void }) {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 shrink-0">
         <Sparkles className="w-4 h-4 text-[#00956D]" />
         <span className="font-semibold text-white text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
-          Matrice Copilot
+          Matrice Spark
         </span>
         <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#00775B]/25 text-[#34D399] font-mono tracking-widest ml-0.5">
           BETA
@@ -403,7 +403,7 @@ function CopilotDrawer({ onClose }: { onClose: () => void }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder="Ask Matrice Copilot..."
+            placeholder="Ask Matrice Spark..."
             className="flex-1 bg-transparent text-[12px] text-white placeholder-white/30 outline-none"
             style={{ fontFamily: "Inter, sans-serif" }}
           />
@@ -473,7 +473,10 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
   }, [platformOpen]);
 
   return (
-    <SidebarProvider defaultOpen={true} style={{ "--sidebar-width": "14rem" } as React.CSSProperties}>
+    // h-screen overflow-hidden caps the layout to exactly the viewport — prevents the page
+    // itself from scrolling so the header stays pinned and the Spark drawer is always fully visible.
+    <div className="h-screen overflow-hidden flex">
+    <SidebarProvider defaultOpen={true} className="flex-1 min-w-0 overflow-hidden" style={{ "--sidebar-width": "14rem" } as React.CSSProperties}>
       {/* ── Left Sidebar ────────────────────────────────────────────────────── */}
       <Sidebar collapsible="icon" variant="sidebar" className="border-r border-[#00775B]/15 bg-[#021d18]">
         <SidebarHeader>
@@ -681,7 +684,7 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
               )}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden lg:block">Copilot</span>
+              <span className="hidden lg:block">Spark</span>
             </button>
 
             {/* User profile dropdown */}
@@ -724,10 +727,11 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
           </div>
         </header>
 
-        {/* Body row: main content + optional Copilot drawer */}
-        <div className="flex flex-1 overflow-hidden">
+        {/* Body row: main content + optional Spark drawer */}
+        {/* min-h-0 is critical — without it flex children use min-height:auto and overflow the parent */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Main content area */}
-          <div className="flex flex-1 flex-col overflow-auto">
+          <div className="flex flex-1 flex-col overflow-auto min-w-0">
             {searchActive ? (
               <SearchResultsView query={searchQuery} onClear={clearSearch} />
             ) : (
@@ -740,12 +744,13 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
             )}
           </div>
 
-          {/* Copilot drawer (slides in from right, pushes content left) */}
+          {/* Spark drawer (slides in from right, pushes content left) */}
           {copilotOpen && (
             <CopilotDrawer onClose={() => setCopilotOpen(false)} />
           )}
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </div>
   );
 }
