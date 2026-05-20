@@ -5,7 +5,8 @@
       "name": "Analytics Dev Server",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:analytics"],
-      "port": 5177
+      "port": 5177,
+      "autoPort": true
     },
     {
       "name": "Training Dev Server",

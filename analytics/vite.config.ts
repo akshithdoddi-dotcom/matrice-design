@@ -49,6 +49,11 @@ function crossAppAliasPlugin() {
 }
 
 export default defineConfig({
+  server: {
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5177,
+    strictPort: false,
+    hmr: { overlay: false },
+  },
   plugins: [
     crossAppAliasPlugin(),
     figmaAssetResolver(),
@@ -76,6 +81,14 @@ export default defineConfig({
     fs: {
       // Allow Vite to serve files from the monorepo root
       allow: ['..'],
+    },
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        status: path.resolve(__dirname, 'status.html'),
+      },
     },
   },
 })
