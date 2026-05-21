@@ -78,7 +78,7 @@ export default defineConfig({
   ],
   resolve: {
     // Ensure only one copy of React is used across all sibling app imports
-    dedupe: ['react', 'react-dom', 'react-router-dom'],
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@radix-ui/react-slot'],
     alias: {
       // Pin react/react-dom to analytics' own copies to prevent duplicate instances
       'react': nm('react'),
