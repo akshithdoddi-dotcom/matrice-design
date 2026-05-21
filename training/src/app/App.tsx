@@ -19,6 +19,8 @@ export default function App({ onPlatformSwitch }: TrainingAppProps = {}) {
   const [selectedProject, setSelectedProject] = useState<TrainingProject | null>(null);
   const [activeProjectPage, setActiveProjectPage] = useState<ProjectPage>("home");
   const [projects, setProjects] = useState<TrainingProject[]>(MOCK_PROJECTS);
+  const [initialDatasetId, setInitialDatasetId] = useState<string | null>(null);
+  const [initialJobId,     setInitialJobId]     = useState<string | null>(null);
 
   const [isDark, setIsDark] = useState<boolean>(() => {
     try { return localStorage.getItem("matrice-theme") === "dark"; } catch { return false; }
@@ -32,19 +34,39 @@ export default function App({ onPlatformSwitch }: TrainingAppProps = {}) {
   function openProject(project: TrainingProject) {
     setSelectedProject(project);
     setActiveProjectPage("home");
+    setInitialDatasetId(null);
+    setInitialJobId(null);
   }
 
   function exitProject() {
     setSelectedProject(null);
     setActivePage("dashboard");
+    setInitialDatasetId(null);
+    setInitialJobId(null);
+  }
+
+  function handleProjectPageChange(page: ProjectPage) {
+    setInitialDatasetId(null);
+    setInitialJobId(null);
+    setActiveProjectPage(page);
+  }
+
+  function openDatasetDetail(id: string) {
+    setInitialDatasetId(id);
+    setActiveProjectPage("datasets");
+  }
+
+  function openJobDetail(id: string) {
+    setInitialJobId(id);
+    setActiveProjectPage("training");
   }
 
   function renderContent() {
     if (selectedProject) {
       switch (activeProjectPage) {
-        case "home":        return <ProjectHome  project={selectedProject} onNavigate={setActiveProjectPage} />;
-        case "datasets":    return <Datasets     project={selectedProject} />;
-        case "training":    return <TrainingJobs project={selectedProject} />;
+        case "home":        return <ProjectHome  project={selectedProject} onNavigate={handleProjectPageChange} onOpenDataset={openDatasetDetail} onOpenJob={openJobDetail} onOpenDeployment={() => handleProjectPageChange("deployments")} />;
+        case "datasets":    return <Datasets     project={selectedProject} initialDatasetId={initialDatasetId ?? undefined} />;
+        case "training":    return <TrainingJobs project={selectedProject} initialJobId={initialJobId ?? undefined} />;
         case "deployments": return <Deployments  project={selectedProject} />;
       }
     }
@@ -75,7 +97,7 @@ export default function App({ onPlatformSwitch }: TrainingAppProps = {}) {
       onPageChange={(page) => { setActivePage(page); setSelectedProject(null); }}
       projectName={selectedProject?.name}
       activeProjectPage={activeProjectPage}
-      onProjectPageChange={setActiveProjectPage}
+      onProjectPageChange={handleProjectPageChange}
       onExitProject={exitProject}
       isDark={isDark}
       onToggleDark={() => setIsDark((d) => !d)}

@@ -1,7 +1,6 @@
 import {
   Calendar, Cpu, Globe, Tag, Database, Rocket,
-  ArrowUpRight, HardDrive, Layers, Radio, Square,
-  Clock, TrendingUp,
+  ArrowUpRight, TrendingUp,
 } from "lucide-react";
 import { TrainingProject, MOCK_DATASETS, MOCK_TRAINING_JOBS, MOCK_DEPLOYMENTS } from "@/app/data/mockData";
 import { ProjectPage } from "@/app/components/layout/AppLayout";
@@ -54,7 +53,13 @@ function SectionHeader({
 
 // ─── Datasets panel ───────────────────────────────────────────────────────────
 
-function DatasetsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => void }) {
+function DatasetsPanel({
+  onNavigate,
+  onOpenDataset,
+}: {
+  onNavigate?: (page: ProjectPage) => void;
+  onOpenDataset?: (id: string) => void;
+}) {
   return (
     <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
       <SectionHeader
@@ -64,37 +69,30 @@ function DatasetsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => voi
         onViewAll={() => onNavigate?.("datasets")}
       />
       <div className="divide-y divide-neutral-100">
-        {MOCK_DATASETS.map((ds) => (
+        {MOCK_DATASETS.slice(0, 3).map((ds) => (
           <div
             key={ds.id}
-            className="flex items-center justify-between px-5 py-3.5 hover:bg-neutral-50/60 transition-colors group"
+            className="px-5 py-3.5 hover:bg-neutral-50/60 transition-colors cursor-pointer"
+            onClick={() => onOpenDataset?.(ds.id)}
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-[4px] bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                <Layers className="w-3.5 h-3.5 text-blue-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[12px] font-semibold text-neutral-800 truncate">{ds.name}</p>
-                <p className="text-[10px] text-neutral-400 mt-0.5">
-                  {ds.itemCount.toLocaleString()} items · {(ds.sizeMb / 1024).toFixed(1)} GB
-                </p>
-              </div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[12px] font-semibold text-neutral-800 truncate">{ds.name}</p>
+              <span className="text-[10px] font-mono text-neutral-400 shrink-0 ml-2">{ds.createdAt}</span>
             </div>
-            <div className="flex items-center gap-4 shrink-0 ml-4">
-              {/* Split bar */}
-              <div className="hidden sm:flex items-center gap-1.5">
-                <div className="flex h-1.5 w-20 rounded-full overflow-hidden bg-neutral-100">
-                  <div className="bg-[#00775B]"   style={{ width: `${ds.trainSplit}%` }} />
-                  <div className="bg-[#0284C7]"   style={{ width: `${ds.valSplit}%` }} />
-                  <div className="bg-[#F59E0B]"   style={{ width: `${ds.testSplit}%` }} />
-                </div>
-                <span className="text-[10px] text-neutral-400 font-mono whitespace-nowrap">
-                  {ds.trainSplit}/{ds.valSplit}/{ds.testSplit}
-                </span>
+            {/* Split bar */}
+            <div className="flex items-center gap-2">
+              <div className="flex h-1.5 flex-1 rounded-full overflow-hidden bg-neutral-100">
+                <div className="bg-[#00775B]" style={{ width: `${ds.trainSplit}%` }} />
+                <div className="bg-[#0284C7]" style={{ width: `${ds.valSplit}%` }} />
+                {ds.testSplit > 0 && <div className="bg-[#F59E0B]" style={{ width: `${ds.testSplit}%` }} />}
               </div>
-              <div className="flex items-center gap-1 text-[10px] text-neutral-400 font-mono">
-                <Clock className="w-3 h-3" />{ds.createdAt}
-              </div>
+              <span className="text-[10px] font-mono text-neutral-500 shrink-0">{ds.trainSplit}/{ds.valSplit}/{ds.testSplit}</span>
+            </div>
+            {/* Meta */}
+            <div className="flex items-center gap-3 mt-1.5 text-[10px] text-neutral-400">
+              <span>{ds.itemCount.toLocaleString()} items</span>
+              <span>·</span>
+              <span>{(ds.sizeMb / 1024).toFixed(1)} GB</span>
             </div>
           </div>
         ))}
@@ -106,13 +104,19 @@ function DatasetsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => voi
 // ─── Training Jobs panel ──────────────────────────────────────────────────────
 
 const JOB_STATUS_COLOR = {
-  running: { bg: "bg-blue-50",   text: "text-blue-600",   dot: "bg-blue-500",   label: "Running" },
-  queued:  { bg: "bg-amber-50",  text: "text-amber-600",  dot: "bg-amber-500",  label: "Queued"  },
-  paused:  { bg: "bg-neutral-100", text: "text-neutral-500", dot: "bg-neutral-400", label: "Paused" },
+  running: { bg: "bg-blue-50",     text: "text-blue-600",     dot: "bg-blue-500",     label: "Running" },
+  queued:  { bg: "bg-amber-50",    text: "text-amber-600",    dot: "bg-amber-500",    label: "Queued"  },
+  paused:  { bg: "bg-neutral-100", text: "text-neutral-500",  dot: "bg-neutral-400",  label: "Paused"  },
 } as const;
 
-function TrainingJobsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => void }) {
-  const jobs = MOCK_TRAINING_JOBS.slice(0, 4);
+function TrainingJobsPanel({
+  onNavigate,
+  onOpenJob,
+}: {
+  onNavigate?: (page: ProjectPage) => void;
+  onOpenJob?: (id: string) => void;
+}) {
+  const jobs = MOCK_TRAINING_JOBS.slice(0, 3);
   return (
     <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
       <SectionHeader
@@ -125,14 +129,13 @@ function TrainingJobsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) =>
         {jobs.map((job) => {
           const sc = JOB_STATUS_COLOR[job.status];
           return (
-            <div key={job.id} className="px-5 py-3.5 hover:bg-neutral-50/60 transition-colors">
+            <div
+              key={job.id}
+              className="px-5 py-3.5 hover:bg-neutral-50/60 transition-colors cursor-pointer"
+              onClick={() => onOpenJob?.(job.id)}
+            >
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-[4px] bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                    <Cpu className="w-3 h-3 text-blue-500" />
-                  </div>
-                  <p className="text-[12px] font-semibold text-neutral-800 truncate">{job.projectName}</p>
-                </div>
+                <p className="text-[12px] font-semibold text-neutral-800 truncate">{job.projectName}</p>
                 <span className={cn(
                   "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ml-2",
                   sc.bg, sc.text,
@@ -176,12 +179,18 @@ function TrainingJobsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) =>
 // ─── Deployments panel ────────────────────────────────────────────────────────
 
 const DEP_STATUS_COLOR = {
-  live:    { bg: "bg-[#E5FFF9]", text: "text-[#00775B]", dot: "bg-[#00775B]", label: "Live"    },
+  live:    { bg: "bg-[#E5FFF9]",   text: "text-[#00775B]",   dot: "bg-[#00775B]",   label: "Live"    },
   stopped: { bg: "bg-neutral-100", text: "text-neutral-500", dot: "bg-neutral-400", label: "Stopped" },
-  error:   { bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-500",    label: "Error"   },
+  error:   { bg: "bg-red-50",      text: "text-red-600",     dot: "bg-red-500",     label: "Error"   },
 } as const;
 
-function DeploymentsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => void }) {
+function DeploymentsPanel({
+  onNavigate,
+  onOpenDeployment,
+}: {
+  onNavigate?: (page: ProjectPage) => void;
+  onOpenDeployment?: (id: string) => void;
+}) {
   return (
     <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
       <SectionHeader
@@ -191,40 +200,33 @@ function DeploymentsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => 
         onViewAll={() => onNavigate?.("deployments")}
       />
       <div className="divide-y divide-neutral-100">
-        {MOCK_DEPLOYMENTS.map((dep) => {
+        {MOCK_DEPLOYMENTS.slice(0, 3).map((dep) => {
           const sc = DEP_STATUS_COLOR[dep.status];
           return (
-            <div key={dep.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-neutral-50/60 transition-colors gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={cn(
-                  "w-8 h-8 rounded-[4px] flex items-center justify-center shrink-0",
-                  dep.status === "live" ? "bg-[#E5FFF9] border border-[#00775B]/20" : "bg-neutral-100 border border-neutral-200",
-                )}>
-                  {dep.status === "live"
-                    ? <Radio  className="w-3.5 h-3.5 text-[#00775B]" />
-                    : <Square className="w-3.5 h-3.5 text-neutral-400" />
-                  }
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[12px] font-semibold text-neutral-800 truncate">{dep.modelName}</p>
-                  <p className="text-[10px] text-neutral-400 font-mono truncate mt-0.5">{dep.endpoint}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                {dep.status === "live" && (
-                  <div className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-neutral-500">
-                    <HardDrive className="w-3 h-3" />
-                    {dep.latencyMs}ms
-                  </div>
-                )}
-                <span className="text-[10px] text-neutral-400 font-mono hidden sm:block">{dep.region}</span>
+            <div
+              key={dep.id}
+              className="px-5 py-3.5 hover:bg-neutral-50/60 transition-colors cursor-pointer"
+              onClick={() => onOpenDeployment?.(dep.id)}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[12px] font-semibold text-neutral-800 truncate">{dep.modelName}</p>
                 <span className={cn(
-                  "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                  "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ml-2",
                   sc.bg, sc.text,
                 )}>
                   <span className={cn("w-1.5 h-1.5 rounded-full", sc.dot, dep.status === "live" && "animate-pulse")} />
                   {sc.label}
                 </span>
+              </div>
+              <p className="text-[10px] font-mono text-neutral-400 truncate mb-1.5">{dep.endpoint}</p>
+              <div className="flex items-center gap-3 text-[10px] text-neutral-400">
+                <span>{dep.region}</span>
+                {dep.status === "live" && (
+                  <>
+                    <span>·</span>
+                    <span>{dep.latencyMs}ms</span>
+                  </>
+                )}
               </div>
             </div>
           );
@@ -239,9 +241,12 @@ function DeploymentsPanel({ onNavigate }: { onNavigate?: (page: ProjectPage) => 
 interface ProjectHomeProps {
   project: TrainingProject;
   onNavigate?: (page: ProjectPage) => void;
+  onOpenDataset?: (id: string) => void;
+  onOpenJob?: (id: string) => void;
+  onOpenDeployment?: (id: string) => void;
 }
 
-export function ProjectHome({ project, onNavigate }: ProjectHomeProps) {
+export function ProjectHome({ project, onNavigate, onOpenDataset, onOpenJob, onOpenDeployment }: ProjectHomeProps) {
   const STATS: StatCardData[] = [
     { label: "Datasets",      value: "3",     sublabel: "Attached",       num: "+1",    ref_: "vs Last Week",  dir: "up",     chip: "DATASETS",  color: "#0284C7", bgColor: "#E0F2FE" },
     { label: "Training Runs", value: "4",     sublabel: "All Runs",       num: "+2",    ref_: "vs Last Month", dir: "up",     chip: "RUNS",      color: "#0284C7", bgColor: "#E0F2FE" },
@@ -296,22 +301,11 @@ export function ProjectHome({ project, onNavigate }: ProjectHomeProps) {
         {STATS.map((d) => <StatCard key={d.label} d={d} />)}
       </div>
 
-      {/* Activity panels */}
+      {/* Activity panels — 1×3 row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Datasets — full width on first row */}
-        <div className="xl:col-span-3">
-          <DatasetsPanel onNavigate={onNavigate} />
-        </div>
-
-        {/* Training Jobs — 2/3 */}
-        <div className="xl:col-span-2">
-          <TrainingJobsPanel onNavigate={onNavigate} />
-        </div>
-
-        {/* Deployments — 1/3 */}
-        <div className="xl:col-span-1">
-          <DeploymentsPanel onNavigate={onNavigate} />
-        </div>
+        <DatasetsPanel    onNavigate={onNavigate} onOpenDataset={onOpenDataset} />
+        <TrainingJobsPanel onNavigate={onNavigate} onOpenJob={onOpenJob} />
+        <DeploymentsPanel  onNavigate={onNavigate} onOpenDeployment={onOpenDeployment} />
       </div>
 
       {/* Config details */}

@@ -288,11 +288,13 @@ function AllDatasetsTab({ onView }: { onView: (d: Dataset) => void }) {
 
 // ─── Datasets page ────────────────────────────────────────────────────────────
 
-interface DatasetsProps { project: TrainingProject; }
+interface DatasetsProps { project: TrainingProject; initialDatasetId?: string; }
 
-export function Datasets({ project: _project }: DatasetsProps) {
+export function Datasets({ project: _project, initialDatasetId }: DatasetsProps) {
   const [tab,     setTab]     = useState<DTab>("datasets");
-  const [selected, setSelected] = useState<Dataset | null>(null);
+  const [selected, setSelected] = useState<Dataset | null>(
+    initialDatasetId ? (MOCK_PROJECT_DATASETS.find(d => d.id === initialDatasetId) ?? null) : null
+  );
 
   if (selected) {
     return <DatasetDetail dataset={selected} onBack={() => setSelected(null)} />;

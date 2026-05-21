@@ -423,11 +423,13 @@ function AddModelsTab() {
 
 // ─── TrainingJobs page ────────────────────────────────────────────────────────
 
-interface TrainingJobsProps { project: TrainingProject; }
+interface TrainingJobsProps { project: TrainingProject; initialJobId?: string; }
 
-export function TrainingJobs({ project: _project }: TrainingJobsProps) {
+export function TrainingJobs({ project: _project, initialJobId }: TrainingJobsProps) {
   const [tab,         setTab]         = useState<TTab>("add-models");
-  const [selectedJob, setSelectedJob] = useState<TrainingJob | null>(null);
+  const [selectedJob, setSelectedJob] = useState<TrainingJob | null>(
+    initialJobId ? (MOCK_PROJECT_JOBS.find(j => j.id === initialJobId) ?? null) : null
+  );
 
   if (selectedJob) {
     return <ModelDetail job={selectedJob} onBack={() => setSelectedJob(null)} />;
