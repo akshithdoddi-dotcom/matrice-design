@@ -11,6 +11,7 @@ import {
   Sparkles, Tag, Truck, Package, UserRound,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
+import { CommandPalette } from "@/app/components/CommandPalette";
 
 // ─── Mono font shorthand ──────────────────────────────────────────────────────
 const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono','Fira Code','Cascadia Code',monospace" };
@@ -913,10 +914,10 @@ function InspectionModal({ result, onClose }: { result: SearchResult; onClose: (
 // ─── Main VMS Platform ────────────────────────────────────────────────────────
 
 export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
-  const [searchQuery, setSearchQuery]     = useState("");
-  const [searchActive, setSearchActive]   = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [hoveredFeed, setHoveredFeed]     = useState<string | null>(null);
+  const [searchQuery, setSearchQuery]   = useState("");
+  const [searchActive, setSearchActive] = useState(false);
+  const [paletteOpen, setPaletteOpen]   = useState(false);
+  const [hoveredFeed, setHoveredFeed]   = useState<string | null>(null);
   const [selectedCams, setSelectedCams]   = useState<Set<string>>(new Set());
   const [platformOpen, setPlatformOpen]   = useState(false);
   const [sidebarOpen, setSidebarOpen]     = useState(true);
@@ -929,8 +930,6 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
 
   const platformBtnRef   = useRef<HTMLButtonElement>(null);
   const platformPanelRef = useRef<HTMLDivElement>(null);
-  const searchInputRef   = useRef<HTMLInputElement>(null);
-  const searchWrapRef    = useRef<HTMLDivElement>(null);
 
   // Clock
   useEffect(() => {
@@ -955,40 +954,27 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
     return () => document.removeEventListener("mousedown", h);
   }, [platformOpen]);
 
-  // Close search dropdown on outside click
+  // Global Cmd+K / Ctrl+K → open command palette
   useEffect(() => {
-    if (!searchFocused) return;
-    const h = (e: MouseEvent) => {
-      if (!searchWrapRef.current?.contains(e.target as Node)) setSearchFocused(false);
+    const h = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen(o => !o);
+      }
     };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [searchFocused]);
-
-  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && searchQuery.trim()) {
-      setSearchActive(true);
-      setSearchFocused(false);
-    }
-    if (e.key === "Escape") {
-      setSearchFocused(false);
-      searchInputRef.current?.blur();
-    }
-  }, [searchQuery]);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
 
   const clearSearch = useCallback(() => {
     setSearchQuery("");
     setSearchActive(false);
-    setSearchFocused(false);
-    searchInputRef.current?.focus();
   }, []);
 
-  const handleSuggestionSelect = (text: string) => {
-    setSearchQuery(text);
+  const handlePaletteSearch = useCallback((query: string) => {
+    setSearchQuery(query);
     setSearchActive(true);
-    setSearchFocused(false);
-    searchInputRef.current?.blur();
-  };
+  }, []);
 
   const toggleCamera = (id: string) => {
     setSelectedCams(prev => {
@@ -1168,53 +1154,29 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
 
           <div className="h-4 w-px bg-white/10 mx-1 shrink-0" />
 
-          {/* ── Predictive Vision Search — right-aligned ─────────────────── */}
-          <div className="flex-1 flex justify-end">
-            <div ref={searchWrapRef} className="relative w-full max-w-lg">
-              <div className={cn(
-                "flex items-center gap-2 h-8 rounded-lg border transition-all w-full",
-                searchActive
-                  ? "border-[#00775B]/60 bg-[#00775B]/10 shadow-[0_0_14px_rgba(0,119,91,0.25)]"
-                  : searchFocused
-                  ? "border-white/20 bg-white/8 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]"
-                  : "border-white/10 bg-white/5 hover:border-white/15 hover:bg-white/6"
-              )}>
-                {searchActive
-                  ? <Sparkles className="w-3.5 h-3.5 text-[#00956D] shrink-0 ml-3 animate-pulse" />
-                  : <Search className="w-3.5 h-3.5 text-white/35 shrink-0 ml-3" />
-                }
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => { setSearchQuery(e.target.value); if (!searchFocused) setSearchFocused(true); }}
-                  onFocus={() => setSearchFocused(true)}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder="Search live or recorded video — objects, colors, actions, behaviors..."
-                  className="flex-1 bg-transparent text-[12px] text-white placeholder:text-white/25 outline-none"
-                  style={INTER}
-                />
-                {searchActive ? (
-                  <button
-                    onClick={clearSearch}
-                    className="flex items-center gap-1 mr-2 px-2 py-0.5 rounded text-[11px] text-white/50 hover:text-white/80 hover:bg-white/10 border border-white/10 transition-colors shrink-0"
-                    style={MONO}
-                  >
-                    <X className="w-2.5 h-2.5" /> Clear
-                  </button>
-                ) : !searchFocused && (
-                  <div className="mr-3 flex items-center gap-0.5 opacity-30 pointer-events-none">
-                    <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/20 bg-white/10" style={MONO}>⌘</kbd>
-                    <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/20 bg-white/10" style={MONO}>F</kbd>
-                  </div>
-                )}
+          {/* ── Right utility: Search anchor ──────────────────────────────── */}
+          <div className="flex-1 flex items-center justify-end gap-2">
+            {searchActive && (
+              <button
+                onClick={clearSearch}
+                className="flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium text-white/55 hover:text-white border border-white/10 bg-white/4 hover:bg-white/8 transition-all shrink-0"
+                style={MONO}
+              >
+                <X className="w-2.5 h-2.5" /> Clear Results
+              </button>
+            )}
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="flex items-center gap-2 h-8 px-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/8 hover:border-white/18 text-white/50 hover:text-white transition-all shrink-0"
+              style={INTER}
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="text-[12px] hidden sm:block">Search</span>
+              <div className="hidden sm:flex items-center gap-0.5 ml-0.5">
+                <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/15 bg-white/8" style={MONO}>⌘</kbd>
+                <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/15 bg-white/8" style={MONO}>K</kbd>
               </div>
-
-              {/* Predictive dropdown */}
-              {searchFocused && !searchActive && (
-                <SearchDropdown query={searchQuery} onSelect={handleSuggestionSelect} />
-              )}
-            </div>
+            </button>
           </div>
         </header>
 
@@ -1332,6 +1294,15 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
       {/* ── Inspection modal ──────────────────────────────────────────────── */}
       {selectedResult && (
         <InspectionModal result={selectedResult} onClose={() => setSelectedResult(null)} />
+      )}
+
+      {/* ── Command Palette (Cmd+K) ───────────────────────────────────────── */}
+      {paletteOpen && (
+        <CommandPalette
+          platform="vms"
+          onSearch={handlePaletteSearch}
+          onClose={() => setPaletteOpen(false)}
+        />
       )}
     </div>
   );

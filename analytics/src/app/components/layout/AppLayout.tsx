@@ -74,6 +74,7 @@ import {
 } from "@fe-common/components/ui/popover";
 import { cn } from "@/app/lib/utils";
 import { Page } from "@/app/components/layout/Sidebar";
+import { CommandPalette } from "@/app/components/CommandPalette";
 
 // ── Matrice brand icon ────────────────────────────────────────────────────────
 const MatriceIcon = () => (
@@ -428,26 +429,22 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
   const platformBtnRef = useRef<HTMLButtonElement>(null);
   const platformPanelRef = useRef<HTMLDivElement>(null);
 
-  // Vision Intelligence Search
-  const [searchInput, setSearchInput] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  // Vision Intelligence Search (query/active driven by Command Palette)
+  const [searchQuery,  setSearchQuery]  = useState("");
   const [searchActive, setSearchActive] = useState(false);
+  const [paletteOpen,  setPaletteOpen]  = useState(false);
 
   // Copilot drawer
   const [copilotOpen, setCopilotOpen] = useState(false);
 
-  const handleSearchSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (searchInput.trim()) {
-      setSearchQuery(searchInput.trim());
-      setSearchActive(true);
-    }
-  };
-
   const clearSearch = () => {
     setSearchQuery("");
     setSearchActive(false);
-    setSearchInput("");
+  };
+
+  const handlePaletteSearch = (query: string) => {
+    setSearchQuery(query);
+    setSearchActive(true);
   };
 
   useEffect(() => {
@@ -455,6 +452,18 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
       setClockTime(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
     }, 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Global Cmd+K / Ctrl+K → open command palette
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen(o => !o);
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, []);
 
   // Close platform panel on outside click
@@ -623,38 +632,24 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
             </span>
           </div>
 
-          {/* Center: Vision Intelligence Search */}
-          <div className="flex-1 flex justify-center px-3">
-            <form onSubmit={handleSearchSubmit} className="w-full max-w-xl">
-              <div className="relative flex items-center">
-                <Search className="absolute left-3 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-                <input
-                  value={searchInput}
-                  onChange={e => setSearchInput(e.target.value)}
-                  placeholder="Search events, behaviors, or compliance trends across sites..."
-                  className="w-full h-8 pl-9 pr-8 bg-white/5 border border-white/10 rounded-lg text-[12px] text-white placeholder-white/25 focus:outline-none focus:border-[#00775B]/60 focus:bg-white/8 transition-all"
-                  style={{ fontFamily: "Inter, sans-serif" }}
-                />
-                {searchInput ? (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="absolute right-2.5 text-white/30 hover:text-white/70 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                ) : (
-                  <div className="absolute right-2.5 flex items-center gap-0.5 pointer-events-none opacity-40">
-                    <kbd className="text-[9px] font-mono px-1 py-0.5 rounded border border-white/20 bg-white/10">⌘</kbd>
-                    <kbd className="text-[9px] font-mono px-1 py-0.5 rounded border border-white/20 bg-white/10">K</kbd>
-                  </div>
-                )}
-              </div>
-            </form>
-          </div>
+          <div className="flex-1" />
 
           {/* Right: actions */}
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Search anchor */}
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="flex items-center gap-2 h-8 px-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/8 hover:border-white/18 text-white/50 hover:text-white transition-all"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="hidden md:block text-[12px]">Search</span>
+              <div className="hidden md:flex items-center gap-0.5 ml-0.5">
+                <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/15 bg-white/8" style={{ fontFamily: "JetBrains Mono, monospace" }}>⌘</kbd>
+                <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/15 bg-white/8" style={{ fontFamily: "JetBrains Mono, monospace" }}>K</kbd>
+              </div>
+            </button>
+
             {/* LIVE indicator */}
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#00775B] rounded-full text-white text-xs font-semibold shadow-md shadow-[#00775B]/30">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
@@ -749,6 +744,15 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
             <CopilotDrawer onClose={() => setCopilotOpen(false)} />
           )}
         </div>
+
+        {/* Command Palette (Cmd+K) — rendered inside SidebarInset so it overlays correctly */}
+        {paletteOpen && (
+          <CommandPalette
+            platform="analytics"
+            onSearch={handlePaletteSearch}
+            onClose={() => setPaletteOpen(false)}
+          />
+        )}
       </SidebarInset>
     </SidebarProvider>
     </div>
