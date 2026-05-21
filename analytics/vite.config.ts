@@ -9,6 +9,7 @@ const supportRoot = path.resolve(__dirname, '../support/src')
 const feCommonRoot = path.resolve(__dirname, '../fe-common/src')
 const internalRoot = path.resolve(__dirname, '../internal/src')
 const analyticsRoot = path.resolve(__dirname, './src')
+const nm = (pkg: string) => path.resolve(__dirname, 'node_modules', pkg)
 
 function figmaAssetResolver() {
   return {
@@ -80,8 +81,52 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react-router-dom'],
     alias: {
       // Pin react/react-dom to analytics' own copies to prevent duplicate instances
-      'react': path.resolve(__dirname, 'node_modules/react'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      'react': nm('react'),
+      'react-dom': nm('react-dom'),
+      // Ensure sibling apps (fe-common, training, etc.) resolve all shared packages
+      // from analytics' node_modules — they have no node_modules of their own.
+      '@radix-ui/react-accordion': nm('@radix-ui/react-accordion'),
+      '@radix-ui/react-alert-dialog': nm('@radix-ui/react-alert-dialog'),
+      '@radix-ui/react-aspect-ratio': nm('@radix-ui/react-aspect-ratio'),
+      '@radix-ui/react-avatar': nm('@radix-ui/react-avatar'),
+      '@radix-ui/react-checkbox': nm('@radix-ui/react-checkbox'),
+      '@radix-ui/react-collapsible': nm('@radix-ui/react-collapsible'),
+      '@radix-ui/react-context-menu': nm('@radix-ui/react-context-menu'),
+      '@radix-ui/react-dialog': nm('@radix-ui/react-dialog'),
+      '@radix-ui/react-dropdown-menu': nm('@radix-ui/react-dropdown-menu'),
+      '@radix-ui/react-hover-card': nm('@radix-ui/react-hover-card'),
+      '@radix-ui/react-label': nm('@radix-ui/react-label'),
+      '@radix-ui/react-menubar': nm('@radix-ui/react-menubar'),
+      '@radix-ui/react-navigation-menu': nm('@radix-ui/react-navigation-menu'),
+      '@radix-ui/react-popover': nm('@radix-ui/react-popover'),
+      '@radix-ui/react-progress': nm('@radix-ui/react-progress'),
+      '@radix-ui/react-radio-group': nm('@radix-ui/react-radio-group'),
+      '@radix-ui/react-scroll-area': nm('@radix-ui/react-scroll-area'),
+      '@radix-ui/react-select': nm('@radix-ui/react-select'),
+      '@radix-ui/react-separator': nm('@radix-ui/react-separator'),
+      '@radix-ui/react-slider': nm('@radix-ui/react-slider'),
+      '@radix-ui/react-slot': nm('@radix-ui/react-slot'),
+      '@radix-ui/react-switch': nm('@radix-ui/react-switch'),
+      '@radix-ui/react-tabs': nm('@radix-ui/react-tabs'),
+      '@radix-ui/react-toast': nm('@radix-ui/react-toast'),
+      '@radix-ui/react-toggle': nm('@radix-ui/react-toggle'),
+      '@radix-ui/react-toggle-group': nm('@radix-ui/react-toggle-group'),
+      '@radix-ui/react-tooltip': nm('@radix-ui/react-tooltip'),
+      'class-variance-authority': nm('class-variance-authority'),
+      'clsx': nm('clsx'),
+      'cmdk': nm('cmdk'),
+      'input-otp': nm('input-otp'),
+      'lucide-react': nm('lucide-react'),
+      'next-themes': nm('next-themes'),
+      'react-day-picker': nm('react-day-picker'),
+      'react-hook-form': nm('react-hook-form'),
+      'react-resizable-panels': nm('react-resizable-panels'),
+      'recharts': nm('recharts'),
+      'sonner': nm('sonner'),
+      'tailwind-merge': nm('tailwind-merge'),
+      'vaul': nm('vaul'),
+      '@tanstack/react-table': nm('@tanstack/react-table'),
+      'dayjs': nm('dayjs'),
       '@': analyticsRoot,
       '@analytics': analyticsRoot,
       '@training': trainingRoot,
