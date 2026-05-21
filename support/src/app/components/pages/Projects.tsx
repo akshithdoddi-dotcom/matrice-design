@@ -15,11 +15,11 @@ import {
   Briefcase,
   FolderOpen as FolderIcon,
 } from "lucide-react";
-import { MOCK_PROJECTS, Project, ProjectSeverity, ComponentStatus, Pipeline } from "@/data/mockData";
-import { Account } from "@/data/mockData";
+import { MOCK_PROJECTS, Project, ProjectSeverity, ComponentStatus, Pipeline, Account, Cluster } from "@/data/mockData";
 import { cn } from "@/app/lib/utils";
+import { DataTable, type ColumnDef } from "@fe-common/components/ui/data-table";
 
-// ── Design tokens (AccItemV12 style) ─────────────────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
 
 const SEV = {
   default:  { stripe: "#CBD5E1", border: "#E2E8F0",                bg: "#ffffff",                  badgeBg: "#F1F5F9",               badgeColor: "#64748B",  shadow: "0 4px 20px rgba(0,0,0,0.08)",       iconColor: "#475569", titleOpen: "#0F172A" },
@@ -30,13 +30,11 @@ const SEV = {
   resolved: { stripe: "#94A3B8", border: "rgba(100,116,139,0.20)", bg: "rgba(100,116,139,0.04)",   badgeBg: "rgba(100,116,139,0.08)",badgeColor: "#64748B",  shadow: "0 4px 20px rgba(100,116,139,0.10)", iconColor: "#64748B", titleOpen: "#475569" },
 } as const;
 
-// ── Component status config (for pipeline cards) ──────────────────────────────
-
 const COMP_STATUS: Record<ComponentStatus, { Icon: React.ElementType; color: string; bg: string }> = {
-  critical: { Icon: AlertCircle,  color: "#E7000B", bg: "rgba(231,0,11,0.08)"   },
-  warning:  { Icon: AlertTriangle,color: "#E19A04", bg: "rgba(225,154,4,0.08)"  },
-  stable:   { Icon: CheckCircle2, color: "#00A63E", bg: "rgba(0,166,62,0.08)"   },
-  info:     { Icon: Info,         color: "#2B7FFF", bg: "rgba(43,127,255,0.08)" },
+  critical: { Icon: AlertCircle,   color: "#E7000B", bg: "rgba(231,0,11,0.08)"   },
+  warning:  { Icon: AlertTriangle, color: "#E19A04", bg: "rgba(225,154,4,0.08)"  },
+  stable:   { Icon: CheckCircle2,  color: "#00A63E", bg: "rgba(0,166,62,0.08)"   },
+  info:     { Icon: Info,          color: "#2B7FFF", bg: "rgba(43,127,255,0.08)" },
 };
 
 // ── Severity icon ─────────────────────────────────────────────────────────────
@@ -55,41 +53,57 @@ function SeverityDot({ severity }: { severity: ProjectSeverity }) {
   return <Icon className="w-4 h-4 flex-shrink-0" style={{ color: s.iconColor }} />;
 }
 
-// ── Pipeline card ─────────────────────────────────────────────────────────────
+// ── Pipeline table columns ────────────────────────────────────────────────────
 
-function PipelineCard({ pipeline }: { pipeline: Pipeline }) {
-  return (
-    <div
-      className="flex-shrink-0 w-[168px] rounded-[6px] overflow-hidden"
-      style={{ border: "1px solid #E2E8F0", backgroundColor: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-    >
-      {/* Coloured header */}
-      <div className="px-3 py-2" style={{ backgroundColor: pipeline.headerColor }}>
-        <div className="text-[11px] font-bold text-white leading-tight truncate">{pipeline.name}</div>
-      </div>
-      {/* 2×2 status grid */}
-      <div className="grid grid-cols-2 gap-[3px] p-[5px] bg-[#F8FAFC]">
-        {pipeline.comps.map((comp) => {
+const pipelineCols: ColumnDef<Pipeline>[] = [
+  {
+    id: "color",
+    header: "",
+    minWidth: 16,
+    maxWidth: 16,
+    sortable: false,
+    cell: ({ row }) => (
+      <div style={{ width: 6, height: 22, borderRadius: 3, backgroundColor: row.headerColor }} />
+    ),
+  },
+  {
+    id: "name",
+    header: "Pipeline",
+    accessorKey: "name",
+    minWidth: 160,
+    cell: ({ row }) => (
+      <span className="text-[12px] font-medium text-[#0F172A]">{row.name}</span>
+    ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    minWidth: 140,
+    sortable: false,
+    cell: ({ row }) => (
+      <div style={{ display: "flex", gap: 3 }}>
+        {row.comps.map(comp => {
           const st = COMP_STATUS[comp.status];
           return (
-            <div
-              key={comp.name}
-              className="flex flex-col items-center justify-center gap-[3px] py-[7px] rounded-[4px]"
-              style={{ backgroundColor: st.bg }}
-            >
-              <st.Icon className="w-[13px] h-[13px]" style={{ color: st.color }} />
-              <span className="text-[8px] font-semibold leading-none text-[#64748B]">{comp.name}</span>
+            <div key={comp.name} style={{ display: "flex", alignItems: "center", gap: 2, padding: "2px 5px", borderRadius: 3, backgroundColor: st.bg }}>
+              <st.Icon style={{ width: 9, height: 9, color: st.color }} />
+              <span style={{ fontSize: 9, color: st.color, fontWeight: 600 }}>{comp.name.slice(0, 3)}</span>
             </div>
           );
         })}
       </div>
-      {/* Footer note */}
-      <div className="px-3 py-2 border-t border-[#F1F5F9]">
-        <p className="text-[9px] leading-snug text-[#94A3B8]">{pipeline.note}</p>
-      </div>
-    </div>
-  );
-}
+    ),
+  },
+  {
+    id: "note",
+    header: "Note",
+    accessorKey: "note",
+    minWidth: 110,
+    cell: ({ row }) => (
+      <span className="text-[10px] text-[#94A3B8] truncate">{row.note}</span>
+    ),
+  },
+];
 
 // ── Project accordion row ─────────────────────────────────────────────────────
 
@@ -97,14 +111,14 @@ interface ProjectRowProps {
   project: Project;
   isOpen: boolean;
   onToggle: () => void;
+  onSelectPipeline?: (pipeline: Pipeline) => void;
 }
 
-function ProjectRow({ project, isOpen, onToggle }: ProjectRowProps) {
+function ProjectRow({ project, isOpen, onToggle, onSelectPipeline }: ProjectRowProps) {
   const [hovered, setHovered] = useState(false);
   const s = SEV[project.severity] ?? SEV.default;
   const isDefault = project.severity === "default";
 
-  // Badge label
   const badge =
     project.severity === "stable" || project.severity === "resolved"
       ? "Healthy"
@@ -117,11 +131,7 @@ function ProjectRow({ project, isOpen, onToggle }: ProjectRowProps) {
         border: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
         borderLeft: `3px solid ${s.stripe}`,
         backgroundColor: isOpen ? s.bg : "#ffffff",
-        boxShadow: isOpen
-          ? s.shadow
-          : hovered
-          ? "0 2px 8px rgba(0,0,0,0.06)"
-          : "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: isOpen ? s.shadow : hovered ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)",
       }}
     >
       {/* Trigger */}
@@ -130,20 +140,14 @@ function ProjectRow({ project, isOpen, onToggle }: ProjectRowProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         className="w-full flex items-center gap-3 px-4 text-left outline-none transition-all duration-200"
-        style={{
-          height: 52,
-          backgroundColor: !isOpen && hovered ? "#F8FAFC" : "transparent",
-        }}
+        style={{ height: 52, backgroundColor: !isOpen && hovered ? "#F8FAFC" : "transparent" }}
       >
         <SeverityDot severity={project.severity} />
 
         <div className="flex-1 min-w-0">
           <div
             className="text-[13px] leading-tight truncate transition-all duration-200"
-            style={{
-              color: isOpen ? s.titleOpen : "#0F172A",
-              fontWeight: isOpen ? 700 : 500,
-            }}
+            style={{ color: isOpen ? s.titleOpen : "#0F172A", fontWeight: isOpen ? 700 : 500 }}
           >
             {project.name}
           </div>
@@ -152,7 +156,6 @@ function ProjectRow({ project, isOpen, onToggle }: ProjectRowProps) {
           </div>
         </div>
 
-        {/* Badge */}
         <div
           className="flex-shrink-0 px-2.5 py-1 rounded-[3px] text-[10px] font-semibold transition-all duration-200"
           style={{
@@ -174,41 +177,35 @@ function ProjectRow({ project, isOpen, onToggle }: ProjectRowProps) {
         />
       </button>
 
-      {/* Content: pipeline cards */}
+      {/* Content: pipeline table */}
       <div
         className="overflow-hidden transition-all duration-300"
-        style={{ maxHeight: isOpen ? 260 : 0 }}
+        style={{ maxHeight: isOpen ? 400 : 0 }}
       >
-        <div
-          className="pb-4"
-          style={{ borderTop: `1px dashed ${isDefault ? "#E2E8F0" : s.border}` }}
-        >
-          <div className="px-4 pt-3">
-            {/* Sub-header */}
+        <div style={{ borderTop: `1px dashed ${isDefault ? "#E2E8F0" : s.border}` }}>
+          <div className="px-4 pt-3 pb-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[9px] font-bold uppercase tracking-[0.65px] text-[#94A3B8]">
                 Inference Pipelines
               </span>
               <span
                 className="text-[9px] font-bold px-1.5 py-0.5 rounded-[3px]"
-                style={{
-                  backgroundColor: isDefault ? "#F1F5F9" : s.badgeBg,
-                  color: isDefault ? "#64748B" : s.badgeColor,
-                }}
+                style={{ backgroundColor: isDefault ? "#F1F5F9" : s.badgeBg, color: isDefault ? "#64748B" : s.badgeColor }}
               >
                 {project.pipelineCount}
               </span>
             </div>
-
-            {project.pipelines.length > 0 ? (
-              <div className="flex gap-2.5 overflow-x-auto pb-1">
-                {project.pipelines.map((pl) => (
-                  <PipelineCard key={pl.id} pipeline={pl} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-[12px] text-[#94A3B8]">No pipelines configured.</p>
-            )}
+            <DataTable
+              data={project.pipelines}
+              rowIdKey="id"
+              columns={pipelineCols}
+              toolbar={false}
+              pagination="none"
+              showRowCue={true}
+              onRowClick={(pipeline) => onSelectPipeline?.(pipeline)}
+              emptyState={{ title: "No pipelines", description: "No pipelines configured" }}
+              striped={false}
+            />
           </div>
         </div>
       </div>
@@ -292,6 +289,7 @@ interface ProjectGroupProps {
   projects: Project[];
   openIds: Set<string>;
   onToggle: (id: string) => void;
+  onSelectPipeline?: (project: Project, pipeline: Pipeline) => void;
 }
 
 function ProjectGroup({
@@ -304,6 +302,7 @@ function ProjectGroup({
   projects,
   openIds,
   onToggle,
+  onSelectPipeline,
 }: ProjectGroupProps) {
   const [page, setPage] = useState(1);
 
@@ -341,6 +340,7 @@ function ProjectGroup({
             project={project}
             isOpen={openIds.has(project.id)}
             onToggle={() => onToggle(project.id)}
+            onSelectPipeline={(pl) => onSelectPipeline?.(project, pl)}
           />
         ))}
       </div>
@@ -363,12 +363,18 @@ function ProjectGroup({
 
 interface ProjectsProps {
   account: Account | null;
+  cluster?: Cluster | null;
+  initialOpenId?: string | null;
   onBack: () => void;
+  onBackToDesk?: () => void;
+  onSelectPipeline?: (project: Project, pipeline: Pipeline) => void;
 }
 
-export function Projects({ account, onBack }: ProjectsProps) {
+export function Projects({ account, cluster, initialOpenId, onBack, onBackToDesk, onSelectPipeline }: ProjectsProps) {
   const [query, setQuery] = useState("");
-  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const [openIds, setOpenIds] = useState<Set<string>>(
+    () => new Set(initialOpenId ? [initialOpenId] : [])
+  );
 
   const toggleItem = useCallback((id: string) => {
     setOpenIds((prev) => {
@@ -381,10 +387,12 @@ export function Projects({ account, onBack }: ProjectsProps) {
 
   const filtered = useMemo(
     () =>
-      MOCK_PROJECTS.filter((p) =>
-        p.name.toLowerCase().includes(query.toLowerCase())
+      MOCK_PROJECTS.filter(
+        (p) =>
+          (!cluster || p.clusterId === cluster.id) &&
+          p.name.toLowerCase().includes(query.toLowerCase())
       ),
-    [query]
+    [query, cluster]
   );
 
   const attentionProjects = useMemo(
@@ -427,19 +435,33 @@ export function Projects({ account, onBack }: ProjectsProps) {
       {/* Body */}
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-[11px] text-[#94A3B8]">
+        <div className="flex items-center gap-1.5 text-[11px] text-[#94A3B8] flex-wrap">
           <button
-            onClick={onBack}
+            onClick={onBackToDesk ?? onBack}
             className="hover:text-[#00775B] transition-colors font-medium"
           >
             Support Desk
           </button>
           <span>›</span>
-          <span className="text-[#0F172A] font-medium truncate max-w-[180px]">
+          <button
+            onClick={onBack}
+            className="hover:text-[#00775B] transition-colors font-medium truncate max-w-[160px]"
+          >
             {account?.name ?? "Account"}
-          </span>
+          </button>
+          {cluster && (
+            <>
+              <span>›</span>
+              <button
+                onClick={onBack}
+                className="hover:text-[#00775B] transition-colors font-medium truncate max-w-[160px]"
+              >
+                {cluster.name}
+              </button>
+            </>
+          )}
           <span>›</span>
-          <span>Projects Overview</span>
+          <span className="text-[#0F172A] font-medium">Projects Overview</span>
         </div>
 
         {/* Search + count */}
@@ -471,6 +493,7 @@ export function Projects({ account, onBack }: ProjectsProps) {
           projects={attentionProjects}
           openIds={openIds}
           onToggle={toggleItem}
+          onSelectPipeline={onSelectPipeline}
         />
 
         {/* Healthy group */}
@@ -484,6 +507,7 @@ export function Projects({ account, onBack }: ProjectsProps) {
           projects={healthyProjects}
           openIds={openIds}
           onToggle={toggleItem}
+          onSelectPipeline={onSelectPipeline}
         />
 
         {filtered.length === 0 && (

@@ -514,13 +514,10 @@ export function DataTable<T extends object>({
         <div className="mui-datatable-toolbar">
           <Popover.Root>
             <Popover.Trigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                startIcon={<Columns3 size={14} />}
-              >
+              <button type="button" className="mui-datatable-toolbar-btn">
+                <Columns3 size={13} />
                 Columns
-              </Button>
+              </button>
             </Popover.Trigger>
             <Popover.Content
               sideOffset={8}
@@ -561,13 +558,10 @@ export function DataTable<T extends object>({
           {hasFilterableColumns && (
             <Popover.Root>
               <Popover.Trigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  startIcon={<Filter size={14} />}
-                >
+                <button type="button" className="mui-datatable-toolbar-btn">
+                  <Filter size={13} />
                   Filter
-                </Button>
+                </button>
               </Popover.Trigger>
               <Popover.Content
                 sideOffset={8}
@@ -618,14 +612,14 @@ export function DataTable<T extends object>({
           )}
 
           {exportable && (
-            <Button
-              variant="outline"
-              size="sm"
-              startIcon={<Download size={14} />}
+            <button
+              type="button"
+              className="mui-datatable-toolbar-btn"
               onClick={() => (onExport ? onExport() : handleDefaultExport())}
             >
+              <Download size={13} />
               Export
-            </Button>
+            </button>
           )}
 
           <div className="flex-1" />

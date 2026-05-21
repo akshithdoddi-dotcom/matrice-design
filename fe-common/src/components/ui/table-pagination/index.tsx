@@ -1,10 +1,9 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-import { Button } from "../button";
 import { getPageWindow } from "../data-table/helpers";
 
 const controlBase = [
@@ -140,17 +139,24 @@ export const TablePagination = React.forwardRef<
           className="mui-table-pagination-nav flex items-center gap-1"
           aria-label="Table pagination"
         >
-          <Button
+          <button
             type="button"
-            variant={canPrev ? "default" : "secondary"}
-            size="sm"
+            disabled={!canPrev}
+            onClick={() => onPageChange(1)}
+            className={cn(controlBase, "min-w-8 px-1.5 disabled:opacity-30")}
+            aria-label="First page"
+          >
+            <ChevronsLeft size={14} strokeWidth={2} aria-hidden />
+          </button>
+          <button
+            type="button"
             disabled={!canPrev}
             onClick={() => onPageChange(safePage - 1)}
-            startIcon={<ChevronLeft size={14} strokeWidth={2.25} aria-hidden />}
-            className="min-w-18 uppercase tracking-wide"
+            className={cn(controlBase, "min-w-8 px-1.5 disabled:opacity-30")}
+            aria-label="Previous page"
           >
-            {previousLabel}
-          </Button>
+            <ChevronLeft size={14} strokeWidth={2} aria-hidden />
+          </button>
 
           {pageNumbers.map((pageNumber) => {
             const active = pageNumber === safePage;
@@ -173,17 +179,24 @@ export const TablePagination = React.forwardRef<
             );
           })}
 
-          <Button
+          <button
             type="button"
-            variant={canNext ? "default" : "secondary"}
-            size="sm"
             disabled={!canNext}
             onClick={() => onPageChange(safePage + 1)}
-            endIcon={<ChevronRight size={14} strokeWidth={2.25} aria-hidden />}
-            className="min-w-18 uppercase tracking-wide"
+            className={cn(controlBase, "min-w-8 px-1.5 disabled:opacity-30")}
+            aria-label="Next page"
           >
-            {nextLabel}
-          </Button>
+            <ChevronRight size={14} strokeWidth={2} aria-hidden />
+          </button>
+          <button
+            type="button"
+            disabled={!canNext}
+            onClick={() => onPageChange(totalPages)}
+            className={cn(controlBase, "min-w-8 px-1.5 disabled:opacity-30")}
+            aria-label="Last page"
+          >
+            <ChevronsRight size={14} strokeWidth={2} aria-hidden />
+          </button>
         </nav>
 
         {hasSummary ? (

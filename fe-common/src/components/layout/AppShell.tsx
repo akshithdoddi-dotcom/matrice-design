@@ -97,7 +97,7 @@ export interface NavItem {
 }
 
 export interface BreadcrumbSegment {
-  label: string;
+  label: React.ReactNode;
   onClick?: () => void;
 }
 
@@ -410,10 +410,10 @@ export function AppShell({
           <div className="flex-1 flex items-center gap-1.5 text-xs min-w-0">
             {crumbs.map((seg, i) => (
               <span key={i} className="flex items-center gap-1.5 min-w-0">
-                {i > 0 && <span className="text-white/20 shrink-0">/</span>}
+                {i > 0 && <span className="text-white/20 shrink-0">›</span>}
                 <span
                   className={cn(
-                    "truncate",
+                    typeof seg.label === "string" && "truncate",
                     i === crumbs.length - 1 ? "text-white/70 font-medium" : "text-white/30",
                     seg.onClick && "cursor-pointer hover:text-white/60 transition-colors"
                   )}

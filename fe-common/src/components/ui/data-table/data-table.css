@@ -19,6 +19,33 @@
   background: var(--bg-surface);
 }
 
+.mui-datatable-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.mui-datatable-toolbar-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.mui-datatable-toolbar-btn[data-state="open"] {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
 .mui-datatable-popover {
   z-index: 1600;
   min-width: 240px;

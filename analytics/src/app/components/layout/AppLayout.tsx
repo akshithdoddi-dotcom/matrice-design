@@ -102,13 +102,13 @@ const MatriceIcon = () => (
 );
 
 // ── Platform switcher ─────────────────────────────────────────────────────────
-type AppKey = "analytics" | "training" | "marketplace" | "fe-common" | "vms" | "internal";
+type AppKey = "analytics" | "training" | "marketplace" | "support" | "fe-common" | "vms" | "internal";
 const platforms: { icon: React.ElementType; label: string; shortcut: string; app?: AppKey; active?: boolean }[] = [
   { icon: Monitor,   label: "Matrice VMS",         shortcut: "1", app: "vms" },
   { icon: BarChart3, label: "Matrice Analytics",   shortcut: "2", app: "analytics", active: true },
   { icon: Cpu,       label: "Matrice Training",    shortcut: "3", app: "training" },
   { icon: Store,     label: "Matrice Marketplace", shortcut: "4", app: "marketplace" },
-  { icon: Wrench,    label: "Matrice Support",     shortcut: "5" },
+  { icon: Wrench,    label: "Matrice Support",     shortcut: "5", app: "support" },
   { icon: Shield,    label: "Matrice Internal",    shortcut: "6", app: "internal" },
   { icon: Layers,    label: "FE Components",       shortcut: "7", app: "fe-common" },
 ];

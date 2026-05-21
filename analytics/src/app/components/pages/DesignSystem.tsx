@@ -4075,7 +4075,7 @@ const AccordionContentV11 = () => {
                   </div>
                   {/* Collapsed */}
                   <div
-                    className="rounded-[8px] mb-1.5"
+                    className="rounded-[4px] mb-1.5"
                     style={{ border: "1px solid #E2E8F0", backgroundColor: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
                   >
                     <div className="flex items-center gap-2.5 px-3 py-3" style={{ borderLeft: "3px solid transparent" }}>
@@ -4091,7 +4091,7 @@ const AccordionContentV11 = () => {
                   </div>
                   {/* Expanded */}
                   <div
-                    className="rounded-[8px]"
+                    className="rounded-[4px]"
                     style={{ border: `1px solid ${val.border}`, backgroundColor: val.bg, boxShadow: val.shadow }}
                   >
                     <div
@@ -4314,9 +4314,11 @@ const AccItemV12 = ({
 
   return (
     <div
-      className="rounded-[8px] overflow-hidden transition-all duration-200"
+      className="rounded-[4px] overflow-hidden transition-all duration-200"
       style={{
-        border: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
+        borderTop: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
+        borderRight: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
+        borderBottom: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
         borderLeft: `3px solid ${s.stripe}`,
         backgroundColor: isOpen ? s.bg : "#ffffff",
         boxShadow: isOpen ? s.shadow : hovered ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)",
@@ -4600,85 +4602,165 @@ const AccordionContentV12 = () => {
         <SectionHeader
           icon={Eye}
           title="Severity Color States"
-          description="Same 7 states as v1.1 — default stays truly neutral. Caps-title mode shown across all states."
+          description="All 7 severity variants — collapsed, expanded with zone cards (caps title), expanded with text (caps title), and expanded with text (no caps title)."
         />
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+
+        {/* ── Row labels ── */}
+        <div className="grid grid-cols-2 gap-3 mb-1">
+          {["Collapsed", "Open · Cards (Caps)", "Open · Text (Caps)", "Open · Text (No Caps)"].map((lbl) => (
+            <div key={lbl} className="text-[8px] font-bold uppercase tracking-[0.5px] text-[#CBD5E1]">{lbl}</div>
+          ))}
+        </div>
+
+        <div className="space-y-3">
           {(Object.entries(ACC_SEV_V11) as [AccSeverityV11, typeof ACC_SEV_V11[AccSeverityV11]][]).map(
             ([key, val]) => {
               const isDefaultState = key === "default";
+              // Bare trigger row — matches AccItemV12 exactly
+              // rightSide: "icon" | "text" | "none"
+              const trigger = (caps: boolean, open: boolean, rightSide: "icon" | "text" | "none" = "icon") => (
+                <div className="flex items-center gap-2.5 px-3 py-0 h-[44px]">
+                  {/* Left icon — NO background box, bare icon only */}
+                  <Zap
+                    className="w-4 h-4 flex-shrink-0"
+                    style={{ color: open ? val.iconColor : (isDefaultState ? "#94A3B8" : val.iconColor) }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="truncate leading-tight"
+                      style={{
+                        fontSize: caps ? 11 : 13,
+                        fontWeight: open ? 700 : caps ? 600 : 500,
+                        textTransform: caps ? "uppercase" : "none",
+                        letterSpacing: caps ? "0.07em" : "normal",
+                        color: open ? val.titleOpen : "#0F172A",
+                      }}
+                    >
+                      {caps ? "Incident Report" : "Active Incident Report"}
+                    </div>
+                    <div className="text-[11px] mt-0.5 leading-tight truncate" style={{ color: "#94A3B8" }}>
+                      {open ? "Zone A · Loading Dock" : "Collapsed"}
+                    </div>
+                  </div>
+                  {/* Right side: icon pill */}
+                  {rightSide === "icon" && (
+                    <div
+                      className="min-w-[22px] h-[18px] px-1.5 rounded-[3px] flex items-center justify-center flex-shrink-0 text-[9px] font-bold"
+                      style={{ backgroundColor: val.badgeBg, color: val.badgeColor }}
+                    >
+                      23
+                    </div>
+                  )}
+                  {/* Right side: text badge */}
+                  {rightSide === "text" && (
+                    <div
+                      className="flex-shrink-0 px-2.5 py-1 rounded-[3px] text-[10px] font-mono font-semibold"
+                      style={{
+                        backgroundColor: val.badgeBg,
+                        color: val.badgeColor,
+                        border: `1px solid ${isDefaultState ? "#E2E8F0" : val.border}`,
+                      }}
+                    >
+                      23 events
+                    </div>
+                  )}
+                  <ChevronDown
+                    className="w-4 h-4 flex-shrink-0"
+                    style={{
+                      color: isDefaultState ? (open ? "#475569" : "#CBD5E1") : val.color,
+                      opacity: open ? 1 : 0.45,
+                      transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
+                  />
+                </div>
+              );
+
+              const cardStyles = (open: boolean) => ({
+                borderTop: `1px solid ${open ? val.border : "#E2E8F0"}`,
+                borderRight: `1px solid ${open ? val.border : "#E2E8F0"}`,
+                borderBottom: `1px solid ${open ? val.border : "#E2E8F0"}`,
+                borderLeft: `3px solid ${val.stripe}`,
+                backgroundColor: open ? val.bg : "#fff",
+                boxShadow: open ? val.shadow : "0 1px 3px rgba(0,0,0,0.04)",
+              });
+
               return (
                 <div key={key}>
-                  <div className="text-[9px] font-bold uppercase tracking-[0.5px] mb-2" style={{ color: val.color }}>
+                  {/* Severity label */}
+                  <div className="text-[9px] font-bold uppercase tracking-[0.5px] mb-1.5" style={{ color: val.color }}>
                     {val.label}
                   </div>
-                  {/* Collapsed */}
-                  <div
-                    className="rounded-[8px] mb-1.5"
-                    style={{ border: "1px solid #E2E8F0", backgroundColor: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-                  >
-                    <div className="flex items-center gap-2.5 px-3 py-0 h-[44px]" style={{ borderLeft: "3px solid transparent" }}>
-                      <div className="w-6 h-6 rounded-[4px] flex items-center justify-center bg-[#F8FAFC]">
-                        <Zap className="w-3 h-3 text-[#94A3B8]" />
+                  <div className="grid grid-cols-2 gap-3 items-start">
+
+                    {/* 1. Collapsed — all 3 right-side states */}
+                    <div className="space-y-1.5">
+                      {/* Right side: icon pill */}
+                      <div className="rounded-[4px]" style={cardStyles(false)}>
+                        {trigger(true, false, "icon")}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.07em] text-[#0F172A] truncate">Incident Report</div>
-                        <div className="text-[9px] text-[#94A3B8]">Collapsed</div>
+                      {/* Right side: text badge */}
+                      <div className="rounded-[4px]" style={cardStyles(false)}>
+                        {trigger(true, false, "text")}
                       </div>
-                      <div className="px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#94A3B8] text-[9px] font-mono font-bold">23</div>
-                      <ChevronDown className="w-3.5 h-3.5 text-[#CBD5E1]" />
+                      {/* Right side: none */}
+                      <div className="rounded-[4px]" style={cardStyles(false)}>
+                        {trigger(true, false, "none")}
+                      </div>
                     </div>
-                  </div>
-                  {/* Expanded */}
-                  <div
-                    className="rounded-[8px]"
-                    style={{ border: `1px solid ${val.border}`, backgroundColor: val.bg, boxShadow: val.shadow }}
-                  >
-                    <div className="flex items-center gap-2.5 px-3 py-0 h-[44px]" style={{ borderLeft: `3px solid ${val.stripe}` }}>
-                      <div className="w-6 h-6 rounded-[4px] flex items-center justify-center" style={{ backgroundColor: val.iconBg }}>
-                        <Zap className="w-3 h-3" style={{ color: val.iconColor }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.07em] truncate" style={{ color: val.titleOpen }}>
-                          Incident Report
+
+                    {/* 2. Expanded — Zone cards, caps */}
+                    <div className="rounded-[4px]" style={cardStyles(true)}>
+                      {trigger(true, true, "text")}
+                      <div className="px-3 pb-2.5" style={{ borderTop: `1px dashed ${isDefaultState ? "#E2E8F0" : val.border}` }}>
+                        <div className="flex items-center gap-1.5 pt-2 mb-1.5">
+                          <span className="text-[8px] font-bold uppercase tracking-[0.6px] text-[#94A3B8]">Zone Summary</span>
+                          <span className="text-[8px] font-bold px-1 py-0.5 rounded-[2px]" style={{ backgroundColor: val.badgeBg, color: val.badgeColor }}>5</span>
                         </div>
-                        <div className="text-[9px] text-[#94A3B8]">Expanded</div>
-                      </div>
-                      <div
-                        className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold"
-                        style={{ backgroundColor: val.badgeBg, color: val.badgeColor }}
-                      >
-                        23
-                      </div>
-                      <ChevronDown className="w-3.5 h-3.5" style={{ color: isDefaultState ? "#475569" : val.color, transform: "rotate(180deg)" }} />
-                    </div>
-                    <div className="px-3 pb-2.5" style={{ borderTop: `1px dashed ${isDefaultState ? "#E2E8F0" : val.border}` }}>
-                      <div className="flex items-center gap-2 pt-2 mb-2">
-                        <span className="text-[8px] font-bold uppercase tracking-[0.6px] text-[#94A3B8]">Zone Summary</span>
-                        <span className="text-[8px] font-bold px-1 py-0.5 rounded-full" style={{ backgroundColor: val.badgeBg, color: val.badgeColor }}>5</span>
-                      </div>
-                      <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-                        {ZONES_V12.slice(0, 3).map((zone) => (
-                          <div key={zone.id} className="flex-shrink-0 rounded-[4px] overflow-hidden" style={{ width: 60, border: "1px solid #E2E8F0" }}>
-                            <div className="px-1.5 py-1" style={{ backgroundColor: zone.headerColor }}>
-                              <div className="text-[7px] font-bold text-white truncate">{zone.label}</div>
+                        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                          {ZONES_V12.slice(0, 3).map((zone) => (
+                            <div key={zone.id} className="flex-shrink-0 rounded-[3px] overflow-hidden" style={{ width: 54, border: "1px solid #E2E8F0" }}>
+                              <div className="px-1.5 py-[3px]" style={{ backgroundColor: zone.headerColor }}>
+                                <div className="text-[7px] font-bold text-white truncate">{zone.label}</div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-[2px] p-[3px] bg-[#F8FAFC]">
+                                {zone.comps.slice(0, 4).map((c) => {
+                                  const st = ZONE_STATUS_CFG[c.status];
+                                  return (
+                                    <div key={c.name} className="flex items-center justify-center py-[3px] rounded-[2px]" style={{ backgroundColor: st.bg }}>
+                                      <st.Icon className="w-[8px] h-[8px]" style={{ color: st.color }} />
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-[2px] p-[3px] bg-[#F8FAFC]">
-                              {zone.comps.slice(0, 4).map((c) => {
-                                const st = ZONE_STATUS_CFG[c.status];
-                                return (
-                                  <div key={c.name} className="flex items-center justify-center py-[3px] rounded-[2px]" style={{ backgroundColor: st.bg }}>
-                                    <st.Icon className="w-[8px] h-[8px]" style={{ color: st.color }} />
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                        <div className="flex-shrink-0 w-[28px] flex items-center justify-center rounded-[4px] text-[8px] font-bold text-[#94A3B8] border border-dashed border-[#E2E8F0]">
-                          +2
+                          ))}
+                          <div className="flex-shrink-0 w-[24px] flex items-center justify-center rounded-[3px] text-[8px] font-bold text-[#94A3B8] border border-dashed border-[#E2E8F0]">+2</div>
                         </div>
                       </div>
                     </div>
+
+                    {/* 3. Expanded — Text, caps */}
+                    <div className="rounded-[4px]" style={cardStyles(true)}>
+                      {trigger(true, true, "icon")}
+                      <div className="px-3 pb-3" style={{ borderTop: `1px dashed ${isDefaultState ? "#E2E8F0" : val.border}` }}>
+                        <p className="text-[10px] text-[#475569] leading-relaxed pt-2">
+                          Automated detection flagged anomalous activity across 3 camera feeds in Zone A.
+                          Response team notified. All affected feeds flagged for manual review.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 4. Expanded — Text, no caps */}
+                    <div className="rounded-[4px]" style={cardStyles(true)}>
+                      {trigger(false, true, "icon")}
+                      <div className="px-3 pb-3" style={{ borderTop: `1px dashed ${isDefaultState ? "#E2E8F0" : val.border}` }}>
+                        <p className="text-[10px] text-[#475569] leading-relaxed pt-2">
+                          Automated detection flagged anomalous activity across 3 camera feeds in Zone A.
+                          Response team notified. All affected feeds flagged for manual review.
+                        </p>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               );
@@ -4711,6 +4793,7 @@ const AccordionContentV12 = () => {
 
       {/* Annotations */}
       <div className="grid grid-cols-2 gap-2">
+        <Annotation>Left stripe: 3px solid · severity color · always visible (collapsed and expanded)</Annotation>
         <Annotation>Caps Title ON: 11px Inter 600/700 · tracking 0.07em · uppercase transform</Annotation>
         <Annotation>Caps Title OFF: 13px Inter 500→700 on open (inherited v1.1)</Annotation>
         <Annotation>Zone Summary: scrollable horizontal strip · one card per zone · always visible when Content = Cards</Annotation>

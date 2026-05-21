@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 const TrainingApp = lazy(() => import("@training/app/App"));
 const MarketplaceApp = lazy(() => import("@marketplace/app/App"));
+const SupportApp = lazy(() => import("@support/app/App"));
 const FEComponentsApp = lazy(() => import("@fe-common/preview/App"));
 const InternalApp = lazy(() => import("@internal/app/App"));
 import { SeverityIcon } from "@fe-common/components/ui/SeverityIcon";
@@ -212,7 +213,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
-type ActiveApp = "analytics" | "training" | "marketplace" | "fe-common" | "vms" | "internal";
+type ActiveApp = "analytics" | "training" | "marketplace" | "support" | "fe-common" | "vms" | "internal";
 
 /** Root switcher — picks which app to render based on platform selection */
 export default function App() {
@@ -222,6 +223,7 @@ export default function App() {
   if (activeApp === "vms")         return <VMSPlatform onPlatformSwitch={handleSwitch} />;
   if (activeApp === "training")    return <Suspense fallback={null}><TrainingApp      onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "marketplace") return <Suspense fallback={null}><MarketplaceApp   onPlatformSwitch={handleSwitch} /></Suspense>;
+  if (activeApp === "support")     return <Suspense fallback={null}><SupportApp       onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "fe-common")   return <Suspense fallback={null}><FEComponentsApp  onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "internal")    return <Suspense fallback={null}><InternalApp      onPlatformSwitch={handleSwitch} /></Suspense>;
   return <AnalyticsApp onPlatformSwitch={handleSwitch} />;

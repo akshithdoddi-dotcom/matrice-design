@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 import {
-  Headphones,
-  FolderOpen,
-  GitBranch,
-  Camera,
-  Network,
+  LayoutDashboard,
+  Server,
   Cpu,
-  Brain,
-  Terminal,
+  FolderOpen,
   Settings,
   HelpCircle,
   Monitor,
@@ -33,13 +29,10 @@ import { cn } from "@/app/lib/utils";
 // ── Page type ──────────────────────────────────────────────────────────────
 export type Page =
   | "support-desk"
-  | "projects"
-  | "system-flow"
-  | "cameras"
-  | "gateways"
+  | "all-clusters"
   | "compute"
-  | "ml-apps"
-  | "command-centre"
+  | "projects"
+  | "pipeline-detail"
   | "settings";
 
 // ── Matrice icon ───────────────────────────────────────────────────────────
@@ -79,14 +72,9 @@ const platforms = [
 
 // ── Nav items ──────────────────────────────────────────────────────────────
 const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
-  { id: "support-desk",   label: "Support Desk",   icon: Headphones },
-  { id: "projects",       label: "Projects",        icon: FolderOpen },
-  { id: "system-flow",    label: "System Flow",     icon: GitBranch  },
-  { id: "cameras",        label: "Cameras",         icon: Camera     },
-  { id: "gateways",       label: "Gateways",        icon: Network    },
-  { id: "compute",        label: "Compute",         icon: Cpu        },
-  { id: "ml-apps",        label: "ML Apps",         icon: Brain      },
-  { id: "command-centre", label: "Command Centre",  icon: Terminal   },
+  { id: "support-desk", label: "Dashboard",    icon: LayoutDashboard },
+  { id: "all-clusters", label: "All Clusters", icon: Server          },
+  { id: "compute",      label: "Compute",      icon: Cpu             },
 ];
 
 // ── Props ─────────────────────────────────────────────────────────────────
