@@ -922,6 +922,12 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
   const [platformOpen, setPlatformOpen]   = useState(false);
   const [sidebarOpen, setSidebarOpen]     = useState(true);
   const [gridCols, setGridCols]           = useState<2 | 3 | 4>(4);
+  // ── View-state snapshot: restored when user exits search ─────────────────
+  const [viewSnapshot, setViewSnapshot] = useState<{
+    gridCols: 2 | 3 | 4;
+    sidebarOpen: boolean;
+    selectedCams: Set<string>;
+  } | null>(null);
   const [clockTime, setClockTime]         = useState(() =>
     new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   );
@@ -966,15 +972,34 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
+  // Escape while search results are visible → restore snapshot
+  useEffect(() => {
+    if (!searchActive) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !paletteOpen) clearSearch();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [searchActive, paletteOpen, clearSearch]);
+
+  // Restore snapshot + wipe search state
   const clearSearch = useCallback(() => {
     setSearchQuery("");
     setSearchActive(false);
-  }, []);
+    if (viewSnapshot) {
+      setGridCols(viewSnapshot.gridCols);
+      setSidebarOpen(viewSnapshot.sidebarOpen);
+      setSelectedCams(new Set(viewSnapshot.selectedCams));
+      setViewSnapshot(null);
+    }
+  }, [viewSnapshot]);
 
+  // Cache current view before entering search results
   const handlePaletteSearch = useCallback((query: string) => {
+    setViewSnapshot({ gridCols, sidebarOpen, selectedCams: new Set(selectedCams) });
     setSearchQuery(query);
     setSearchActive(true);
-  }, []);
+  }, [gridCols, sidebarOpen, selectedCams]);
 
   const toggleCamera = (id: string) => {
     setSelectedCams(prev => {
@@ -1180,93 +1205,163 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
           </div>
         </header>
 
-        {/* ── Grid toolbar ─────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#0a1628] border-b border-white/5 shrink-0">
-          <div className="flex items-center rounded-md overflow-hidden border border-white/10">
-            {[
-              { icon: List,       cols: undefined, title: "List" },
-              { icon: Grid2X2,    cols: 2,         title: "2×2"  },
-              { icon: LayoutGrid, cols: 3,         title: "3×3"  },
-              { icon: Grid3X3,    cols: 4,         title: "4×4"  },
-            ].map(({ icon: Icon, cols, title }) => (
+        {/* ══════════════════════════════════════════════════════════════════
+            SEARCH RESULTS WORKSPACE — shown only when searchActive
+        ══════════════════════════════════════════════════════════════════ */}
+        {searchActive && (
+          <>
+            {/* ── Row 1: Context header ─────────────────────────────────── */}
+            <div className="flex items-center gap-3 px-3 py-2 shrink-0 border-b border-white/6 animate-in fade-in duration-150"
+              style={{ background: "#030c1a" }}>
               <button
-                key={title}
-                title={title}
-                onClick={() => cols && setGridCols(cols as 2 | 3 | 4)}
-                className={cn("flex items-center justify-center w-7 h-7 transition-colors",
-                  gridCols === cols ? "bg-[#00775B] text-white" : "bg-white/3 text-white/40 hover:bg-white/8 hover:text-white"
-                )}
+                onClick={clearSearch}
+                className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-white/14 bg-white/5 hover:bg-white/10 hover:border-white/22 text-white/80 hover:text-white transition-all shrink-0"
+                style={INTER}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-medium">Back to Live View</span>
               </button>
-            ))}
-          </div>
 
-          <button className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-[#00775B]/40 bg-[#00775B]/10 text-[11px] font-medium text-[#34D399] hover:bg-[#00775B]/20 transition-colors" style={INTER}>
-            <Eye className="w-3.5 h-3.5" /> Smart View
-          </button>
+              <div className="h-3.5 w-px bg-white/10 shrink-0" />
 
-          {searchActive && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-[#00775B]/10 border border-[#00775B]/30 animate-in fade-in duration-200">
-              <Sparkles className="w-3 h-3 text-[#34D399] animate-pulse" />
-              <span className="text-[11px] text-[#34D399]" style={MONO}>{SEARCH_RESULTS.length} clips</span>
-              <span className="text-[11px] text-white/50" style={INTER}>matching <span className="italic">"{searchQuery}"</span></span>
-              <span className="text-[10px] text-white/30 ml-1" style={MONO}>· Live + Archive</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Sparkles className="w-3 h-3 text-[#00956D] shrink-0 animate-pulse" />
+                <span className="text-[12px] text-white/55 shrink-0" style={MONO}>
+                  {SEARCH_RESULTS.length} clips matching
+                </span>
+                <span className="text-[12px] text-white/85 truncate italic" style={MONO}>
+                  "{searchQuery}"
+                </span>
+                <span className="text-[12px] text-white/35 shrink-0" style={MONO}>
+                  · Live + Archive
+                </span>
+              </div>
+
+              <div className="flex-1" />
+              <span className="text-[10px] text-white/22 shrink-0 hidden lg:block" style={MONO}>
+                ESC to restore
+              </span>
             </div>
-          )}
 
-          <div className="flex-1" />
+            {/* ── Row 2: Grid toolbelt ──────────────────────────────────── */}
+            <div className="flex items-center gap-2 px-3 py-1.5 shrink-0 border-b border-white/5"
+              style={{ background: "#060f1e" }}>
+              {/* Layout toggles */}
+              <div className="flex items-center rounded-md overflow-hidden border border-white/10">
+                {[
+                  { icon: Grid2X2,    cols: 2, title: "2×2" },
+                  { icon: LayoutGrid, cols: 3, title: "3×3" },
+                  { icon: Grid3X3,    cols: 4, title: "4×4" },
+                ].map(({ icon: Icon, cols, title }) => (
+                  <button
+                    key={title}
+                    title={title}
+                    onClick={() => setGridCols(cols as 2 | 3 | 4)}
+                    className={cn("flex items-center justify-center w-7 h-7 text-[11px] transition-colors",
+                      gridCols === cols ? "bg-[#00775B] text-white" : "bg-white/3 text-white/45 hover:bg-white/8 hover:text-white"
+                    )}
+                    style={MONO}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </button>
+                ))}
+              </div>
 
-          {/* ── Alert badges + actions (moved from header) ───────────────── */}
-          <button className={cn(
-            "flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-bold transition-all",
-            flashAlert ? "bg-red-600 text-white shadow-lg shadow-red-900/50" : "bg-red-700/80 text-white"
-          )} style={MONO}>
-            <AlertTriangle className="w-3.5 h-3.5" />
-            {LIVE_ALERTS_COUNT.critical} CRITICAL
-          </button>
+              {/* Sort */}
+              <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-white/10 bg-white/4 hover:bg-white/8 text-[11px] text-white/55 hover:text-white transition-colors" style={INTER}>
+                <SlidersHorizontal className="w-3 h-3" /> Sort: Recent
+              </button>
 
-          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-bold bg-orange-600/80 text-white" style={MONO}>
-            <AlertCircle className="w-3.5 h-3.5" />
-            {LIVE_ALERTS_COUNT.high} HIGH
-          </button>
+              <div className="flex-1" />
 
-          <div className="h-4 w-px bg-white/10" />
+              {/* Bulk export */}
+              <button className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-white/12 bg-white/5 hover:bg-white/10 text-[11px] font-medium text-white/65 hover:text-white transition-all" style={INTER}>
+                <Download className="w-3 h-3" /> Bulk Export
+              </button>
+            </div>
+          </>
+        )}
 
-          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-white/15 text-[11px] font-medium text-white/70 hover:text-white hover:bg-white/8 transition-colors" style={INTER}>
-            <Cpu className="w-3.5 h-3.5" /> Assign Apps
-          </button>
+        {/* ══════════════════════════════════════════════════════════════════
+            LIVE VIEW TOOLBAR — shown only when !searchActive
+        ══════════════════════════════════════════════════════════════════ */}
+        {!searchActive && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#0a1628] border-b border-white/5 shrink-0">
+            <div className="flex items-center rounded-md overflow-hidden border border-white/10">
+              {[
+                { icon: List,       cols: undefined, title: "List" },
+                { icon: Grid2X2,    cols: 2,         title: "2×2"  },
+                { icon: LayoutGrid, cols: 3,         title: "3×3"  },
+                { icon: Grid3X3,    cols: 4,         title: "4×4"  },
+              ].map(({ icon: Icon, cols, title }) => (
+                <button
+                  key={title}
+                  title={title}
+                  onClick={() => cols && setGridCols(cols as 2 | 3 | 4)}
+                  className={cn("flex items-center justify-center w-7 h-7 transition-colors",
+                    gridCols === cols ? "bg-[#00775B] text-white" : "bg-white/3 text-white/40 hover:bg-white/8 hover:text-white"
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </button>
+              ))}
+            </div>
 
-          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-[#00775B] hover:bg-[#006649] text-[11px] font-medium text-white transition-colors" style={INTER}>
-            <Plus className="w-3.5 h-3.5" /> Create Group
-          </button>
-
-          <div className="h-4 w-px bg-white/10" />
-
-          <div className="hidden lg:flex items-center gap-1.5 h-7 px-2 rounded-md border border-white/10" style={MONO}>
-            <Clock className="w-3 h-3 text-white/25" />
-            <span className="text-[11px] text-white/50">{clockTime}</span>
-          </div>
-
-          <button className="h-6 w-6 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[9px] font-bold ring-2 ring-transparent hover:ring-[#00775B]/40 transition-all" style={MONO}>
-            AU
-          </button>
-
-          <div className="h-4 w-px bg-white/10" />
-
-          {/* Pagination */}
-          <div className="flex items-center gap-2 text-[11px] text-white/40" style={MONO}>
-            <button className="p-1 rounded hover:bg-white/8 disabled:opacity-30 transition-colors" disabled>
-              <ChevronLeft className="w-3.5 h-3.5" />
+            <button className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-[#00775B]/40 bg-[#00775B]/10 text-[11px] font-medium text-[#34D399] hover:bg-[#00775B]/20 transition-colors" style={INTER}>
+              <Eye className="w-3.5 h-3.5" /> Smart View
             </button>
-            <span>Page 1 of 8</span>
-            <button className="p-1 rounded hover:bg-white/8 transition-colors">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
 
-        {/* ── Full-width camera grid (no right panel) ───────────────────── */}
+            <div className="flex-1" />
+
+            <button className={cn(
+              "flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-bold transition-all",
+              flashAlert ? "bg-red-600 text-white shadow-lg shadow-red-900/50" : "bg-red-700/80 text-white"
+            )} style={MONO}>
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {LIVE_ALERTS_COUNT.critical} CRITICAL
+            </button>
+
+            <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-bold bg-orange-600/80 text-white" style={MONO}>
+              <AlertCircle className="w-3.5 h-3.5" />
+              {LIVE_ALERTS_COUNT.high} HIGH
+            </button>
+
+            <div className="h-4 w-px bg-white/10" />
+
+            <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-white/15 text-[11px] font-medium text-white/70 hover:text-white hover:bg-white/8 transition-colors" style={INTER}>
+              <Cpu className="w-3.5 h-3.5" /> Assign Apps
+            </button>
+
+            <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-[#00775B] hover:bg-[#006649] text-[11px] font-medium text-white transition-colors" style={INTER}>
+              <Plus className="w-3.5 h-3.5" /> Create Group
+            </button>
+
+            <div className="h-4 w-px bg-white/10" />
+
+            <div className="hidden lg:flex items-center gap-1.5 h-7 px-2 rounded-md border border-white/10" style={MONO}>
+              <Clock className="w-3 h-3 text-white/25" />
+              <span className="text-[11px] text-white/50">{clockTime}</span>
+            </div>
+
+            <button className="h-6 w-6 rounded-full bg-[#00775B] flex items-center justify-center text-white text-[9px] font-bold ring-2 ring-transparent hover:ring-[#00775B]/40 transition-all" style={MONO}>
+              AU
+            </button>
+
+            <div className="h-4 w-px bg-white/10" />
+
+            <div className="flex items-center gap-2 text-[11px] text-white/40" style={MONO}>
+              <button className="p-1 rounded hover:bg-white/8 disabled:opacity-30 transition-colors" disabled>
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <span>Page 1 of 8</span>
+              <button className="p-1 rounded hover:bg-white/8 transition-colors">
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Full-width camera grid ────────────────────────────────────────── */}
         <div
           className="flex-1 overflow-y-auto p-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-track]:bg-transparent"
           style={{ background: "#07101d" }}
