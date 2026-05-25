@@ -1,170 +1,240 @@
-import { useMemo } from "react";
-import { MapPin } from "lucide-react";
+import { useState, useMemo } from "react";
+import { MapPin, Server } from "lucide-react";
 import { MOCK_CLUSTERS, MOCK_ACCOUNTS, Cluster } from "@/data/mockData";
-import { StatusCapsule } from "@fe-common/components/ui/DataGrid";
-import { DataTable, type ColumnDef } from "@fe-common/components/ui/data-table";
+import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@fe-common/components/ui/DataGrid";
 
 // ── Row type ──────────────────────────────────────────────────────────────────
 
 type Row = Cluster & { accountName: string };
 
-// ── Column definitions ────────────────────────────────────────────────────────
+// ── Filter tabs ───────────────────────────────────────────────────────────────
 
-const columns: ColumnDef<Row>[] = [
+type StatusFilter = "all" | "active" | "warning" | "inactive";
+
+const FILTER_TABS: { id: StatusFilter; label: string; dot?: string; activeBg: string }[] = [
+  { id: "all",      label: "All",      activeBg: "#0F172A" },
+  { id: "active",   label: "Active",   dot: "#00A63E", activeBg: "#00A63E" },
+  { id: "warning",  label: "Warning",  dot: "#E19A04", activeBg: "#B37A00" },
+  { id: "inactive", label: "Inactive", dot: "#E7000B", activeBg: "#E7000B" },
+];
+
+// ── Column definitions (DataGrid v2.3 format) ────────────────────────────────
+
+const columns: DataGridColumn<Row>[] = [
   {
-    id: "name",
+    key: "name",
     header: "Cluster",
-    accessorKey: "name",
-    filterable: true,
-    minWidth: 200,
-    cell: ({ row }) => (
-      <span className="font-mono text-[11px] font-medium text-[#0F172A]">{row.name}</span>
-    ),
+    sortable: true,
+    width: "minmax(200px, 2fr)",
+    searchValue: (r) => r.name,
+    render: (row, hovered) => <MonoCell hovered={hovered} isPrimary>{row.name}</MonoCell>,
   },
   {
-    id: "accountName",
+    key: "accountName",
     header: "Account",
-    accessorKey: "accountName",
-    filterable: true,
-    minWidth: 160,
-    cell: ({ row }) => (
-      <span className="text-[12px] text-[#64748B]">{row.accountName}</span>
-    ),
+    sortable: true,
+    width: "minmax(160px, 1.5fr)",
+    searchValue: (r) => r.accountName,
+    render: (row, hovered) => <InterCell hovered={hovered}>{row.accountName}</InterCell>,
   },
   {
-    id: "status",
+    key: "status",
     header: "Status",
-    accessorKey: "status",
-    minWidth: 110,
-    cell: ({ row }) => (
+    width: "110px",
+    render: (row) => (
       <StatusCapsule
-        status={row.status === "inactive" ? "error" : (row.status as any)}
+        status={row.status === "inactive" ? "error" : row.status}
         label={row.status.toUpperCase()}
       />
     ),
   },
   {
-    id: "ip",
+    key: "ip",
     header: "IP Address",
-    accessorKey: "ip",
-    filterable: true,
-    minWidth: 140,
-    cell: ({ row }) => (
-      <span className="font-mono text-[11px] text-[#94A3B8]">{row.ip}</span>
-    ),
+    sortable: true,
+    width: "minmax(130px, 1fr)",
+    searchValue: (r) => r.ip,
+    render: (row, hovered) => <MonoCell hovered={hovered}>{row.ip}</MonoCell>,
   },
   {
-    id: "location",
+    key: "location",
     header: "Location",
-    accessorKey: "location",
-    filterable: true,
-    minWidth: 130,
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1">
+    sortable: true,
+    width: "minmax(130px, 1fr)",
+    searchValue: (r) => r.location,
+    render: (row, hovered) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
         <MapPin style={{ width: 11, height: 11, color: "#94A3B8", flexShrink: 0 }} />
-        <span style={{ fontSize: 11, color: "#64748B" }}>{row.location}</span>
+        <InterCell hovered={hovered}>{row.location}</InterCell>
       </div>
     ),
   },
   {
-    id: "instanceCount",
+    key: "instanceCount",
     header: "Instances",
-    minWidth: 100,
-    cell: ({ row }) => (
-      <span style={{ fontSize: 12, color: "#64748B" }}>
-        {row.instanceCount}
-        <span style={{ color: "#CBD5E1" }}>/{row.totalInstances}</span>
+    width: "100px",
+    render: (row, hovered) => (
+      <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono','Fira Code',monospace", color: hovered ? "#0F172A" : "#64748B" }}>
+        {row.instanceCount}<span style={{ color: "#CBD5E1" }}>/{row.totalInstances}</span>
       </span>
     ),
   },
   {
-    id: "sgCount",
+    key: "sgCount",
     header: "SG",
-    accessorKey: "sgCount",
-    minWidth: 70,
+    width: "70px",
     align: "center",
-    cell: ({ row }) => (
-      <span className="text-[12px] text-[#64748B]">{row.sgCount}</span>
-    ),
+    sortable: true,
+    render: (row, hovered) => <MonoCell hovered={hovered}>{String(row.sgCount)}</MonoCell>,
   },
   {
-    id: "cpuCores",
+    key: "cpuCores",
     header: "CPU",
-    accessorKey: "cpuCores",
-    minWidth: 80,
+    width: "80px",
     align: "center",
-    cell: ({ row }) => (
-      <span className="text-[12px] text-[#64748B]">{row.cpuCores}</span>
-    ),
+    sortable: true,
+    render: (row, hovered) => <MonoCell hovered={hovered}>{String(row.cpuCores)}</MonoCell>,
   },
   {
-    id: "memory",
+    key: "memory",
     header: "Memory",
-    accessorKey: "memory",
-    minWidth: 90,
+    width: "90px",
     align: "center",
-    cell: ({ row }) => (
-      <span className="text-[12px] text-[#64748B]">{row.memory}</span>
-    ),
+    render: (row, hovered) => <MonoCell hovered={hovered}>{row.memory}</MonoCell>,
   },
 ];
 
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface AllClustersProps {
+  onSelectCluster?: (cluster: Cluster) => void;
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function AllClusters() {
-  const rows = useMemo<Row[]>(
+export function AllClusters({ onSelectCluster }: AllClustersProps) {
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  const allRows = useMemo<Row[]>(
     () =>
       MOCK_CLUSTERS.map((c) => ({
         ...c,
-        accountName:
-          MOCK_ACCOUNTS.find((a) => a.id === c.accountId)?.name ?? c.accountId,
+        accountName: MOCK_ACCOUNTS.find((a) => a.id === c.accountId)?.name ?? c.accountId,
       })),
     []
   );
 
+  const filteredRows = useMemo(
+    () => statusFilter === "all" ? allRows : allRows.filter((r) => r.status === statusFilter),
+    [allRows, statusFilter]
+  );
+
+  const activeCnt  = allRows.filter((r) => r.status === "active").length;
+  const warnCnt    = allRows.filter((r) => r.status === "warning").length;
+  const inactCnt   = allRows.filter((r) => r.status === "inactive").length;
+
+  const filterCounts: Record<StatusFilter, number> = {
+    all: allRows.length, active: activeCnt, warning: warnCnt, inactive: inactCnt,
+  };
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: "#F8FAFC" }}>
+
       {/* Page header */}
-      <div
-        className="flex items-center justify-between px-6 py-4 flex-shrink-0"
-        style={{ backgroundColor: "#00775B" }}
-      >
-        <div>
-          <div className="text-[15px] font-bold text-white leading-tight">All Clusters</div>
-          <div className="text-[11px] text-white/60 mt-0.5">
-            {MOCK_CLUSTERS.length} clusters across {MOCK_ACCOUNTS.length} accounts
+      <div className="px-6 pt-5 pb-4 flex-shrink-0 border-b border-[#E2E8F0] bg-white">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="w-8 h-8 rounded-[8px] bg-[#F0FDF9] border border-[#00775B]/15 flex items-center justify-center">
+                <Server className="w-4 h-4 text-[#00775B]" />
+              </div>
+              <span className="text-[16px] font-bold text-[#0F172A] leading-tight">All Clusters</span>
+            </div>
+            <p className="text-[12px] text-[#94A3B8] ml-[42px]">
+              {allRows.length} clusters across {MOCK_ACCOUNTS.length} accounts
+            </p>
+          </div>
+
+          {/* Summary chips */}
+          <div className="flex items-center gap-2">
+            {[
+              { label: "Active",   count: activeCnt, dot: "#00A63E", color: "#00A63E" },
+              { label: "Warning",  count: warnCnt,   dot: "#E19A04", color: "#B37A00" },
+              { label: "Inactive", count: inactCnt,  dot: "#E7000B", color: "#E7000B" },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] border border-[#E2E8F0] bg-white text-[11px]"
+              >
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.dot }} />
+                <span className="text-[#64748B]">{s.label}:</span>
+                <span className="font-bold" style={{ color: s.color }}>{s.count}</span>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <StatChip label="Active"   value={String(MOCK_CLUSTERS.filter((c) => c.status === "active").length)}   color="#00A63E" />
-          <StatChip label="Warning"  value={String(MOCK_CLUSTERS.filter((c) => c.status === "warning").length)}  color="#E19A04" />
-          <StatChip label="Inactive" value={String(MOCK_CLUSTERS.filter((c) => c.status === "inactive").length)} color="#E7000B" />
+      </div>
+
+      {/* Table area */}
+      <div className="flex-1 overflow-auto p-6">
+        <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, overflow: "hidden" }}>
+          {/* Filter tabs */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderBottom: "1px solid #E2E8F0", backgroundColor: "#fff" }}>
+            {FILTER_TABS.map((tab) => {
+              const isActive = statusFilter === tab.id;
+              const count = filterCounts[tab.id];
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setStatusFilter(tab.id)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5, height: 28, padding: "0 10px",
+                    borderRadius: 6, fontSize: 11, fontWeight: isActive ? 700 : 600, fontFamily: "Inter, sans-serif",
+                    cursor: "pointer", border: isActive ? "none" : "1px solid #E2E8F0",
+                    backgroundColor: isActive ? tab.activeBg : "transparent",
+                    color: isActive ? "#fff" : "#64748B",
+                    transition: "all 150ms ease", whiteSpace: "nowrap",
+                  }}
+                >
+                  {tab.dot && (
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: isActive ? "#fff" : tab.dot, flexShrink: 0 }} />
+                  )}
+                  {tab.label}
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3,
+                    backgroundColor: isActive ? "rgba(255,255,255,0.2)" : "#F1F5F9",
+                    color: isActive ? "#fff" : "#64748B",
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* DataGrid v2.3 */}
+          <DataGrid<Row>
+            data={filteredRows}
+            columns={columns}
+            selectable
+            searchable
+            searchPlaceholder="Search clusters, IPs, locations..."
+            pageSize={20}
+            defaultSortKey="name"
+            onRowClick={onSelectCluster ? (row) => onSelectCluster(row) : undefined}
+            emptyState={
+              <span>
+                No clusters match the current filter.{" "}
+                {statusFilter !== "all" && (
+                  <button onClick={() => setStatusFilter("all")} style={{ color: "#00775B", background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>
+                    Show all
+                  </button>
+                )}
+              </span>
+            }
+          />
         </div>
       </div>
-
-      {/* Table */}
-      <div className="flex-1 overflow-auto p-6">
-        <DataTable<Row>
-          data={rows}
-          rowIdKey="id"
-          columns={columns}
-          selectable
-          selectionMode="multi"
-          emptyState={{ title: "No clusters", description: "No clusters found" }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ── Stat chip ─────────────────────────────────────────────────────────────────
-
-function StatChip({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className="flex items-center gap-1.5 bg-white/15 border border-white/25 rounded-[7px] px-3 py-1.5">
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-      <span className="text-[11px] text-white/80">{label}:</span>
-      <span className="text-[12px] font-bold text-white">{value}</span>
     </div>
   );
 }

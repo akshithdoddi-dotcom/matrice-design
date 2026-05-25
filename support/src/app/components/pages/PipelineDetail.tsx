@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ChevronRight, Video, Brain } from "lucide-react";
+import { Video, Brain } from "lucide-react";
 import { Project, Pipeline, Camera, MLApp, Cluster, Account, CameraStatus, MLAppStatus } from "@/data/mockData";
-import { DataTable, type ColumnDef } from "@fe-common/components/ui/data-table";
+import { DataGrid, DataGridColumn, StatusCapsule, MonoCell, InterCell } from "@fe-common/components/ui/DataGrid";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -16,23 +16,7 @@ const CAM_CFG: Record<CameraStatus, { color: string; bg: string; label: string }
   degraded: { color: "#E19A04", bg: "rgba(225,154,4,0.10)",   label: "DEGRADED" },
 };
 
-const ML_CFG: Record<MLAppStatus, { color: string; bg: string; label: string }> = {
-  running:  { color: "#00A63E", bg: "rgba(0,166,62,0.10)",    label: "RUNNING"  },
-  error:    { color: "#E7000B", bg: "rgba(231,0,11,0.10)",    label: "ERROR"    },
-  stopped:  { color: "#94A3B8", bg: "rgba(100,116,139,0.10)", label: "STOPPED"  },
-  starting: { color: "#2B7FFF", bg: "rgba(43,127,255,0.10)",  label: "STARTING" },
-};
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function StatusPill({ label, color, bg }: { label: string; color: string; bg: string }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 7px", borderRadius: 4, backgroundColor: bg, fontSize: 9, fontWeight: 700, color, letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
-      <span style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
-      {label}
-    </span>
-  );
-}
 
 function StatChip({ label, value, color }: { label: string; value: string; color: string }) {
   return (
@@ -44,146 +28,139 @@ function StatChip({ label, value, color }: { label: string; value: string; color
   );
 }
 
-// ── Column definitions ────────────────────────────────────────────────────────
+// ── Camera columns (DataGrid v2.3) ───────────────────────────────────────────
 
-const cameraCols: ColumnDef<Camera>[] = [
+const cameraCols: DataGridColumn<Camera>[] = [
   {
-    id: "name",
+    key: "name",
     header: "Camera",
-    minWidth: 200,
-    cell: ({ row }) => (
+    width: "minmax(180px, 2fr)",
+    sortable: true,
+    searchValue: (r) => r.name,
+    render: (row, hovered) => (
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: "rgba(0,119,91,0.08)", border: "1px solid rgba(0,119,91,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Video style={{ width: 14, height: 14, color: "#00775B" }} />
+          <Video style={{ width: 14, height: 14, color: TEAL }} />
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</div>
+          <div><InterCell hovered={hovered} isPrimary>{row.name}</InterCell></div>
           <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 1 }}>{row.mlApps.length} ML app{row.mlApps.length !== 1 ? "s" : ""}</div>
         </div>
       </div>
     ),
   },
   {
-    id: "ip",
+    key: "ip",
     header: "IP Address",
-    accessorKey: "ip",
-    minWidth: 130,
-    cell: ({ row }) => <span style={{ fontSize: 11, fontFamily: "monospace", color: "#94A3B8" }}>{row.ip}</span>,
+    width: "minmax(120px, 1fr)",
+    render: (row, hovered) => <MonoCell hovered={hovered}>{row.ip}</MonoCell>,
   },
   {
-    id: "location",
+    key: "location",
     header: "Location",
-    accessorKey: "location",
-    minWidth: 110,
-    cell: ({ row }) => <span style={{ fontSize: 11, color: "#64748B" }}>{row.location}</span>,
+    width: "minmax(110px, 1fr)",
+    render: (row, hovered) => <InterCell hovered={hovered}>{row.location}</InterCell>,
   },
   {
-    id: "status",
+    key: "status",
     header: "Status",
-    accessorKey: "status",
-    minWidth: 100,
-    sortable: false,
-    cell: ({ row }) => <StatusPill label={CAM_CFG[row.status].label} color={CAM_CFG[row.status].color} bg={CAM_CFG[row.status].bg} />,
+    width: "100px",
+    render: (row) => <StatusCapsule status={row.status} label={CAM_CFG[row.status].label} />,
   },
   {
-    id: "fps",
+    key: "fps",
     header: "FPS",
-    accessorKey: "fps",
-    minWidth: 60,
+    width: "60px",
     align: "center",
-    cell: ({ row }) => <span style={{ fontSize: 11, color: "#64748B" }}>{row.fps > 0 ? row.fps : "—"}</span>,
+    render: (row, hovered) => <MonoCell hovered={hovered}>{row.fps > 0 ? String(row.fps) : "—"}</MonoCell>,
   },
   {
-    id: "resolution",
+    key: "resolution",
     header: "Resolution",
-    accessorKey: "resolution",
-    minWidth: 90,
-    cell: ({ row }) => <span style={{ fontSize: 11, color: "#64748B" }}>{row.resolution}</span>,
+    width: "90px",
+    render: (row, hovered) => <MonoCell hovered={hovered}>{row.resolution}</MonoCell>,
   },
   {
-    id: "mlAppsCount",
+    key: "mlAppsCount",
     header: "ML Apps",
-    minWidth: 70,
+    width: "70px",
     align: "center",
-    cell: ({ row }) => (
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <span style={{
-          display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px",
-          borderRadius: 4, fontSize: 10, fontWeight: 600,
-          backgroundColor: row.mlApps.length > 0 ? "rgba(0,119,91,0.08)" : "#F8FAFC",
-          color: row.mlApps.length > 0 ? "#00775B" : "#94A3B8",
-        }}>
-          <Brain style={{ width: 10, height: 10 }} />
-          {row.mlApps.length}
-        </span>
-      </div>
+    render: (row) => (
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px",
+        borderRadius: 4, fontSize: 10, fontWeight: 600,
+        backgroundColor: row.mlApps.length > 0 ? "rgba(0,119,91,0.08)" : "#F8FAFC",
+        color: row.mlApps.length > 0 ? TEAL : "#94A3B8",
+      }}>
+        <Brain style={{ width: 10, height: 10 }} />
+        {row.mlApps.length}
+      </span>
     ),
   },
 ];
 
-// ── ML App sub-table ──────────────────────────────────────────────────────────
+// ── ML App sub-table columns (DataGrid v2.3) ─────────────────────────────────
 
-const mlAppCols: ColumnDef<MLApp>[] = [
+const ML_CFG: Record<MLAppStatus, { color: string; bg: string; label: string }> = {
+  running:  { color: "#00A63E", bg: "rgba(0,166,62,0.10)",    label: "RUNNING"  },
+  error:    { color: "#E7000B", bg: "rgba(231,0,11,0.10)",    label: "ERROR"    },
+  stopped:  { color: "#94A3B8", bg: "rgba(100,116,139,0.10)", label: "STOPPED"  },
+  starting: { color: "#2B7FFF", bg: "rgba(43,127,255,0.10)",  label: "STARTING" },
+};
+
+const mlAppCols: DataGridColumn<MLApp>[] = [
   {
-    id: "name",
+    key: "name",
     header: "ML App",
-    minWidth: 180,
-    cell: ({ row }) => {
+    width: "minmax(180px, 2fr)",
+    render: (row, hovered) => {
       const cfg = ML_CFG[row.status];
       return (
         <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
           <div style={{ width: 22, height: 22, borderRadius: 5, backgroundColor: cfg.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Brain style={{ width: 11, height: 11, color: cfg.color }} />
           </div>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+          <InterCell hovered={hovered} isPrimary>{row.name}</InterCell>
         </div>
       );
     },
   },
   {
-    id: "model",
+    key: "model",
     header: "Model",
-    accessorKey: "model",
-    minWidth: 150,
-    cell: ({ row }) => <span style={{ fontSize: 11, fontFamily: "monospace", color: "#64748B" }}>{row.model}</span>,
+    width: "minmax(140px, 1.5fr)",
+    render: (row, hovered) => <MonoCell hovered={hovered}>{row.model}</MonoCell>,
   },
   {
-    id: "status",
+    key: "status",
     header: "Status",
-    accessorKey: "status",
-    minWidth: 100,
-    sortable: false,
-    cell: ({ row }) => {
-      const cfg = ML_CFG[row.status];
-      return <StatusPill label={cfg.label} color={cfg.color} bg={cfg.bg} />;
-    },
+    width: "100px",
+    render: (row) => <StatusCapsule status={row.status} label={ML_CFG[row.status].label} />,
   },
   {
-    id: "latencyMs",
+    key: "latencyMs",
     header: "Latency",
-    accessorKey: "latencyMs",
-    minWidth: 80,
-    cell: ({ row }) => <span style={{ fontSize: 11, color: "#64748B" }}>{row.latencyMs > 0 ? `${row.latencyMs} ms` : "—"}</span>,
+    width: "80px",
+    render: (row, hovered) => <MonoCell hovered={hovered}>{row.latencyMs > 0 ? `${row.latencyMs} ms` : "—"}</MonoCell>,
   },
   {
-    id: "accuracy",
+    key: "accuracy",
     header: "Accuracy",
-    accessorKey: "accuracy",
-    minWidth: 80,
-    cell: ({ row }) => <span style={{ fontSize: 11, color: row.accuracy > 0 ? "#334155" : "#94A3B8", fontWeight: row.accuracy > 0 ? 600 : 400 }}>{row.accuracy > 0 ? `${row.accuracy}%` : "—"}</span>,
+    width: "80px",
+    render: (row, hovered) => (
+      <MonoCell hovered={hovered} color={row.accuracy > 0 ? "#334155" : "#94A3B8"}>
+        {row.accuracy > 0 ? `${row.accuracy}%` : "—"}
+      </MonoCell>
+    ),
   },
 ];
 
-function MLAppSubTable({ camera }: { camera: Camera }) {
+function MLAppSubGrid({ camera }: { camera: Camera }) {
   return (
-    <DataTable
+    <DataGrid<MLApp>
       data={camera.mlApps}
-      rowIdKey="id"
       columns={mlAppCols}
-      toolbar={false}
-      pagination="none"
-      showRowCue={false}
-      striped={false}
+      compact
     />
   );
 }
@@ -200,7 +177,7 @@ interface PipelineDetailProps {
 }
 
 export function PipelineDetail({ project, pipeline, cluster, account, onBack, onBackToDesk }: PipelineDetailProps) {
-  const [expandedCams, setExpandedCams] = useState<string[]>([]);
+  const [expandedCams, setExpandedCams] = useState<(string | number)[]>([]);
 
   if (!pipeline || !project) {
     return (
@@ -244,34 +221,6 @@ export function PipelineDetail({ project, pipeline, cluster, account, onBack, on
 
       {/* ── Body ──────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-auto">
-        {/* Breadcrumb */}
-        <div
-          className="flex items-center gap-1.5 text-[11px] text-[#94A3B8] px-6 py-3 flex-wrap"
-          style={{ borderBottom: `1px solid ${BORDER_CLR}`, backgroundColor: "#fff" }}
-        >
-          <button onClick={onBackToDesk ?? onBack} className="hover:text-[#00775B] transition-colors font-medium">
-            Support Desk
-          </button>
-          <ChevronRight className="w-3 h-3" />
-          {account && (
-            <>
-              <span className="truncate max-w-[120px]">{account.name}</span>
-              <ChevronRight className="w-3 h-3" />
-            </>
-          )}
-          {cluster && (
-            <>
-              <span className="font-mono truncate max-w-[140px]">{cluster.name}</span>
-              <ChevronRight className="w-3 h-3" />
-            </>
-          )}
-          <button onClick={onBack} className="hover:text-[#00775B] transition-colors font-medium truncate max-w-[160px]">
-            {project.name}
-          </button>
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-[#0F172A] font-medium truncate max-w-[160px]">{pipeline.name}</span>
-        </div>
-
         {/* Section label */}
         <div className="flex items-center gap-2 px-6 pt-5 pb-3">
           <Video style={{ width: 14, height: 14, color: TEAL }} />
@@ -293,20 +242,17 @@ export function PipelineDetail({ project, pipeline, cluster, account, onBack, on
           )}
         </div>
 
-        {/* Camera table */}
-        <div className="mx-6 mb-6">
-          <DataTable
+        {/* Camera table (DataGrid v2.3 with expandable ML Apps) */}
+        <div className="mx-6 mb-6" style={{ border: `1px solid ${BORDER_CLR}`, borderRadius: 8, overflow: "hidden" }}>
+          <DataGrid<Camera>
             data={cameras}
-            rowIdKey="id"
             columns={cameraCols}
             expandable
             isRowExpandable={(cam) => cam.mlApps.length > 0}
-            renderExpandedRow={(cam) => <MLAppSubTable camera={cam} />}
-            expandedRows={expandedCams}
-            onExpandedRowsChange={(ids) => setExpandedCams(ids.map(id => String(id)))}
-            toolbar={false}
-            pagination="none"
-            emptyState={{ title: "No cameras", description: "No cameras configured for this pipeline" }}
+            renderExpandedRow={(cam) => <MLAppSubGrid camera={cam} />}
+            expandedRowIds={expandedCams}
+            onExpandedRowIdsChange={setExpandedCams}
+            emptyState={<span style={{ fontSize: 12, color: "#94A3B8" }}>No cameras configured for this pipeline</span>}
           />
         </div>
       </div>

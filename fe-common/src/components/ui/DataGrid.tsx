@@ -47,6 +47,18 @@ export interface DataGridProps<T extends { id: string | number }> {
   selectable?: boolean;
   selectedIds?: Set<string | number>;
   onSelectionChange?: (ids: Set<string | number>) => void;
+  // ── Expandable rows (v2.3 accordion) ────────────────────────────────────────
+  expandable?: boolean;
+  /** Return false to hide the expand chevron for a specific row */
+  isRowExpandable?: (row: T) => boolean;
+  /** Render content shown below the row when expanded */
+  renderExpandedRow?: (row: T) => React.ReactNode;
+  /** Controlled expanded state — array of expanded row ids */
+  expandedRowIds?: (string | number)[];
+  /** Fires when expand state changes */
+  onExpandedRowIdsChange?: (ids: (string | number)[]) => void;
+  /** Highlight a single row as "active/selected" without checkbox selection */
+  selectedRowId?: string | number;
 }
 
 // ─── Palette (mirrors theme.css tokens) ──────────────────────────────────────
@@ -163,15 +175,32 @@ const STATUS_CFG: Record<string, { label: string; bg: string }> = {
   deprecated: { label: "Deprecated", bg: "#94A3B8" },
 };
 
+// Issue 3.5: Non-color symbol prefixes so status is scannable without colour vision
+const STATUS_SYMBOL: Record<string, string> = {
+  // Green — checkmark
+  active: "✓", online: "✓", running: "✓", healthy: "✓",
+  success: "✓", available: "✓", enabled: "✓",
+  // Amber — warning
+  degraded: "⚠", warning: "⚠", pending: "◌", queued: "◌", paused: "⏸",
+  // Red — cross
+  offline: "✕", failed: "✕", error: "✕", flagged: "!",
+  // Blue — activity
+  starting: "▶", training: "◎", "in-use": "◎", syncing: "⟳",
+  // Neutral — square
+  stopped: "■", draft: "○", unknown: "?", disabled: "⊘",
+};
+
 export const StatusCapsule = ({
   status, label: overrideLabel,
 }: {
   status: string; label?: string;
 }) => {
-  const cfg = STATUS_CFG[status.toLowerCase()] ?? { label: status, bg: "#94A3B8" };
+  const key = status.toLowerCase();
+  const cfg = STATUS_CFG[key] ?? { label: status, bg: "#94A3B8" };
+  const symbol = STATUS_SYMBOL[key];
   return (
     <span style={{
-      display: "inline-flex", alignItems: "center",
+      display: "inline-flex", alignItems: "center", gap: 4,
       padding: "2px 8px", borderRadius: 4,
       fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
       textTransform: "uppercase", color: "#ffffff",
@@ -179,6 +208,11 @@ export const StatusCapsule = ({
       fontFamily: "'JetBrains Mono','Fira Code',monospace",
       whiteSpace: "nowrap",
     }}>
+      {symbol && (
+        <span style={{ fontSize: 9, opacity: 0.9, letterSpacing: 0, textTransform: "none" }}>
+          {symbol}
+        </span>
+      )}
       {overrideLabel ?? cfg.label}
     </span>
   );
@@ -260,6 +294,12 @@ export function DataGrid<T extends { id: string | number }>({
   selectable = false,
   selectedIds: controlledSelectedIds,
   onSelectionChange,
+  expandable = false,
+  isRowExpandable,
+  renderExpandedRow,
+  expandedRowIds,
+  onExpandedRowIdsChange,
+  selectedRowId,
 }: DataGridProps<T>) {
   const [hoveredId, setHoveredId]   = useState<string | number | null>(null);
   const [searchQ,   setSearchQ]     = useState("");
@@ -267,6 +307,7 @@ export function DataGrid<T extends { id: string | number }>({
   const [sortKey,   setSortKey]     = useState<string | null>(defaultSortKey ?? null);
   const [sortDir,   setSortDir]     = useState<"asc" | "desc">(defaultSortDir);
   const [internalSelected, setInternalSelected] = useState<Set<string | number>>(new Set());
+  const [internalExpanded, setInternalExpanded] = useState<Set<string | number>>(new Set());
 
   const selectedIds = controlledSelectedIds ?? internalSelected;
   const setSelected = (ids: Set<string | number>) => {
@@ -274,17 +315,51 @@ export function DataGrid<T extends { id: string | number }>({
     onSelectionChange?.(ids);
   };
 
+  const expandedIds = expandedRowIds ? new Set(expandedRowIds) : internalExpanded;
+  const toggleExpand = (id: string | number) => {
+    const next = new Set(expandedIds);
+    next.has(id) ? next.delete(id) : next.add(id);
+    if (!expandedRowIds) setInternalExpanded(next);
+    onExpandedRowIdsChange?.([...next]);
+  };
+
   const rowH        = compact ? 36 : 44;
   const resolveId   = (row: T) => (getRowId ? getRowId(row) : row.id);
 
-  // checkbox column injected automatically when selectable
+  // Auto-injected columns: expand chevron + select checkbox
   const allColumns: DataGridColumn<T>[] = useMemo(() => {
-    if (!selectable) return columns;
-    const allIds = data.map(resolveId);
-    const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
-    const someSelected = allIds.some((id) => selectedIds.has(id)) && !allSelected;
-    return [
-      {
+    const cols: DataGridColumn<T>[] = [];
+
+    // Expand chevron column
+    if (expandable) {
+      cols.push({
+        key: "__expand__",
+        header: "",
+        width: "32px",
+        align: "center",
+        render: (row: T) => {
+          const id = resolveId(row);
+          const canExpand = isRowExpandable ? isRowExpandable(row) : true;
+          const isExp = expandedIds.has(id);
+          if (!canExpand) return <span style={{ width: 14 }} />;
+          return (
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleExpand(id); }}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, width: 20, height: 20, borderRadius: 3, color: isExp ? TEAL : "#CBD5E1", transition: "color 120ms ease" }}
+            >
+              <ChevronRight style={{ width: 14, height: 14, transition: "transform 150ms ease", transform: isExp ? "rotate(90deg)" : "none" }} />
+            </button>
+          );
+        },
+      });
+    }
+
+    // Select checkbox column
+    if (selectable) {
+      const allIds = data.map(resolveId);
+      const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+      const someSelected = allIds.some((id) => selectedIds.has(id)) && !allSelected;
+      cols.push({
         key: "__select__",
         header: "",
         width: "40px",
@@ -322,11 +397,13 @@ export function DataGrid<T extends { id: string | number }>({
             </button>
           );
         },
-      },
-      ...columns,
-    ];
+      });
+    }
+
+    cols.push(...columns);
+    return cols;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columns, selectable, selectedIds, data]);
+  }, [columns, selectable, selectedIds, data, expandable, expandedIds]);
 
   const colTemplate = allColumns.map((c) => c.width ?? "1fr").join(" ");
 
@@ -498,45 +575,69 @@ export function DataGrid<T extends { id: string | number }>({
           const rid      = resolveId(row);
           const isHov    = hoveredId === rid;
           const isSel    = selectedIds.has(rid);
-          const rowBg    = isSel ? ROW_SEL : isHov ? ROW_HOVER : idx % 2 === 1 ? ROW_ODD : ROW_EVEN;
+          const isActiveRow = selectedRowId !== undefined && selectedRowId === rid;
+          const isExp    = expandable && expandedIds.has(rid);
+          const rowBg    = isActiveRow ? ROW_SEL : isSel ? ROW_SEL : isHov ? ROW_HOVER : idx % 2 === 1 ? ROW_ODD : ROW_EVEN;
 
           return (
-            <div
-              key={rid}
-              onMouseEnter={() => setHoveredId(rid)}
-              onMouseLeave={() => setHoveredId(null)}
-              onClick={() => onRowClick?.(row)}
-              style={{
-                display: "grid", gridTemplateColumns: colTemplate,
-                alignItems: "center", minHeight: rowH,
-                position: "relative", backgroundColor: rowBg,
-                borderBottom: `1px solid ${DIVIDER_CLR}`,
-                cursor: onRowClick ? "pointer" : "default",
-                transition: "background-color 100ms ease",
-                outline: isSel ? `1px solid ${TEAL}20` : undefined,
-              }}
-            >
-              {/* 2px teal left strip */}
-              <div style={{
-                position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
-                backgroundColor: isSel ? TEAL : TEAL,
-                opacity: isHov || isSel ? 1 : 0,
-                transition: "opacity 100ms ease",
-              }} />
+            <div key={rid}>
+              <div
+                onMouseEnter={() => setHoveredId(rid)}
+                onMouseLeave={() => setHoveredId(null)}
+                onClick={() => onRowClick?.(row)}
+                style={{
+                  display: "grid", gridTemplateColumns: colTemplate,
+                  alignItems: "center", minHeight: rowH,
+                  position: "relative", backgroundColor: rowBg,
+                  borderBottom: isExp ? "none" : `1px solid ${DIVIDER_CLR}`,
+                  cursor: onRowClick ? "pointer" : "default",
+                  transition: "background-color 100ms ease",
+                  outline: (isSel || isActiveRow) ? `1px solid ${TEAL}33` : undefined,
+                }}
+              >
+                {/* 2px teal left strip */}
+                <div style={{
+                  position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
+                  backgroundColor: TEAL,
+                  opacity: isHov || isSel || isExp || isActiveRow ? 1 : 0,
+                  transition: "opacity 100ms ease",
+                }} />
 
-              {allColumns.map((col) => (
-                <div
-                  key={col.key}
-                  style={{
-                    padding: "0 8px", textAlign: col.align ?? "left",
-                    overflow: "hidden", minWidth: 0,
-                    display: "flex", alignItems: "center",
-                    justifyContent: col.align === "center" ? "center" : col.align === "right" ? "flex-end" : "flex-start",
-                  }}
-                >
-                  {col.render(row, isHov)}
+                {/* Issue 2.2 + 3.3: right-edge chevron — non-color active-row indicator */}
+                {isActiveRow && (
+                  <div style={{
+                    position: "absolute", right: 8, top: "50%",
+                    transform: "translateY(-50%)", pointerEvents: "none",
+                  }}>
+                    <ChevronRight style={{ width: 13, height: 13, color: TEAL, opacity: 0.7 }} />
+                  </div>
+                )}
+
+                {allColumns.map((col) => (
+                  <div
+                    key={col.key}
+                    style={{
+                      padding: "0 8px", textAlign: col.align ?? "left",
+                      overflow: "hidden", minWidth: 0,
+                      display: "flex", alignItems: "center",
+                      justifyContent: col.align === "center" ? "center" : col.align === "right" ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    {col.render(row, isHov)}
+                  </div>
+                ))}
+              </div>
+
+              {/* Expanded content */}
+              {isExp && renderExpandedRow && (
+                <div style={{
+                  borderLeft: `3px solid ${TEAL}`,
+                  borderBottom: `1px solid ${DIVIDER_CLR}`,
+                  backgroundColor: ROW_ODD,
+                }}>
+                  {renderExpandedRow(row)}
                 </div>
-              ))}
+              )}
             </div>
           );
         })

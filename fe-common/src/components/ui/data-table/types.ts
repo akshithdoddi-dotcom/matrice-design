@@ -1,5 +1,26 @@
 import * as React from "react";
 
+// ── Filter tabs ───────────────────────────────────────────────────────────────
+
+/**
+ * A single tab in the DataTable filter-tab bar.
+ * Each tab filters rows where `filterTabKey` equals `id` (use id `"all"` to skip filtering).
+ */
+export interface FilterTab {
+  /** Value to match against `filterTabKey` in each row. Use `"all"` for the "show everything" tab. */
+  id: string;
+  /** Display label */
+  label: string;
+  /** Small dot color rendered before the label */
+  dot?: string;
+  /** Text color when this tab is active (defaults to `#ffffff`) */
+  activeColor?: string;
+  /** Background/border color when this tab is active (defaults to `#0F172A`) */
+  activeBg?: string;
+}
+
+// ── Column definition ─────────────────────────────────────────────────────────
+
 export interface ColumnDef<T> {
   id: string;
   header: string;
@@ -74,6 +95,17 @@ export interface DataTableProps<T extends object> {
   cardTitle?: string | React.ReactNode;
   cardSubTitle?: string;
   cardAction?: React.ReactNode;
+  /**
+   * Renders a filter-tab bar above the table. Each tab filters rows where the
+   * value at `filterTabKey` equals the tab's `id`. Include an `id: "all"` tab
+   * to show an unfiltered view. Counts per tab are computed automatically.
+   */
+  filterTabs?: FilterTab[];
+  /**
+   * The field key (string key of T) whose value is compared against each
+   * FilterTab's `id`. Required when `filterTabs` is set.
+   */
+  filterTabKey?: string;
 }
 
 export const DEFAULT_PAGE_SIZE = 10;

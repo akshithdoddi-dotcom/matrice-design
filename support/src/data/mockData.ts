@@ -241,6 +241,206 @@ export const MOCK_CLUSTERS: Cluster[] = [
   },
 ];
 
+// ─── Compute Instances ────────────────────────────────────────────────────────
+
+export type ComputeStatus = "healthy" | "warning" | "error" | "inactive";
+
+export interface DbConnection {
+  port: number;
+  status: "running" | "stopped" | "error";
+}
+
+export interface ContainerResource {
+  id: string;
+  name: string;
+  cpuUtil: number;
+  ramUtil: number;
+  gpuUtil: number;
+  status: "running" | "stopped" | "error";
+}
+
+export interface ComputeInstance {
+  id: string;
+  clusterId: string;
+  name: string;
+  status: ComputeStatus;
+  instanceId: string;
+  leaseType: string;
+  instanceSource: string;
+  ip: string;
+  containers: number;
+  lastUpdated: string;
+  gpu: string;
+  gpuProvider: string;
+  gpuArchitecture: string;
+  totalMemory: string;
+  cpuArchitecture: string;
+  cudaVersion: string;
+  gpuUtil: number;
+  cpuUtil: number;
+  ramUtil: number;
+  cpuCores: number;
+  memoryGB: number;
+  storageGB: number;
+  dbConnections: DbConnection[];
+  containerList: ContainerResource[];
+}
+
+export const MOCK_COMPUTE_INSTANCES: ComputeInstance[] = [
+  // ── cl-1: Thor4-dev-MM-test-v2-default ──────────────────────────────────────
+  {
+    id: "ci-1-1", clusterId: "cl-1",
+    name: "Thor4-node-01", status: "healthy",
+    instanceId: "local-afbf5868bcd4e9fd", leaseType: "User Local",
+    instanceSource: "User", ip: "10.1.5.23", containers: 0,
+    lastUpdated: "May 25, 11:41 AM",
+    gpu: "NVIDIA A100 80GB", gpuProvider: "NVIDIA", gpuArchitecture: "Ampere",
+    totalMemory: "80 GB", cpuArchitecture: "x86_64", cudaVersion: "12.2",
+    gpuUtil: 0, cpuUtil: 2, ramUtil: 4,
+    cpuCores: 128, memoryGB: 789, storageGB: 0,
+    dbConnections: [
+      { port: 6334, status: "running" },
+      { port: 27017, status: "running" },
+      { port: 8123, status: "running" },
+    ],
+    containerList: [],
+  },
+  {
+    id: "ci-1-2", clusterId: "cl-1",
+    name: "Thor4-node-02", status: "warning",
+    instanceId: "local-c3d2e1f0a9b87654", leaseType: "User Local",
+    instanceSource: "User", ip: "10.1.5.24", containers: 3,
+    lastUpdated: "May 25, 11:39 AM",
+    gpu: "NVIDIA A100 80GB", gpuProvider: "NVIDIA", gpuArchitecture: "Ampere",
+    totalMemory: "80 GB", cpuArchitecture: "x86_64", cudaVersion: "12.2",
+    gpuUtil: 68, cpuUtil: 82, ramUtil: 74,
+    cpuCores: 128, memoryGB: 789, storageGB: 0,
+    dbConnections: [{ port: 6334, status: "running" }, { port: 27017, status: "stopped" }],
+    containerList: [
+      { id: "c-1-2-1", name: "inference-worker-a", cpuUtil: 34, ramUtil: 28, gpuUtil: 22, status: "running" },
+      { id: "c-1-2-2", name: "inference-worker-b", cpuUtil: 28, ramUtil: 22, gpuUtil: 18, status: "running" },
+      { id: "c-1-2-3", name: "monitor-agent",      cpuUtil:  6, ramUtil:  8, gpuUtil:  0, status: "running" },
+    ],
+  },
+  // ── cl-2: Thor4-dev-MM-default ──────────────────────────────────────────────
+  {
+    id: "ci-2-1", clusterId: "cl-2",
+    name: "MM-compute-01", status: "healthy",
+    instanceId: "node-d9e0f1a2b3c4d5e6", leaseType: "Dedicated",
+    instanceSource: "Platform", ip: "73.47.89.221", containers: 2,
+    lastUpdated: "May 25, 10:55 AM",
+    gpu: "NVIDIA RTX 4090", gpuProvider: "NVIDIA", gpuArchitecture: "Ada Lovelace",
+    totalMemory: "24 GB", cpuArchitecture: "x86_64", cudaVersion: "12.1",
+    gpuUtil: 12, cpuUtil: 18, ramUtil: 22,
+    cpuCores: 32, memoryGB: 128, storageGB: 2000,
+    dbConnections: [{ port: 5432, status: "running" }, { port: 6379, status: "running" }],
+    containerList: [
+      { id: "c-2-1-1", name: "model-server-v2", cpuUtil: 12, ramUtil: 15, gpuUtil: 10, status: "running" },
+      { id: "c-2-1-2", name: "data-pipeline",   cpuUtil:  6, ramUtil:  7, gpuUtil:  2, status: "running" },
+    ],
+  },
+  // ── cl-3: RTX-dev-ML-v1-default ─────────────────────────────────────────────
+  {
+    id: "ci-3-1", clusterId: "cl-3",
+    name: "RTX-ml-node-01", status: "warning",
+    instanceId: "node-a1b2c3d4e5f60718", leaseType: "Shared",
+    instanceSource: "Platform", ip: "10.9.201.155", containers: 4,
+    lastUpdated: "May 25, 09:12 AM",
+    gpu: "NVIDIA RTX 3090", gpuProvider: "NVIDIA", gpuArchitecture: "Ampere",
+    totalMemory: "24 GB", cpuArchitecture: "x86_64", cudaVersion: "11.8",
+    gpuUtil: 91, cpuUtil: 78, ramUtil: 88,
+    cpuCores: 24, memoryGB: 64, storageGB: 500,
+    dbConnections: [{ port: 5432, status: "running" }, { port: 8080, status: "error" }],
+    containerList: [
+      { id: "c-3-1-1", name: "training-job-47",  cpuUtil: 42, ramUtil: 48, gpuUtil: 55, status: "running" },
+      { id: "c-3-1-2", name: "training-job-48",  cpuUtil: 28, ramUtil: 30, gpuUtil: 28, status: "running" },
+      { id: "c-3-1-3", name: "eval-worker",      cpuUtil:  6, ramUtil:  8, gpuUtil:  8, status: "running" },
+      { id: "c-3-1-4", name: "logging-agent",    cpuUtil:  2, ramUtil:  2, gpuUtil:  0, status: "running" },
+    ],
+  },
+  // ── cl-4: H100-default ──────────────────────────────────────────────────────
+  {
+    id: "ci-4-1", clusterId: "cl-4",
+    name: "H100-5-21-default", status: "healthy",
+    instanceId: "node-f1e2d3c4b5a60798", leaseType: "Dedicated",
+    instanceSource: "Platform", ip: "192.168.1.56", containers: 0,
+    lastUpdated: "May 25, 11:30 AM",
+    gpu: "NVIDIA H100 80GB", gpuProvider: "NVIDIA", gpuArchitecture: "Hopper",
+    totalMemory: "80 GB", cpuArchitecture: "x86_64", cudaVersion: "12.3",
+    gpuUtil: 0, cpuUtil: 0, ramUtil: 0,
+    cpuCores: 64, memoryGB: 512, storageGB: 10000,
+    dbConnections: [{ port: 6334, status: "running" }],
+    containerList: [],
+  },
+  // ── cl-5: Fault-Tolerant-default ────────────────────────────────────────────
+  {
+    id: "ci-5-1", clusterId: "cl-5",
+    name: "FT-node-alpha", status: "healthy",
+    instanceId: "node-8a9b0c1d2e3f4a5b", leaseType: "User Local",
+    instanceSource: "User", ip: "192.68.1.3", containers: 1,
+    lastUpdated: "May 25, 11:00 AM",
+    gpu: "NVIDIA RTX 4080", gpuProvider: "NVIDIA", gpuArchitecture: "Ada Lovelace",
+    totalMemory: "16 GB", cpuArchitecture: "x86_64", cudaVersion: "12.0",
+    gpuUtil: 5, cpuUtil: 14, ramUtil: 31,
+    cpuCores: 16, memoryGB: 32, storageGB: 1000,
+    dbConnections: [{ port: 5432, status: "running" }, { port: 27017, status: "running" }],
+    containerList: [
+      { id: "c-5-1-1", name: "edge-inference", cpuUtil: 14, ramUtil: 31, gpuUtil: 5, status: "running" },
+    ],
+  },
+  {
+    id: "ci-5-2", clusterId: "cl-5",
+    name: "FT-node-beta", status: "error",
+    instanceId: "node-6c7d8e9f0a1b2c3d", leaseType: "User Local",
+    instanceSource: "User", ip: "192.68.1.4", containers: 0,
+    lastUpdated: "May 25, 08:14 AM",
+    gpu: "NVIDIA RTX 4080", gpuProvider: "NVIDIA", gpuArchitecture: "Ada Lovelace",
+    totalMemory: "16 GB", cpuArchitecture: "x86_64", cudaVersion: "12.0",
+    gpuUtil: 0, cpuUtil: 0, ramUtil: 0,
+    cpuCores: 16, memoryGB: 32, storageGB: 1000,
+    dbConnections: [{ port: 5432, status: "error" }],
+    containerList: [],
+  },
+  // ── cl-6: Edge-Compute-v2 ────────────────────────────────────────────────────
+  {
+    id: "ci-6-1", clusterId: "cl-6",
+    name: "Edge-node-dallas-01", status: "healthy",
+    instanceId: "node-3e4f5a6b7c8d9e0f", leaseType: "Dedicated",
+    instanceSource: "Platform", ip: "10.0.0.46", containers: 5,
+    lastUpdated: "May 25, 11:45 AM",
+    gpu: "NVIDIA A30", gpuProvider: "NVIDIA", gpuArchitecture: "Ampere",
+    totalMemory: "24 GB", cpuArchitecture: "x86_64", cudaVersion: "12.1",
+    gpuUtil: 34, cpuUtil: 41, ramUtil: 52,
+    cpuCores: 48, memoryGB: 256, storageGB: 4000,
+    dbConnections: [{ port: 6334, status: "running" }, { port: 5432, status: "running" }, { port: 6379, status: "running" }],
+    containerList: [
+      { id: "c-6-1-1", name: "vision-pipeline-1", cpuUtil: 18, ramUtil: 22, gpuUtil: 15, status: "running" },
+      { id: "c-6-1-2", name: "vision-pipeline-2", cpuUtil: 14, ramUtil: 18, gpuUtil: 12, status: "running" },
+      { id: "c-6-1-3", name: "stream-ingester",   cpuUtil:  5, ramUtil:  8, gpuUtil:  4, status: "running" },
+      { id: "c-6-1-4", name: "result-publisher",  cpuUtil:  3, ramUtil:  4, gpuUtil:  3, status: "running" },
+      { id: "c-6-1-5", name: "health-monitor",    cpuUtil:  1, ramUtil:  0, gpuUtil:  0, status: "running" },
+    ],
+  },
+  // ── cl-7: SEC-Cluster-Alpha ──────────────────────────────────────────────────
+  {
+    id: "ci-7-1", clusterId: "cl-7",
+    name: "SEC-Alpha-compute-01", status: "healthy",
+    instanceId: "node-0a1b2c3d4e5f6789", leaseType: "Dedicated",
+    instanceSource: "Platform", ip: "10.2.1.101", containers: 3,
+    lastUpdated: "May 25, 11:20 AM",
+    gpu: "NVIDIA A100 40GB", gpuProvider: "NVIDIA", gpuArchitecture: "Ampere",
+    totalMemory: "40 GB", cpuArchitecture: "x86_64", cudaVersion: "12.2",
+    gpuUtil: 22, cpuUtil: 35, ramUtil: 41,
+    cpuCores: 32, memoryGB: 128, storageGB: 3000,
+    dbConnections: [{ port: 5432, status: "running" }, { port: 27017, status: "running" }],
+    containerList: [
+      { id: "c-7-1-1", name: "sec-inference-01", cpuUtil: 18, ramUtil: 22, gpuUtil: 14, status: "running" },
+      { id: "c-7-1-2", name: "sec-inference-02", cpuUtil: 12, ramUtil: 14, gpuUtil:  8, status: "running" },
+      { id: "c-7-1-3", name: "audit-logger",     cpuUtil:  5, ramUtil:  5, gpuUtil:  0, status: "running" },
+    ],
+  },
+];
+
 // ─── Projects ─────────────────────────────────────────────────────────────────
 
 export const MOCK_PROJECTS: Project[] = [

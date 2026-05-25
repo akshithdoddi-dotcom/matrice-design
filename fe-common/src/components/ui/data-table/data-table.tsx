@@ -112,6 +112,8 @@ export function DataTable<T extends object>({
   cardTitle,
   cardSubTitle,
   cardAction,
+  filterTabs,
+  filterTabKey,
 }: DataTableProps<T>) {
   const isServerPagination = pagination === "server";
   const hasPagination = pagination !== "none";
@@ -163,6 +165,40 @@ export function DataTable<T extends object>({
     ? controlledExpanded
     : internalExpanded;
 
+  // ── Filter tabs ─────────────────────────────────────────────────────────────
+  const [activeTabId, setActiveTabId] = React.useState("all");
+
+  const tabCounts = React.useMemo<Record<string, number>>(() => {
+    if (!filterTabs || !filterTabKey) return {};
+    const counts: Record<string, number> = { all: data.length };
+    for (const tab of filterTabs) {
+      if (tab.id !== "all") {
+        counts[tab.id] = data.filter(
+          (row) =>
+            String((row as Record<string, unknown>)[filterTabKey]) === tab.id,
+        ).length;
+      }
+    }
+    return counts;
+  }, [data, filterTabs, filterTabKey]);
+
+  const tabFilteredData = React.useMemo(() => {
+    if (!filterTabs || !filterTabKey || activeTabId === "all") return data;
+    return data.filter(
+      (row) =>
+        String((row as Record<string, unknown>)[filterTabKey]) === activeTabId,
+    );
+  }, [data, filterTabs, filterTabKey, activeTabId]);
+
+  const handleTabChange = React.useCallback(
+    (tabId: string) => {
+      setActiveTabId(tabId);
+      setInternalPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    },
+    [],
+  );
+  // ────────────────────────────────────────────────────────────────────────────
+
   React.useEffect(() => {
     setInternalPagination((prev) => ({ ...prev, pageSize }));
   }, [pageSize]);
@@ -171,6 +207,7 @@ export function DataTable<T extends object>({
     ? toSortingState(sortModel)
     : internalSorting;
 
+  // Always build from the full unfiltered data so selection IDs survive tab switches
   const selectedIdLookup = React.useMemo(() => {
     const map = new Map<string, T[keyof T]>();
     for (const row of data) {
@@ -238,11 +275,11 @@ export function DataTable<T extends object>({
       return 1;
     }
     if (isServerPagination) {
-      const resolvedTotalRows = totalRows ?? data.length;
+      const resolvedTotalRows = totalRows ?? tabFilteredData.length;
       return Math.max(1, Math.ceil(resolvedTotalRows / pageSize));
     }
     return undefined;
-  }, [hasPagination, isServerPagination, totalRows, data.length, pageSize]);
+  }, [hasPagination, isServerPagination, totalRows, tabFilteredData.length, pageSize]);
 
   const tableColumns = React.useMemo<TanstackColumnDef<T, unknown>[]>(() => {
     const computedColumns: TanstackColumnDef<T, unknown>[] = columns.map(
@@ -386,7 +423,7 @@ export function DataTable<T extends object>({
   ]);
 
   const table = useReactTable({
-    data,
+    data: tabFilteredData,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel:
@@ -442,9 +479,9 @@ export function DataTable<T extends object>({
 
   const resolvedTotalRows = hasPagination
     ? isServerPagination
-      ? (totalRows ?? data.length)
+      ? (totalRows ?? tabFilteredData.length)
       : table.getFilteredRowModel().rows.length
-    : data.length;
+    : tabFilteredData.length;
 
   const currentPageIndex = hasPagination
     ? isServerPagination
@@ -510,6 +547,59 @@ export function DataTable<T extends object>({
 
   const internalTable = (
     <div className={cn("mui-datatable", className)}>
+      {filterTabs && filterTabs.length > 0 && filterTabKey && (
+        <div className="mui-datatable-filtertabs">
+          {filterTabs.map((tab) => {
+            const isActive = activeTabId === tab.id;
+            const count =
+              tab.id === "all" ? data.length : (tabCounts[tab.id] ?? 0);
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabChange(tab.id)}
+                className="mui-datatable-filtertab"
+                data-active={isActive || undefined}
+                style={
+                  isActive
+                    ? {
+                        backgroundColor: tab.activeBg ?? "#0F172A",
+                        color: tab.activeColor ?? "#ffffff",
+                        borderColor: tab.activeBg ?? "#0F172A",
+                      }
+                    : undefined
+                }
+              >
+                {tab.dot && (
+                  <span
+                    className="mui-datatable-filtertab-dot"
+                    style={{
+                      backgroundColor: isActive
+                        ? (tab.activeColor ?? "#ffffff")
+                        : tab.dot,
+                    }}
+                  />
+                )}
+                {tab.label}
+                <span
+                  className="mui-datatable-filtertab-count"
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: "rgba(255,255,255,0.2)",
+                          color: tab.activeColor ?? "#ffffff",
+                        }
+                      : undefined
+                  }
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {toolbar && (
         <div className="mui-datatable-toolbar">
           <Popover.Root>

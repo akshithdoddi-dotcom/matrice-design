@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Server,
   Cpu,
+  Camera,
   FolderOpen,
   Settings,
   HelpCircle,
@@ -31,8 +32,10 @@ export type Page =
   | "support-desk"
   | "all-clusters"
   | "compute"
+  | "cameras"
   | "projects"
   | "pipeline-detail"
+  | "project-view"
   | "settings";
 
 // ── Matrice icon ───────────────────────────────────────────────────────────
@@ -75,6 +78,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: "support-desk", label: "Dashboard",    icon: LayoutDashboard },
   { id: "all-clusters", label: "All Clusters", icon: Server          },
   { id: "compute",      label: "Compute",      icon: Cpu             },
+  { id: "cameras",      label: "Cameras",      icon: Camera          },
 ];
 
 // ── Props ─────────────────────────────────────────────────────────────────
