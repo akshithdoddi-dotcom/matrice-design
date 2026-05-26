@@ -1,0 +1,10 @@
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+@source '../../../fe-common/src/**/*.{js,ts,jsx,tsx}';
+
+@import 'tw-animate-css';
+
+/* Single source of truth — do not add tokens here.
+   Edit fe-common/src/styles/theme.css instead. */
+@import '../../../fe-common/src/styles/theme.css';
+@import '../../../fe-common/src/styles/globals.css';

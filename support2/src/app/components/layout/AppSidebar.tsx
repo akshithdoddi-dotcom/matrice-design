@@ -36,6 +36,12 @@ export type Page =
   | "projects"
   | "pipeline-detail"
   | "project-view"
+  | "system-flow"
+  | "gateways"
+  | "ml-apps"
+  | "command-centre"
+  | "resource-visualizer"
+  | "pipeline-view"
   | "settings";
 
 // ── Matrice icon ───────────────────────────────────────────────────────────

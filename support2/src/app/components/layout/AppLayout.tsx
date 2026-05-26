@@ -1,42 +1,36 @@
-import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AppShell, NavItem, BreadcrumbSegment } from "@fe-common/components/layout/AppShell";
 import {
-  Server,
-  Cpu,
-  Camera,
-  FolderOpen,
-  LayoutDashboard,
   Settings,
   HelpCircle,
   Briefcase,
   Check,
   ChevronDown,
   Database,
+  LayoutGrid,
+  Terminal,
+  BarChart3,
 } from "lucide-react";
 import { Page } from "@/app/components/layout/AppSidebar";
 import { Account, Cluster, Project, Pipeline, MOCK_ACCOUNTS, MOCK_CLUSTERS, MOCK_PROJECTS } from "@/data/mockData";
 
-const BASE_NAV: NavItem[] = [
-  { id: "dashboard",    label: "Dashboard",    icon: LayoutDashboard },
-  { id: "support-desk", label: "All Clusters", icon: Server          },
-];
+// ── Nav items ─────────────────────────────────────────────────────────────────
 
-const CLUSTER_NAV: NavItem[] = [
-  { id: "projects", label: "Projects", icon: FolderOpen },
-  { id: "compute",  label: "Compute",  icon: Cpu        },
-  { id: "cameras",  label: "Cameras",  icon: Camera     },
+const MAIN_NAV: NavItem[] = [
+  { id: "support-desk",        label: "Clusters",             icon: LayoutGrid  },
+  { id: "command-centre",      label: "Command Centre",      icon: Terminal    },
+  { id: "resource-visualizer", label: "Resource Visualizer", icon: BarChart3   },
 ];
 
 const FOOTER_NAV: NavItem[] = [
-  { id: "settings", label: "Settings",      icon: Settings  },
+  { id: "settings", label: "Settings",       icon: Settings   },
   { id: "help",     label: "Help & Support", icon: HelpCircle },
 ];
 
 const TEAL = "#00775B";
 
-// ── Account switcher rendered inside the navbar breadcrumb ────────────────────
-// Only shown on the support-desk page
+// ── Account switcher breadcrumb ───────────────────────────────────────────────
 
 function AccountSwitcherBreadcrumb({
   selected,
@@ -68,6 +62,10 @@ function AccountSwitcherBreadcrumb({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  const label = selected
+    ? `${selected.name} (${selected.accountId.slice(0, 5)}...`
+    : "Select account";
+
   return (
     <>
       <button
@@ -76,9 +74,7 @@ function AccountSwitcherBreadcrumb({
         className="flex items-center gap-1 hover:text-white transition-colors font-semibold"
         style={{ color: open ? "#fff" : "rgba(255,255,255,0.75)" }}
       >
-        <span className="max-w-[200px] truncate">
-          {selected?.name ?? "Select account"}
-        </span>
+        <span className="max-w-[260px] truncate">{label}</span>
         <ChevronDown
           className="w-3 h-3 shrink-0 transition-transform duration-150"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }}
@@ -93,7 +89,7 @@ function AccountSwitcherBreadcrumb({
             position: "fixed",
             top: pos.top,
             left: pos.left,
-            width: 300,
+            width: 320,
             zIndex: 9999,
             border: "1px solid #E2E8F0",
           }}
@@ -104,7 +100,7 @@ function AccountSwitcherBreadcrumb({
             </span>
           </div>
           {MOCK_ACCOUNTS.map((acc) => {
-            const clCount = MOCK_CLUSTERS.filter((c) => c.accountId === acc.id).length;
+            const clCount  = MOCK_CLUSTERS.filter((c) => c.accountId === acc.id).length;
             const isActive = selected?.id === acc.id;
             return (
               <button
@@ -139,7 +135,7 @@ function AccountSwitcherBreadcrumb({
   );
 }
 
-// ── Severity dot colours (mirrors Projects.tsx SEV tokens) ───────────────────
+// ── Severity dot colours ──────────────────────────────────────────────────────
 
 const SEV_DOT: Record<string, string> = {
   critical: "#E7000B",
@@ -150,7 +146,7 @@ const SEV_DOT: Record<string, string> = {
   default:  "#CBD5E1",
 };
 
-// ── Project switcher rendered inside the navbar breadcrumb ───────────────────
+// ── Project switcher breadcrumb ───────────────────────────────────────────────
 
 function ProjectSwitcherBreadcrumb({
   selected,
@@ -166,9 +162,7 @@ function ProjectSwitcherBreadcrumb({
   const btnRef          = useRef<HTMLButtonElement>(null);
   const panelRef        = useRef<HTMLDivElement>(null);
 
-  const projects = clusterId
-    ? MOCK_PROJECTS.filter((p) => p.clusterId === clusterId)
-    : [];
+  const projects = clusterId ? MOCK_PROJECTS.filter((p) => p.clusterId === clusterId) : [];
 
   useLayoutEffect(() => {
     if (!open || !btnRef.current) return;
@@ -196,9 +190,7 @@ function ProjectSwitcherBreadcrumb({
         className="flex items-center gap-1 hover:text-white transition-colors font-semibold"
         style={{ color: open ? "#fff" : "rgba(255,255,255,0.75)" }}
       >
-        <span className="max-w-[200px] truncate">
-          {selected?.name ?? "All Projects"}
-        </span>
+        <span className="max-w-[200px] truncate">{selected?.name ?? "All Projects"}</span>
         <ChevronDown
           className="w-3 h-3 shrink-0 transition-transform duration-150"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }}
@@ -209,49 +201,29 @@ function ProjectSwitcherBreadcrumb({
         <div
           ref={panelRef}
           className="rounded-[10px] bg-white overflow-hidden shadow-2xl"
-          style={{
-            position: "fixed",
-            top: pos.top,
-            left: pos.left,
-            width: 300,
-            zIndex: 9999,
-            border: "1px solid #E2E8F0",
-          }}
+          style={{ position: "fixed", top: pos.top, left: pos.left, width: 300, zIndex: 9999, border: "1px solid #E2E8F0" }}
         >
           <div className="px-3 py-2 border-b border-[#F1F5F9]">
-            <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]">
-              Switch Project
-            </span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]">Switch Project</span>
           </div>
-          {projects.length === 0 ? (
-            <div className="px-3 py-3 text-[11px] text-[#94A3B8]">No projects in this cluster</div>
-          ) : (
-            projects.map((proj) => {
-              const dot   = SEV_DOT[proj.severity] ?? SEV_DOT.default;
-              const isAct = selected?.id === proj.id;
-              return (
-                <button
-                  key={proj.id}
-                  onClick={() => { onSelect?.(proj); setOpen(false); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[#F8FAFC]"
-                >
-                  {/* severity dot */}
-                  <span style={{
-                    width: 8, height: 8, borderRadius: "50%",
-                    backgroundColor: dot, flexShrink: 0,
-                  }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-[#0F172A] truncate">{proj.name}</div>
-                    <div className="text-[10px] text-[#94A3B8] mt-0.5">{proj.pipelineCount} pipeline{proj.pipelineCount !== 1 ? "s" : ""}</div>
-                  </div>
-                  {isAct
-                    ? <Check className="w-3.5 h-3.5 shrink-0" style={{ color: TEAL }} />
-                    : null
-                  }
-                </button>
-              );
-            })
-          )}
+          {projects.length === 0
+            ? <div className="px-3 py-3 text-[11px] text-[#94A3B8]">No projects in this cluster</div>
+            : projects.map((proj) => {
+                const dot   = SEV_DOT[proj.severity] ?? SEV_DOT.default;
+                const isAct = selected?.id === proj.id;
+                return (
+                  <button key={proj.id} onClick={() => { onSelect?.(proj); setOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[#F8FAFC]">
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: dot, flexShrink: 0 }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-[#0F172A] truncate">{proj.name}</div>
+                      <div className="text-[10px] text-[#94A3B8] mt-0.5">{proj.pipelineCount} pipeline{proj.pipelineCount !== 1 ? "s" : ""}</div>
+                    </div>
+                    {isAct && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: TEAL }} />}
+                  </button>
+                );
+              })
+          }
         </div>,
         document.body
       )}
@@ -259,7 +231,7 @@ function ProjectSwitcherBreadcrumb({
   );
 }
 
-// ── Cluster switcher rendered inside the navbar breadcrumb ──────────────────
+// ── Cluster switcher breadcrumb ───────────────────────────────────────────────
 
 const CLUSTER_STATUS_DOT: Record<string, string> = {
   active:   "#22C55E",
@@ -281,9 +253,7 @@ function ClusterSwitcherBreadcrumb({
   const btnRef          = useRef<HTMLButtonElement>(null);
   const panelRef        = useRef<HTMLDivElement>(null);
 
-  const clusters = accountId
-    ? MOCK_CLUSTERS.filter((c) => c.accountId === accountId)
-    : [];
+  const clusters = accountId ? MOCK_CLUSTERS.filter((c) => c.accountId === accountId) : MOCK_CLUSTERS;
 
   useLayoutEffect(() => {
     if (!open || !btnRef.current) return;
@@ -311,9 +281,7 @@ function ClusterSwitcherBreadcrumb({
         className="flex items-center gap-1 hover:text-white transition-colors font-semibold"
         style={{ color: open ? "#fff" : "rgba(255,255,255,0.75)" }}
       >
-        <span className="max-w-[220px] truncate">
-          {selected?.name ?? "Select cluster"}
-        </span>
+        <span className="max-w-[220px] truncate">{selected?.name ?? "Select cluster"}</span>
         <ChevronDown
           className="w-3 h-3 shrink-0 transition-transform duration-150"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }}
@@ -324,56 +292,35 @@ function ClusterSwitcherBreadcrumb({
         <div
           ref={panelRef}
           className="rounded-[10px] bg-white overflow-hidden shadow-2xl"
-          style={{
-            position: "fixed",
-            top: pos.top,
-            left: pos.left,
-            width: 320,
-            zIndex: 9999,
-            border: "1px solid #E2E8F0",
-          }}
+          style={{ position: "fixed", top: pos.top, left: pos.left, width: 320, zIndex: 9999, border: "1px solid #E2E8F0" }}
         >
           <div className="px-3 py-2 border-b border-[#F1F5F9]">
-            <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]">
-              Switch Cluster
-            </span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]">Switch Cluster</span>
           </div>
-          {clusters.length === 0 ? (
-            <div className="px-3 py-3 text-[11px] text-[#94A3B8]">No clusters in this account</div>
-          ) : (
-            clusters.map((cl) => {
-              const dot    = CLUSTER_STATUS_DOT[cl.status] ?? "#94A3B8";
-              const isAct  = selected?.id === cl.id;
-              return (
-                <button
-                  key={cl.id}
-                  onClick={() => { onSelect?.(cl); setOpen(false); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[#F8FAFC]"
-                >
-                  <div
-                    className="w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0"
-                    style={{
-                      backgroundColor: isAct ? TEAL : "#F1F5F9",
-                      border: `1px solid ${isAct ? TEAL : "#E2E8F0"}`,
-                    }}
-                  >
-                    <Database className="w-3.5 h-3.5" style={{ color: isAct ? "#fff" : "#94A3B8" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-[#0F172A] truncate">{cl.name}</div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: dot, display: "inline-block" }} />
-                      <span className="text-[10px] text-[#94A3B8]">{cl.status} · {cl.instanceCount}/{cl.totalInstances} instances</span>
+          {clusters.length === 0
+            ? <div className="px-3 py-3 text-[11px] text-[#94A3B8]">No clusters in this account</div>
+            : clusters.map((cl) => {
+                const dot   = CLUSTER_STATUS_DOT[cl.status] ?? "#94A3B8";
+                const isAct = selected?.id === cl.id;
+                return (
+                  <button key={cl.id} onClick={() => { onSelect?.(cl); setOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[#F8FAFC]">
+                    <div className="w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: isAct ? TEAL : "#F1F5F9", border: `1px solid ${isAct ? TEAL : "#E2E8F0"}` }}>
+                      <Database className="w-3.5 h-3.5" style={{ color: isAct ? "#fff" : "#94A3B8" }} />
                     </div>
-                  </div>
-                  {isAct
-                    ? <Check className="w-3.5 h-3.5 shrink-0" style={{ color: TEAL }} />
-                    : null
-                  }
-                </button>
-              );
-            })
-          )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-[#0F172A] truncate">{cl.name}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: dot, display: "inline-block" }} />
+                        <span className="text-[10px] text-[#94A3B8]">{cl.status} · {cl.instanceCount}/{cl.totalInstances} instances</span>
+                      </div>
+                    </div>
+                    {isAct && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: TEAL }} />}
+                  </button>
+                );
+              })
+          }
         </div>,
         document.body
       )}
@@ -391,17 +338,13 @@ interface AppLayoutProps {
   onToggleDark?: () => void;
   onPlatformSwitch?: (app: string) => void;
   fullBleed?: boolean;
-  // Account context
   selectedAccount?: Account | null;
   onSelectAccount?: (a: Account) => void;
-  // Nav context for breadcrumbs
   selectedCluster?: Cluster | null;
   selectedProject?: Project | null;
   selectedPipeline?: Pipeline | null;
-  // Back-nav callbacks for breadcrumb clicks
   onGoToDesk?: () => void;
   onGoToProjects?: () => void;
-  // Project & cluster switchers
   onSelectProject?: (p: Project) => void;
   onSelectCluster?: (c: Cluster) => void;
 }
@@ -425,19 +368,10 @@ export function AppLayout({
   onSelectCluster,
 }: AppLayoutProps) {
 
-  // ── Build nav items (cluster-scoped items only when a cluster is selected) ─
-  const mainNav = useMemo(
-    () => selectedCluster ? [...BASE_NAV, ...CLUSTER_NAV] : BASE_NAV,
-    [selectedCluster]
-  );
-
-  // ── Build breadcrumb per page ──────────────────────────────────────────────
-
+  // ── Breadcrumb per page ────────────────────────────────────────────────────
   let breadcrumb: BreadcrumbSegment[] | undefined;
 
-  if (activePage === "dashboard") {
-    breadcrumb = [{ label: "Dashboard" }];
-  } else if (activePage === "support-desk") {
+  if (activePage === "support-desk") {
     breadcrumb = [
       {
         label: (
@@ -447,10 +381,8 @@ export function AppLayout({
           />
         ),
       },
-      { label: "All Clusters" },
+      { label: "Clusters" },
     ];
-  } else if (activePage === "all-clusters") {
-    breadcrumb = [{ label: "All Clusters" }];
   } else if (activePage === "projects") {
     breadcrumb = [
       {
@@ -461,7 +393,6 @@ export function AppLayout({
           />
         ),
       },
-      { label: "All Clusters", onClick: onGoToDesk },
       {
         label: (
           <ClusterSwitcherBreadcrumb
@@ -474,15 +405,7 @@ export function AppLayout({
     ];
   } else if (activePage === "project-view") {
     breadcrumb = [
-      {
-        label: (
-          <AccountSwitcherBreadcrumb
-            selected={selectedAccount ?? null}
-            onSelect={onSelectAccount}
-          />
-        ),
-      },
-      { label: "All Clusters", onClick: onGoToDesk },
+      { label: "Projects", onClick: onGoToDesk },
       {
         label: (
           <ClusterSwitcherBreadcrumb
@@ -504,15 +427,7 @@ export function AppLayout({
     ];
   } else if (activePage === "pipeline-detail") {
     const crumbs: BreadcrumbSegment[] = [
-      {
-        label: (
-          <AccountSwitcherBreadcrumb
-            selected={selectedAccount ?? null}
-            onSelect={onSelectAccount}
-          />
-        ),
-      },
-      { label: "All Clusters", onClick: onGoToDesk },
+      { label: "Projects", onClick: onGoToDesk },
       {
         label: (
           <ClusterSwitcherBreadcrumb
@@ -534,7 +449,37 @@ export function AppLayout({
     ];
     if (selectedPipeline) crumbs.push({ label: selectedPipeline.name });
     breadcrumb = crumbs;
-  } else if (activePage === "compute" || activePage === "cameras") {
+  } else if (activePage === "cameras") {
+    breadcrumb = [
+      { label: "Cameras" },
+      ...(selectedCluster
+        ? [{
+            label: (
+              <ClusterSwitcherBreadcrumb
+                selected={selectedCluster}
+                accountId={selectedAccount?.id}
+                onSelect={onSelectCluster}
+              />
+            ),
+          }]
+        : []),
+    ];
+  } else if (activePage === "compute") {
+    breadcrumb = [
+      { label: "Compute" },
+      ...(selectedCluster
+        ? [{
+            label: (
+              <ClusterSwitcherBreadcrumb
+                selected={selectedCluster}
+                accountId={selectedAccount?.id}
+                onSelect={onSelectCluster}
+              />
+            ),
+          }]
+        : []),
+    ];
+  } else if (activePage === "pipeline-view") {
     breadcrumb = [
       {
         label: (
@@ -544,7 +489,6 @@ export function AppLayout({
           />
         ),
       },
-      { label: "All Clusters", onClick: onGoToDesk },
       {
         label: (
           <ClusterSwitcherBreadcrumb
@@ -554,23 +498,46 @@ export function AppLayout({
           />
         ),
       },
-      { label: activePage === "compute" ? "Compute" : "Cameras" },
+      { label: selectedProject?.name ?? "Project", onClick: onGoToProjects },
+      { label: selectedPipeline?.name ?? "Pipeline" },
     ];
+  } else if (activePage === "system-flow") {
+    breadcrumb = [{ label: "System Flow" }];
+  } else if (activePage === "gateways") {
+    breadcrumb = [{ label: "Gateways" }];
+  } else if (activePage === "ml-apps") {
+    breadcrumb = [{ label: "ML Apps" }];
+  } else if (activePage === "command-centre") {
+    breadcrumb = [{ label: "Command Centre" }];
+  } else if (activePage === "resource-visualizer") {
+    breadcrumb = [{ label: "Resource Visualizer" }];
   }
+
+  // All pages are full-bleed in this design (no padding wrapper)
+  const isFullBleed = fullBleed || activePage === "settings";
+
+  // All cluster/pipeline-scoped pages should keep "Clusters" highlighted in the sidebar
+  const CLUSTER_PAGES: Page[] = [
+    "support-desk", "projects", "project-view",
+    "pipeline-detail", "pipeline-view",
+    "system-flow", "cameras", "gateways",
+    "compute", "ml-apps",
+  ];
+  const activeNavId = CLUSTER_PAGES.includes(activePage) ? "support-desk" : activePage;
 
   return (
     <AppShell
-      navItems={mainNav}
+      navItems={MAIN_NAV}
       footerNavItems={FOOTER_NAV}
-      activePage={activePage}
+      activePage={activeNavId}
       onPageChange={(p) => onPageChange(p as Page)}
-      platformLabel="Support Platform"
-      activePlatformId="support"
+      platformLabel="Support Platform 2"
+      activePlatformId="support2"
       onPlatformSwitch={onPlatformSwitch}
       isDark={isDark}
       onToggleDark={onToggleDark}
       breadcrumb={breadcrumb}
-      contentClassName={fullBleed || activePage === "settings" ? "p-0 min-h-0 overflow-hidden" : "p-6"}
+      contentClassName={isFullBleed ? "p-0 min-h-0 overflow-hidden" : "p-6"}
     >
       {children}
     </AppShell>

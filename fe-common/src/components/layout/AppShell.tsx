@@ -83,8 +83,9 @@ const PLATFORMS = [
   { id: "training",    label: "Matrice Training",    icon: Cpu,      shortcut: "3" },
   { id: "marketplace", label: "Matrice Marketplace", icon: Store,    shortcut: "4" },
   { id: "support",     label: "Matrice Support",     icon: Wrench,   shortcut: "5" },
-  { id: "internal",    label: "Matrice Internal",    icon: Shield,   shortcut: "6" },
-  { id: "fe-common",   label: "FE Components",       icon: Layers,   shortcut: "7" },
+  { id: "support2",    label: "Support 2",           icon: Wrench,   shortcut: "6" },
+  { id: "internal",    label: "Matrice Internal",    icon: Shield,   shortcut: "7" },
+  { id: "fe-common",   label: "FE Components",       icon: Layers,   shortcut: "8" },
 ];
 
 // ── Types ─────────────────────────────────────────────────────────────────────

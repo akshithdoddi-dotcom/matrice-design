@@ -2,29 +2,33 @@ import { useState } from "react";
 import { Page } from "@/app/components/layout/AppSidebar";
 import { AppLayout } from "@/app/components/layout/AppLayout";
 import { SupportDesk } from "@/app/components/pages/SupportDesk";
-import { AllClusters } from "@/app/components/pages/AllClusters";
 import { Projects } from "@/app/components/pages/Projects";
 import { PipelineDetail } from "@/app/components/pages/PipelineDetail";
 import { ProjectView } from "@/app/components/pages/ProjectView";
 import { Compute } from "@/app/components/pages/Compute";
 import { Cameras } from "@/app/components/pages/Cameras";
-import { Dashboard } from "@/app/components/pages/Dashboard";
+import { PipelineView } from "@/app/components/pages/PipelineView";
 import { ComingSoon } from "@/app/components/pages/ComingSoon";
 import { SettingsPage } from "@/app/components/pages/Settings";
 import { Account, Cluster, Project, Pipeline } from "@/data/mockData";
 
-const FULL_BLEED_PAGES: Page[] = ["support-desk", "all-clusters", "projects", "pipeline-detail", "project-view", "compute", "cameras"];
+// All pages are full-bleed in this design — no padding wrapper
+const FULL_BLEED_PAGES: Page[] = [
+  "support-desk", "projects", "pipeline-detail", "project-view",
+  "compute", "cameras", "system-flow", "gateways", "ml-apps",
+  "command-centre", "resource-visualizer", "pipeline-view",
+];
 
 interface AppProps {
   onPlatformSwitch?: (app: string) => void;
 }
 
 export default function App({ onPlatformSwitch }: AppProps = {}) {
-  const [activePage, setActivePage]           = useState<Page>("dashboard");
-  const [isDark, setIsDark]                   = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [activePage, setActivePage]             = useState<Page>("support-desk");
+  const [isDark, setIsDark]                     = useState(false);
+  const [selectedAccount, setSelectedAccount]   = useState<Account | null>(null);
+  const [selectedCluster, setSelectedCluster]   = useState<Cluster | null>(null);
+  const [selectedProject, setSelectedProject]   = useState<Project | null>(null);
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
 
   const handleSelectAccount = (account: Account) => {
@@ -57,30 +61,28 @@ export default function App({ onPlatformSwitch }: AppProps = {}) {
     setActivePage("project-view");
   };
 
-  // Navigating to "All Clusters" (support-desk) always clears cluster context
-  // so the cluster-scoped sidebar items disappear.
   const handleGoToDesk = () => {
     setActivePage("support-desk");
-    setSelectedCluster(null);
-    setSelectedProject(null);
-    setSelectedPipeline(null);
   };
 
-  const handleBackFromPipeline = () => {
-    setActivePage("projects");
+  const handleBackFromPipeline  = () => setActivePage("projects");
+  const handleBackFromProjectView = () => setActivePage("projects");
+
+  const handlePipelineClick = (project: Project, pipeline: Pipeline) => {
+    setSelectedProject(project);
+    setSelectedPipeline(pipeline);
+    setActivePage("pipeline-view");
   };
 
-  const handleBackFromProjectView = () => {
-    setActivePage("projects");
-  };
+  const knownPages: Page[] = [
+    "support-desk", "projects", "pipeline-detail", "project-view",
+    "compute", "cameras", "settings", "pipeline-view",
+  ];
 
   return (
     <AppLayout
       activePage={activePage}
-      onPageChange={(page) => {
-        if (page === "support-desk") handleGoToDesk();
-        else setActivePage(page);
-      }}
+      onPageChange={(page) => setActivePage(page)}
       isDark={isDark}
       onToggleDark={() => setIsDark((v) => !v)}
       onPlatformSwitch={onPlatformSwitch}
@@ -104,18 +106,6 @@ export default function App({ onPlatformSwitch }: AppProps = {}) {
         setActivePage("projects");
       }}
     >
-      {activePage === "dashboard" && (
-        <Dashboard
-          onGoToClusters={handleGoToDesk}
-          onSelectCluster={handleSelectCluster}
-          onSelectClusterForCameras={(cluster) => {
-            setSelectedCluster(cluster);
-            setSelectedProject(null);
-            setSelectedPipeline(null);
-            setActivePage("cameras");
-          }}
-        />
-      )}
       {activePage === "support-desk" && (
         <SupportDesk
           selectedAccount={selectedAccount}
@@ -124,7 +114,6 @@ export default function App({ onPlatformSwitch }: AppProps = {}) {
           onSelectProject={handleSelectProject}
         />
       )}
-      {activePage === "all-clusters" && <AllClusters />}
       {activePage === "projects" && (
         <Projects
           account={selectedAccount}
@@ -134,6 +123,7 @@ export default function App({ onPlatformSwitch }: AppProps = {}) {
           onBackToDesk={handleGoToDesk}
           onSelectPipeline={handleSelectPipeline}
           onEnterProject={handleEnterProject}
+          onPipelineClick={handlePipelineClick}
         />
       )}
       {activePage === "project-view" && (
@@ -162,20 +152,21 @@ export default function App({ onPlatformSwitch }: AppProps = {}) {
       {activePage === "cameras" && (
         <Cameras account={selectedAccount} cluster={selectedCluster} />
       )}
+      {activePage === "pipeline-view" && (
+        <PipelineView
+          pipeline={selectedPipeline}
+          project={selectedProject}
+          cluster={selectedCluster}
+          account={selectedAccount}
+          onBack={handleBackFromPipeline}
+        />
+      )}
       {activePage === "settings" && (
         <SettingsPage isDark={isDark} onToggleDark={() => setIsDark((v) => !v)} />
       )}
-      {activePage !== "dashboard" &&
-        activePage !== "support-desk" &&
-        activePage !== "all-clusters" &&
-        activePage !== "projects" &&
-        activePage !== "project-view" &&
-        activePage !== "pipeline-detail" &&
-        activePage !== "compute" &&
-        activePage !== "cameras" &&
-        activePage !== "settings" && (
-          <ComingSoon page={activePage} />
-        )}
+      {!knownPages.includes(activePage) && activePage !== "settings" && (
+        <ComingSoon page={activePage} />
+      )}
     </AppLayout>
   );
 }
