@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import {
-  ArrowLeft, RefreshCw, ChevronDown, ChevronRight,
+  ArrowLeft, RefreshCw, ChevronDown, ChevronRight, ChevronLeft,
   Search, X, Play, CloudUpload, HardDrive, Zap, Plus,
   LayoutGrid, List, Tag, Wand2, Layers, Shuffle,
   SlidersHorizontal, CheckCircle, AlertCircle,
@@ -36,12 +36,18 @@ const TEAL = "#00775B";
 const DETAIL = {
   version:    "v1.0",
   status:     "Processed",
-  classes:    2,
+  classes:    8,
   createdBy:  "Mohammed Usman",
-  split:      { train: 2600, test: 480, val: 190, unassigned: 27 },
+  split:      { train: 7840, test: 1420, val: 890, unassigned: 300 },
   categories: [
-    { name: "benign",    train: 1450, test: 180, val: 160, unassigned: 10 },
-    { name: "malignant", train: 1150, test: 300,  val:  30, unassigned: 17 },
+    { name: "Helmet",          train: 1820, test: 340, val: 210, unassigned: 42 },
+    { name: "No Helmet",       train: 1540, test: 280, val: 175, unassigned: 38 },
+    { name: "Safety Vest",     train: 1230, test: 220, val: 140, unassigned: 61 },
+    { name: "No Vest",         train:  980, test: 185, val: 110, unassigned: 55 },
+    { name: "Gloves",          train:  720, test: 130, val:  85, unassigned: 29 },
+    { name: "Safety Goggles",  train:  640, test: 112, val:  72, unassigned: 34 },
+    { name: "Ear Protection",  train:  520, test:  98, val:  60, unassigned: 28 },
+    { name: "Safety Boots",    train:  390, test:  55, val:  38, unassigned: 13 },
   ],
   recentActions: [
     { type: "processed", msg: "Dataset processed successfully", time: "2 days ago",  icon: "ok"  },
@@ -121,7 +127,7 @@ function StatusBar({ dataset }: { dataset: Dataset }) {
       <span className="text-neutral-200">|</span>
       <span className="text-neutral-400">Created By: <span className="text-neutral-600 font-medium">{DETAIL.createdBy}</span></span>
       <div className="ml-auto flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[10px] font-semibold bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20">
+        <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-[4px] text-[10px] font-semibold bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20">
           <CheckCircle className="w-3 h-3" /> {DETAIL.status}
         </span>
         <Select defaultValue="v1.0">
@@ -171,130 +177,169 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
     Val:   c.val,
   }));
 
-  const [catSearch, setCatSearch]   = useState("");
-  const [catView,   setCatView]     = useState<"graph" | "table">("graph");
-  const [catSplit,  setCatSplit]    = useState("all");
+  const [catSearch,     setCatSearch]     = useState("");
+  const [catView,       setCatView]       = useState<"graph" | "table">("graph");
+  const [catSplit,      setCatSplit]      = useState("all");
+  const [catDist,       setCatDist]       = useState("all");
+  const [classCountRange, setClassCountRange] = useState<number[]>(() => {
+    const max = Math.max(...DETAIL.categories.map((c) => c.train + c.test + c.val), 100);
+    return [0, max];
+  });
 
-  const filteredCatData = catBarData.filter((c) => {
+  const allCatTotals = categories.map((c) => c.train + c.test + c.val);
+  const maxClassCount = Math.max(...allCatTotals, 100);
+
+  const filteredCatData = catBarData.filter((c, i) => {
     if (!c.name.toLowerCase().includes(catSearch.toLowerCase())) return false;
+    const tot = allCatTotals[i];
+    if (tot < classCountRange[0] || tot > classCountRange[1]) return false;
+    if (catDist !== "all") {
+      const avg = allCatTotals.reduce((a, b) => a + b, 0) / allCatTotals.length;
+      if (catDist === "balanced"   && Math.abs(tot - avg) > avg * 0.3) return false;
+      if (catDist === "imbalanced" && Math.abs(tot - avg) <= avg * 0.3) return false;
+    }
     return true;
   });
 
   return (
-    <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
+    <div className="p-6 flex flex-col gap-4 bg-[#F8FAFC] min-w-0">
 
-      {/* ── Row: Stat Cards (2×2) + Split Overview ── */}
+      {/* ── Row 1: Stat cards (full width, uniform height) ── */}
       <div className="grid grid-cols-3 gap-4">
-        {/* 4 StatCards in a 2×2 grid */}
-        <div className="col-span-2 grid grid-cols-2 gap-4">
-          {([
-            { label: "Total Images", value: total.toLocaleString(),      sublabel: `${DETAIL.classes} classes`,                        num: "+2",  ref_: "vs Last Upload", dir: "up",     chip: "IMAGES",   color: "#0284C7", bgColor: "#E0F2FE" },
-            { label: "Labeled",      value: `${labelPct}%`,              sublabel: `${labeled.toLocaleString()} of ${total.toLocaleString()}`, num: "+5%", ref_: "vs Last Version", dir: "up", chip: "LABELED",  color: "#00775B", bgColor: "#E5FFF9" },
-            { label: "Version",      value: DETAIL.version,              sublabel: "Current version",                                  num: "—",   ref_: "—",              dir: "neutral", chip: "VERSION",  color: "#D97706", bgColor: "#FFFBEB" },
-            { label: "Status",       value: DETAIL.status,               sublabel: `by ${DETAIL.createdBy}`,                           num: "—",   ref_: "—",              dir: "neutral", chip: "STATUS",   color: "#059669", bgColor: "#ECFDF5" },
-          ] as StatCardData[]).map((d) => (
-            <StatCard key={d.label} d={d} compact />
-          ))}
-        </div>
+        {([
+          { label: "Total Images", value: total.toLocaleString(),      sublabel: `${DETAIL.classes} classes`,                             num: "+2",  ref_: "vs Last Upload",  dir: "up",      chip: "IMAGES",  color: "#0284C7", bgColor: "#E0F2FE" },
+          { label: "Labeled",      value: `${labelPct}%`,              sublabel: `${labeled.toLocaleString()} of ${total.toLocaleString()}`, num: "+5%", ref_: "vs Last Version", dir: "up",      chip: "LABELED", color: "#00775B", bgColor: "#E5FFF9" },
+          { label: "Version",      value: DETAIL.version,              sublabel: "Current version",                                       num: "—",   ref_: "—",               dir: "neutral",  chip: "VERSION", color: "#D97706", bgColor: "#FFFBEB" },
+        ] as StatCardData[]).map((d) => (
+          <StatCard key={d.label} d={d} compact />
+        ))}
+      </div>
 
-        {/* Split Overview */}
-        <Card className="overflow-hidden flex flex-col">
-          <div className="px-5 pt-4 pb-3 border-b border-neutral-100">
+      {/* ── Row 2: Split Overview (sidebar) + Category Distribution (main) ── */}
+      <div className="flex gap-4 items-start">
+
+        {/* Split Overview — narrow fixed panel */}
+        <Card className="w-56 flex-shrink-0 overflow-hidden">
+          <div className="px-4 pt-4 pb-3 border-b border-neutral-100">
             <h3 className="text-[13px] font-semibold text-neutral-800">Split Overview</h3>
             <p className="text-[11px] text-neutral-400 mt-0.5">{total.toLocaleString()} total images</p>
           </div>
-          <div className="p-5 flex flex-col gap-4 flex-1">
-            {/* Proportional bar */}
-            <div className="flex h-3 rounded-full overflow-hidden gap-px">
+          <div className="p-4 flex flex-col gap-3">
+            <div className="flex h-2.5 rounded-full overflow-hidden gap-px">
               {splitSegments.map((s) => (
-                <div
-                  key={s.key}
-                  className="transition-all"
+                <div key={s.key} className="transition-all"
                   style={{ width: `${s.pct}%`, backgroundColor: s.color, minWidth: s.pct > 0 ? "2px" : 0 }}
-                  title={`${s.label}: ${s.count.toLocaleString()} (${s.pct}%)`}
-                />
+                  title={`${s.label}: ${s.count.toLocaleString()} (${s.pct}%)`} />
               ))}
             </div>
-            {/* Legend */}
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2">
               {splitSegments.map((s) => (
                 <div key={s.key} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                    <span className="text-[12px] text-neutral-600 font-medium">{s.label}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="text-[11px] text-neutral-600 font-medium">{s.label}</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[13px] font-bold font-mono" style={{ color: s.color }}>
-                      {s.count.toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-neutral-400 ml-1.5">{s.pct}%</span>
+                  <div>
+                    <span className="text-[12px] font-bold font-mono" style={{ color: s.color }}>{s.count.toLocaleString()}</span>
+                    <span className="text-[10px] text-neutral-400 ml-1">{s.pct}%</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </Card>
-      </div>
 
-      {/* ── Category Distribution ── */}
-      <Card className="overflow-hidden">
-        <div className="px-5 pt-4 pb-3 border-b border-neutral-100 flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h3 className="text-[13px] font-semibold text-neutral-800">Category Distribution</h3>
-            <p className="text-[11px] text-neutral-400 mt-0.5">Images per class across train / test / validation splits</p>
-          </div>
-          <SegmentedControl
-            size="sm"
-            value={catView}
-            onChange={(v) => setCatView(v as "graph" | "table")}
-            ariaLabel="Category distribution view"
-            options={[
-              { value: "graph", icon: <BarChart2 className="w-3.5 h-3.5" />, ariaLabel: "Graph view" },
-              { value: "table", icon: <Table2    className="w-3.5 h-3.5" />, ariaLabel: "Table view" },
-            ]}
-          />
-        </div>
-
-        <div className="flex">
-          {/* Filter sidebar */}
-          <div className="w-52 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Filters</p>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-neutral-500">Split</label>
-              <Select value={catSplit} onValueChange={setCatSplit}>
-                <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Splits</SelectItem>
-                  <SelectItem value="train">Train</SelectItem>
-                  <SelectItem value="test">Test</SelectItem>
-                  <SelectItem value="val">Validation</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Category Distribution — takes remaining width, filters in sidebar */}
+        <Card className="flex-1 overflow-hidden min-w-0">
+          <div className="px-5 pt-4 pb-3 border-b border-neutral-100 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-[13px] font-semibold text-neutral-800">Category Distribution</h3>
+              <p className="text-[11px] text-neutral-400 mt-0.5">Images per class across train / test / validation splits</p>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-medium text-neutral-500">Search Class</label>
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  className="h-8 w-full pl-8 pr-3 text-[12px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]"
-                  placeholder="Search class…"
-                  value={catSearch}
-                  onChange={(e) => setCatSearch(e.target.value)}
+            <SegmentedControl
+              size="sm"
+              value={catView}
+              onChange={(v) => setCatView(v as "graph" | "table")}
+              ariaLabel="Category distribution view"
+              options={[
+                { value: "graph", icon: <BarChart2 className="w-3.5 h-3.5" />, ariaLabel: "Graph view" },
+                { value: "table", icon: <Table2    className="w-3.5 h-3.5" />, ariaLabel: "Table view" },
+              ]}
+            />
+          </div>
+          <div className="flex">
+            {/* Filter sidebar */}
+            <div className="w-52 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Filters</p>
+
+              {/* Search Category */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[11px] font-medium text-neutral-500">Search Category</Label>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    className="h-8 w-full pl-8 pr-3 text-[12px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]"
+                    placeholder="Search Category"
+                    value={catSearch}
+                    onChange={(e) => setCatSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Select Distribution */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[11px] font-medium text-neutral-500">Select Distribution</Label>
+                <Select value={catDist} onValueChange={setCatDist}>
+                  <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="balanced">Balanced</SelectItem>
+                    <SelectItem value="imbalanced">Imbalanced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Select Split */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[11px] font-medium text-neutral-500">Select Split</Label>
+                <Select value={catSplit} onValueChange={setCatSplit}>
+                  <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="train">Train</SelectItem>
+                    <SelectItem value="test">Test</SelectItem>
+                    <SelectItem value="val">Validation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Number of Classes slider */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[11px] font-medium text-neutral-500">Number of Classes</Label>
+                  <span className="text-[10px] font-mono text-neutral-400">{classCountRange[0]}–{classCountRange[1]}</span>
+                </div>
+                <Slider
+                  value={classCountRange}
+                  onValueChange={setClassCountRange}
+                  min={0}
+                  max={maxClassCount}
+                  step={Math.max(1, Math.floor(maxClassCount / 20))}
+                  className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]"
                 />
               </div>
-            </div>
-            {(catSearch || catSplit !== "all") && (
-              <button
-                onClick={() => { setCatSearch(""); setCatSplit("all"); }}
-                className="flex items-center justify-center gap-1.5 h-8 rounded-md border border-neutral-200 text-neutral-500 hover:bg-neutral-50 text-[11px] font-medium transition-colors"
-              >
-                <X className="w-3 h-3" /> Clear Filters
-              </button>
-            )}
-          </div>
 
-          {/* Chart / Table */}
-          <div className="flex-1 p-5">
+              {(catSearch || catSplit !== "all" || catDist !== "all" || classCountRange[0] > 0 || classCountRange[1] < maxClassCount) && (
+                <button
+                  onClick={() => { setCatSearch(""); setCatSplit("all"); setCatDist("all"); setClassCountRange([0, maxClassCount]); }}
+                  className="flex items-center justify-center gap-1.5 h-8 rounded-md border border-neutral-200 text-neutral-500 hover:bg-neutral-50 text-[11px] font-medium transition-colors">
+                  <X className="w-3 h-3" /> Clear Filters
+                </button>
+              )}
+            </div>
+
+            {/* Chart / Table */}
+            <div className="flex-1 p-5 min-w-0">
             {catView === "graph" ? (
               <ResponsiveContainer width="100%" height={Math.max(filteredCatData.length * 60 + 40, 140)}>
                 <BarChart
@@ -304,22 +349,14 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
                   barCategoryGap="30%"
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fontSize: 10, fill: "#94A3B8" }}
-                    label={{ value: "Image Count", position: "insideBottom", offset: -10, fontSize: 10, fill: "#94A3B8" }}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
-                    width={80}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "#F8FAFC" }}
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "#94A3B8" }}
+                    label={{ value: "Image Count", position: "insideBottom", offset: -10, fontSize: 10, fill: "#94A3B8" }} />
+                  <YAxis type="category" dataKey="name"
+                    tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }} width={80} />
+                  <Tooltip cursor={{ fill: "#F8FAFC" }}
                     content={({ active, payload, label }) => {
                       if (!active || !payload?.length) return null;
-                      const total = payload.reduce((s, p) => s + (Number(p.value) || 0), 0);
+                      const tot = payload.reduce((s, p) => s + (Number(p.value) || 0), 0);
                       return (
                         <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2.5 shadow-lg text-[11px] min-w-[140px]">
                           <p className="font-bold text-neutral-800 capitalize mb-2 text-[12px]">{label}</p>
@@ -334,40 +371,36 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
                           ))}
                           <div className="border-t border-neutral-100 mt-2 pt-1.5 flex justify-between">
                             <span className="text-neutral-400">Total</span>
-                            <span className="font-mono font-bold text-neutral-700">{total.toLocaleString()}</span>
+                            <span className="font-mono font-bold text-neutral-700">{tot.toLocaleString()}</span>
                           </div>
                         </div>
                       );
                     }}
                   />
-                  <Legend
-                    iconType="square"
-                    iconSize={9}
-                    wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
-                    formatter={(val) => <span className="text-neutral-500 capitalize">{val}</span>}
-                  />
-                  <Bar dataKey="Train" stackId="a" fill={TEAL}      name="Train"  />
-                  <Bar dataKey="Test"  stackId="a" fill="#F59E0B"   name="Test"   />
-                  <Bar dataKey="Val"   stackId="a" fill="#22C55E"   name="Val"    radius={[0, 3, 3, 0]} />
+                  <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                    formatter={(val) => <span className="text-neutral-500 capitalize">{val}</span>} />
+                  <Bar dataKey="Train" stackId="a" fill={TEAL}    name="Train" />
+                  <Bar dataKey="Test"  stackId="a" fill="#F59E0B" name="Test"  />
+                  <Bar dataKey="Val"   stackId="a" fill="#22C55E" name="Val"   radius={[0, 3, 3, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <DataTable<{ id: string; name: string; train: number; test: number; val: number; total: number; trainPct: number; colorIdx: number }>
                 columns={[
-                  { id: "name",  header: "Class", accessorKey: "name",
+                  { id: "name",    header: "Class",   accessorKey: "name",
                     cell: ({ row }) => (
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
                         <span className="font-semibold text-neutral-700 capitalize">{row.name}</span>
                       </div>
                     ) },
-                  { id: "train", header: "Train", accessorKey: "train", align: "right",
+                  { id: "train",   header: "Train",   accessorKey: "train", align: "right",
                     cell: ({ row }) => <span className="font-mono text-neutral-600">{row.train.toLocaleString()}</span> },
-                  { id: "test",  header: "Test",  accessorKey: "test",  align: "right",
+                  { id: "test",    header: "Test",    accessorKey: "test",  align: "right",
                     cell: ({ row }) => <span className="font-mono text-neutral-600">{row.test.toLocaleString()}</span>  },
-                  { id: "val",   header: "Val",   accessorKey: "val",   align: "right",
+                  { id: "val",     header: "Val",     accessorKey: "val",   align: "right",
                     cell: ({ row }) => <span className="font-mono text-neutral-600">{row.val.toLocaleString()}</span>   },
-                  { id: "total", header: "Total", accessorKey: "total", align: "right",
+                  { id: "total",   header: "Total",   accessorKey: "total", align: "right",
                     cell: ({ row }) => <span className="font-mono font-bold text-neutral-800">{row.total.toLocaleString()}</span> },
                   { id: "balance", header: "Balance", accessorKey: "trainPct",
                     cell: ({ row }) => (
@@ -382,8 +415,8 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
                 data={categories
                   .filter((c) => c.name.toLowerCase().includes(catSearch.toLowerCase()))
                   .map((c, i) => {
-                    const total = c.train + c.test + c.val;
-                    return { id: c.name, name: c.name, train: c.train, test: c.test, val: c.val, total, trainPct: Math.round((c.train / total) * 100), colorIdx: i };
+                    const tot = c.train + c.test + c.val;
+                    return { id: c.name, name: c.name, train: c.train, test: c.test, val: c.val, total: tot, trainPct: Math.round((c.train / tot) * 100), colorIdx: i };
                   })}
                 rowIdKey="id"
                 pagination="none"
@@ -393,7 +426,8 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
             )}
           </div>
         </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -866,20 +900,23 @@ function PreviewTab() {
     <div className="flex flex-col h-full bg-[#F8FAFC] min-w-0">
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-5 py-3.5 border-b border-neutral-200 bg-white flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {[
-            { label: "Select Split", value: splitFilter, onChange: setSplitFilter, options: [{ v: "all", l: "All" }, { v: "train", l: "Train" }, { v: "test", l: "Test" }, { v: "val", l: "Validation" }] },
-            { label: "Select Class", value: classFilter, onChange: setClassFilter, options: [{ v: "all", l: "All" }, { v: "benign", l: "Benign" }, { v: "malignant", l: "Malignant" }] },
-            { label: "Select Item Type", value: typeFilter, onChange: setTypeFilter, options: [{ v: "all", l: "All" }, { v: "image", l: "Image" }] },
+            { label: "Split",     value: splitFilter, onChange: setSplitFilter, options: [{ v: "all", l: "All" }, { v: "train", l: "Train" }, { v: "test", l: "Test" }, { v: "val", l: "Validation" }] },
+            { label: "Class",     value: classFilter, onChange: setClassFilter, options: [{ v: "all", l: "All" }, { v: "benign", l: "Benign" }, { v: "malignant", l: "Malignant" }] },
+            { label: "Item Type", value: typeFilter,  onChange: setTypeFilter,  options: [{ v: "all", l: "All" }, { v: "image", l: "Image" }] },
           ].map(({ label, value, onChange, options }) => (
-            <Select key={label} value={value} onValueChange={onChange}>
-              <SelectTrigger className="h-8 w-40 text-[11px]">
-                <SelectValue placeholder={label} />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map(({ v, l }) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div key={label} className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{label}</span>
+              <Select value={value} onValueChange={onChange}>
+                <SelectTrigger className="h-8 w-36 text-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map(({ v, l }) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           ))}
         </div>
         <div className="ml-auto flex items-center gap-1 bg-neutral-100 rounded-md p-0.5">
@@ -975,92 +1012,265 @@ const ANNOTATION_TOOLS = [
   { id: "point",  icon: "•",  label: "Point" },
 ];
 
+type AnnotationStatus = "labelled" | "unlabelled" | "assigned";
+
+const ANNOT_STATUS_STYLE: Record<AnnotationStatus, { bg: string; text: string; border: string; label: string }> = {
+  labelled:   { bg: "bg-[#E5FFF9]",   text: "text-[#00775B]",  border: "border-[#00775B]/30",  label: "Labelled"   },
+  unlabelled: { bg: "bg-neutral-100", text: "text-neutral-500", border: "border-neutral-200",   label: "Unlabelled" },
+  assigned:   { bg: "bg-blue-50",     text: "text-blue-600",    border: "border-blue-200",      label: "Assigned"   },
+};
+
+const ANNOT_STATUS_SEQ: AnnotationStatus[] = ["labelled", "labelled", "unlabelled", "assigned", "labelled", "unlabelled"];
+
+const ANNOTATION_ITEMS = PREVIEW_ITEMS.map((item, i) => ({
+  ...item,
+  annotationStatus: ANNOT_STATUS_SEQ[i % ANNOT_STATUS_SEQ.length],
+}));
+
 function AnnotationTab() {
-  const [activeTool, setActiveTool] = useState("rect");
-  const [activeClass, setActiveClass] = useState("benign");
+  const [selectedId,    setSelectedId]    = useState<number | null>(null);
+  const [splitFilter,   setSplitFilter]   = useState("all");
+  const [classFilter,   setClassFilter]   = useState("all");
+  const [statusFilter,  setStatusFilter]  = useState("all");
+  const [viewMode,      setViewMode]      = useState<"grid" | "list">("grid");
+  const [activeTool,    setActiveTool]    = useState("rect");
+  const [activeClass,   setActiveClass]   = useState("benign");
 
-  return (
-    <div className="flex h-[600px] bg-[#F8FAFC] min-w-0 overflow-hidden">
-      {/* Tool palette */}
-      <div className="w-14 flex-shrink-0 bg-[#021d18] flex flex-col items-center gap-2 pt-4 pb-4">
-        {ANNOTATION_TOOLS.map(({ id, icon, label }) => (
-          <button key={id} title={label} onClick={() => setActiveTool(id)}
-            className={cn("w-9 h-9 rounded-md flex items-center justify-center text-lg transition-colors",
-              activeTool === id ? "bg-[#00775B] text-white" : "text-neutral-400 hover:bg-white/10 hover:text-white")}>
-            {icon}
-          </button>
-        ))}
-        <div className="mt-auto flex flex-col gap-2">
-          <button title="Zoom In"  className="w-9 h-9 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 flex items-center justify-center font-bold text-lg">+</button>
-          <button title="Zoom Out" className="w-9 h-9 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 flex items-center justify-center font-bold text-lg">−</button>
-        </div>
-      </div>
+  const filtered = ANNOTATION_ITEMS.filter((item) => {
+    if (splitFilter  !== "all" && item.split             !== splitFilter)  return false;
+    if (classFilter  !== "all" && item.label             !== classFilter)  return false;
+    if (statusFilter !== "all" && item.annotationStatus  !== statusFilter) return false;
+    return true;
+  });
 
-      {/* Canvas area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Image nav */}
-        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-neutral-200 bg-white text-[11px]">
-          <button className="text-neutral-400 hover:text-neutral-600">← Prev</button>
-          <span className="text-neutral-500 font-mono">IMG_0001.jpg</span>
-          <span className="text-neutral-300">|</span>
-          <span className="text-neutral-400">1 of 2,600</span>
-          <button className="text-neutral-400 hover:text-neutral-600">Next →</button>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="inline-flex items-center h-5 px-2 rounded bg-[#E5FFF9] text-[#00775B] text-[10px] font-semibold">{activeClass}</span>
-            <button className="h-6 px-2.5 rounded bg-[#00775B] text-white text-[10px] font-semibold">Save</button>
-          </div>
-        </div>
-
-        {/* Canvas */}
-        <div className="flex-1 bg-neutral-800 relative overflow-hidden flex items-center justify-center">
-          <div className="relative"
-            style={{ width: 480, height: 480, background: "radial-gradient(circle at 40% 40%, hsl(30, 60%, 20%), hsl(15, 40%, 10%))" }}>
-            {/* Lesion sim */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full opacity-60"
-                style={{ width: "55%", height: "55%", background: "radial-gradient(circle, hsl(10, 55%, 12%), hsl(5, 40%, 7%))" }} />
-            </div>
-            {/* Annotation box simulation */}
-            <div className="absolute border-2 border-[#00775B] rounded"
-              style={{ top: "20%", left: "18%", width: "60%", height: "58%" }}>
-              <span className="absolute -top-5 left-0 bg-[#00775B] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-t">benign</span>
-              <div className="absolute -top-1 -left-1 w-2 h-2 bg-[#00775B] rounded-sm" />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#00775B] rounded-sm" />
-              <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#00775B] rounded-sm" />
-              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#00775B] rounded-sm" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Annotations panel */}
-      <div className="w-56 flex-shrink-0 border-l border-neutral-200 bg-white flex flex-col">
-        <div className="px-4 py-3 border-b border-neutral-100">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Labels</p>
-        </div>
-        <div className="p-3 flex flex-col gap-2">
-          {["benign", "malignant"].map((cls) => (
-            <button key={cls} onClick={() => setActiveClass(cls)}
-              className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-[12px] font-medium transition-colors w-full text-left",
-                activeClass === cls ? "bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20" : "hover:bg-neutral-50 text-neutral-600 border border-transparent")}>
-              <span className="w-3 h-3 rounded-sm flex-shrink-0"
-                style={{ backgroundColor: cls === "benign" ? TEAL : "#F59E0B" }} />
-              {cls}
+  // ── Editor view (opened on image click) ──────────────────────────────────────
+  if (selectedId !== null) {
+    const item = ANNOTATION_ITEMS[selectedId];
+    return (
+      <div className="flex h-full bg-[#F8FAFC] min-w-0 overflow-hidden">
+        {/* Tool palette */}
+        <div className="w-14 flex-shrink-0 bg-[#021d18] flex flex-col items-center gap-2 pt-4 pb-4">
+          {ANNOTATION_TOOLS.map(({ id, icon, label }) => (
+            <button key={id} title={label} onClick={() => setActiveTool(id)}
+              className={cn("w-9 h-9 rounded-md flex items-center justify-center text-lg transition-colors",
+                activeTool === id ? "bg-[#00775B] text-white" : "text-neutral-400 hover:bg-white/10 hover:text-white")}>
+              {icon}
             </button>
           ))}
-        </div>
-        <div className="px-4 py-3 border-b border-t border-neutral-100 mt-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Annotations</p>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between px-2 py-1.5 bg-[#E5FFF9] rounded text-[11px]">
-            <span className="font-medium text-[#00775B]">benign #1</span>
-            <button className="text-neutral-400 hover:text-red-500"><X className="w-3 h-3" /></button>
+          <div className="mt-auto flex flex-col gap-2">
+            <button title="Zoom In"  className="w-9 h-9 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 flex items-center justify-center font-bold text-lg">+</button>
+            <button title="Zoom Out" className="w-9 h-9 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 flex items-center justify-center font-bold text-lg">−</button>
           </div>
         </div>
-        <div className="p-3 border-t border-neutral-100">
-          <button className="w-full h-8 rounded-md bg-[#00775B] text-white text-xs font-semibold">Save &amp; Next →</button>
+
+        {/* Canvas area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-neutral-200 bg-white text-[11px]">
+            <button onClick={() => setSelectedId(null)} className="text-neutral-400 hover:text-[#00775B] transition-colors">← Back</button>
+            <span className="text-neutral-300">|</span>
+            <span className="text-neutral-500 font-mono">IMG_{String(selectedId + 1).padStart(4, "0")}.jpg</span>
+            <span className="text-neutral-300">|</span>
+            <span className="text-neutral-400">{selectedId + 1} of {ANNOTATION_ITEMS.length}</span>
+            <div className="ml-auto flex items-center gap-2">
+              {(() => { const sc = ANNOT_STATUS_STYLE[item.annotationStatus]; return (
+                <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-semibold border", sc.bg, sc.text, sc.border)}>{sc.label}</span>
+              ); })()}
+              <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-semibold",
+                activeClass === "benign" ? "bg-[#E5FFF9] text-[#00775B]" : "bg-amber-50 text-amber-600")}>{activeClass}</span>
+              <button className="h-6 px-2.5 rounded-[4px] bg-[#00775B] text-white text-[10px] font-semibold hover:bg-[#006649] transition-colors">Save</button>
+            </div>
+          </div>
+          <div className="flex-1 bg-neutral-800 relative overflow-hidden flex items-center justify-center">
+            <div className="relative"
+              style={{ width: 480, height: 480, background: `radial-gradient(circle at 40% 40%, hsl(${item.hue}, 60%, 20%), hsl(${item.hue + 20}, 50%, 12%))` }}>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="rounded-full opacity-60"
+                  style={{ width: "55%", height: "55%", background: `radial-gradient(circle, hsl(${item.hue + 5}, 55%, 12%), hsl(${item.hue}, 40%, 7%))` }} />
+              </div>
+              <div className="absolute border-2 border-[#00775B] rounded"
+                style={{ top: "20%", left: "18%", width: "60%", height: "58%" }}>
+                <span className="absolute -top-5 left-0 bg-[#00775B] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-t">{item.label}</span>
+                <div className="absolute -top-1 -left-1 w-2 h-2 bg-[#00775B] rounded-sm" />
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#00775B] rounded-sm" />
+                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#00775B] rounded-sm" />
+                <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#00775B] rounded-sm" />
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Right panel: Labels + Annotations */}
+        <div className="w-56 flex-shrink-0 border-l border-neutral-200 bg-white flex flex-col">
+          <div className="px-4 py-3 border-b border-neutral-100">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Labels</p>
+          </div>
+          <div className="p-3 flex flex-col gap-2">
+            {["benign", "malignant"].map((cls) => (
+              <button key={cls} onClick={() => setActiveClass(cls)}
+                className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-[12px] font-medium transition-colors w-full text-left",
+                  activeClass === cls ? "bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20" : "hover:bg-neutral-50 text-neutral-600 border border-transparent")}>
+                <span className="w-3 h-3 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: cls === "benign" ? TEAL : "#F59E0B" }} />
+                {cls}
+              </button>
+            ))}
+          </div>
+          <div className="px-4 py-3 border-y border-neutral-100 mt-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Annotations</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+            <div className="flex items-center justify-between px-2 py-1.5 bg-[#E5FFF9] rounded-[4px] text-[11px]">
+              <span className="font-medium text-[#00775B]">{item.label} #1</span>
+              <button className="text-neutral-400 hover:text-red-500"><X className="w-3 h-3" /></button>
+            </div>
+          </div>
+          <div className="p-3 border-t border-neutral-100">
+            <button
+              onClick={() => setSelectedId((selectedId + 1) % ANNOTATION_ITEMS.length)}
+              className="w-full h-8 rounded-[4px] bg-[#00775B] text-white text-xs font-semibold hover:bg-[#006649] transition-colors">
+              Save &amp; Next →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Grid view ────────────────────────────────────────────────────────────────
+  return (
+    <div className="flex flex-col h-full bg-[#F8FAFC] min-w-0">
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-neutral-200 bg-white flex-wrap">
+        <div className="flex items-center gap-3">
+          {([
+            { label: "Split",  value: splitFilter,  onChange: setSplitFilter,  options: [{ v: "all", l: "All" }, { v: "train", l: "Train" }, { v: "test", l: "Test" }, { v: "val", l: "Validation" }] },
+            { label: "Class",  value: classFilter,  onChange: setClassFilter,  options: [{ v: "all", l: "All" }, { v: "benign", l: "Benign" }, { v: "malignant", l: "Malignant" }] },
+            { label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ v: "all", l: "All" }, { v: "labelled", l: "Labelled" }, { v: "unlabelled", l: "Unlabelled" }, { v: "assigned", l: "Assigned" }] },
+          ] as const).map(({ label, value, onChange, options }) => (
+            <div key={label} className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{label}</span>
+              <Select value={value} onValueChange={onChange as (v: string) => void}>
+                <SelectTrigger className="h-8 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {options.map(({ v, l }) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+        </div>
+        {/* Status summary pills + view toggle */}
+        <div className="ml-auto flex items-center gap-2">
+          {(["labelled", "unlabelled", "assigned"] as const).map((s) => {
+            const sc = ANNOT_STATUS_STYLE[s];
+            const count = ANNOTATION_ITEMS.filter((i) => i.annotationStatus === s).length;
+            return (
+              <span key={s} className={cn("inline-flex items-center gap-1.5 h-6 px-2.5 rounded-[4px] text-[10px] font-semibold border", sc.bg, sc.text, sc.border)}>
+                {sc.label} <span className="opacity-60">{count}</span>
+              </span>
+            );
+          })}
+          <div className="flex items-center gap-1 bg-neutral-100 rounded-md p-0.5 ml-2">
+            <button onClick={() => setViewMode("grid")}
+              className={cn("p-1.5 rounded transition-colors", viewMode === "grid" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setViewMode("list")}
+              className={cn("p-1.5 rounded transition-colors", viewMode === "list" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
+              <List className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-5">
+        {viewMode === "grid" ? (
+          <div className="grid grid-cols-4 gap-3">
+            {filtered.map((item) => {
+              const sc = ANNOT_STATUS_STYLE[item.annotationStatus];
+              return (
+                <div key={item.id}
+                  onClick={() => setSelectedId(item.id)}
+                  className="relative rounded-[4px] overflow-hidden border border-neutral-200 shadow-sm group cursor-pointer hover:shadow-md hover:border-[#00775B]/40 transition-all">
+                  <div className="aspect-square relative overflow-hidden"
+                    style={{ background: `radial-gradient(circle at 40% 40%, hsl(${item.hue}, 60%, 25%), hsl(${item.hue + 20}, 50%, 12%))` }}>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="rounded-full opacity-60"
+                        style={{ width: "60%", height: "60%", background: `radial-gradient(circle, hsl(${item.hue + 5}, 55%, 15%), hsl(${item.hue}, 40%, 8%))` }} />
+                    </div>
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="h-7 px-3 rounded-[4px] bg-white/90 text-neutral-800 text-[11px] font-semibold">Annotate</span>
+                    </div>
+                    <div className="absolute top-2 left-2">
+                      <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[9px] font-semibold border", sc.bg, sc.text, sc.border)}>
+                        {sc.label}
+                      </span>
+                    </div>
+                    <div className="absolute top-2 right-2">
+                      <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[9px] font-semibold",
+                        item.label === "benign" ? "bg-[#00775B] text-white" : "bg-amber-500 text-white")}>
+                        {item.label}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="px-2.5 py-2 bg-white border-t border-neutral-100">
+                    <p className="text-[10px] font-mono text-neutral-400">IMG_{String(item.id + 1).padStart(4, "0")}.jpg</p>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-[9px] uppercase tracking-wide text-neutral-400">{item.split}</span>
+                      <span className="text-[9px] text-neutral-300">224×224</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <DataTable<{ id: number; idx: number; label: string; split: string; annotationStatus: AnnotationStatus }>
+            columns={[
+              { id: "idx",      header: "#",        accessorKey: "idx",
+                cell: ({ row }) => <span className="font-mono text-[10px] text-neutral-400">{row.idx}</span> },
+              { id: "filename", header: "Filename", accessorKey: "id",
+                cell: ({ row }) => (
+                  <button onClick={() => setSelectedId(row.id)}
+                    className="font-mono text-[11px] text-[#00775B] hover:underline cursor-pointer">
+                    IMG_{String(row.idx).padStart(4, "0")}.jpg
+                  </button>
+                ) },
+              { id: "class",    header: "Class",    accessorKey: "label",
+                cell: ({ row }) => (
+                  <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-semibold",
+                    row.label === "benign" ? "bg-[#E5FFF9] text-[#00775B]" : "bg-amber-50 text-amber-700")}>
+                    {row.label}
+                  </span>
+                ) },
+              { id: "status",   header: "Status",   accessorKey: "annotationStatus",
+                cell: ({ row }) => {
+                  const sc = ANNOT_STATUS_STYLE[row.annotationStatus];
+                  return (
+                    <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-semibold border", sc.bg, sc.text, sc.border)}>
+                      {sc.label}
+                    </span>
+                  );
+                } },
+              { id: "split",    header: "Split",    accessorKey: "split",
+                cell: ({ row }) => <span className="text-[11px] text-neutral-500 capitalize">{row.split}</span> },
+              { id: "dims",     header: "Dimensions", accessorKey: "id",
+                cell: () => <span className="font-mono text-[10px] text-neutral-400">224×224</span> },
+              { id: "action",   header: "",           accessorKey: "id",
+                cell: ({ row }) => (
+                  <button onClick={() => setSelectedId(row.id)}
+                    className="h-6 px-2.5 rounded-[4px] bg-[#00775B]/10 text-[#00775B] text-[10px] font-semibold hover:bg-[#00775B]/20 transition-colors">
+                    Annotate
+                  </button>
+                ) },
+            ]}
+            data={filtered.map((item) => ({ ...item, idx: item.id + 1 }))}
+            rowIdKey="id"
+            pagination="client"
+            pageSize={24}
+            showRowCue={false}
+          />
+        )}
       </div>
     </div>
   );
@@ -1267,141 +1477,113 @@ const IMAGE_GEN_STYLES = ["Realistic", "Clinical", "Microscopic", "Artistic", "S
 type GenImage = { id: number; selected: boolean; colors: string[] };
 
 function ImageGenerationTab() {
-  const [prompt,      setPrompt]      = useState("");
-  const [model,       setModel]       = useState("stable-diffusion-xl");
-  const [count,       setCount]       = useState("12");
-  const [resolution,  setResolution]  = useState("224");
-  const [style,       setStyle]       = useState("Realistic");
-  const [genClass,    setGenClass]    = useState("benign");
-  const [genSplit,    setGenSplit]    = useState("train");
-  const [isGenerating,setIsGenerating]= useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [cfgScale,    setCfgScale]    = useState(7);
-  const [steps,       setSteps]       = useState(30);
-  const [generated,   setGenerated]   = useState<GenImage[]>([]);
-  const [allSelected, setAllSelected] = useState(false);
+  const [prompt,       setPrompt]       = useState("");
+  const [newVersion,   setNewVersion]   = useState(true);
+  const [version,      setVersion]      = useState("v1.1");
+  const [model,        setModel]        = useState("stable-diffusion-xl");
+  const [style,        setStyle]        = useState("Realistic");
+  const [genClass,     setGenClass]     = useState("benign");
+  const [genSplit,     setGenSplit]      = useState("train");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [previewImg,   setPreviewImg]   = useState<GenImage | null>(null);
+  const [origIndex,    setOrigIndex]    = useState(0);
+
+  const origImages = GEN_PLACEHOLDER_COLORS;
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
     setIsGenerating(true);
     setTimeout(() => {
-      const imgs: GenImage[] = GEN_PLACEHOLDER_COLORS.slice(0, parseInt(count)).map((colors, i) => ({
-        id: i, selected: false, colors,
-      }));
-      setGenerated(imgs);
+      setPreviewImg({ id: 0, selected: false, colors: GEN_PLACEHOLDER_COLORS[Math.floor(Math.random() * GEN_PLACEHOLDER_COLORS.length)] });
       setIsGenerating(false);
-    }, 2000);
+    }, 1800);
   };
 
-  const toggleImageSelect = (id: number) =>
-    setGenerated((prev) => prev.map((img) => img.id === id ? { ...img, selected: !img.selected } : img));
-
-  const toggleAll = () => {
-    setAllSelected(!allSelected);
-    setGenerated((prev) => prev.map((img) => ({ ...img, selected: !allSelected })));
-  };
-
-  const selectedCount = generated.filter((g) => g.selected).length;
+  const prevOrig = () => setOrigIndex((i) => (i - 1 + origImages.length) % origImages.length);
+  const nextOrig = () => setOrigIndex((i) => (i + 1) % origImages.length);
+  const origColors = origImages[origIndex];
 
   return (
-    <div className="p-6 bg-[#F8FAFC] flex flex-col gap-5 min-w-0">
+    <div className="flex h-full min-w-0 bg-[#F8FAFC]">
 
-      {/* ── Configuration panel ── */}
-      <div className="grid grid-cols-3 gap-5">
-
-        {/* Prompt */}
-        <div className="col-span-2 flex flex-col gap-0">
-          <Card className="p-5 flex flex-col gap-4 h-full">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#00775B]" />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Generation Prompt</h3>
-            </div>
-            <div className="flex flex-col gap-1.5 flex-1">
-              <Label className="text-xs text-neutral-600">Describe the images you want to generate</Label>
-              <Textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="e.g. Close-up dermoscopy image of a benign melanocytic nevus with uniform pigmentation and regular border, clinical photography..."
-                className="flex-1 min-h-[100px] text-sm resize-none"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Negative Prompt <span className="text-neutral-400">(optional)</span></Label>
-              <Input placeholder="e.g. blurry, low quality, artifacts, text, watermark" className="h-9 text-sm" />
-            </div>
-          </Card>
+      {/* ── Left: Config panel ── */}
+      <div className="w-72 shrink-0 border-r border-neutral-200 bg-white flex flex-col overflow-y-auto">
+        {/* Header */}
+        <div className="px-5 pt-5 pb-4 border-b border-neutral-100">
+          <div className="flex items-center gap-2 mb-0.5">
+            <Sparkles className="w-4 h-4 text-[#00775B]" />
+            <h3 className="text-[13px] font-bold text-neutral-900">Generate Your Image</h3>
+          </div>
+          <p className="text-[11px] text-neutral-400">Create synthetic training data with AI</p>
         </div>
 
-        {/* Settings */}
-        <div className="flex flex-col gap-3">
-          <Card className="p-4 flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Settings2 className="w-4 h-4 text-neutral-400" />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Settings</h3>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Model</Label>
-              <Select value={model} onValueChange={setModel}>
-                <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {IMAGE_GEN_MODELS.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      <span className="font-medium">{m.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-neutral-400">{IMAGE_GEN_MODELS.find(m => m.id === model)?.desc}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-neutral-600">Count</Label>
-                <Select value={count} onValueChange={setCount}>
-                  <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["4", "8", "12", "16", "24", "32"].map((n) => (
-                      <SelectItem key={n} value={n}>{n} images</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-neutral-600">Resolution</Label>
-                <Select value={resolution} onValueChange={setResolution}>
-                  <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["224", "256", "512", "768", "1024"].map((r) => (
-                      <SelectItem key={r} value={r}>{r}×{r}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Visual Style</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {IMAGE_GEN_STYLES.map((s) => (
-                  <button key={s} onClick={() => setStyle(s)}
-                    className={cn("h-6 px-2.5 rounded-full text-[10px] font-medium border transition-all",
-                      style === s
-                        ? "bg-[#00775B] text-white border-[#00775B]"
-                        : "bg-white text-neutral-500 border-neutral-200 hover:border-[#00775B]/40")}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </Card>
+        <div className="flex flex-col gap-5 p-5 flex-1">
 
-          <Card className="p-4 flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-neutral-400" />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Class Assignment</h3>
+          {/* New Version toggle + version field */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-[12px] font-semibold text-neutral-700">New Version</Label>
+              <Switch checked={newVersion} onCheckedChange={setNewVersion} />
             </div>
+            {newVersion && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[11px] font-medium text-neutral-500">Version Name</Label>
+                <Input
+                  value={version}
+                  onChange={(e) => setVersion(e.target.value)}
+                  className="h-9 font-mono text-[12px] bg-white"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Model */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Model</label>
+            <Select value={model} onValueChange={setModel}>
+              <SelectTrigger className="h-8 text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {IMAGE_GEN_MODELS.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-neutral-400">{IMAGE_GEN_MODELS.find(m => m.id === model)?.desc}</p>
+          </div>
+
+          {/* Style chips */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Style</label>
+            <div className="flex flex-wrap gap-1.5">
+              {IMAGE_GEN_STYLES.map((s) => (
+                <button key={s} onClick={() => setStyle(s)}
+                  className={cn("h-6 px-2.5 rounded-full text-[10px] font-medium border transition-all",
+                    style === s
+                      ? "bg-[#00775B] text-white border-[#00775B]"
+                      : "bg-white text-neutral-500 border-neutral-200 hover:border-[#00775B]/40")}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Prompt */}
+          <div className="flex flex-col gap-1.5 flex-1">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Prompt</label>
+            <Textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe the image to generate…"
+              className="resize-none text-[12px] min-h-[100px] flex-1"
+            />
+          </div>
+
+          {/* Class + Split */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Assign to Class</Label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Class</label>
               <Select value={genClass} onValueChange={setGenClass}>
-                <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 text-[11px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="benign">Benign</SelectItem>
                   <SelectItem value="malignant">Malignant</SelectItem>
@@ -1409,9 +1591,9 @@ function ImageGenerationTab() {
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-neutral-600">Add to Split</Label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Split</label>
               <Select value={genSplit} onValueChange={setGenSplit}>
-                <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 text-[11px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="train">Train</SelectItem>
                   <SelectItem value="val">Validation</SelectItem>
@@ -1419,136 +1601,129 @@ function ImageGenerationTab() {
                 </SelectContent>
               </Select>
             </div>
-          </Card>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="p-5 border-t border-neutral-100 flex flex-col gap-2">
+          <button
+            onClick={handleGenerate}
+            disabled={!prompt.trim() || isGenerating}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 h-9 rounded-[6px] text-[12px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed",
+              isGenerating ? "bg-[#006649]" : "bg-[#00775B] hover:bg-[#006649]"
+            )}>
+            {isGenerating
+              ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Generating…</>
+              : <><Wand2 className="w-3.5 h-3.5" /> Generate Preview</>}
+          </button>
+          <button
+            disabled={!previewImg || isGenerating}
+            className="w-full flex items-center justify-center gap-2 h-9 rounded-[6px] text-[12px] font-semibold text-[#00775B] border border-[#00775B]/30 bg-[#00775B]/5 hover:bg-[#00775B]/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+            <Plus className="w-3.5 h-3.5" /> Generate Samples
+          </button>
         </div>
       </div>
 
-      {/* Advanced settings (collapsible) */}
-      <button onClick={() => setShowAdvanced(!showAdvanced)}
-        className="flex items-center gap-2 text-[11px] font-medium text-neutral-500 hover:text-neutral-700 transition-colors self-start">
-        <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAdvanced && "rotate-90")} />
-        Advanced Settings
-      </button>
-      {showAdvanced && (
-        <Card className="p-5 grid grid-cols-2 gap-5">
-          {[
-            { label: "CFG Scale", desc: "Higher = more prompt-adherent", value: cfgScale, min: 1, max: 20, step: 0.5, onChange: setCfgScale },
-            { label: "Sampling Steps", desc: "More steps = higher quality, slower", value: steps, min: 10, max: 100, step: 5, onChange: setSteps },
-          ].map(({ label, desc, value, min, max, step, onChange }) => (
-            <div key={label} className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-xs text-neutral-700">{label}</Label>
-                  <p className="text-[10px] text-neutral-400">{desc}</p>
-                </div>
-                <span className="text-[13px] font-bold font-mono text-[#00775B]">{value}</span>
-              </div>
-              <Slider value={[value]} onValueChange={([v]) => onChange(v)} min={min} max={max} step={step}
-                className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
-            </div>
-          ))}
-        </Card>
-      )}
+      {/* ── Right: image panels ── */}
+      <div className="flex-1 grid grid-cols-2 gap-0 min-w-0">
 
-      {/* Generate button */}
-      <div className="flex items-center gap-3">
-        <button onClick={handleGenerate} disabled={!prompt.trim() || isGenerating}
-          className={cn(
-            "flex items-center gap-2 h-10 px-6 rounded-md text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-            isGenerating ? "bg-[#006649]" : "bg-[#00775B] hover:bg-[#006649]"
-          )}>
-          {isGenerating
-            ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating…</>
-            : <><Wand2 className="w-4 h-4" /> Generate {count} Images</>}
-        </button>
-        {generated.length > 0 && (
-          <p className="text-[11px] text-neutral-400">
-            {generated.length} images generated · <span className="text-[#00775B] font-medium">{selectedCount} selected</span>
-          </p>
-        )}
+        {/* Original Image */}
+        <div className="flex flex-col border-r border-neutral-200">
+          <div className="px-5 py-3 border-b border-neutral-200 bg-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-semibold text-neutral-800">Original Image</span>
+              <span className="text-[10px] font-mono text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
+                {origIndex + 1} / {origImages.length}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={prevOrig} className="w-7 h-7 flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button onClick={nextOrig} className="w-7 h-7 flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center bg-[#F1F5F9] p-8">
+            <div className="relative w-full max-w-[320px] aspect-square rounded-lg overflow-hidden shadow-md border border-neutral-200">
+              <div className="w-full h-full"
+                style={{ background: `radial-gradient(circle at 45% 40%, ${origColors[0]}, ${origColors[1]})` }}>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="rounded-full opacity-40"
+                    style={{ width: "55%", height: "55%", background: `radial-gradient(circle, rgba(255,255,255,0.08), transparent)` }} />
+                </div>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black/60 to-transparent">
+                <p className="text-[10px] font-mono text-white/80">IMG_{String(origIndex + 1).padStart(4, "0")}.jpg</p>
+                <span className={cn(
+                  "text-[9px] font-semibold px-1.5 py-0.5 rounded-full",
+                  origIndex % 2 === 0 ? "bg-amber-500/80 text-white" : "bg-[#00775B]/80 text-white"
+                )}>
+                  {origIndex % 2 === 0 ? "malignant" : "benign"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Generated Image */}
+        <div className="flex flex-col">
+          <div className="px-5 py-3 border-b border-neutral-200 bg-white flex items-center justify-between">
+            <span className="text-[12px] font-semibold text-neutral-800">Generated Image</span>
+            {previewImg && (
+              <div className="flex items-center gap-1.5">
+                <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-neutral-200 text-[11px] font-medium text-neutral-500 hover:bg-neutral-50 transition-colors">
+                  <Download className="w-3 h-3" /> Save
+                </button>
+                <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-[#00775B] text-white text-[11px] font-semibold hover:bg-[#006649] transition-colors">
+                  <Plus className="w-3 h-3" /> Add to Dataset
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex-1 flex items-center justify-center bg-[#F1F5F9] p-8">
+            {isGenerating ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-[#00775B]/10 flex items-center justify-center">
+                  <RefreshCw className="w-6 h-6 text-[#00775B] animate-spin" />
+                </div>
+                <p className="text-[12px] font-medium text-neutral-500">Generating image…</p>
+              </div>
+            ) : previewImg ? (
+              <div className="relative w-full max-w-[320px] aspect-square rounded-lg overflow-hidden shadow-md border border-[#00775B]/30">
+                <div className="w-full h-full"
+                  style={{ background: `radial-gradient(circle at 55% 45%, ${previewImg.colors[0]}, ${previewImg.colors[1]})` }}>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="rounded-full opacity-40"
+                      style={{ width: "55%", height: "55%", background: `radial-gradient(circle, rgba(255,255,255,0.08), transparent)` }} />
+                  </div>
+                </div>
+                <div className="absolute top-2 right-2">
+                  <span className="text-[9px] font-bold font-mono bg-[#00775B] text-white px-2 py-0.5 rounded-full">{version}</span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black/60 to-transparent">
+                  <p className="text-[10px] font-mono text-white/80">gen_001.png</p>
+                  <span className={cn(
+                    "text-[9px] font-semibold px-1.5 py-0.5 rounded-full",
+                    genClass === "malignant" ? "bg-amber-500/80 text-white" : "bg-[#00775B]/80 text-white"
+                  )}>{genClass}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center">
+                  <Wand2 className="w-6 h-6 text-neutral-300" />
+                </div>
+                <p className="text-[12px] font-medium text-neutral-400">Enter a prompt and click</p>
+                <p className="text-[11px] text-neutral-300">Generate Preview</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Generated images */}
-      {generated.length > 0 && (
-        <Card className="overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <h3 className="text-[13px] font-semibold text-neutral-800">Generated Images</h3>
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#00775B] text-white text-[10px] font-bold">
-                {generated.length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={toggleAll}
-                className="text-[11px] font-medium text-neutral-500 hover:text-neutral-700 transition-colors">
-                {allSelected ? "Deselect All" : "Select All"}
-              </button>
-            </div>
-          </div>
-          <div className="p-5 grid grid-cols-6 gap-3">
-            {generated.map((img) => (
-              <div key={img.id}
-                onClick={() => toggleImageSelect(img.id)}
-                className={cn("relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all",
-                  img.selected ? "border-[#00775B] shadow-md shadow-[#00775B]/20" : "border-transparent hover:border-neutral-300")}>
-                <div className="w-full h-full"
-                  style={{ background: `radial-gradient(circle at 45% 40%, ${img.colors[0]}, ${img.colors[1]})` }}>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="rounded-full opacity-50"
-                      style={{ width: "55%", height: "55%", background: `radial-gradient(circle, rgba(255,255,255,0.05), transparent)` }} />
-                  </div>
-                </div>
-                {img.selected && (
-                  <div className="absolute inset-0 bg-[#00775B]/15 flex items-start justify-end p-1.5">
-                    <div className="w-5 h-5 rounded-full bg-[#00775B] flex items-center justify-center shadow">
-                      <CheckCircle className="w-3 h-3 text-white" />
-                    </div>
-                  </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 px-1.5 py-1 bg-black/40">
-                  <p className="text-[9px] font-mono text-white/80">gen_{String(img.id + 1).padStart(3, "0")}.png</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Action bar */}
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-neutral-100 bg-neutral-50/50">
-            <div className="flex items-center gap-2">
-              <span className={cn("text-[12px]", selectedCount > 0 ? "text-neutral-700 font-medium" : "text-neutral-400")}>
-                {selectedCount > 0 ? `${selectedCount} image${selectedCount > 1 ? "s" : ""} selected` : "Select images to add to dataset"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button disabled={selectedCount === 0}
-                className="flex items-center gap-2 h-8 px-4 rounded-md border border-neutral-200 text-[12px] font-medium text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                <Download className="w-3.5 h-3.5" /> Download
-              </button>
-              <button disabled={selectedCount === 0}
-                className="flex items-center gap-2 h-8 px-4 rounded-md border border-red-200 text-[12px] font-medium text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                <Trash2 className="w-3.5 h-3.5" /> Discard
-              </button>
-              <button disabled={selectedCount === 0}
-                className="flex items-center gap-2 h-8 px-4 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#006649] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                <Plus className="w-3.5 h-3.5" /> Add to Dataset
-              </button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Empty prompt state */}
-      {generated.length === 0 && !isGenerating && (
-        <Card className="py-16 flex flex-col items-center gap-3">
-          <div className="w-14 h-14 rounded-full bg-[#00775B]/10 flex items-center justify-center">
-            <Wand2 className="w-7 h-7 text-[#00775B]" />
-          </div>
-          <p className="text-[13px] font-semibold text-neutral-600">Generate synthetic training data</p>
-          <p className="text-[12px] text-neutral-400 text-center max-w-sm">
-            Use AI to create additional labelled images for your dataset. Write a detailed prompt and click Generate.
-          </p>
-        </Card>
-      )}
     </div>
   );
 }
@@ -1579,9 +1754,6 @@ export function DatasetDetail({ dataset, onBack }: DatasetDetailProps) {
           </button>
           <ChevronRight className="w-3.5 h-3.5 text-neutral-300" />
           <span className="text-[12px] font-semibold text-neutral-800">{dataset.name}</span>
-          <span className="inline-flex items-center h-5 px-2 rounded-full bg-neutral-100 text-neutral-500 text-[10px] font-mono font-semibold ml-1">
-            {DETAIL.version}
-          </span>
         </div>
 
         {/* Horizontal tab bar */}

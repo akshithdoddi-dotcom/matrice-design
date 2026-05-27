@@ -97,7 +97,7 @@ export function AppLayout({
       footerNavItems={footerNavItems}
       activePage={shellActivePage}
       onPageChange={handlePageChange}
-      navGroupLabel={inProject ? projectName : undefined}
+      navGroupLabel={undefined}
       breadcrumb={breadcrumb}
       platformLabel="Training Platform"
       activePlatformId="training"

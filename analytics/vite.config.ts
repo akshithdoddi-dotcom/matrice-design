@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 const trainingRoot = path.resolve(__dirname, '../training/src')
 const marketplaceRoot = path.resolve(__dirname, '../marketplace/src')
 const supportRoot = path.resolve(__dirname, '../support/src')
+const support2Root = path.resolve(__dirname, '../support2/src')
 const feCommonRoot = path.resolve(__dirname, '../fe-common/src')
 const internalRoot = path.resolve(__dirname, '../internal/src')
 const analyticsRoot = path.resolve(__dirname, './src')
@@ -42,6 +43,9 @@ function crossAppAliasPlugin() {
       }
       if (id.startsWith(supportRoot + '/')) {
         return { code: code.replace(/(['"])@\//g, '$1@support/'), map: null }
+      }
+      if (id.startsWith(support2Root + '/')) {
+        return { code: code.replace(/(['"])@\//g, '$1@support2/'), map: null }
       }
       if (id.startsWith(feCommonRoot + '/')) {
         return { code: code.replace(/(['"])@\//g, '$1@fe-common/'), map: null }
@@ -132,6 +136,7 @@ export default defineConfig({
       '@training': trainingRoot,
       '@marketplace': marketplaceRoot,
       '@support': supportRoot,
+      '@support2': support2Root,
       '@fe-common': feCommonRoot,
       '@internal': internalRoot,
     },
@@ -161,6 +166,7 @@ export default defineConfig({
               if (importer.startsWith(trainingRoot))    root = trainingRoot
               if (importer.startsWith(marketplaceRoot)) root = marketplaceRoot
               if (importer.startsWith(supportRoot))     root = supportRoot
+              if (importer.startsWith(support2Root))    root = support2Root
               if (importer.startsWith(feCommonRoot))    root = feCommonRoot
               if (importer.startsWith(internalRoot))    root = internalRoot
               if (!root) return undefined

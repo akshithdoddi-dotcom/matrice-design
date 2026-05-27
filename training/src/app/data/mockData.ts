@@ -4286,6 +4286,12 @@ export const MOCK_PROJECTS: TrainingProject[] = [
     country: "United States", storageType: "Matrice", supportedDevices: "Nvidia GPU",
   },
   {
+    id: "p000", name: "Smart Checkout Monitor", type: "deploy", inputType: "Video",
+    outputType: "detection", industry: "Retail", tags: ["checkout", "live"],
+    status: "complete", createdAt: "2026-05-12", computeType: "Matrice",
+    country: "United States", storageType: "Matrice", supportedDevices: "Nvidia GPU",
+  },
+  {
     id: "p002", name: "Parking Lot Classifier", type: "build", inputType: "Image",
     outputType: "classification", industry: "Automotive", tags: ["parking", "cv"],
     status: "training", createdAt: "2026-04-22", computeType: "AWS",

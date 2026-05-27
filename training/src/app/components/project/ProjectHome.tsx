@@ -1,6 +1,6 @@
 import {
   Calendar, Cpu, Globe, Tag, Database, Rocket,
-  ArrowUpRight, TrendingUp,
+  ArrowUpRight, TrendingUp, ArrowRight, Building2,
 } from "lucide-react";
 import { TrainingProject, MOCK_DATASETS, MOCK_TRAINING_JOBS, MOCK_DEPLOYMENTS } from "@/app/data/mockData";
 import { ProjectPage } from "@/app/components/layout/AppLayout";
@@ -258,42 +258,55 @@ export function ProjectHome({ project, onNavigate, onOpenDataset, onOpenJob, onO
     <div className="flex flex-col gap-6 p-6">
 
       {/* Project header */}
-      <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-xl font-bold text-neutral-900 truncate">{project.name}</h1>
-              <StatusCapsule status={STATUS_KEY[project.status]} label={STATUS_LABEL[project.status]} />
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-[11px] text-neutral-500">
-              <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />Created {project.createdAt}</span>
-              {project.country && <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{project.country}</span>}
-              <span className="flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5" />{project.computeType}</span>
-            </div>
-            {project.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                <Tag className="w-3 h-3 text-neutral-400 mt-0.5 shrink-0" />
-                {project.tags.map((tag) => (
-                  <span key={tag} className="px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded-full text-[10px] font-medium">{tag}</span>
-                ))}
-              </div>
+      <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm p-6 flex items-start justify-between gap-6">
+
+        {/* Left: name, meta, tags */}
+        <div className="flex flex-col gap-3 min-w-0 flex-1">
+          {/* Name */}
+          <h1 className="text-xl font-bold text-neutral-900 truncate">{project.name}</h1>
+
+          {/* Meta row */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-500">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 shrink-0" />Created {project.createdAt}
+            </span>
+            {project.country && (
+              <span className="flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 shrink-0" />{project.country}
+              </span>
             )}
-          </div>
-          <div className="flex flex-col gap-2 shrink-0 items-end">
-            <span className={cn(
-              "text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-[4px]",
-              project.type === "build" ? "bg-[#00775B]/10 text-[#00775B]" : "bg-[#0284C7]/10 text-[#0284C7]",
-            )}>
-              {project.type}
+            <span className="flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 shrink-0" />{project.industry}
             </span>
-            <span className="text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-3 py-1 rounded-[4px] capitalize">
-              {project.outputType.replace("_", " ")}
-            </span>
-            <span className="text-[10px] text-neutral-400 bg-neutral-50 px-3 py-1 rounded-[4px]">
-              Input: {project.inputType}
+            <span className="flex items-center gap-1.5 font-medium text-neutral-600">
+              {project.inputType}
+              <ArrowRight className="w-3 h-3 text-neutral-300" />
+              <span className="capitalize">{project.outputType.replace("_", " ")}</span>
             </span>
           </div>
+
+          {/* Tags */}
+          {project.tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Tag className="w-3 h-3 text-neutral-300 shrink-0" />
+              {project.tags.map((tag) => (
+                <span key={tag} className="px-2 py-0.5 bg-neutral-100 text-neutral-500 rounded-full text-[10px] font-medium">{tag}</span>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Right: status + type badges */}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <StatusCapsule status={STATUS_KEY[project.status]} label={STATUS_LABEL[project.status]} />
+          <span className={cn(
+            "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-[4px]",
+            project.type === "build" ? "bg-[#00775B]/10 text-[#00775B]" : "bg-[#0284C7]/10 text-[#0284C7]",
+          )}>
+            {project.type}
+          </span>
+        </div>
+
       </div>
 
       {/* Stat cards */}
@@ -308,27 +321,6 @@ export function ProjectHome({ project, onNavigate, onOpenDataset, onOpenJob, onO
         <DeploymentsPanel  onNavigate={onNavigate} onOpenDeployment={onOpenDeployment} />
       </div>
 
-      {/* Config details */}
-      <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm p-6">
-        <h2 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700 mb-4">Configuration</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { label: "Compute Type",      value: project.computeType },
-            { label: "Storage Type",      value: project.storageType ?? "—" },
-            { label: "Supported Devices", value: project.supportedDevices ?? "—" },
-            { label: "Country",           value: project.country ?? "—" },
-            { label: "Industry",          value: project.industry },
-            { label: "Input Type",        value: project.inputType },
-            { label: "Output Type",       value: project.outputType.replace("_", " ") },
-            { label: "Project Type",      value: project.type },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">{label}</p>
-              <p className="text-sm font-semibold text-neutral-800 mt-1 capitalize">{value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
 
     </div>
   );

@@ -256,12 +256,6 @@ function UploadDatasetTab() {
 function AllDatasetsTab({ onView }: { onView: (d: Dataset) => void }) {
   return (
     <div>
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100">
-        <p className="text-xs text-neutral-400">{MOCK_PROJECT_DATASETS.length} attached datasets</p>
-        <button className="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-md text-white" style={{ backgroundColor: TEAL }}>
-          <Plus className="w-3.5 h-3.5" /> Add Dataset
-        </button>
-      </div>
       <DataGrid<Dataset>
         columns={[
           { key: "id",        header: "ID",                width: "90px",  render: (r, h) => <MonoCell hovered={h} isPrimary color="#64748B" hoveredColor="#0F172A" fontSize={11}>{r.id}</MonoCell> },

@@ -36,10 +36,11 @@ interface Props {
 }
 
 const PLATFORMS = [
-  { id: "vms",       name: "Matrice VMS",       shortcut: "1", icon: MonitorPlay },
-  { id: "analytics", name: "Matrice Analytics", shortcut: "2", icon: BarChart3, active: true },
-  { id: "support",   name: "Matrice Support",   shortcut: "3", icon: Headphones },
-  { id: "internal",  name: "Matrice Internal",  shortcut: "4", icon: Shield },
+  { id: "vms",       name: "Matrice VMS",         shortcut: "1", icon: MonitorPlay, url: null },
+  { id: "analytics", name: "Matrice Analytics",   shortcut: "2", icon: BarChart3,   url: "http://localhost:5177", active: true },
+  { id: "support",   name: "Matrice Support",     shortcut: "3", icon: Headphones,  url: "http://localhost:5174" },
+  { id: "support2",  name: "Support Platform 2",  shortcut: "4", icon: Headphones,  url: "http://localhost:5175" },
+  { id: "internal",  name: "Matrice Internal",    shortcut: "5", icon: Shield,      url: null },
 ];
 
 const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType; badge?: number }[] = [
@@ -119,7 +120,12 @@ export const AppSidebar = ({ activePage, onPageChange }: Props) => {
                   Platforms
                 </DropdownMenuLabel>
                 {PLATFORMS.map((p) => (
-                  <DropdownMenuItem key={p.id} className="gap-2 p-2 cursor-pointer">
+                  <DropdownMenuItem
+                    key={p.id}
+                    className="gap-2 p-2 cursor-pointer"
+                    disabled={!p.url}
+                    onClick={() => p.url && window.open(p.url, "_blank")}
+                  >
                     <div className="flex size-6 items-center justify-center rounded-sm border bg-muted">
                       <p.icon className="size-3.5 shrink-0" />
                     </div>
