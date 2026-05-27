@@ -311,13 +311,6 @@ export function CameraLogsPage() {
           toolbar
           pagination="client"
           pageSize={15}
-          cardTitle={
-            <span className="text-[14px] font-semibold text-gray-900">
-              {hasFilters
-                ? `Filtered · ${filtered.length} entries`
-                : `All Camera Logs · ${ALL_CAM_LOGS.length} entries`}
-            </span>
-          }
           emptyState={{
             title: "No logs found",
             description: "Try adjusting your filters.",
