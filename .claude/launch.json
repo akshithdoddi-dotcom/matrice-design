@@ -11,14 +11,14 @@
     {
       "name": "Training Dev Server",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:training"],
+      "runtimeArgs": ["run", "dev:standalone:training"],
       "port": 5175
     },
     {
       "name": "Support Dev Server",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 5173,
+      "runtimeArgs": ["run", "dev:standalone:support"],
+      "port": 5174,
       "autoPort": true
     }
   ]

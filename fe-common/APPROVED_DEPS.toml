@@ -1,0 +1,682 @@
+# Approved Dependencies — Frontend (single org-wide source of truth)
+#
+# Single source of truth for org-wide dependency approval.
+# Consumed by go-/py-/fe-dependency-approval.yml workflows.
+#
+# Adding a dep: open PR to matrice-ai/.github editing this file.
+# Reviewers: Abhishek + Pratik + Nikita + Tech Head per CODEOWNERS
+
+[meta]
+policy = "strict"
+enforce_versions = true
+generated_date = "2026-05-05"
+
+[packages."@emotion/react"]
+versions = ["11.14.0"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."@emotion/styled"]
+versions = ["11.14.1"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."@hookform/resolvers"]
+versions = ["5.2.2"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+[packages."@matrice-ai/ui"]
+# Wildcard: any version is auto-approved. Internal UI library — consumers track
+# the latest as it ships from fe-common's own approval flow. Reason field already
+# noted "Unpinned — consumers track latest"; this finally honours that intent in
+# the approval workflow.
+versions = ["*"]
+reason = "Internal package — any version allowed (managed by fe-common's own approval flow)"
+approved_by = "dipendra"
+
+[packages."@microsoft/fetch-event-source"]
+versions = ["2.0.1"]
+reason = "Used by: fe-analytics"
+approved_by = "dipendra"
+
+[packages."@mui/icons-material"]
+versions = ["7.3.9"]
+reason = "Used by: fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard. fe-internal"
+approved_by = "dipendra"
+
+[packages."@mui/material"]
+versions = ["7.3.9"]
+reason = "Used by: fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard. fe-internal"
+approved_by = "dipendra"
+
+[packages."@mui/system"]
+versions = ["7.3.9"]
+reason = "Used by: fe-streaming, fe-analytics, fe-support, fe-dashboard. fe-internal"
+approved_by = "dipendra"
+
+[packages."@mui/x-data-grid-pro"]
+versions = ["8.28.2"]
+reason = "Used by: fe-streaming, fe-analytics, fe-support, fe-dashboard. fe-internal"
+approved_by = "dipendra"
+
+[packages."@mui/x-date-pickers"]
+versions = ["8.27.2"]
+reason = "Used by: fe-streaming, fe-analytics, fe-support, fe-dashboard. fe-internal"
+approved_by = "dipendra"
+
+[packages."@mui/x-license"]
+versions = ["8.26.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-support, fe-dashboard. fe-internal"
+approved_by = "dipendra"
+
+[packages."@nivo/annotations"]
+versions = ["0.99.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+[packages."@nivo/axes"]
+versions = ["0.99.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+[packages."@nivo/bar"]
+versions = ["0.99.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+[packages."@nivo/legends"]
+versions = ["0.99.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+[packages."@nivo/line"]
+versions = ["0.99.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+[packages."@nivo/pie"]
+versions = ["0.99.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+[packages."@nivo/scatterplot"]
+versions = ["0.99.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-avatar"]
+versions = ["1.1.11"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-dialog"]
+versions = ["1.1.15"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-dropdown-menu"]
+versions = ["2.1.16"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-popover"]
+versions = ["1.1.15"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-separator"]
+versions = ["1.1.8"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-slot"]
+versions = ["1.2.4"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-tabs"]
+versions = ["1.1.13"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-toast"]
+versions = ["1.2.15"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@radix-ui/react-tooltip"]
+versions = ["1.2.8"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@reduxjs/toolkit"]
+versions = ["2.11.2"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-annotator, fe-dashboard. fe-support"
+approved_by = "dipendra"
+
+[packages."@rollup/rollup-linux-x64-gnu"]
+versions = ["4.60.2"]
+reason = "Used by: fe-internal (optionalDependency — npm per-platform native binary for rollup; pulled in transitively by vite/next build). OSV-clean."
+approved_by = "<reviewer>"
+
+[packages."@rollup/rollup-linux-x64-musl"]
+versions = ["4.60.2"]
+reason = "Used by: fe-internal (optionalDependency — npm per-platform native binary for rollup; pulled in transitively by vite/next build). OSV-clean."
+approved_by = "<reviewer>"
+
+[packages."@sentry/nextjs"]
+versions = ["10.47.0"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-support, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."@tailwindcss/oxide-linux-x64-gnu"]
+versions = ["4.2.1"]
+reason = "Used by: fe-internal (optionalDependency — Rust-based oxide native engine binary for tailwindcss@4.2.1). OSV-clean."
+approved_by = "<reviewer>"
+
+[packages."@tailwindcss/oxide-linux-x64-musl"]
+versions = ["4.2.1"]
+reason = "Used by: fe-internal (optionalDependency — Rust-based oxide native engine binary for tailwindcss@4.2.1). OSV-clean."
+approved_by = "<reviewer>"
+
+[packages."@tailwindcss/postcss"]
+versions = ["4.2.1"]
+reason = "Used by: fe-internal, fe-support"
+approved_by = "dipendra"
+
+[packages."@tanstack/react-query"]
+versions = ["5.90.21"]
+reason = "Used by: fe-internal, fe-support"
+approved_by = "dipendra"
+
+[packages."@tanstack/react-table"]
+versions = ["8.21.3"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."@testing-library/jest-dom"]
+versions = ["6.9.1"]
+reason = "DOM matchers"
+approved_by = "dipendra"
+
+[packages."@testing-library/react"]
+versions = ["16.3.2"]
+reason = "React testing"
+approved_by = "dipendra"
+
+[packages."@testing-library/user-event"]
+versions = ["14.6.1"]
+reason = "user interaction sim"
+approved_by = "dipendra"
+
+[packages."@typescript-eslint/eslint-plugin"]
+versions = ["8.58.1"]
+reason = "TS rules"
+approved_by = "dipendra"
+
+[packages."@typescript-eslint/parser"]
+versions = ["8.58.1"]
+reason = "TS parser; must match @typescript-eslint/eslint-plugin (peer dep ^8.58.1)"
+approved_by = "dipendra"
+
+[packages."@vitejs/plugin-react"]
+versions = ["5.1.4"]
+reason = "Vite React plugin"
+approved_by = "dipendra"
+
+[packages."@xyflow/react"]
+versions = ["12.10.2"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."axios"]
+versions = ["1.15.2"]
+reason = "Used by: fe-internal, fe-streaming, fe-support, fe-annotator, fe-dashboard. fe-analytics"
+approved_by = "dipendra"
+
+[packages."class-variance-authority"]
+versions = ["0.7.1"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."clsx"]
+versions = ["2.1.1"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."cmdk"]
+versions = ["1.1.1"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."d3"]
+versions = ["7.9.0"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."date-fns"]
+versions = ["4.1.0"]
+reason = "Used by: fe-analytics, fe-annotator"
+approved_by = "dipendra"
+
+[packages."date-fns-jalali"]
+versions = ["4.1.0-0"]
+reason = "Used by: fe-internal. Override pin of the jalali (Persian-calendar) variant pulled transitively via @mui/x-date-pickers; aligns with approved date-fns@4.1.0. OSV-clean."
+approved_by = "<reviewer>"
+
+[packages."dayjs"]
+versions = ["1.11.20"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-common, fe-support, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."dompurify"]
+versions = ["3.4.0"]
+reason = "Used by: fe-internal, fe-dashboard (quill HTML sanitization)"
+approved_by = "dipendra"
+
+[packages."eslint"]
+versions = ["10.1.0"]
+reason = "linter"
+approved_by = "dipendra"
+
+[packages."eslint-config-prettier"]
+versions = ["10.1.8"]
+reason = "prettier compat"
+approved_by = "dipendra"
+
+[packages."eslint-plugin-react-hooks"]
+versions = ["7.0.0"]
+reason = "React hooks rules"
+approved_by = "dipendra"
+
+[packages."eslint-plugin-security"]
+versions = ["4.0.0"]
+reason = "security rules"
+approved_by = "dipendra"
+
+[packages."espree"]
+versions = ["11.2.0"]
+reason = "Used by: fe-dashboard (eslint.config.mjs custom parser wiring)"
+approved_by = "dipendra"
+
+[packages."eventemitter2"]
+versions = ["6.4.9"]
+reason = "Used by: fe-annotator"
+approved_by = "dipendra"
+
+[packages."exceljs"]
+versions = ["4.4.0"]
+reason = "Used by: fe-streaming"
+approved_by = "dipendra"
+
+[packages."fabric"]
+versions = ["7.2.0"]
+reason = "Used by: fe-internal, fe-annotator, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."fast-uri"]
+versions = ["3.1.2"]
+reason = "Used by: fe-dashboard. Override of transitive ajv@8.18.0 → fast-uri@3.1.0 (CVE-2026-6321 HIGH, CVE-2026-6322 HIGH)"
+approved_by = "<reviewer>"
+
+[packages."hls.js"]
+versions = ["1.6.15"]
+reason = "Used by: fe-streaming, fe-analytics"
+approved_by = "dipendra"
+
+[packages."html2canvas"]
+versions = ["1.4.1"]
+reason = "Used by: fe-analytics"
+approved_by = "dipendra"
+
+[packages."husky"]
+versions = ["9.1.7"]
+reason = "git hooks"
+approved_by = "dipendra"
+
+[packages."immer"]
+versions = ["11.1.4"]
+reason = "Used by: fe-annotator"
+approved_by = "dipendra"
+
+[packages."jest"]
+versions = ["30.3.0"]
+reason = "test runner (legacy; prefer vitest)"
+approved_by = "dipendra"
+
+[packages."lightningcss-linux-x64-gnu"]
+versions = ["1.31.1"]
+reason = "Used by: fe-internal (optionalDependency — native CSS minifier binary; pulled in transitively by tailwindcss v4 oxide). OSV-clean."
+approved_by = "<reviewer>"
+
+[packages."lightningcss-linux-x64-musl"]
+versions = ["1.31.1"]
+reason = "Used by: fe-internal (optionalDependency — native CSS minifier binary; pulled in transitively by tailwindcss v4 oxide). OSV-clean."
+approved_by = "<reviewer>"
+
+[packages."lint-staged"]
+versions = ["16.4.0"]
+reason = "staged file linting"
+approved_by = "dipendra"
+
+[packages."lucide-react"]
+versions = ["0.577.0"]
+reason = "Used by: fe-internal, fe-support, fe-common. Corrects prior typo (1.7.0)."
+approved_by = "dipendra"
+
+[packages."marked"]
+versions = ["17.0.6"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal"
+approved_by = "dipendra"
+
+[packages."msw"]
+versions = ["2.13.2"]
+reason = "API mocking"
+approved_by = "dipendra"
+
+[packages."nanoid"]
+versions = ["5.1.7"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-dashboard. fe-support"
+approved_by = "dipendra"
+
+[packages."next"]
+versions = ["16.2.3", "16.2.6"]
+reason = "Used by: fe-streaming, fe-dashboard (16.2.6 patches GHSA-8h8q-6873-q5fj DoS). fe-internal/fe-analytics/fe-support on 16.2.2 (patch bump)."
+approved_by = "dipendra"
+
+[packages."next-auth"]
+versions = ["5.0.0-beta.30"]
+reason = "fe-internal, fe-dashboard on stable v4. v5 is still beta; pin stable until GA."
+approved_by = "dipendra"
+
+[packages."notistack"]
+versions = ["3.0.2"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-annotator, fe-dashboard. fe-support"
+approved_by = "dipendra"
+
+[packages."p-limit"]
+versions = ["7.3.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal"
+approved_by = "dipendra"
+
+[packages."papaparse"]
+versions = ["5.5.3"]
+reason = "Used by: fe-streaming"
+approved_by = "dipendra"
+
+[packages."postcss"]
+versions = ["8.5.10"]
+reason = "Used by: fe-dashboard. Override of transitive next@16.2.3 → postcss@8.4.31 (CVE-2026-41305 MEDIUM)"
+approved_by = "<reviewer>"
+
+[packages."prettier"]
+versions = ["3.8.1"]
+reason = "formatter"
+approved_by = "dipendra"
+
+[packages."prismjs"]
+versions = ["1.30.0"]
+reason = "Used by: fe-dashboard. Override of transitive refractor@3.6.0 → prismjs@1.27.0 (CVE-2024-53382 MEDIUM); also flattens duplicate copy already at 1.30.0 under react-syntax-highlighter"
+approved_by = "<reviewer>"
+
+[packages."quill"]
+versions = ["2.0.2"]
+reason = "Used by: fe-internal. Override pin of transitive react-quill-new → quill; floors the bundled quill at 2.0.2 (above older XSS-affected 1.x line). OSV-clean."
+approved_by = "<reviewer>"
+
+[packages."react"]
+versions = ["19.2.4"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."react-code-blocks"]
+versions = ["0.1.6"]
+reason = "Used by: fe-internal, fe-analytics, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."react-day-picker"]
+versions = ["9.14.0"]
+reason = "Used by: fe-internal, fe-common"
+approved_by = "dipendra"
+
+[packages."react-dom"]
+versions = ["19.2.4"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."react-hook-form"]
+versions = ["7.72.1"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-dashboard. fe-support"
+approved_by = "dipendra"
+
+[packages."react-lottie"]
+versions = ["1.2.10"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."react-quill-new"]
+versions = ["3.8.3"]
+reason = "Used by: fe-internal, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."react-redux"]
+versions = ["9.2.0"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."recharts"]
+versions = ["3.8.1"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."redux-logger"]
+versions = ["3.0.6"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."redux-persist"]
+versions = ["6.0.0"]
+reason = "Used by: fe-internal, fe-streaming, fe-analytics, fe-support, fe-annotator, fe-dashboard"
+approved_by = "dipendra"
+
+[packages."tailwind-merge"]
+versions = ["3.5.0"]
+reason = "Used by: fe-analytics, fe-common"
+approved_by = "dipendra"
+
+[packages."tailwindcss"]
+versions = ["4.2.1"]
+reason = "Used by: fe-internal, fe-support"
+approved_by = "dipendra"
+
+[packages."tw-animate-css"]
+versions = ["1.4.0"]
+reason = "Used by: fe-common (@matrice-ai/ui)"
+approved_by = "dipendra"
+
+[packages."typescript"]
+versions = ["5.7.3"]
+reason = "TypeScript"
+approved_by = "dipendra"
+
+[packages."uuid"]
+versions = ["14.0.0"]
+reason = "Used by: fe-streaming, fe-analytics, fe-support"
+approved_by = "dipendra"
+
+[packages."vite"]
+versions = ["6.1.0", "6.4.2"]
+reason = "build tool"
+approved_by = "dipendra"
+
+[packages."vitest"]
+versions = ["4.0.18"]
+reason = "test runner"
+approved_by = "dipendra"
+
+[packages."yaml"]
+versions = ["2.8.3"]
+reason = "Used by: fe-internal. Override floor pin for transitive yaml (pulled via lint-staged / postcss tooling); ensures bundled yaml is ≥2.8.3 (above older parser-DoS line). OSV-clean at 2.8.3 and current latest 2.9.0."
+approved_by = "<reviewer>"
+
+[packages."zod"]
+versions = ["4.3.6"]
+reason = "Used by: fe-streaming, fe-analytics, fe-dashboard. fe-internal/fe-support"
+approved_by = "dipendra"
+
+# Added during matrice-website v1->new-template content migration (May 2026).
+
+[packages."@headlessui/react"]
+versions = ["2.2.0"]
+reason = "Used by: matrice-website (legacy v1 marketing components — modal/menu/disclosure)"
+approved_by = "dipendra"
+
+[packages."@heroicons/react"]
+versions = ["2.2.0"]
+reason = "Used by: matrice-website (legacy v1 marketing components — icon set)"
+approved_by = "dipendra"
+
+[packages."@mui/material-nextjs"]
+versions = ["9.0.1"]
+reason = "Used by: matrice-website (AppRouterCacheProvider for emotion SSR/CSR consistency in App Router)"
+approved_by = "dipendra"
+
+[packages."@nivo/bullet"]
+versions = ["0.99.0"]
+reason = "Used by: matrice-website (data viz — bullet chart on platform/solutions pages)"
+approved_by = "dipendra"
+
+[packages."@nivo/core"]
+versions = ["0.99.0"]
+reason = "Used by: matrice-website (peer dep of @nivo/bullet — shared Nivo plumbing)"
+approved_by = "dipendra"
+
+[packages."embla-carousel-autoplay"]
+versions = ["8.6.0"]
+reason = "Used by: matrice-website (autoplay plugin for embla; modern replacement for unmaintained react-slick + slick-carousel)"
+approved_by = "dipendra"
+
+[packages."embla-carousel-react"]
+versions = ["8.6.0"]
+reason = "Used by: matrice-website (lightweight, accessible, actively maintained carousel; replaces unmaintained react-slick + slick-carousel jQuery stack)"
+approved_by = "dipendra"
+
+[packages."geist"]
+versions = ["1.3.1"]
+reason = "Used by: matrice-website (Geist Sans/Mono fonts via geist/font/sans + geist/font/mono)"
+approved_by = "dipendra"
+
+[packages."motion"]
+versions = ["12.38.0"]
+reason = "Used by: matrice-website (animation lib; v12 is the renamed framer-motion successor — framer-motion is now legacy and re-exports as motion/react)"
+approved_by = "dipendra"
+
+[packages."react-multi-carousel"]
+versions = ["2.8.5"]
+reason = "Used by: matrice-website (carousels on solutions / industries / testimonial sections)"
+approved_by = "dipendra"
+
+[dev_allowed]
+patterns = [
+  "@eslint*",
+  "@ianvs/prettier-plugin-sort-imports",
+  "@next/bundle-analyzer",
+  "@storybook/*",
+  "@svgr/*",
+  "@tailwindcss/postcss",
+  "@tailwindcss/vite",
+  "@testing-library/*",
+  "@trivago/prettier-plugin-sort-imports",
+  "@types/*",
+  "@typescript-eslint/*",
+  "@vitejs/plugin-react",
+  "@vitest/*",
+  "autoprefixer",
+  "cross-env",
+  "cssnano",
+  "esbuild",
+  "eslint*",
+  "globals",
+  "happy-dom",
+  "husky",
+  "jest",
+  "jest-environment-jsdom",
+  "jsdom",
+  "lint-staged",
+  "msw",
+  "postcss*",
+  "prettier",
+  "rimraf",
+  "storybook",
+  "tailwindcss",
+  "ts-node",
+  "tsup",
+  "typescript",
+  "typescript-eslint",
+  "vite",
+  "vite-tsconfig-paths",
+  "vitest",
+]
+
+# CICD-101 P0.2: explicit deny-list. Hard-fail if any forbidden package appears
+# in dependencies / devDependencies / overrides / resolutions / peerDependencies /
+# optionalDependencies, OR as a transitive in package-lock.json.
+# Adding a new entry here requires CODEOWNERS approval (Tech Head + CTO + Reda + ML Head).
+# Removing an entry: same approval — document why the package is no longer forbidden.
+[forbidden.jquery]
+reason = "DOM-manipulation lib superseded by React; security maintenance only"
+[forbidden.moment]
+reason = "Use date-fns / dayjs / Temporal"
+[forbidden.lodash]
+reason = "Use lodash-es with tree-shaking, or stdlib"
+# lodash is bundled transitively by widely-used approved upstream packages
+# (@nivo/* family, @trivago/prettier-plugin-sort-imports, jest, eslint
+# internals). Direct use is still blocked by (1) the per-vector forbidden
+# check (deps/devDeps/peer/opt) and (2) ESLint's no-restricted-imports rule
+# on the consumer side (defense in depth). transitive_exempt skips lodash
+# in the lockfile transitive scan; override_exempt additionally allows it
+# in the `overrides` / `resolutions` vectors so consumers can pin the
+# bundled transitive copy to a CVE-safe floor (e.g., ">=4.18.0") without
+# the dep-approval gate tripping on the forbidden list.
+transitive_exempt = true
+override_exempt = true
+[forbidden.request]
+reason = "Deprecated 2020; use undici or fetch"
+[forbidden."request-promise"]
+reason = "Deprecated; use undici or fetch"
+[forbidden.bluebird]
+reason = "Use native Promises"
+# bluebird is bundled transitively by `unzipper@~0.10` which is itself a
+# dependency of `exceljs@4.4.0` (only currently published .xlsx read+write
+# lib that is in APPROVED_DEPS). Latest unzipper@0.12 still depends on
+# bluebird, and exceljs is unavoidable for the .xlsx import/export feature
+# in fe-streaming (Bulk-cameras). Direct use is still blocked by the
+# per-vector forbidden check. transitive_exempt skips bluebird in the
+# lockfile transitive scan.
+transitive_exempt = true
+[forbidden.bower]
+reason = "Deprecated package manager"
+[forbidden.coffeescript]
+reason = "Deprecated language; use TypeScript"
+[forbidden.async]
+reason = "Use async/await"
+# async is bundled transitively by `archiver@^5` which is itself a
+# dependency of `exceljs@4.4.0`. Latest archiver@8 still pins
+# `async@^3.2.4`, and exceljs is unavoidable for the .xlsx
+# import/export feature in fe-streaming (Bulk-cameras). Direct use
+# is still blocked by the per-vector forbidden check.
+# transitive_exempt skips async in the lockfile transitive scan.
+transitive_exempt = true
+[forbidden.underscore]
+reason = "Use stdlib or lodash-es"
+[forbidden."prototype"]
+reason = "Legacy DOM lib"
+[forbidden.gulp]
+reason = "Use vite/esbuild"
+[forbidden.grunt]
+reason = "Use vite/esbuild"
+[forbidden.karma]
+reason = "Use vitest/playwright"
+[forbidden.enzyme]
+reason = "Use @testing-library/react"

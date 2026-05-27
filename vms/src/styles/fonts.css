@@ -1,0 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Geist Mono is not available on Google Fonts, but we can use a similar high-quality mono font or try to import it if we had a URL.
+   Since I cannot easily add a non-standard font file, I will stick to JetBrains Mono as the "Geist Mono" substitute for now,
+   or add 'Geist Mono' to the font stack in case the system has it.
+   Wait, I can use a CDN for Geist if available, but to be safe and consistent with the previous instructions which mentioned JetBrains Mono,
+   I will ensure the font stack prefers Geist Mono.
+*/

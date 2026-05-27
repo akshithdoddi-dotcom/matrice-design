@@ -7,6 +7,7 @@
     "dev": "npm run dev --prefix analytics",
     "build": "npm run build --prefix analytics",
     "dev:standalone:support": "npm run dev --prefix support",
+    "dev:standalone:support2": "npm run dev --prefix support2",
     "dev:standalone:training": "npm run dev --prefix training",
     "dev:standalone:marketplace": "npm run dev --prefix marketplace",
     "dev:analytics": "npm run dev --prefix analytics"

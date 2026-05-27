@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Native git pre-push hook for matrice-ai consumer repos.
+#
+# Activated by `scripts/install-dev-hooks.sh` which sets
+# `git config core.hooksPath scripts/git-hooks` for the repo.
+#
+# Two sequential gates (both block push if they fail):
+#   1. check-precommit-trailer.sh — refuses push unless HEAD commit
+#      carries a valid Pre-Commit-Verified-Result: all-passed trailer
+#      with timestamp within 7 days. Mirrors the server-side
+#      CICD-101 P1.1 contract enforced by .github/workflows/pre-commit.yml.
+#
+#   2. check-cicd-failures.sh — refuses push if .cicd-failures.md has
+#      unresolved entries under "## Failed Checks" without a
+#      corresponding "[x] FIXED-IN: <sha>" or
+#      "MANUALLY-VERIFIED-BY: @<handle>" line in "## Resolutions Log".
+#
+# Bypass: git push --no-verify (logged + audited via the org-side
+# cicd-report-validator workflow that ships with PR-2).
+#
+# stdin protocol: <local_ref> <local_sha> <remote_ref> <remote_sha>
+# Both sub-scripts consume stdin (the trailer check uses it; the
+# failures check ignores it). We tee stdin to both via a temp file so
+# the protocol is preserved across both gates.
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SCRIPTS_DIR="${REPO_ROOT}/scripts"
+
+if [[ ! -x "${SCRIPTS_DIR}/check-precommit-trailer.sh" ]] || \
+   [[ ! -x "${SCRIPTS_DIR}/check-cicd-failures.sh" ]]; then
+  echo "❌ pre-push hook: required scripts missing in ${SCRIPTS_DIR}/"
+  echo "   Re-run scripts/install-dev-hooks.sh from the repo root."
+  exit 1
+fi
+
+# Buffer stdin so both scripts can read it.
+STDIN_BUF="$(mktemp)"
+trap 'rm -f "${STDIN_BUF}"' EXIT
+cat > "${STDIN_BUF}"
+
+# Gate 1
+"${SCRIPTS_DIR}/check-precommit-trailer.sh" < "${STDIN_BUF}"
+
+# Gate 2 (does not consume stdin protocol but pass empty input for safety)
+"${SCRIPTS_DIR}/check-cicd-failures.sh" < /dev/null
+
+echo "✓ Pre-push gates passed."

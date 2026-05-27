@@ -1,0 +1,50 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Next.js
+/.next/
+/out/
+/build
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Testing
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/coverage/
+/jscpd-report/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+npm-debug.log*
+.vercel
+
+# Build artifacts
+*.tar
+*.gz
+/dist/
+
+# Claude / AI assistant files
+CLAUDE.md
+.claude/

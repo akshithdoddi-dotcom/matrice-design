@@ -1,0 +1,11 @@
+# ──────────────────────────────────────────────────────────────────
+# GENERATED FILE — DO NOT EDIT
+# Source:  matrice-ai/.github/config/codeowners-rules.yml
+# Synced:  2026-04-30T01:18:17Z by sync-codeowners.yml
+# Class:   library-javascript
+# Domain:  general
+# Manual edits will be OVERWRITTEN on next sync.
+# To change owners, edit codeowners-rules.yml in matrice-ai/.github
+# ──────────────────────────────────────────────────────────────────
+
+* @ayushsinghMA @MohnedMoneam0 @reda-matrice @dipendra-matrice @abhisshek9100 @nikitapandey-matrice

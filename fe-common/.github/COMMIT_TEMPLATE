@@ -1,0 +1,13 @@
+<type>(<scope>): <imperative description — max 72 chars>
+
+What: One-line summary of what this commit does.
+Why:  The reason this change is needed.
+
+Feature-Id: <JIRA-ID or internal ID>
+Step:        X.Y
+Est-Hours:   X
+Gate-Impact: G1/G2/G3/G4/G5
+Breaking:    Yes/No
+SDK-Update:  Yes/No
+
+# Valid types: feat, fix, perf, refactor, docs, chore, test, ci

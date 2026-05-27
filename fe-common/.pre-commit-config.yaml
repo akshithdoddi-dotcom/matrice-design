@@ -1,0 +1,88 @@
+exclude: |
+  (?x)^(
+    dist/.*|
+    coverage/.*|
+    node_modules/.*|
+    .*\.min\.(js|css)|
+    package-lock\.json
+  )$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: detect-aws-credentials
+        args: ["--allow-missing-credentials"]
+      - id: check-case-conflict
+      - id: no-commit-to-branch
+        args: ["--branch", "prod"]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # Defense-in-depth secret scanning (added in Wave 2)
+  - repo: https://github.com/trufflesecurity/trufflehog
+    rev: v3.95.2 # WASM panic fix (>=v3.93)
+    hooks:
+      - id: trufflehog
+        stages: [pre-commit, pre-push]
+
+  # PII / hardcoded-secrets baseline (closes ISO A.8.33 + SOC 2 P1)
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: 'package-lock.json|go\.sum|.*\.lock$'
+
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: npx eslint --max-warnings=0 --no-warn-ignored
+        language: system
+        types_or: [javascript, jsx, ts, tsx]
+        pass_filenames: true
+
+      - id: prettier
+        name: prettier
+        entry: npx prettier --check
+        language: system
+        types_or: [javascript, jsx, ts, tsx, css, json]
+        pass_filenames: true
+
+      - id: tsc
+        name: typescript
+        entry: npx tsc --noEmit
+        language: system
+        pass_filenames: false
+
+      - id: docker-pin-check
+        name: dockerfile pin check
+        entry: "bash -c 'for f in Dockerfile Dockerfile.*; do [ -f \"$f\" ] || continue; if grep -qP \"FROM\\s+\\S+:latest\" \"$f\"; then echo \"ERROR: :latest in $f\"; exit 1; fi; done'"
+        language: system
+        files: Dockerfile
+        pass_filenames: false
+
+  # CICD-101 P1.1 / INC-057: Pre-Commit-Verified-* trailer injector.
+  # Runs at commit-msg stage; appends content-hash + hooks-list + result +
+  # timestamp trailers so the server-side detect-trailer hard-gate
+  # (matrice-ai/.github INC-055) can verify L1 hooks ran locally.
+  - repo: local
+    hooks:
+      - id: precommit-add-trailer
+        name: Inject Pre-Commit-Verified-* trailer
+        entry: scripts/precommit-add-trailer.sh
+        language: system
+        stages: [commit-msg]
