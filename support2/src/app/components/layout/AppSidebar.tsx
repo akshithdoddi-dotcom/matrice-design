@@ -42,6 +42,7 @@ export type Page =
   | "command-centre"
   | "resource-visualizer"
   | "pipeline-view"
+  | "camera-logs"
   | "settings";
 
 // ── Matrice icon ───────────────────────────────────────────────────────────

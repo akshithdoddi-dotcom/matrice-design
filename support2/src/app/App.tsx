@@ -10,13 +10,14 @@ import { Cameras } from "@/app/components/pages/Cameras";
 import { PipelineView } from "@/app/components/pages/PipelineView";
 import { ComingSoon } from "@/app/components/pages/ComingSoon";
 import { SettingsPage } from "@/app/components/pages/Settings";
+import { CameraLogsPage } from "@/app/components/pages/CameraLogsPage";
 import { Account, Cluster, Project, Pipeline } from "@/data/mockData";
 
 // All pages are full-bleed in this design — no padding wrapper
 const FULL_BLEED_PAGES: Page[] = [
   "support-desk", "projects", "pipeline-detail", "project-view",
   "compute", "cameras", "system-flow", "gateways", "ml-apps",
-  "command-centre", "resource-visualizer", "pipeline-view",
+  "command-centre", "resource-visualizer", "pipeline-view", "camera-logs",
 ];
 
 interface AppProps {
@@ -76,7 +77,7 @@ export default function App({ onPlatformSwitch }: AppProps = {}) {
 
   const knownPages: Page[] = [
     "support-desk", "projects", "pipeline-detail", "project-view",
-    "compute", "cameras", "settings", "pipeline-view",
+    "compute", "cameras", "settings", "pipeline-view", "camera-logs",
   ];
 
   return (
@@ -161,6 +162,7 @@ export default function App({ onPlatformSwitch }: AppProps = {}) {
           onBack={handleBackFromPipeline}
         />
       )}
+      {activePage === "camera-logs" && <CameraLogsPage />}
       {activePage === "settings" && (
         <SettingsPage isDark={isDark} onToggleDark={() => setIsDark((v) => !v)} />
       )}

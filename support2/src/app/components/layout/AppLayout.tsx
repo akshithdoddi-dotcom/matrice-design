@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   Terminal,
   BarChart3,
+  Video,
 } from "lucide-react";
 import { Page } from "@/app/components/layout/AppSidebar";
 import { Account, Cluster, Project, Pipeline, MOCK_ACCOUNTS, MOCK_CLUSTERS, MOCK_PROJECTS } from "@/data/mockData";
@@ -19,6 +20,7 @@ import { Account, Cluster, Project, Pipeline, MOCK_ACCOUNTS, MOCK_CLUSTERS, MOCK
 
 const MAIN_NAV: NavItem[] = [
   { id: "support-desk",        label: "Clusters",             icon: LayoutGrid  },
+  { id: "camera-logs",         label: "Camera Logs",          icon: Video       },
   { id: "command-centre",      label: "Command Centre",      icon: Terminal    },
   { id: "resource-visualizer", label: "Resource Visualizer", icon: BarChart3   },
 ];

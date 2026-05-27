@@ -161,7 +161,12 @@ function CountBadge({ active, total }: { active: number; total: number }) {
 
 // ── Camera Detail Modal ───────────────────────────────────────────────────────
 
-function CameraDetailModal({ cam, onClose }: { cam: Camera; onClose: () => void }) {
+function CameraDetailModal({ cam, pipeline, project, account, onClose }: {
+  cam: Camera; pipeline: Pipeline; project: Project; account: Account | null; onClose: () => void;
+}) {
+  const [notifyOpen,   setNotifyOpen]   = useState(false);
+  const [escalateOpen, setEscalateOpen] = useState(false);
+
   const cfg = CAM_STATUS[cam.status];
   const camLogs = CAM_LOGS.filter((l) => l.camName === cam.name);
 
@@ -225,12 +230,14 @@ function CameraDetailModal({ cam, onClose }: { cam: Camera; onClose: () => void 
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            <button onClick={() => setNotifyOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               style={{ border: "1px solid #D1D5DB" }}>
               <Bell style={{ width: 13, height: 13 }} />
               Notify Client
             </button>
-            <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
+            <button onClick={() => setEscalateOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: TEAL }}>
               <PhoneCall style={{ width: 13, height: 13 }} />
               Escalate
@@ -356,6 +363,19 @@ function CameraDetailModal({ cam, onClose }: { cam: Camera; onClose: () => void 
 
         </div>
       </div>
+
+      {notifyOpen && (
+        <NotifyClientModal
+          pipeline={pipeline} project={project} account={account}
+          statusLabel={cfg.label} onClose={() => setNotifyOpen(false)}
+        />
+      )}
+      {escalateOpen && (
+        <EscalateModal
+          pipeline={pipeline} project={project} account={account}
+          statusLabel={cfg.label} onClose={() => setEscalateOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -581,11 +601,11 @@ const MOCK_MOUNTS = [
 
 function DrawerHeader({
   title, subtitle, statusBg, statusColor, statusLabel,
-  onClose,
+  onClose, onNotify, onEscalate,
 }: {
   title: string; subtitle: string;
   statusBg: string; statusColor: string; statusLabel: string;
-  onClose: () => void;
+  onClose: () => void; onNotify: () => void; onEscalate: () => void;
 }) {
   return (
     <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100">
@@ -606,12 +626,14 @@ function DrawerHeader({
         </button>
       </div>
       <div className="flex items-center gap-2">
-        <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        <button onClick={onNotify}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           style={{ border: "1px solid #D1D5DB" }}>
           <Bell style={{ width: 13, height: 13 }} />
           Notify Client
         </button>
-        <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
+        <button onClick={onEscalate}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: TEAL }}>
           <PhoneCall style={{ width: 13, height: 13 }} />
           Escalate to Technical Team
@@ -649,8 +671,12 @@ function KVRow({ label, value, mono, color }: {
   );
 }
 
-function ComputeDetailModal({ ci, onClose }: { ci: ComputeInstance; onClose: () => void }) {
+function ComputeDetailModal({ ci, pipeline, project, account, onClose }: {
+  ci: ComputeInstance; pipeline: Pipeline; project: Project; account: Account | null; onClose: () => void;
+}) {
   const [showAllActions, setShowAllActions] = useState(false);
+  const [notifyOpen,     setNotifyOpen]     = useState(false);
+  const [escalateOpen,   setEscalateOpen]   = useState(false);
   const overallColor = metricColor(Math.max(ci.gpuUtil, ci.cpuUtil, ci.ramUtil));
   const statusLabel  = overallColor === GREEN ? "HEALTHY" : overallColor === AMBER ? "WARNING" : "CRITICAL";
   const visibleActions = showAllActions ? MOCK_ACTIONS : MOCK_ACTIONS.slice(0, 5);
@@ -672,6 +698,8 @@ function ComputeDetailModal({ ci, onClose }: { ci: ComputeInstance; onClose: () 
           statusColor={overallColor}
           statusLabel={statusLabel}
           onClose={onClose}
+          onNotify={() => setNotifyOpen(true)}
+          onEscalate={() => setEscalateOpen(true)}
         />
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4" style={{ backgroundColor: "#F8FAFC" }}>
@@ -869,13 +897,19 @@ function ComputeDetailModal({ ci, onClose }: { ci: ComputeInstance; onClose: () 
 
         </div>
       </div>
+      {notifyOpen   && <NotifyClientModal pipeline={pipeline} project={project} account={account} statusLabel={statusLabel} onClose={() => setNotifyOpen(false)} />}
+      {escalateOpen && <EscalateModal     pipeline={pipeline} project={project} account={account} statusLabel={statusLabel} onClose={() => setEscalateOpen(false)} />}
     </div>
   );
 }
 
 // ── ML Detail Modal ───────────────────────────────────────────────────────────
 
-function MLDetailModal({ app, onClose }: { app: MLApp; onClose: () => void }) {
+function MLDetailModal({ app, pipeline, project, account, onClose }: {
+  app: MLApp; pipeline: Pipeline; project: Project; account: Account | null; onClose: () => void;
+}) {
+  const [notifyOpen,   setNotifyOpen]   = useState(false);
+  const [escalateOpen, setEscalateOpen] = useState(false);
   const cfg = ML_STATUS[app.status];
   const isRunning = app.status === "running";
 
@@ -894,6 +928,8 @@ function MLDetailModal({ app, onClose }: { app: MLApp; onClose: () => void }) {
           statusColor={cfg.color}
           statusLabel={cfg.label}
           onClose={onClose}
+          onNotify={() => setNotifyOpen(true)}
+          onEscalate={() => setEscalateOpen(true)}
         />
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4" style={{ backgroundColor: "#F8FAFC" }}>
@@ -975,16 +1011,304 @@ function MLDetailModal({ app, onClose }: { app: MLApp; onClose: () => void }) {
 
         </div>
       </div>
+      {notifyOpen   && <NotifyClientModal pipeline={pipeline} project={project} account={account} statusLabel={cfg.label} onClose={() => setNotifyOpen(false)} />}
+      {escalateOpen && <EscalateModal     pipeline={pipeline} project={project} account={account} statusLabel={cfg.label} onClose={() => setEscalateOpen(false)} />}
+    </div>
+  );
+}
+
+// ── Notify Client Modal ───────────────────────────────────────────────────────
+
+function NotifyClientModal({
+  pipeline, project, account, statusLabel, onClose,
+}: {
+  pipeline: Pipeline; project: Project; account: Account | null;
+  statusLabel: string; onClose: () => void;
+}) {
+  const mlApps  = pipeline.cameras.flatMap((c) => c.mlApps);
+  const activeCams = pipeline.cameras.filter((c) => c.status === "online").length;
+  const activeML   = mlApps.filter((a) => a.status === "running").length;
+
+  const defaultMsg = `Dear ${account?.name ?? "Client"} (${account?.accountId ?? ""}) Team,
+
+We are currently monitoring your pipeline "${pipeline.name}" in the "${project.name}" project.
+
+We have identified some performance degradation that our team is actively addressing.
+
+Current Status Summary:
+• Cameras: All ${pipeline.cameras.length} cameras operating normally
+• ML Applications: ${activeML} of ${mlApps.length} applications not deployed or failing
+• Compute Resources: All 1 compute instances operational
+
+Our support team is actively investigating the situation and will keep you updated. If you have any questions or concerns, please don't hesitate to reach out.
+
+Best regards,
+Matrice AI Support Team`;
+
+  const [msg, setMsg] = useState(defaultMsg);
+
+  const statusColor = statusLabel === "HEALTHY" ? GREEN : statusLabel === "DEGRADED" ? AMBER : RED;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onClose}>
+      <div className="bg-white rounded shadow-2xl w-[600px] max-w-[94vw] max-h-[90vh] flex flex-col"
+        style={{ border: "1px solid #E5E7EB" }}
+        onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: "rgba(0,119,91,0.10)" }}>
+              <Bell style={{ width: 17, height: 17, color: TEAL }} />
+            </div>
+            <div>
+              <div className="text-[15px] font-semibold text-gray-900">
+                Notify Client — {account?.name ?? "Client"} ({account?.accountId ?? ""})
+              </div>
+              <div className="text-[12px] text-gray-400 mt-0.5">Send a status update to the client's primary contact</div>
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-100 transition-colors flex-shrink-0">
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Context grid */}
+        <div className="mx-6 mt-4 rounded p-4 grid grid-cols-2 gap-x-6 gap-y-3"
+          style={{ border: "1px solid #E5E7EB", backgroundColor: "#F8FAFC" }}>
+          {[
+            { label: "CLIENT",         value: `${account?.name ?? "—"} (${account?.accountId ?? ""})` },
+            { label: "PROJECT",        value: project.name },
+            { label: "PIPELINE",       value: pipeline.name },
+            { label: "CURRENT STATUS", value: statusLabel, color: statusColor },
+          ].map(({ label, value, color }) => (
+            <div key={label}>
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</div>
+              {label === "CURRENT STATUS" ? (
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded"
+                  style={{ backgroundColor: `${color}15`, color }}>
+                  {value}
+                </span>
+              ) : (
+                <div className="text-[13px] font-semibold text-gray-800 truncate">{value}</div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Message */}
+        <div className="px-6 mt-4 flex-1 overflow-auto">
+          <div className="text-[13px] font-semibold text-gray-700 mb-2">Suggested Message</div>
+          <textarea
+            value={msg}
+            onChange={(e) => setMsg(e.target.value)}
+            rows={10}
+            className="w-full text-[13px] text-gray-700 px-3.5 py-3 rounded resize-none outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B] transition-all"
+            style={{ border: "1px solid #D1D5DB", lineHeight: "1.6" }}
+          />
+        </div>
+
+        {/* Info note */}
+        <div className="mx-6 mt-3 px-3.5 py-2.5 rounded flex items-start gap-2"
+          style={{ backgroundColor: "#F0F9FF", border: "1px solid #BAE6FD" }}>
+          <ExternalLink style={{ width: 13, height: 13, color: "#0369A1", flexShrink: 0, marginTop: 1 }} />
+          <span className="text-[11px] text-blue-700">
+            This message will be sent to the primary contact for {account?.name ?? "the client"} ({account?.accountId ?? ""}). You can customize it before sending.
+          </span>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 mt-4">
+          <button onClick={onClose}
+            className="px-4 py-2 text-[13px] font-medium text-gray-700 rounded hover:bg-gray-50 transition-colors"
+            style={{ border: "1px solid #D1D5DB" }}>
+            Cancel
+          </button>
+          <button onClick={onClose}
+            className="px-4 py-2 text-[13px] font-semibold text-white rounded transition-opacity hover:opacity-90"
+            style={{ backgroundColor: TEAL }}>
+            Send Notification
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Escalate Modal ────────────────────────────────────────────────────────────
+
+const PRIORITY_LEVELS = [
+  { value: "p1", label: "Critical - P1" },
+  { value: "p2", label: "High - P2"     },
+  { value: "p3", label: "Medium - P3"   },
+  { value: "p4", label: "Low - P4"      },
+];
+
+function EscalateModal({
+  pipeline, project, account, statusLabel, onClose,
+}: {
+  pipeline: Pipeline; project: Project; account: Account | null;
+  statusLabel: string; onClose: () => void;
+}) {
+  const [priority,    setPriority]    = useState("p2");
+  const [priorityOpen, setPriorityOpen] = useState(false);
+  const [notes,       setNotes]       = useState("");
+
+  const mlApps    = pipeline.cameras.flatMap((c) => c.mlApps);
+  const failedML  = mlApps.filter((a) => a.status !== "running").length;
+  const pipelineId = pipeline.id ?? "—";
+
+  const escalationMsg = `WARNING: Performance degradation detected. Investigation needed.
+
+Affected Component: pipeline "${pipeline.name}" (ID: ${pipelineId}) in project "${project.name}"
+Client: ${account?.name ?? "—"} (${account?.accountId ?? ""})
+Current Status: ${statusLabel}
+
+Component Failures:
+- ML Apps: ${failedML}/${mlApps.length} not deployed (${mlApps.length > 0 ? Math.round((failedML / mlApps.length) * 100) : 0}% failure rate)
+
+Please investigate root cause and apply fix within SLA.`;
+
+  const statusColor = statusLabel === "HEALTHY" ? GREEN : statusLabel === "DEGRADED" ? AMBER : RED;
+  const selectedPriority = PRIORITY_LEVELS.find((p) => p.value === priority)!;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={() => { onClose(); setPriorityOpen(false); }}>
+      <div className="bg-white rounded shadow-2xl w-[600px] max-w-[94vw] max-h-[90vh] flex flex-col"
+        style={{ border: "1px solid #E5E7EB" }}
+        onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: "rgba(234,88,12,0.10)" }}>
+              <AlertTriangle style={{ width: 17, height: 17, color: "#EA580C" }} />
+            </div>
+            <div>
+              <div className="text-[15px] font-semibold text-gray-900">Escalate to Technical Team</div>
+              <div className="text-[12px] text-gray-400 mt-0.5">Create an escalation ticket for the technical team to investigate</div>
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-100 transition-colors flex-shrink-0">
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {/* Context grid */}
+          <div className="rounded p-4 grid grid-cols-2 gap-x-6 gap-y-3"
+            style={{ border: "1px solid #E5E7EB", backgroundColor: "#F8FAFC" }}>
+            {[
+              { label: "CLIENT",         value: `${account?.name ?? "—"} (${account?.accountId ?? ""})` },
+              { label: "PROJECT",        value: project.name },
+              { label: "PIPELINE",       value: pipeline.name },
+              { label: "CURRENT STATUS", value: statusLabel, color: statusColor },
+            ].map(({ label, value, color }) => (
+              <div key={label}>
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</div>
+                {label === "CURRENT STATUS" ? (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded flex items-center gap-1 w-fit"
+                    style={{ backgroundColor: `${color}15`, color }}>
+                    {statusLabel !== "HEALTHY" && <AlertTriangle style={{ width: 10, height: 10 }} />}
+                    {value}
+                  </span>
+                ) : (
+                  <div className="text-[13px] font-semibold text-gray-800 truncate">{value}</div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Priority Level */}
+          <div>
+            <div className="text-[13px] font-semibold text-gray-700 mb-2">Priority Level</div>
+            <div className="relative">
+              <button
+                onClick={() => setPriorityOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded text-[13px] font-medium text-gray-800 bg-white transition-colors hover:bg-gray-50"
+                style={{ border: `1px solid ${priorityOpen ? TEAL : "#D1D5DB"}`,
+                  outline: priorityOpen ? `2px solid ${TEAL}20` : "none" }}>
+                {selectedPriority.label}
+                <ChevronDown className="w-4 h-4 text-gray-400" style={{ transform: priorityOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+              </button>
+              {priorityOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded shadow-lg z-10 overflow-hidden"
+                  style={{ border: "1px solid #E5E7EB" }}>
+                  {PRIORITY_LEVELS.map((p) => (
+                    <button key={p.value}
+                      onClick={() => { setPriority(p.value); setPriorityOpen(false); }}
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 text-[13px] hover:bg-gray-50 transition-colors"
+                      style={{ color: priority === p.value ? TEAL : "#374151" }}>
+                      {p.label}
+                      {priority === p.value && <CheckCircle style={{ width: 14, height: 14, color: TEAL }} />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Escalation message */}
+          <div>
+            <div className="text-[13px] font-semibold text-gray-700 mb-2">Escalation Details</div>
+            <textarea
+              value={escalationMsg}
+              readOnly
+              rows={8}
+              className="w-full text-[12px] font-mono text-gray-600 px-3.5 py-3 rounded resize-none bg-gray-50"
+              style={{ border: "1px solid #E5E7EB", lineHeight: "1.6" }}
+            />
+          </div>
+
+          {/* Additional Notes */}
+          <div>
+            <div className="text-[13px] font-semibold text-gray-700 mb-2">Additional Notes <span className="font-normal text-gray-400">(Optional)</span></div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Add any additional context or notes for the technical team..."
+              className="w-full text-[13px] text-gray-700 px-3.5 py-3 rounded resize-none outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B] transition-all placeholder-gray-400"
+              style={{ border: "1px solid #D1D5DB" }}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+          <button onClick={onClose}
+            className="px-4 py-2 text-[13px] font-medium text-gray-700 rounded hover:bg-gray-50 transition-colors"
+            style={{ border: "1px solid #D1D5DB" }}>
+            Cancel
+          </button>
+          <button onClick={onClose}
+            className="px-4 py-2 text-[13px] font-semibold text-white rounded transition-opacity hover:opacity-90"
+            style={{ backgroundColor: "#EA580C" }}>
+            Create Escalation
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ── System Flow tab ───────────────────────────────────────────────────────────
 
-function SystemFlowTab({ pipeline, cluster }: { pipeline: Pipeline; cluster: Cluster | null }) {
+function SystemFlowTab({ pipeline, cluster, project, account }: {
+  pipeline: Pipeline; cluster: Cluster | null;
+  project: Project; account: Account | null;
+}) {
   const [detailCam,     setDetailCam]     = useState<Camera | null>(null);
   const [detailCompute, setDetailCompute] = useState<ComputeInstance | null>(null);
   const [detailML,      setDetailML]      = useState<MLApp | null>(null);
+  const [notifyOpen,    setNotifyOpen]    = useState(false);
+  const [escalateOpen,  setEscalateOpen]  = useState(false);
 
   const cameras   = pipeline.cameras;
   const mlApps    = useMemo(
@@ -1018,11 +1342,16 @@ function SystemFlowTab({ pipeline, cluster }: { pipeline: Pipeline; cluster: Clu
             className="w-full pl-9 pr-4 py-2.5 text-[13px] rounded bg-white border border-gray-200 outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B] transition-all placeholder-gray-400"
           />
         </div>
-        <button className="px-4 py-2.5 text-[13px] font-medium rounded border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
+        <div className="flex-1" />
+        <button
+          onClick={() => setNotifyOpen(true)}
+          className="px-4 py-2.5 text-[13px] font-medium rounded border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2 flex-shrink-0">
           <Bell className="w-4 h-4" />
           Notify Client
         </button>
-        <button className="px-4 py-2.5 text-[13px] font-semibold rounded text-white flex items-center gap-2 transition-opacity hover:opacity-90"
+        <button
+          onClick={() => setEscalateOpen(true)}
+          className="px-4 py-2.5 text-[13px] font-semibold rounded text-white flex items-center gap-2 transition-opacity hover:opacity-90 flex-shrink-0"
           style={{ backgroundColor: TEAL }}>
           <PhoneCall className="w-4 h-4" />
           Escalate to Technical Team
@@ -1114,17 +1443,42 @@ function SystemFlowTab({ pipeline, cluster }: { pipeline: Pipeline; cluster: Clu
 
       {/* Camera detail drawer */}
       {detailCam && (
-        <CameraDetailModal cam={detailCam} onClose={() => setDetailCam(null)} />
+        <CameraDetailModal
+          cam={detailCam} pipeline={pipeline} project={project} account={account}
+          onClose={() => setDetailCam(null)}
+        />
       )}
 
       {/* Compute detail drawer */}
       {detailCompute && (
-        <ComputeDetailModal ci={detailCompute} onClose={() => setDetailCompute(null)} />
+        <ComputeDetailModal
+          ci={detailCompute} pipeline={pipeline} project={project} account={account}
+          onClose={() => setDetailCompute(null)}
+        />
       )}
 
       {/* ML App detail drawer */}
       {detailML && (
-        <MLDetailModal app={detailML} onClose={() => setDetailML(null)} />
+        <MLDetailModal
+          app={detailML} pipeline={pipeline} project={project} account={account}
+          onClose={() => setDetailML(null)}
+        />
+      )}
+
+      {/* Notify Client modal */}
+      {notifyOpen && (
+        <NotifyClientModal
+          pipeline={pipeline} project={project} account={account}
+          statusLabel={statusLabel} onClose={() => setNotifyOpen(false)}
+        />
+      )}
+
+      {/* Escalate modal */}
+      {escalateOpen && (
+        <EscalateModal
+          pipeline={pipeline} project={project} account={account}
+          statusLabel={statusLabel} onClose={() => setEscalateOpen(false)}
+        />
       )}
     </div>
   );
@@ -1524,7 +1878,7 @@ export function PipelineView({ pipeline, project, cluster, account, onBack }: Pi
 
       {/* Tab content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {tab === "system-flow"   && <SystemFlowTab   pipeline={pipeline} cluster={cluster} />}
+        {tab === "system-flow"   && <SystemFlowTab   pipeline={pipeline} cluster={cluster} project={project} account={account} />}
         {tab === "pipeline-logs" && <PipelineLogsTab pipeline={pipeline} />}
         {tab === "camera-logs"   && <CameraLogsTab   pipeline={pipeline} />}
       </div>
