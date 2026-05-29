@@ -25,7 +25,10 @@ interface AppProps {
 }
 
 export default function App({ onPlatformSwitch }: AppProps = {}) {
-  const [activePage, setActivePage]             = useState<Page>("support-desk");
+  const [activePage, setActivePage]             = useState<Page>(() => {
+    const p = new URLSearchParams(window.location.search).get("page") as Page | null;
+    return p ?? "support-desk";
+  });
   const [isDark, setIsDark]                     = useState(false);
   const [selectedAccount, setSelectedAccount]   = useState<Account | null>(null);
   const [selectedCluster, setSelectedCluster]   = useState<Cluster | null>(null);
