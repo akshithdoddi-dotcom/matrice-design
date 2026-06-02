@@ -4,6 +4,7 @@ import {
   Play, Search, RefreshCw, CheckCircle, AlertCircle, Info,
   AlertTriangle, XCircle, Terminal, Copy, LayoutGrid, List,
   FileDown, Cpu, Zap, Package, Settings2, ChevronDown, X,
+  Database, FlaskConical, TrendingUp, Layers,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -19,6 +20,7 @@ import { DataTable, type ColumnDef } from "@fe-common/components/ui/data-table";
 import { Switch } from "@fe-common/components/ui/switch";
 import { Select as FESelect } from "@fe-common/components/ui/ui-select";
 import { Input as FEInput } from "@fe-common/components/ui/ui-input";
+import { StatCard, type StatCardData } from "@fe-common/components/ui/StatCard";
 import { TrainingJob } from "@/app/data/mockData";
 import { cn } from "@/app/lib/utils";
 
@@ -275,38 +277,112 @@ function SummaryTab() {
   const [classRange,   setClassRange]   = useState<number[]>([0, 20]);
   const [viewMode,     setViewMode]     = useState<"grid" | "list">("grid");
 
+  const total = MODEL.trainCount + MODEL.testCount + MODEL.valCount;
+
+  const STAT_CARDS: StatCardData[] = [
+    {
+      label: "Test Accuracy", value: "84.19%", sublabel: "acc@1 · test split",
+      num: "+1.3%", ref_: "vs baseline", dir: "up", chip: "ACC@1",
+      color: "#00775B", bgColor: "#F0FBF7",
+      sparkline: [74, 78, 80, 80, 82, 83, 84, 84.19],
+    },
+    {
+      label: "Val Accuracy", value: "86.1%", sublabel: "acc@1 · val split",
+      num: "Epoch 50", ref_: "final epoch", dir: "up", chip: "VAL",
+      color: "#0284C7", bgColor: "#F0F7FF",
+      sparkline: [42, 62, 74, 81, 84, 85, 86, 86.1],
+    },
+    {
+      label: "Total Samples", value: "3,297", sublabel: `${MODEL.trainCount} train · ${MODEL.testCount} test · ${MODEL.valCount} val`,
+      num: `${MODEL.valCount}`, ref_: "val samples", dir: "neutral", chip: "DATA",
+      color: "#7C3AED", bgColor: "#FAF5FF",
+    },
+    {
+      label: "Model Params", value: "21.5M", sublabel: "EfficientNetV2-S",
+      num: "FP32", ref_: "no pruning", dir: "neutral", chip: "PARAMS",
+      color: "#D97706", bgColor: "#FFFBEB",
+    },
+  ];
+
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
-      {/* ── Top info panels ── */}
+      {/* ── StatCards row ── */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        {STAT_CARDS.map((d) => <StatCard key={d.label} d={d} />)}
+      </div>
+
+      {/* ── Dataset + Training Config info ── */}
       <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <div className="grid grid-cols-2 divide-x divide-neutral-100">
-            <KVCell k="Dataset Name"      v={<span className="text-[#00775B] font-semibold">{MODEL.dataset}</span>} />
-            <KVCell k="Dataset Version"   v={<span className="text-[#00775B] font-semibold">{MODEL.datasetVer}</span>} />
+
+        {/* Dataset card */}
+        <Card className="overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50/40">
+            <Database className="w-3.5 h-3.5 text-neutral-400" />
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">Dataset</h3>
           </div>
-          <div className="grid grid-cols-1 border-t border-neutral-100">
-            <KVCell k="Train / Test / Val Count"
-              v={<span className="text-[#00775B] font-semibold">{MODEL.trainCount}/{MODEL.testCount}/{MODEL.valCount}</span>} />
+          <div className="grid grid-cols-2 divide-x divide-neutral-100">
+            <KVCell k="Dataset Name"    v={<span className="text-[#00775B] font-semibold">{MODEL.dataset}</span>} />
+            <KVCell k="Dataset Version" v={<span className="text-[#00775B] font-semibold">{MODEL.datasetVer}</span>} />
+          </div>
+          <div className="border-t border-neutral-100 px-5 pt-3 pb-1 flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Split Distribution</span>
+            <div className="flex items-center gap-3 text-[10px]">
+              {([
+                { label: "Train", count: MODEL.trainCount, color: "#00775B" },
+                { label: "Test",  count: MODEL.testCount,  color: "#0284C7" },
+                { label: "Val",   count: MODEL.valCount,   color: "#D97706" },
+              ] as const).map(({ label, count, color }) => (
+                <span key={label} className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-sm shrink-0 inline-block" style={{ backgroundColor: color }} />
+                  <span className="text-neutral-500">{label}</span>
+                  <span className="font-mono font-semibold" style={{ color }}>{count.toLocaleString()}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="px-5 pb-4 pt-2">
+            <div className="h-2 rounded-full overflow-hidden flex">
+              <div className="h-full bg-[#00775B] transition-all" style={{ width: `${(MODEL.trainCount / total) * 100}%` }} />
+              <div className="h-full bg-[#0284C7] transition-all" style={{ width: `${(MODEL.testCount  / total) * 100}%` }} />
+              <div className="h-full bg-[#D97706] transition-all" style={{ width: `${(MODEL.valCount   / total) * 100}%` }} />
+            </div>
           </div>
         </Card>
 
-        <Card>
+        {/* Training config card */}
+        <Card className="overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50/40">
+            <Cpu className="w-3.5 h-3.5 text-neutral-400" />
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">Training Configuration</h3>
+          </div>
           <div className="grid grid-cols-2 divide-x divide-neutral-100">
             <KVCell k="Training Framework" v={<span className="text-[#00775B] font-semibold">{MODEL.framework}</span>} />
             <KVCell k="Target Runtime"     v={<span className="text-[#00775B] font-semibold">{MODEL.targetRuntime}</span>} />
           </div>
           <div className="grid grid-cols-2 divide-x divide-neutral-100 border-t border-neutral-100">
-            <KVCell k="Primary Metric"     v={<span className="text-[#00775B] font-semibold">{MODEL.metric}</span>} />
-            <KVCell k="Performance (Test)" v={<span className="text-[#00775B] font-semibold">{MODEL.performance}</span>} />
+            <KVCell k="Primary Metric" v={
+              <span className="inline-flex items-center h-6 px-2.5 rounded-[4px] text-[11px] font-bold bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20">
+                {MODEL.metric}
+              </span>
+            } />
+            <KVCell k="Performance (Test)" v={
+              <div className="flex items-center gap-2">
+                <span className="text-[22px] font-bold font-mono text-[#00775B] leading-none">{(MODEL.performance * 100).toFixed(2)}%</span>
+                <TrendingUp className="w-4 h-4 text-[#00775B]/60" />
+              </div>
+            } />
           </div>
         </Card>
       </div>
 
-      {/* ── Model Performance ── */}
+      {/* ── Model Performance chart ── */}
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-          <h3 className="text-[14px] font-semibold text-neutral-800">Model Performance</h3>
+          <div>
+            <h3 className="text-[13px] font-semibold text-neutral-800">Model Performance</h3>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Per-class breakdown across splits</p>
+          </div>
           <div className="flex items-center gap-1 bg-neutral-100 rounded-md p-0.5">
             <button onClick={() => setViewMode("grid")}
               className={cn("p-1.5 rounded transition-colors", viewMode === "grid" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
@@ -321,7 +397,7 @@ function SummaryTab() {
 
         <div className="flex">
           {/* Filter sidebar */}
-          <div className="w-72 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-4 bg-neutral-50/30">
+          <div className="w-64 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-4 bg-neutral-50/30">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Filters</p>
             <MultiChipSelect label="Select Split Type"
               values={splitFilter} onRemove={(v) => setSplitFilter(p => p.filter(x => x !== v))}
@@ -349,20 +425,35 @@ function SummaryTab() {
               placeholder="Select models…" />
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-neutral-600">Number of Classes (Max 20)</Label>
+                <Label className="text-xs text-neutral-600">Number of Classes</Label>
+                <span className="text-[10px] font-mono text-neutral-400">{classRange[0]}–{classRange[1]}</span>
               </div>
               <Slider value={classRange} onValueChange={setClassRange} min={0} max={20} step={1}
                 className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
             </div>
-            <button className="h-9 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#006649] transition-colors">
+            <button className="h-9 rounded-[4px] bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#006649] transition-colors">
               Apply Filters
             </button>
           </div>
 
-          {/* Chart */}
-          <div className="flex-1 p-5">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={PERF_DATA} layout="vertical" margin={{ top: 8, right: 32, bottom: 24, left: 56 }}>
+          {/* Chart area */}
+          <div className="flex-1 p-5 flex flex-col gap-3">
+            {/* Quick metric chips */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {[
+                { label: "Accuracy",   value: "84.19%", color: "#00775B" },
+                { label: "Macro F1",   value: "0.882",  color: "#0284C7" },
+                { label: "Precision",  value: "0.889",  color: "#7C3AED" },
+                { label: "Recall",     value: "0.883",  color: "#D97706" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="flex items-center gap-2 h-8 px-3 rounded-[4px] border border-neutral-200 bg-white">
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wide">{label}</span>
+                  <span className="font-mono font-bold text-[12px]" style={{ color }}>{value}</span>
+                </div>
+              ))}
+            </div>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={PERF_DATA} layout="vertical" margin={{ top: 4, right: 32, bottom: 24, left: 56 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
                 <XAxis type="number" domain={[0, 0.9]} tick={{ fontSize: 10, fill: "#94A3B8" }}
                   label={{ value: metricFilter, position: "insideBottom", offset: -14, fontSize: 10, fill: "#94A3B8" }} />
@@ -371,7 +462,7 @@ function SummaryTab() {
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
                     return (
-                      <div className="bg-white border border-neutral-200 rounded px-3 py-2 shadow text-[11px]">
+                      <div className="bg-white border border-neutral-200 rounded-[4px] px-3 py-2 shadow text-[11px]">
                         <p className="font-semibold text-neutral-800 capitalize mb-1">{label}</p>
                         {payload.map((p) => (
                           <p key={p.dataKey} className="font-mono" style={{ color: p.fill }}>
@@ -382,9 +473,9 @@ function SummaryTab() {
                     );
                   }}
                 />
-                <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
-                <Bar dataKey="val"  name={`${MODEL.name.slice(0, 22)}… (val)`}  fill="#06B6D4" barSize={22} />
-                <Bar dataKey="test" name={`${MODEL.name.slice(0, 22)}… (test)`} fill={TEAL}     barSize={22} />
+                <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                <Bar dataKey="val"  name={`${MODEL.name.slice(0, 22)}… (val)`}  fill="#06B6D4" barSize={20} radius={[0, 2, 2, 0]} />
+                <Bar dataKey="test" name={`${MODEL.name.slice(0, 22)}… (test)`} fill={TEAL}     barSize={20} radius={[0, 2, 2, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -398,117 +489,231 @@ function SummaryTab() {
 // TAB 2 — HYPERPARAMETERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Param group definition
+const PARAM_GROUPS = [
+  {
+    id: "training",
+    label: "Training Config",
+    color: "#00775B",
+    bgColor: "#F0FBF7",
+    icon: Cpu,
+    params: [
+      { key: "batch_size",     label: "Batch Size",          chip: false },
+      { key: "epochs",         label: "Epochs",              chip: false },
+      { key: "patience",       label: "Early Stop Patience", chip: false },
+      { key: "min_delta",      label: "Min Delta",           chip: false },
+      { key: "primary_metric", label: "Primary Metric",      chip: true  },
+      { key: "target_runtime", label: "Target Runtime",      chip: true  },
+    ],
+  },
+  {
+    id: "optimizer",
+    label: "Optimizer",
+    color: "#0284C7",
+    bgColor: "#F0F7FF",
+    icon: Zap,
+    params: [
+      { key: "optimizer",    label: "Optimizer",    chip: true  },
+      { key: "learning_rate",label: "Learning Rate",chip: false },
+      { key: "momentum",     label: "Momentum",     chip: false },
+      { key: "weight_decay", label: "Weight Decay", chip: false },
+    ],
+  },
+  {
+    id: "scheduler",
+    label: "LR Scheduler",
+    color: "#7C3AED",
+    bgColor: "#FAF5FF",
+    icon: Settings2,
+    params: [
+      { key: "lr_scheduler", label: "Scheduler Type", chip: true  },
+      { key: "lr_step_size", label: "Step Size",       chip: false },
+      { key: "lr_gamma",     label: "Gamma",           chip: false },
+      { key: "lr_min",       label: "Min LR",          chip: false },
+    ],
+  },
+] as const;
+
 function HyperparametersTab() {
-  const chipParams = ["target_runtime"];
-  const params = Object.entries(MODEL.params);
 
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
-      {/* Model Parameters */}
-      <Card className="overflow-hidden">
-        <SectionHead title="Model Parameters" sub={`${params.length} configuration values`} />
-        <div className="grid grid-cols-3 divide-y divide-neutral-100">
-          {params.map(([k, v]) => (
-            <div key={k} className={cn("flex flex-col gap-1.5 px-5 py-4 border-r border-neutral-100",
-              "[&:nth-child(3n)]:border-r-0")}>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{k}</span>
-              {chipParams.includes(k) ? (
-                <span className="inline-flex items-center h-5 px-2 rounded bg-neutral-100 text-neutral-700 text-[11px] font-semibold w-fit">{v}</span>
-              ) : (
-                <span className="text-[13px] font-mono font-semibold text-neutral-800">{v}</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </Card>
+      {/* ── Param group cards ── */}
+      <div className="grid grid-cols-3 gap-4">
+        {PARAM_GROUPS.map((group) => {
+          const GroupIcon = group.icon;
+          return (
+            <Card key={group.id} className="overflow-hidden">
+              {/* Group header */}
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+                <GroupIcon className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">
+                  {group.label}
+                </h3>
+                <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-500">
+                  {group.params.length}
+                </span>
+              </div>
+              {/* Params list */}
+              <div className="divide-y divide-neutral-100">
+                {group.params.map(({ key, label, chip }) => {
+                  const value = MODEL.params[key as keyof typeof MODEL.params];
+                  return (
+                    <div key={key} className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50/60 transition-colors">
+                      <span className="text-[11px] text-neutral-500 shrink-0 mr-3">{label}</span>
+                      {chip ? (
+                        <span className="inline-flex items-center h-5 px-2.5 rounded-[4px] text-[10px] font-bold uppercase tracking-wide shrink-0"
+                          style={{ backgroundColor: `${group.color}14`, color: group.color }}>
+                          {value}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[13px] font-semibold text-neutral-800">{value}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
 
-      {/* Model Information */}
-      <Card className="overflow-hidden">
-        <SectionHead title="Model Information" />
-        <div className="grid grid-cols-4 divide-x divide-neutral-100">
-          <KVCell k="Model Key"              v={MODEL.modelInfo.key}    />
-          <KVCell k="Model Name"             v={MODEL.modelInfo.name}   />
-          <KVCell k="Parameters (Million)"   v={MODEL.modelInfo.paramsM}/>
-          <KVCell k="Recommended Runtime"    v={MODEL.modelInfo.runtime}/>
-        </div>
-      </Card>
+      {/* ── Model Info + Benchmark Results + Architectures — same row ── */}
+      <div className="grid grid-cols-3 gap-4">
 
-      {/* Benchmark Results */}
-      <DataTable<{ id: string; dataset: string; metric: string; split: string; value: number }>
-        columns={[
-          { id: "dataset", header: "Benchmark Dataset", accessorKey: "dataset",
-            cell: ({ row }) => <span className="font-semibold text-neutral-700">{row.dataset}</span> },
-          { id: "metric",  header: "Metric",  accessorKey: "metric",
-            cell: ({ row }) => <span className="font-mono text-neutral-500">{row.metric}</span> },
-          { id: "split",   header: "Split Type", accessorKey: "split",
-            cell: ({ row }) => <span className="text-neutral-500">{row.split}</span> },
-          { id: "value",   header: "Value", accessorKey: "value", align: "right",
-            cell: ({ row }) => <span className="font-mono font-semibold text-neutral-800">{row.value}</span> },
-        ]}
-        data={[{ id: "bm-1", dataset: "ImageNet", metric: "acc@1", split: "val", value: 84.23 }]}
-        rowIdKey="id"
-        pagination="none"
-        toolbar={false}
-        showRowCue={false}
-        cardTitle="Benchmark Results"
-      />
-
-      {/* Model Family Info */}
-      <Card className="overflow-hidden">
-        <SectionHead title="Model Family Info" />
-        <div className="grid grid-cols-3 divide-x divide-neutral-100 border-b border-neutral-100">
-          <KVCell k="Model Family Name" v={MODEL.familyInfo.familyName} />
-          <KVCell k="Model Input"  v={MODEL.familyInfo.input}  chip />
-          <KVCell k="Model Output" v={MODEL.familyInfo.output} chip />
-        </div>
-        <div className="grid grid-cols-3 divide-x divide-neutral-100 border-b border-neutral-100">
-          <KVCell k="Export Formats"     v={MODEL.familyInfo.exportFmts}  chip />
-          <KVCell k="Benchmark Datasets" v={MODEL.familyInfo.benchmarks}       />
-          <KVCell k="Supported Metrics"  v={MODEL.familyInfo.metrics}     chip />
-        </div>
-        <div className="grid grid-cols-3 divide-x divide-neutral-100 border-b border-neutral-100">
-          <KVCell k="Training Docker Container" v={MODEL.familyInfo.dockerImg} />
-          <KVCell k="Training Framework"        v={MODEL.familyInfo.trainFW}   />
-          <KVCell k="Data Processing"           v={MODEL.familyInfo.dataProc}  />
-        </div>
-        <div className="grid grid-cols-3 divide-x divide-neutral-100 border-b border-neutral-100">
-          <KVCell k="Pruning Support" v={MODEL.familyInfo.pruning} />
-          <KVCell k="Keep Private"    v={MODEL.familyInfo.private} />
-          <KVCell k="References" v={
-            <a href={MODEL.familyInfo.references[0]} target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-1 h-5 px-2 rounded border border-neutral-200 bg-neutral-50 text-[10px] font-medium text-[#0284C7] hover:underline">
-              arxiv.org <ExternalLink className="w-2.5 h-2.5" />
-            </a>
-          } />
-        </div>
-        <div className="grid grid-cols-3 divide-x divide-neutral-100">
-          <KVCell k="Code Repository Link" v={MODEL.familyInfo.repoLink} />
-          <div className="col-span-2 px-5 py-4">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-1.5">Description</span>
-            <p className="text-[12px] text-neutral-600 leading-relaxed">{MODEL.familyInfo.description}</p>
+        {/* ── Model Information ── */}
+        <Card className="overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+            <Package className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">Model Information</h3>
           </div>
-        </div>
-      </Card>
+          <div className="divide-y divide-neutral-100">
+            {([
+              { label: "Model Key",       value: MODEL.modelInfo.key,       mono: true,  accent: false },
+              { label: "Model Name",      value: MODEL.modelInfo.name,      mono: false, accent: false },
+              { label: "Parameters",      value: `${MODEL.modelInfo.paramsM}M`, mono: true, accent: true },
+              { label: "Runtime",         value: MODEL.modelInfo.runtime,   mono: false, accent: false },
+              { label: "Framework",       value: MODEL.familyInfo.trainFW,  mono: false, accent: false },
+              { label: "Data Processing", value: MODEL.familyInfo.dataProc, mono: false, accent: false },
+              { label: "Pruning",         value: MODEL.familyInfo.pruning,  mono: false, accent: false },
+              { label: "Input → Output",  value: `${MODEL.familyInfo.input} → ${MODEL.familyInfo.output}`, mono: false, accent: false },
+            ] as { label: string; value: string; mono: boolean; accent: boolean }[]).map(({ label, value, mono, accent }) => (
+              <div key={label} className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50/60 transition-colors">
+                <span className="text-[11px] text-neutral-500 shrink-0 mr-3">{label}</span>
+                <span className={cn(
+                  "text-[12px] font-semibold text-right capitalize",
+                  mono && "font-mono normal-case",
+                  accent ? "text-[#00775B]" : "text-neutral-800",
+                )}>
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
 
-      {/* Model Architectures */}
-      <DataTable<{ id: string; name: string; key: string; paramsM: number }>
-        columns={[
-          { id: "name",   header: "Model Name",       accessorKey: "name",
-            cell: ({ row }) => <span className="font-semibold text-neutral-800">{row.name}</span> },
-          { id: "key",    header: "Model Key",         accessorKey: "key",
-            cell: ({ row }) => <span className="font-mono text-neutral-500">{row.key}</span> },
-          { id: "params", header: "Params (Millions)", accessorKey: "paramsM", align: "right",
-            cell: ({ row }) => <span className="font-mono font-semibold text-neutral-700">{row.paramsM}</span> },
-        ]}
-        data={MODEL.architectures.map((a) => ({ id: a.key, ...a }))}
-        rowIdKey="id"
-        pagination="none"
-        toolbar={false}
-        showRowCue={false}
-        cardTitle="Model Architectures"
-        cardSubTitle="Available variants within this model family"
-      />
+        {/* ── Benchmark Results ── */}
+        <Card className="overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+            <FlaskConical className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">Benchmark Results</h3>
+            <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-500">1</span>
+          </div>
+          <div className="divide-y divide-neutral-100">
+            {([
+              { label: "Dataset", value: "ImageNet",  chip: false },
+              { label: "Metric",  value: "acc@1",     chip: true, chipColor: "#00775B", chipBg: "#E5FFF9" },
+              { label: "Split",   value: "val",       chip: true, chipColor: "#475569",  chipBg: "#F1F5F9" },
+            ] as { label: string; value: string; chip: boolean; chipColor?: string; chipBg?: string }[]).map(({ label, value, chip, chipColor, chipBg }) => (
+              <div key={label} className="flex items-center justify-between px-5 py-3">
+                <span className="text-[11px] text-neutral-500">{label}</span>
+                {chip ? (
+                  <span className="inline-flex items-center h-5 px-2.5 rounded-[4px] text-[10px] font-bold border"
+                    style={{ color: chipColor, backgroundColor: chipBg, borderColor: `${chipColor}30` }}>
+                    {value.toUpperCase()}
+                  </span>
+                ) : (
+                  <span className="text-[13px] font-bold text-neutral-800">{value}</span>
+                )}
+              </div>
+            ))}
+            {/* Score section */}
+            <div className="px-5 py-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-neutral-500">Score</span>
+                <span className="font-mono font-bold text-[22px] text-[#0284C7] leading-none">84.23</span>
+              </div>
+              <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-[#0284C7]" style={{ width: "84.23%" }} />
+              </div>
+              <div className="flex justify-between text-[9px] font-mono text-neutral-400">
+                <span>0</span><span>50</span><span>100</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* ── Model Architectures ── */}
+        <Card className="overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+            <Layers className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">Model Architectures</h3>
+            <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-500">
+              {MODEL.architectures.length}
+            </span>
+          </div>
+          <div className="divide-y divide-neutral-100">
+            {MODEL.architectures.map((arch) => {
+              const isActive = arch.key === MODEL.modelInfo.key;
+              const pct = (arch.paramsM / 120) * 100;
+              return (
+                <div key={arch.key}
+                  className={cn(
+                    "px-5 py-3.5 flex flex-col gap-2 transition-colors",
+                    isActive ? "bg-[#F0FBF7]" : "hover:bg-neutral-50/50",
+                  )}>
+                  {/* Name + badge row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full shrink-0",
+                        isActive ? "bg-[#00775B]" : "bg-neutral-300",
+                      )} />
+                      <span className="text-[12px] font-semibold text-neutral-800">{arch.name}</span>
+                      {isActive && (
+                        <span className="inline-flex items-center h-4 px-1.5 rounded-[4px] bg-[#E5FFF9] text-[#00775B] text-[9px] font-bold uppercase border border-[#00775B]/20">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <span className={cn(
+                      "inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-bold shrink-0",
+                      isActive ? "bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20" : "bg-neutral-100 text-neutral-500",
+                    )}>
+                      {arch.paramsM < 30 ? "Small" : arch.paramsM < 80 ? "Medium" : "Large"}
+                    </span>
+                  </div>
+                  {/* Params bar */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full"
+                        style={{ width: `${pct}%`, backgroundColor: isActive ? "#00775B" : "#7C3AED" }} />
+                    </div>
+                    <span className="font-mono text-[11px] font-bold shrink-0 w-10 text-right"
+                      style={{ color: isActive ? "#00775B" : "#7C3AED" }}>
+                      {arch.paramsM}M
+                    </span>
+                  </div>
+                  {/* Model key */}
+                  <span className="font-mono text-[10px] text-neutral-400">{arch.key}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+      </div>
     </div>
   );
 }
