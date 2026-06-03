@@ -31,6 +31,7 @@ type Application = {
   updatedAt: string;
   versions: number;
   issueCount: number;
+  image?: string;
 };
 
 type ReportedIssue = {
@@ -48,14 +49,14 @@ type ReportedIssue = {
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const MOCK_APPS: Application[] = [
-  { id: "app-001", name: "PPE COMPLIANCE DETECTION",    description: "Detects missing personal protective equipment on workers in real-time, including helmets, vests, and gloves. Triggers instant alerts to safety supervisors.",         status: "published", category: "SAFETY",              industries: ["Oil & Gas", "Manufacturing"],  tags: ["detection", "safety"],     url: "https://dev.app.matrice.ai/publish/app-001", updatedAt: "May 11, 2026",  versions: 2, issueCount: 0 },
-  { id: "app-002", name: "BAGGAGE THREAT SCREENING",    description: "AI-powered detection of prohibited items and potential threats in baggage at checkpoints. Flags anomalies for security personnel review with confidence scores.",       status: "in-review", category: "SECURITY",            industries: ["Airport", "Transportation"],   tags: ["detection", "security"],   url: "",                                          updatedAt: "Jan 12, 2026",  versions: 1, issueCount: 1 },
-  { id: "app-003", name: "PEOPLE COUNTING & FLOW",      description: "Accurately counts and tracks the flow of people entering, exiting, and moving across zones. Provides occupancy analytics and crowd density heatmaps in real-time.",   status: "published", category: "ANALYTICS",           industries: ["Retail", "Mall", "Airport"],   tags: ["counting", "tracking"],   url: "https://dev.app.matrice.ai/publish/686d0ece378", updatedAt: "Nov 13, 2025", versions: 3, issueCount: 0 },
-  { id: "app-004", name: "VEHICLE LICENSE PLATE OCR",   description: "Reads and logs vehicle license plates at entry and exit points. Integrates with access control systems to automate gate operations and maintain vehicle logs.",       status: "published", category: "ACCESS CONTROL",      industries: ["Corporate", "Manufacturing"], tags: ["ocr", "vehicle"],          url: "https://dev.app.matrice.ai/publish/886d0ece378", updatedAt: "May 8, 2026",  versions: 2, issueCount: 0 },
-  { id: "app-005", name: "FORKLIFT PROXIMITY ALERT",    description: "Monitors safe distances between forklifts and pedestrians on the warehouse floor. Emits audio-visual warnings when proximity thresholds are breached.",              status: "created",   category: "SAFETY",              industries: ["Manufacturing", "Logistics"],  tags: ["proximity", "safety"],    url: "",                                          updatedAt: "Jul 15, 2025",  versions: 0, issueCount: 0 },
-  { id: "app-006", name: "SHELF STOCK MONITOR",         description: "Automatically detects empty or low-stock shelves using ceiling cameras and notifies store staff. Reduces out-of-stock incidents and improves replenishment speed.",   status: "created",   category: "RETAIL ANALYTICS",   industries: ["Retail", "Grocery"],          tags: ["inventory", "retail"],    url: "",                                          updatedAt: "Jul 16, 2025",  versions: 0, issueCount: 0 },
-  { id: "app-007", name: "FIRE & SMOKE DETECTION",      description: "Early detection of fire and smoke across camera feeds using thermal and visual analysis. Integrates with alarm systems for automated emergency response triggers.",   status: "in-review", category: "SAFETY",              industries: ["Healthcare", "Construction"],  tags: ["fire", "safety"],         url: "",                                          updatedAt: "Jul 28, 2025",  versions: 1, issueCount: 0 },
-  { id: "app-008", name: "CUSTOMER QUEUE ANALYTICS",    description: "Measures queue lengths and estimated wait times at checkout counters and service desks. Provides actionable staffing insights to reduce customer wait times.",        status: "created",   category: "ANALYTICS",           industries: ["Retail", "Hospitality"],       tags: ["queue", "analytics"],     url: "",                                          updatedAt: "Jul 23, 2025",  versions: 0, issueCount: 0 },
+  { id: "app-001", name: "PPE COMPLIANCE DETECTION",    description: "Detects missing personal protective equipment on workers in real-time, including helmets, vests, and gloves. Triggers instant alerts to safety supervisors.",         status: "published", category: "SAFETY",              industries: ["Oil & Gas", "Manufacturing"],  tags: ["detection", "safety"],     url: "https://dev.app.matrice.ai/publish/app-001", updatedAt: "May 11, 2026",  versions: 2, issueCount: 0, image: "/unauthorized-entry.png" },
+  { id: "app-002", name: "BAGGAGE THREAT SCREENING",    description: "AI-powered detection of prohibited items and potential threats in baggage at checkpoints. Flags anomalies for security personnel review with confidence scores.",       status: "in-review", category: "SECURITY",            industries: ["Airport", "Transportation"],   tags: ["detection", "security"],   url: "",                                          updatedAt: "Jan 12, 2026",  versions: 1, issueCount: 1, image: "/abandoned-object.png" },
+  { id: "app-003", name: "PEOPLE COUNTING & FLOW",      description: "Accurately counts and tracks the flow of people entering, exiting, and moving across zones. Provides occupancy analytics and crowd density heatmaps in real-time.",   status: "published", category: "ANALYTICS",           industries: ["Retail", "Mall", "Airport"],   tags: ["counting", "tracking"],   url: "https://dev.app.matrice.ai/publish/686d0ece378", updatedAt: "Nov 13, 2025", versions: 3, issueCount: 0, image: "/queue-overcrowding.png" },
+  { id: "app-004", name: "VEHICLE LICENSE PLATE OCR",   description: "Reads and logs vehicle license plates at entry and exit points. Integrates with access control systems to automate gate operations and maintain vehicle logs.",       status: "published", category: "ACCESS CONTROL",      industries: ["Corporate", "Manufacturing"], tags: ["ocr", "vehicle"],          url: "https://dev.app.matrice.ai/publish/886d0ece378", updatedAt: "May 8, 2026",  versions: 2, issueCount: 0, image: "/vehicle-accident.png" },
+  { id: "app-005", name: "FORKLIFT PROXIMITY ALERT",    description: "Monitors safe distances between forklifts and pedestrians on the warehouse floor. Emits audio-visual warnings when proximity thresholds are breached.",              status: "created",   category: "SAFETY",              industries: ["Manufacturing", "Logistics"],  tags: ["proximity", "safety"],    url: "",                                          updatedAt: "Jul 15, 2025",  versions: 0, issueCount: 0, image: "/panic-movement.png" },
+  { id: "app-006", name: "SHELF STOCK MONITOR",         description: "Automatically detects empty or low-stock shelves using ceiling cameras and notifies store staff. Reduces out-of-stock incidents and improves replenishment speed.",   status: "created",   category: "RETAIL ANALYTICS",   industries: ["Retail", "Grocery"],          tags: ["inventory", "retail"],    url: "",                                          updatedAt: "Jul 16, 2025",  versions: 0, issueCount: 0, image: "/theft-shoplifting.png" },
+  { id: "app-007", name: "FIRE & SMOKE DETECTION",      description: "Early detection of fire and smoke across camera feeds using thermal and visual analysis. Integrates with alarm systems for automated emergency response triggers.",   status: "in-review", category: "SAFETY",              industries: ["Healthcare", "Construction"],  tags: ["fire", "safety"],         url: "",                                          updatedAt: "Jul 28, 2025",  versions: 1, issueCount: 0, image: "/fire-smoke.png" },
+  { id: "app-008", name: "CUSTOMER QUEUE ANALYTICS",    description: "Measures queue lengths and estimated wait times at checkout counters and service desks. Provides actionable staffing insights to reduce customer wait times.",        status: "created",   category: "ANALYTICS",           industries: ["Retail", "Hospitality"],       tags: ["queue", "analytics"],     url: "",                                          updatedAt: "Jul 23, 2025",  versions: 0, issueCount: 0, image: "/crowd-surge.png" },
 ];
 
 const MOCK_ISSUES: ReportedIssue[] = [
@@ -98,22 +99,28 @@ const THUMBNAIL_THEMES: Record<AppStatus, { bg: string; grid: string; accent: st
   rejected:   { bg: "#1c0505", grid: "#f87171", accent: "#DC2626" },
 };
 
-function AppThumbnail({ status, name }: { status: AppStatus; name: string }) {
+function AppThumbnail({ status, name, image }: { status: AppStatus; name: string; image?: string }) {
   const t = THUMBNAIL_THEMES[status];
   const initials = name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
+
+  if (image) {
+    return (
+      <div className="w-full h-36 relative overflow-hidden flex-shrink-0">
+        <img src={image} alt={name} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_DOT[status] }} />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-36 relative overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: t.bg }}>
-      {/* Subtle dot grid */}
-      <div className="absolute inset-0"
-        style={{ backgroundImage: `radial-gradient(${t.grid}28 1px, transparent 1px)`, backgroundSize: "20px 20px" }} />
-      {/* Glow */}
+      <div className="absolute inset-0" style={{ backgroundImage: `radial-gradient(${t.grid}28 1px, transparent 1px)`, backgroundSize: "20px 20px" }} />
       <div className="absolute inset-0 opacity-20" style={{ background: `radial-gradient(ellipse at 50% 60%, ${t.accent}80, transparent 70%)` }} />
-      {/* Initials badge */}
       <div className="relative z-10 w-14 h-14 rounded-[8px] flex items-center justify-center text-[18px] font-black tracking-tight text-white/90"
         style={{ backgroundColor: t.accent + "33", border: `1.5px solid ${t.accent}60` }}>
         {initials || "AI"}
       </div>
-      {/* Status pip */}
       <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_DOT[status] }} />
     </div>
   );
@@ -127,7 +134,7 @@ function AppCard({ app, onClick }: { app: Application; onClick: () => void }) {
       onClick={onClick}
       className="bg-white rounded-[6px] border border-neutral-200 overflow-hidden flex flex-col cursor-pointer hover:border-[#00775B]/50 hover:shadow-lg transition-all group"
     >
-      <AppThumbnail status={app.status} name={app.name} />
+      <AppThumbnail status={app.status} name={app.name} image={app.image} />
 
       <div className="p-4 flex flex-col gap-3 flex-1">
         {/* Category + issue badge */}
@@ -187,7 +194,7 @@ function AppListRow({ app, onClick }: { app: Application; onClick: () => void })
       className="flex items-center gap-4 px-5 py-3 border-b border-neutral-100 hover:bg-neutral-50 transition-colors cursor-pointer"
     >
       <div className="w-10 h-10 rounded-[4px] overflow-hidden flex-shrink-0" style={{ backgroundColor: "#004d38" }}>
-        <AppThumbnail status={app.status} name={app.name} />
+        <AppThumbnail status={app.status} name={app.name} image={app.image} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -506,7 +513,7 @@ function ApplicationDetail({
       {/* App header card */}
       <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex gap-0">
         <div className="w-48 flex-shrink-0">
-          <AppThumbnail status={app.status} name={app.name} />
+          <AppThumbnail status={app.status} name={app.name} image={app.image} />
         </div>
         <div className="flex-1 p-5 flex flex-col gap-2 justify-center border-l border-neutral-100">
           <div className="flex items-start justify-between">

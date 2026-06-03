@@ -32,250 +32,30 @@ type App = {
   color: string;
   iconBg: string;
   Icon: React.ComponentType<{ className?: string }>;
+  image?: string;
 };
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────────
 
 const APPS: App[] = [
-  {
-    id: "a-001",
-    name: "PEOPLE COUNTING AT ENTRY/EXIT",
-    description: "Real-time counting and tracking of people entering and exiting airport terminals",
-    badge: "OPTIMIZE STAFFING LEVELS",
-    tags: ["COMMON", "AIRPORT"],
-    scenarios: ["Airport", "Mall", "Hospital"],
-    industries: ["Transportation", "Healthcare", "Retail"],
-    categories: ["Most Common"],
-    featured: true,
-    color: "#1e3a2f",
-    iconBg: "#2d5a42",
-    Icon: Users,
-  },
-  {
-    id: "a-002",
-    name: "BAGGAGE DETECTION & TRACKING",
-    description: "Automated detection and tracking of unattended baggage in restricted areas",
-    badge: "LOWER LIABILITY CLAIMS",
-    tags: ["SAFETY", "AIRPORT"],
-    scenarios: ["Airport"],
-    industries: ["Transportation"],
-    categories: ["Safety & Compliance"],
-    featured: true,
-    color: "#2d1f0e",
-    iconBg: "#5a3c1a",
-    Icon: AlertTriangle,
-  },
-  {
-    id: "a-003",
-    name: "QUEUE LENGTH MONITORING",
-    description: "Monitor and optimize queue lengths at security checkpoints and check-in counters",
-    badge: "MINIMIZE WAIT TIMES",
-    tags: ["OPERATIONS", "AIRPORT"],
-    scenarios: ["Airport", "Hospital", "Retail Store"],
-    industries: ["Transportation", "Healthcare", "Retail"],
-    categories: ["Operations & Analytics"],
-    featured: true,
-    color: "#0c2340",
-    iconBg: "#1a3d6b",
-    Icon: BarChart2,
-  },
-  {
-    id: "a-004",
-    name: "PERIMETER INTRUSION DETECTION",
-    description: "Detect unauthorized access along perimeter fences and restricted zones",
-    badge: "REDUCE SECURITY RISK",
-    tags: ["INFRASTRUCTURE", "AIRPORT"],
-    scenarios: ["Airport", "Construction", "Workplace"],
-    industries: ["Transportation", "Manufacturing", "Corporate"],
-    categories: ["Infrastructure"],
-    featured: true,
-    color: "#0a2420",
-    iconBg: "#12463e",
-    Icon: Shield,
-  },
-  {
-    id: "a-005",
-    name: "CUSTOMER COUNTING & HEATMAP",
-    description: "Track customer foot traffic and generate heat maps for store layout optimization",
-    badge: "IDENTIFY HIGH-VALUE ZONES",
-    tags: ["COMMON", "RETAIL STORE"],
-    scenarios: ["Retail Store", "Mall", "Restaurant"],
-    industries: ["Retail", "Hospitality"],
-    categories: ["Most Common", "Operations & Analytics"],
-    featured: true,
-    color: "#1a1a2e",
-    iconBg: "#2d2d5a",
-    Icon: Eye,
-  },
-  {
-    id: "a-006",
-    name: "CUSTOMER FLOW ANALYSIS",
-    description: "Track customer movement patterns to optimize table layouts and service efficiency",
-    badge: "INCREASE CAPTURE RATE",
-    tags: ["COMMON", "RESTAURANT"],
-    scenarios: ["Restaurant", "Retail Store", "Mall"],
-    industries: ["Hospitality", "Retail"],
-    categories: ["Most Common"],
-    color: "#1e2a1e",
-    iconBg: "#2d452d",
-    Icon: Users,
-  },
-  {
-    id: "a-007",
-    name: "OCCUPANCY DETECTION",
-    description: "Monitor real-time office occupancy to optimize space utilization and energy usage",
-    badge: "MAXIMIZE SPACE UTILITY",
-    tags: ["COMMON", "WORKPLACE"],
-    scenarios: ["Workplace", "Hospital", "University"],
-    industries: ["Corporate", "Healthcare", "Education"],
-    categories: ["Most Common"],
-    color: "#1a1420",
-    iconBg: "#2d2040",
-    Icon: Building2,
-  },
-  {
-    id: "a-008",
-    name: "PPE COMPLIANCE DETECTION",
-    description: "Detect and alert when workers are not wearing required personal protective equipment",
-    badge: "ENSURE SITE SAFETY",
-    tags: ["COMMON", "CONSTRUCTION"],
-    scenarios: ["Construction", "Workplace"],
-    industries: ["Construction", "Manufacturing"],
-    categories: ["Most Common", "Safety & Compliance"],
-    color: "#2a1a08",
-    iconBg: "#5a3810",
-    Icon: HardHat,
-  },
-  {
-    id: "a-009",
-    name: "SMART PARKING MANAGEMENT",
-    description: "Automated parking spot detection and guidance system",
-    badge: "MAINTAIN TRAFFIC FLOW",
-    tags: ["INFRASTRUCTURE", "MALL"],
-    scenarios: ["Mall", "Airport", "Workplace"],
-    industries: ["Retail", "Transportation", "Corporate"],
-    categories: ["Infrastructure"],
-    color: "#0f1f2a",
-    iconBg: "#1a3545",
-    Icon: Car,
-  },
-  {
-    id: "a-010",
-    name: "VEHICLE LICENSE PLATE RECOGNITION",
-    description: "Automatic number plate recognition for access control",
-    badge: "AUTOMATE GATE ENTRY",
-    tags: ["INFRASTRUCTURE", "WORKPLACE"],
-    scenarios: ["Workplace", "Airport", "Hospital"],
-    industries: ["Corporate", "Transportation", "Healthcare"],
-    categories: ["Infrastructure"],
-    color: "#1f1a0a",
-    iconBg: "#3d3318",
-    Icon: Car,
-  },
-  {
-    id: "a-011",
-    name: "WASTE MANAGEMENT MONITORING",
-    description: "Monitor waste bin levels to optimize collection schedules",
-    badge: "ENHANCE SERVICE EFFICIENCY",
-    tags: ["INFRASTRUCTURE", "UNIVERSITY"],
-    scenarios: ["University", "Mall", "Hospital"],
-    industries: ["Education", "Healthcare"],
-    categories: ["Infrastructure"],
-    color: "#0a2010",
-    iconBg: "#143d20",
-    Icon: Trash2,
-  },
-  {
-    id: "a-012",
-    name: "FIRE & SMOKE DETECTION",
-    description: "Early detection of fire and smoke to trigger automatic alerts and emergency protocols",
-    badge: "PREVENT FIRE HAZARDS",
-    tags: ["SAFETY", "CONSTRUCTION"],
-    scenarios: ["Construction", "Workplace", "Hospital"],
-    industries: ["Construction", "Healthcare", "Manufacturing"],
-    categories: ["Safety & Compliance"],
-    color: "#2a0a0a",
-    iconBg: "#5a1515",
-    Icon: Flame,
-  },
-  {
-    id: "a-013",
-    name: "CROWD DENSITY ANALYTICS",
-    description: "Monitor crowd density and alert security when thresholds are exceeded",
-    badge: "PREVENT OVERCROWDING",
-    tags: ["SAFETY", "MALL"],
-    scenarios: ["Mall", "Airport", "University"],
-    industries: ["Retail", "Transportation", "Education"],
-    categories: ["Safety & Compliance"],
-    color: "#1a0a2a",
-    iconBg: "#320f50",
-    Icon: Users,
-  },
-  {
-    id: "a-014",
-    name: "SLIP & FALL DETECTION",
-    description: "Detect slip and fall incidents in real-time and immediately notify safety personnel",
-    badge: "REDUCE INCIDENT LIABILITY",
-    tags: ["SAFETY", "HOSPITAL"],
-    scenarios: ["Hospital", "Workplace", "Restaurant"],
-    industries: ["Healthcare", "Corporate", "Hospitality"],
-    categories: ["Safety & Compliance"],
-    color: "#0a1a2a",
-    iconBg: "#132d45",
-    Icon: AlertTriangle,
-  },
-  {
-    id: "a-015",
-    name: "SHELF STOCK MONITORING",
-    description: "Automatically detect empty shelves and trigger restocking workflows",
-    badge: "MINIMIZE OUT-OF-STOCK",
-    tags: ["OPERATIONS", "RETAIL STORE"],
-    scenarios: ["Retail Store", "Mall"],
-    industries: ["Retail"],
-    categories: ["Operations & Analytics"],
-    color: "#1a200a",
-    iconBg: "#2d3a10",
-    Icon: BarChart2,
-  },
-  {
-    id: "a-016",
-    name: "PATIENT FLOW OPTIMIZATION",
-    description: "Track patient movement and wait times across hospital departments",
-    badge: "REDUCE PATIENT WAIT TIME",
-    tags: ["OPERATIONS", "HOSPITAL"],
-    scenarios: ["Hospital"],
-    industries: ["Healthcare"],
-    categories: ["Operations & Analytics"],
-    color: "#0a1a20",
-    iconBg: "#12303d",
-    Icon: HeartPulse,
-  },
-  {
-    id: "a-017",
-    name: "ASSET TRACKING",
-    description: "Track movement and location of valuable equipment across facilities in real-time",
-    badge: "REDUCE ASSET LOSS",
-    tags: ["OPERATIONS", "WORKPLACE"],
-    scenarios: ["Workplace", "Hospital", "University"],
-    industries: ["Corporate", "Healthcare", "Education"],
-    categories: ["Operations & Analytics"],
-    color: "#201a10",
-    iconBg: "#40351e",
-    Icon: Cpu,
-  },
-  {
-    id: "a-018",
-    name: "DELIVERY ZONE MONITORING",
-    description: "Monitor loading docks and delivery zones to streamline logistics operations",
-    badge: "STREAMLINE LOGISTICS",
-    tags: ["OPERATIONS", "CONSTRUCTION"],
-    scenarios: ["Construction", "Workplace", "Hospital"],
-    industries: ["Manufacturing", "Corporate", "Transportation"],
-    categories: ["Operations & Analytics"],
-    color: "#102010",
-    iconBg: "#1e3d1e",
-    Icon: Truck,
-  },
+  { id: "a-001", name: "PEOPLE COUNTING AT ENTRY/EXIT",      description: "Real-time counting and tracking of people entering and exiting airport terminals",                    badge: "OPTIMIZE STAFFING LEVELS",  tags: ["COMMON", "AIRPORT"],        scenarios: ["Airport", "Mall", "Hospital"],          industries: ["Transportation", "Healthcare", "Retail"],     categories: ["Most Common"],                          featured: true,  color: "#1e3a2f", iconBg: "#2d5a42", Icon: Users,        image: "/queue-overcrowding.png" },
+  { id: "a-002", name: "BAGGAGE DETECTION & TRACKING",       description: "Automated detection and tracking of unattended baggage in restricted areas",                         badge: "LOWER LIABILITY CLAIMS",    tags: ["SAFETY", "AIRPORT"],        scenarios: ["Airport"],                               industries: ["Transportation"],                              categories: ["Safety & Compliance"],                  featured: true,  color: "#2d1f0e", iconBg: "#5a3c1a", Icon: AlertTriangle, image: "/abandoned-object.png" },
+  { id: "a-003", name: "QUEUE LENGTH MONITORING",            description: "Monitor and optimize queue lengths at security checkpoints and check-in counters",                    badge: "MINIMIZE WAIT TIMES",       tags: ["OPERATIONS", "AIRPORT"],    scenarios: ["Airport", "Hospital", "Retail Store"],  industries: ["Transportation", "Healthcare", "Retail"],     categories: ["Operations & Analytics"],               featured: true,  color: "#0c2340", iconBg: "#1a3d6b", Icon: BarChart2,    image: "/queue-overcrowding.png" },
+  { id: "a-004", name: "PERIMETER INTRUSION DETECTION",      description: "Detect unauthorized access along perimeter fences and restricted zones",                             badge: "REDUCE SECURITY RISK",      tags: ["INFRASTRUCTURE", "AIRPORT"],scenarios: ["Airport", "Construction", "Workplace"],  industries: ["Transportation", "Manufacturing", "Corporate"],categories: ["Infrastructure"],                       featured: true,  color: "#0a2420", iconBg: "#12463e", Icon: Shield,       image: "/after-hours-intrusion.png" },
+  { id: "a-005", name: "CUSTOMER COUNTING & HEATMAP",        description: "Track customer foot traffic and generate heat maps for store layout optimization",                    badge: "IDENTIFY HIGH-VALUE ZONES", tags: ["COMMON", "RETAIL STORE"],   scenarios: ["Retail Store", "Mall", "Restaurant"],   industries: ["Retail", "Hospitality"],                       categories: ["Most Common", "Operations & Analytics"],featured: true,  color: "#1a1a2e", iconBg: "#2d2d5a", Icon: Eye,          image: "/loitering.png" },
+  { id: "a-006", name: "CUSTOMER FLOW ANALYSIS",             description: "Track customer movement patterns to optimize table layouts and service efficiency",                   badge: "INCREASE CAPTURE RATE",     tags: ["COMMON", "RESTAURANT"],     scenarios: ["Restaurant", "Retail Store", "Mall"],   industries: ["Hospitality", "Retail"],                       categories: ["Most Common"],                                           color: "#1e2a1e", iconBg: "#2d452d", Icon: Users,        image: "/panic-movement.png" },
+  { id: "a-007", name: "OCCUPANCY DETECTION",                description: "Monitor real-time office occupancy to optimize space utilization and energy usage",                  badge: "MAXIMIZE SPACE UTILITY",    tags: ["COMMON", "WORKPLACE"],      scenarios: ["Workplace", "Hospital", "University"],  industries: ["Corporate", "Healthcare", "Education"],        categories: ["Most Common"],                                           color: "#1a1420", iconBg: "#2d2040", Icon: Building2,    image: "/tailgating.png" },
+  { id: "a-008", name: "PPE COMPLIANCE DETECTION",           description: "Detect and alert when workers are not wearing required personal protective equipment",               badge: "ENSURE SITE SAFETY",        tags: ["COMMON", "CONSTRUCTION"],   scenarios: ["Construction", "Workplace"],             industries: ["Construction", "Manufacturing"],                categories: ["Most Common", "Safety & Compliance"],                   color: "#2a1a08", iconBg: "#5a3810", Icon: HardHat,      image: "/unauthorized-entry.png" },
+  { id: "a-009", name: "SMART PARKING MANAGEMENT",           description: "Automated parking spot detection and guidance system",                                               badge: "MAINTAIN TRAFFIC FLOW",     tags: ["INFRASTRUCTURE", "MALL"],   scenarios: ["Mall", "Airport", "Workplace"],          industries: ["Retail", "Transportation", "Corporate"],       categories: ["Infrastructure"],                                        color: "#0f1f2a", iconBg: "#1a3545", Icon: Car,          image: "/parking-obstruction.png" },
+  { id: "a-010", name: "VEHICLE LICENSE PLATE RECOGNITION",  description: "Automatic number plate recognition for access control",                                              badge: "AUTOMATE GATE ENTRY",       tags: ["INFRASTRUCTURE", "WORKPLACE"],scenarios: ["Workplace", "Airport", "Hospital"],      industries: ["Corporate", "Transportation", "Healthcare"],   categories: ["Infrastructure"],                                        color: "#1f1a0a", iconBg: "#3d3318", Icon: Car,          image: "/vehicle-accident.png" },
+  { id: "a-011", name: "WASTE MANAGEMENT MONITORING",        description: "Monitor waste bin levels to optimize collection schedules",                                          badge: "ENHANCE SERVICE EFFICIENCY",tags: ["INFRASTRUCTURE", "UNIVERSITY"],scenarios: ["University", "Mall", "Hospital"],        industries: ["Education", "Healthcare"],                      categories: ["Infrastructure"],                                        color: "#0a2010", iconBg: "#143d20", Icon: Trash2,       image: "/vandalism.png" },
+  { id: "a-012", name: "FIRE & SMOKE DETECTION",             description: "Early detection of fire and smoke to trigger automatic alerts and emergency protocols",              badge: "PREVENT FIRE HAZARDS",      tags: ["SAFETY", "CONSTRUCTION"],   scenarios: ["Construction", "Workplace", "Hospital"], industries: ["Construction", "Healthcare", "Manufacturing"],  categories: ["Safety & Compliance"],                                   color: "#2a0a0a", iconBg: "#5a1515", Icon: Flame,        image: "/fire-smoke.png" },
+  { id: "a-013", name: "CROWD DENSITY ANALYTICS",            description: "Monitor crowd density and alert security when thresholds are exceeded",                             badge: "PREVENT OVERCROWDING",      tags: ["SAFETY", "MALL"],           scenarios: ["Mall", "Airport", "University"],         industries: ["Retail", "Transportation", "Education"],       categories: ["Safety & Compliance"],                                   color: "#1a0a2a", iconBg: "#320f50", Icon: Users,        image: "/crowd-surge.png" },
+  { id: "a-014", name: "SLIP & FALL DETECTION",              description: "Detect slip and fall incidents in real-time and immediately notify safety personnel",                badge: "REDUCE INCIDENT LIABILITY", tags: ["SAFETY", "HOSPITAL"],       scenarios: ["Hospital", "Workplace", "Restaurant"],  industries: ["Healthcare", "Corporate", "Hospitality"],      categories: ["Safety & Compliance"],                                   color: "#0a1a2a", iconBg: "#132d45", Icon: AlertTriangle, image: "/slip-fall.png" },
+  { id: "a-015", name: "SHELF STOCK MONITORING",             description: "Automatically detect empty shelves and trigger restocking workflows",                                badge: "MINIMIZE OUT-OF-STOCK",     tags: ["OPERATIONS", "RETAIL STORE"],scenarios: ["Retail Store", "Mall"],                  industries: ["Retail"],                                      categories: ["Operations & Analytics"],                                color: "#1a200a", iconBg: "#2d3a10", Icon: BarChart2,    image: "/theft-shoplifting.png" },
+  { id: "a-016", name: "PATIENT FLOW OPTIMIZATION",          description: "Track patient movement and wait times across hospital departments",                                  badge: "REDUCE PATIENT WAIT TIME",  tags: ["OPERATIONS", "HOSPITAL"],   scenarios: ["Hospital"],                              industries: ["Healthcare"],                                   categories: ["Operations & Analytics"],                                color: "#0a1a20", iconBg: "#12303d", Icon: HeartPulse,   image: "/medical-emergency.png" },
+  { id: "a-017", name: "ASSET TRACKING",                     description: "Track movement and location of valuable equipment across facilities in real-time",                   badge: "REDUCE ASSET LOSS",         tags: ["OPERATIONS", "WORKPLACE"],  scenarios: ["Workplace", "Hospital", "University"],  industries: ["Corporate", "Healthcare", "Education"],        categories: ["Operations & Analytics"],                                color: "#201a10", iconBg: "#40351e", Icon: Cpu,          image: "/camera-tampering.png" },
+  { id: "a-018", name: "DELIVERY ZONE MONITORING",           description: "Monitor loading docks and delivery zones to streamline logistics operations",                        badge: "STREAMLINE LOGISTICS",      tags: ["OPERATIONS", "CONSTRUCTION"],scenarios: ["Construction", "Workplace", "Hospital"], industries: ["Manufacturing", "Corporate", "Transportation"],categories: ["Operations & Analytics"],                                color: "#102010", iconBg: "#1e3d1e", Icon: Truck,        image: "/vehicle-accident.png" },
 ];
 
 const SCENARIOS: { label: Scenario; Icon: React.ComponentType<{ className?: string }> }[] = [
@@ -542,17 +322,22 @@ function AppDetailModal({ app, onClose }: { app: App; onClose: () => void }) {
 
             {/* Vision stream */}
             <div className="relative h-[240px] shrink-0 overflow-hidden" style={{ backgroundColor: app.color }}>
-              {/* grid */}
-              <div className="absolute inset-0 opacity-10"
-                style={{ backgroundImage: `radial-gradient(${TEAL}60 1px,transparent 1px)`, backgroundSize: "18px 18px" }} />
-              {/* glow */}
-              <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 40% 50%, ${app.iconBg}99, transparent 70%)` }} />
-              {/* centre icon */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: app.iconBg }}>
-                  <app.Icon className="w-8 h-8 text-white/80" />
-                </div>
-              </div>
+              {app.image ? (
+                <>
+                  <img src={app.image} alt={app.name} className="w-full h-full object-cover opacity-70" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
+                </>
+              ) : (
+                <>
+                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `radial-gradient(${TEAL}60 1px,transparent 1px)`, backgroundSize: "18px 18px" }} />
+                  <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 40% 50%, ${app.iconBg}99, transparent 70%)` }} />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: app.iconBg }}>
+                      <app.Icon className="w-8 h-8 text-white/80" />
+                    </div>
+                  </div>
+                </>
+              )}
               {/* bounding box overlays */}
               <div className="absolute top-10 left-12 w-28 h-20 border-2 rounded-sm opacity-60" style={{ borderColor: "#00ff88" }}>
                 <span className="absolute -top-4 left-0 text-[9px] font-bold text-[#00ff88]">Detection 97%</span>
@@ -718,18 +503,21 @@ function AppDetailModal({ app, onClose }: { app: App; onClose: () => void }) {
 function AppCard({ app, onClick }: { app: App; onClick?: () => void }) {
   return (
     <div onClick={onClick} className="rounded-[6px] border border-neutral-200 bg-white overflow-hidden hover:border-[#00775B]/40 hover:shadow-md transition-all cursor-pointer group">
-      {/* Image placeholder */}
-      <div
-        className="w-full h-[110px] relative flex items-center justify-center"
-        style={{ backgroundColor: app.color }}
-      >
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: app.iconBg }}
-        >
-          <app.Icon className="w-5 h-5 text-white/80" />
-        </div>
-        <Camera className="absolute bottom-2 right-2 w-3 h-3 text-white/20" />
+      {/* Image */}
+      <div className="w-full h-[120px] relative overflow-hidden" style={{ backgroundColor: app.color }}>
+        {app.image ? (
+          <>
+            <img src={app.image} alt={app.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-95 group-hover:scale-105 transition-all duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: app.iconBg }}>
+              <app.Icon className="w-5 h-5 text-white/80" />
+            </div>
+          </div>
+        )}
+        <Camera className="absolute bottom-2 right-2 w-3 h-3 text-white/30" />
       </div>
 
       {/* Badge */}
