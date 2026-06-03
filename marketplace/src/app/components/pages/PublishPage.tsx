@@ -48,19 +48,19 @@ type ReportedIssue = {
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const MOCK_APPS: Application[] = [
-  { id: "app-001", name: "IOROIEHOI",         description: "vdsgvxfdbg",                                              status: "published", category: "APPLICATION INSIGHT", industries: ["Oil & Gas", "Automotive"],  tags: ["detection", "analytics"], url: "https://dev.app.matrice.ai/publish/app-001", updatedAt: "May 11, 2026",  versions: 2, issueCount: 0 },
-  { id: "app-002", name: "TEST NEW ZIP",       description: "Description",                                             status: "in-review", category: "APPLICATION INSIGHT", industries: ["Airport", "Automotive"],   tags: ["detection"],              url: "",                                          updatedAt: "Jan 12, 2026",  versions: 1, issueCount: 1 },
-  { id: "app-003", name: "PEOPLE COUNTING",    description: "https://dev.app.matrice.ai/publish/686d0ece378",          status: "published", category: "APPLICATION INSIGHT", industries: ["Oil & Gas", "Agriculture"],tags: ["counting", "tracking"],   url: "https://dev.app.matrice.ai/publish/686d0ece378", updatedAt: "Nov 13, 2025", versions: 3, issueCount: 0 },
-  { id: "app-004", name: "COCO",               description: "https://dev.app.matrice.ai/publish/886d0ece378",          status: "published", category: "APPLICATION INSIGHT", industries: ["Cafe", "Manufacturing"],  tags: ["object-detection"],       url: "https://dev.app.matrice.ai/publish/886d0ece378", updatedAt: "May 8, 2026",  versions: 2, issueCount: 0 },
-  { id: "app-005", name: "TESTING-1",          description: "https://dev.app.matrice.ai/publish",                      status: "created",   category: "APPLICATION INSIGHT", industries: [],                         tags: [],                         url: "https://dev.app.matrice.ai/publish",        updatedAt: "Jul 15, 2025",  versions: 0, issueCount: 0 },
-  { id: "app-006", name: "TEST_PROJ_3",        description: "This is a test project. 1. This has a numbered list.",   status: "created",   category: "APPLICATION INSIGHT", industries: [],                         tags: [],                         url: "https://dev.app.matrice.ai/publish",        updatedAt: "Jul 16, 2025",  versions: 0, issueCount: 0 },
-  { id: "app-007", name: "TESTING",            description: "vufof",                                                   status: "in-review", category: "APPLICATION INSIGHT", industries: [],                         tags: [],                         url: "",                                          updatedAt: "Jul 28, 2025",  versions: 1, issueCount: 0 },
-  { id: "app-008", name: "CHECK FOR CAM",      description: "Hello",                                                   status: "created",   category: "APPLICATION INSIGHT", industries: [],                         tags: [],                         url: "",                                          updatedAt: "Jul 23, 2025",  versions: 0, issueCount: 0 },
+  { id: "app-001", name: "PPE COMPLIANCE DETECTION",    description: "Detects missing personal protective equipment on workers in real-time, including helmets, vests, and gloves. Triggers instant alerts to safety supervisors.",         status: "published", category: "SAFETY",              industries: ["Oil & Gas", "Manufacturing"],  tags: ["detection", "safety"],     url: "https://dev.app.matrice.ai/publish/app-001", updatedAt: "May 11, 2026",  versions: 2, issueCount: 0 },
+  { id: "app-002", name: "BAGGAGE THREAT SCREENING",    description: "AI-powered detection of prohibited items and potential threats in baggage at checkpoints. Flags anomalies for security personnel review with confidence scores.",       status: "in-review", category: "SECURITY",            industries: ["Airport", "Transportation"],   tags: ["detection", "security"],   url: "",                                          updatedAt: "Jan 12, 2026",  versions: 1, issueCount: 1 },
+  { id: "app-003", name: "PEOPLE COUNTING & FLOW",      description: "Accurately counts and tracks the flow of people entering, exiting, and moving across zones. Provides occupancy analytics and crowd density heatmaps in real-time.",   status: "published", category: "ANALYTICS",           industries: ["Retail", "Mall", "Airport"],   tags: ["counting", "tracking"],   url: "https://dev.app.matrice.ai/publish/686d0ece378", updatedAt: "Nov 13, 2025", versions: 3, issueCount: 0 },
+  { id: "app-004", name: "VEHICLE LICENSE PLATE OCR",   description: "Reads and logs vehicle license plates at entry and exit points. Integrates with access control systems to automate gate operations and maintain vehicle logs.",       status: "published", category: "ACCESS CONTROL",      industries: ["Corporate", "Manufacturing"], tags: ["ocr", "vehicle"],          url: "https://dev.app.matrice.ai/publish/886d0ece378", updatedAt: "May 8, 2026",  versions: 2, issueCount: 0 },
+  { id: "app-005", name: "FORKLIFT PROXIMITY ALERT",    description: "Monitors safe distances between forklifts and pedestrians on the warehouse floor. Emits audio-visual warnings when proximity thresholds are breached.",              status: "created",   category: "SAFETY",              industries: ["Manufacturing", "Logistics"],  tags: ["proximity", "safety"],    url: "",                                          updatedAt: "Jul 15, 2025",  versions: 0, issueCount: 0 },
+  { id: "app-006", name: "SHELF STOCK MONITOR",         description: "Automatically detects empty or low-stock shelves using ceiling cameras and notifies store staff. Reduces out-of-stock incidents and improves replenishment speed.",   status: "created",   category: "RETAIL ANALYTICS",   industries: ["Retail", "Grocery"],          tags: ["inventory", "retail"],    url: "",                                          updatedAt: "Jul 16, 2025",  versions: 0, issueCount: 0 },
+  { id: "app-007", name: "FIRE & SMOKE DETECTION",      description: "Early detection of fire and smoke across camera feeds using thermal and visual analysis. Integrates with alarm systems for automated emergency response triggers.",   status: "in-review", category: "SAFETY",              industries: ["Healthcare", "Construction"],  tags: ["fire", "safety"],         url: "",                                          updatedAt: "Jul 28, 2025",  versions: 1, issueCount: 0 },
+  { id: "app-008", name: "CUSTOMER QUEUE ANALYTICS",    description: "Measures queue lengths and estimated wait times at checkout counters and service desks. Provides actionable staffing insights to reduce customer wait times.",        status: "created",   category: "ANALYTICS",           industries: ["Retail", "Hospitality"],       tags: ["queue", "analytics"],     url: "",                                          updatedAt: "Jul 23, 2025",  versions: 0, issueCount: 0 },
 ];
 
 const MOCK_ISSUES: ReportedIssue[] = [
-  { id: "iss-001", appName: "TEST NEW ZIP", version: "v1.0", issueType: "Model Output", subIssue: "Incorrect Labels",   status: "open",        reportCount: 3, createdAt: "2026-04-20", updatedAt: "2026-05-01" },
-  { id: "iss-002", appName: "TEST NEW ZIP", version: "v1.0", issueType: "Performance",  subIssue: "High Latency",       status: "in-progress", reportCount: 1, createdAt: "2026-05-02", updatedAt: "2026-05-08" },
+  { id: "iss-001", appName: "BAGGAGE THREAT SCREENING", version: "v1.0", issueType: "Model Output", subIssue: "False Positive Rate High", status: "open",        reportCount: 3, createdAt: "2026-04-20", updatedAt: "2026-05-01" },
+  { id: "iss-002", appName: "BAGGAGE THREAT SCREENING", version: "v1.0", issueType: "Performance",  subIssue: "High Inference Latency",  status: "in-progress", reportCount: 1, createdAt: "2026-05-02", updatedAt: "2026-05-08" },
 ];
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
@@ -89,28 +89,32 @@ const STATUS_LABEL: Record<AppStatus, string> = {
 const ISSUE_STATUS_KEY: Record<ReportedIssue["status"], string>   = { open: "critical", "in-progress": "active", resolved: "success" };
 const ISSUE_STATUS_LABEL: Record<ReportedIssue["status"], string> = { open: "Open",     "in-progress": "In Progress", resolved: "Resolved" };
 
-// ─── App card thumbnail (simulated detection overlay) ────────────────────────
+// ─── App card thumbnail ───────────────────────────────────────────────────────
 
-function AppThumbnail({ status }: { status: AppStatus }) {
-  const colors: Record<AppStatus, string> = {
-    published:  "#004d38",
-    "in-review":"#3b2a00",
-    created:    "#1e293b",
-    rejected:   "#3b0a0a",
-  };
+const THUMBNAIL_THEMES: Record<AppStatus, { bg: string; grid: string; accent: string }> = {
+  published:  { bg: "#021f15", grid: "#00ff88", accent: "#00775B" },
+  "in-review":{ bg: "#1c1400", grid: "#ffd166", accent: "#D97706" },
+  created:    { bg: "#0d1624", grid: "#60a5fa", accent: "#0284C7" },
+  rejected:   { bg: "#1c0505", grid: "#f87171", accent: "#DC2626" },
+};
+
+function AppThumbnail({ status, name }: { status: AppStatus; name: string }) {
+  const t = THUMBNAIL_THEMES[status];
+  const initials = name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   return (
-    <div
-      className="w-full h-40 relative overflow-hidden flex-shrink-0"
-      style={{ backgroundColor: colors[status] }}
-    >
-      {/* Simulated detection grid */}
-      <div className="absolute inset-0 opacity-10"
-        style={{ backgroundImage: "linear-gradient(#00ff88 1px,transparent 1px),linear-gradient(90deg,#00ff88 1px,transparent 1px)", backgroundSize: "24px 24px" }} />
-      {/* Bounding boxes */}
-      <div className="absolute top-8 left-6 w-20 h-14 border-2 border-[#00ff88] opacity-70 rounded-sm" />
-      <div className="absolute top-12 left-32 w-16 h-18 border-2 border-[#ffdd00] opacity-60 rounded-sm" />
-      <div className="absolute top-6 left-56 w-24 h-20 border-2 border-[#00aaff] opacity-50 rounded-sm" />
-      <div className="absolute top-16 right-10 w-14 h-12 border-2 border-[#ff4444] opacity-60 rounded-sm" />
+    <div className="w-full h-36 relative overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: t.bg }}>
+      {/* Subtle dot grid */}
+      <div className="absolute inset-0"
+        style={{ backgroundImage: `radial-gradient(${t.grid}28 1px, transparent 1px)`, backgroundSize: "20px 20px" }} />
+      {/* Glow */}
+      <div className="absolute inset-0 opacity-20" style={{ background: `radial-gradient(ellipse at 50% 60%, ${t.accent}80, transparent 70%)` }} />
+      {/* Initials badge */}
+      <div className="relative z-10 w-14 h-14 rounded-[8px] flex items-center justify-center text-[18px] font-black tracking-tight text-white/90"
+        style={{ backgroundColor: t.accent + "33", border: `1.5px solid ${t.accent}60` }}>
+        {initials || "AI"}
+      </div>
+      {/* Status pip */}
+      <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_DOT[status] }} />
     </div>
   );
 }
@@ -121,33 +125,49 @@ function AppCard({ app, onClick }: { app: Application; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex flex-col cursor-pointer hover:border-[#00775B]/40 hover:shadow-md transition-all"
+      className="bg-white rounded-[6px] border border-neutral-200 overflow-hidden flex flex-col cursor-pointer hover:border-[#00775B]/50 hover:shadow-lg transition-all group"
     >
-      <AppThumbnail status={app.status} />
-      <div className="p-3 flex flex-col gap-2 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm" style={{ backgroundColor: "#E5FFF9", color: TEAL }}>
+      <AppThumbnail status={app.status} name={app.name} />
+
+      <div className="p-4 flex flex-col gap-3 flex-1">
+        {/* Category + issue badge */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm" style={{ backgroundColor: "#E5FFF9", color: TEAL }}>
             {app.category}
           </span>
           {app.issueCount > 0 && (
-            <span className="flex items-center gap-1 text-[10px] text-red-500 font-semibold">
-              <AlertCircle className="w-3 h-3" /> {app.issueCount}
+            <span className="flex items-center gap-1 text-[9px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-sm">
+              <AlertCircle className="w-2.5 h-2.5" /> {app.issueCount} issue{app.issueCount > 1 ? "s" : ""}
             </span>
           )}
         </div>
-        <h3 className="text-[13px] font-bold text-neutral-900 leading-tight">{app.name}</h3>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_DOT[app.status] }} />
-          <span className="text-[10px] font-bold tracking-wide" style={{ color: STATUS_DOT[app.status] }}>
-            {STATUS_LABEL[app.status]}
-          </span>
-          <span className="text-[10px] text-neutral-400 ml-1">Updated {app.updatedAt}</span>
+
+        {/* Title */}
+        <h3 className="text-[13px] font-bold text-neutral-900 leading-snug group-hover:text-[#00775B] transition-colors line-clamp-2">
+          {app.name}
+        </h3>
+
+        {/* Description */}
+        <p className="text-[11px] text-neutral-500 leading-relaxed line-clamp-2 flex-1">
+          {app.description || "No description provided."}
+        </p>
+
+        {/* Footer: status + meta */}
+        <div className="flex items-center justify-between pt-1 border-t border-neutral-100 mt-auto">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_DOT[app.status] }} />
+            <span className="text-[10px] font-bold tracking-wide" style={{ color: STATUS_DOT[app.status] }}>
+              {STATUS_LABEL[app.status]}
+            </span>
+          </div>
+          <span className="text-[9px] text-neutral-400 font-mono">{app.updatedAt}</span>
         </div>
-        <p className="text-[11px] text-neutral-400 truncate">{app.description || "—"}</p>
+
+        {/* Industry tags */}
         {app.industries.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-auto pt-1">
+          <div className="flex flex-wrap gap-1">
             {app.industries.map((ind) => (
-              <span key={ind} className="text-[9px] font-semibold uppercase tracking-wide px-2 py-0.5 bg-neutral-100 text-neutral-500 rounded-sm">
+              <span key={ind} className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 bg-neutral-100 text-neutral-500 rounded-sm">
                 {ind}
               </span>
             ))}
@@ -167,7 +187,7 @@ function AppListRow({ app, onClick }: { app: Application; onClick: () => void })
       className="flex items-center gap-4 px-5 py-3 border-b border-neutral-100 hover:bg-neutral-50 transition-colors cursor-pointer"
     >
       <div className="w-10 h-10 rounded-[4px] overflow-hidden flex-shrink-0" style={{ backgroundColor: "#004d38" }}>
-        <AppThumbnail status={app.status} />
+        <AppThumbnail status={app.status} name={app.name} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -486,7 +506,7 @@ function ApplicationDetail({
       {/* App header card */}
       <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden flex gap-0">
         <div className="w-48 flex-shrink-0">
-          <AppThumbnail status={app.status} />
+          <AppThumbnail status={app.status} name={app.name} />
         </div>
         <div className="flex-1 p-5 flex flex-col gap-2 justify-center border-l border-neutral-100">
           <div className="flex items-start justify-between">
@@ -761,9 +781,91 @@ export function PublishPage() {
         </div>
       ) : (
         <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden">
-          {apps.map((app) => (
-            <AppListRow key={app.id} app={app} onClick={() => setSelectedApp(app)} />
-          ))}
+          <DataGrid<Application>
+            searchable
+            searchPlaceholder="Search applications…"
+            columns={[
+              {
+                key: "name",
+                header: "Application",
+                render: (row, hov) => (
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-[4px] flex-shrink-0 overflow-hidden" style={{ backgroundColor: "#004d38" }}>
+                      <div className="w-full h-full opacity-40" style={{ backgroundImage: "linear-gradient(#00ff88 1px,transparent 1px),linear-gradient(90deg,#00ff88 1px,transparent 1px)", backgroundSize: "6px 6px" }} />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <InterCell hovered={hov} isPrimary fontSize={12}>{row.name}</InterCell>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm w-fit mt-0.5" style={{ backgroundColor: "#E5FFF9", color: TEAL }}>{row.category}</span>
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: "description",
+                header: "Description",
+                render: (row, hov) => <InterCell hovered={hov} fontSize={11} color="#64748B" hoveredColor="#334155">{row.description || "—"}</InterCell>,
+              },
+              {
+                key: "industries",
+                header: "Industries",
+                width: "180px",
+                render: (row) => (
+                  <div className="flex flex-wrap gap-1">
+                    {row.industries.length > 0
+                      ? row.industries.map((ind) => (
+                          <span key={ind} className="text-[9px] font-semibold uppercase px-1.5 py-0.5 bg-neutral-100 text-neutral-500 rounded-sm">{ind}</span>
+                        ))
+                      : <span className="text-[11px] text-neutral-300">—</span>
+                    }
+                  </div>
+                ),
+              },
+              {
+                key: "versions",
+                header: "Versions",
+                width: "76px",
+                align: "right",
+                render: (row, hov) => <MonoCell hovered={hov} fontSize={11} color="#64748B" hoveredColor="#0F172A">{row.versions}</MonoCell>,
+              },
+              {
+                key: "status",
+                header: "Status",
+                width: "110px",
+                render: (row) => (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_DOT[row.status] }} />
+                    <span className="text-[10px] font-bold tracking-wide" style={{ color: STATUS_DOT[row.status] }}>{STATUS_LABEL[row.status]}</span>
+                  </div>
+                ),
+              },
+              {
+                key: "updatedAt",
+                header: "Updated",
+                width: "100px",
+                align: "right",
+                render: (row, hov) => <MonoCell hovered={hov} fontSize={10} color="#94A3B8" hoveredColor="#475569">{row.updatedAt}</MonoCell>,
+              },
+              {
+                key: "actions",
+                header: "",
+                width: "70px",
+                align: "right",
+                render: (row, hov) => (
+                  <div className="flex justify-end pr-1">
+                    <GridActions visible={hov}>
+                      <GridActionButton title="Open" hoverColor={TEAL} onClick={() => setSelectedApp(row)}>
+                        <Eye className="w-3.5 h-3.5" />
+                      </GridActionButton>
+                      <GridActionButton title="Delete" hoverColor="#DC2626">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </GridActionButton>
+                    </GridActions>
+                  </div>
+                ),
+              },
+            ]}
+            data={apps}
+          />
         </div>
       )}
     </div>

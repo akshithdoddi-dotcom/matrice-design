@@ -8,14 +8,14 @@ import { cn } from "@/app/lib/utils";
 const STATS_ROW1: StatCardData[] = [
   { label: "Listed Services",   value: "124", sublabel: "Across All Categories",   num: "+8",   ref_: "vs Last Month",   dir: "up",     chip: "SERVICES",  color: "#00775B", bgColor: "#E5FFF9" },
   { label: "Active Partners",   value: "37",  sublabel: "Verified Publishers",      num: "+3",   ref_: "vs Last Quarter", dir: "up",     chip: "PARTNERS",  color: "#0284C7", bgColor: "#E0F2FE" },
-  { label: "Monthly Installs",  value: "2.4k",sublabel: "App Store · This Month",  num: "+340", ref_: "vs Last Month",   dir: "up",     chip: "INSTALLS",  color: "#7C3AED", bgColor: "#F3EEFF" },
+  { label: "Monthly Installs",  value: "2.4k",sublabel: "App Store · This Month",  num: "+340", ref_: "vs Last Month",   dir: "up",     chip: "INSTALLS",  color: "#0284C7", bgColor: "#E0F2FE" },
   { label: "Compute Nodes",     value: "18",  sublabel: "BYOM & Managed",          num: "-2",   ref_: "vs Last Week",    dir: "down",   chip: "NODES",     color: "#059669", bgColor: "#ECFDF5" },
 ];
 
 const STATS_ROW2: StatCardData[] = [
   { label: "Published Apps",    value: "3",   sublabel: "Live on Marketplace",     num: "+1",   ref_: "vs Last Month",   dir: "up",     chip: "PUBLISH",   color: "#D97706", bgColor: "#FFFBEB" },
   { label: "Pending Review",    value: "2",   sublabel: "Awaiting Approval",       num: "0",    ref_: "No Change",       dir: "neutral",chip: "REVIEW",    color: "#94A3B8", bgColor: "#F1F5F9" },
-  { label: "BYOM Models",       value: "67",  sublabel: "Approved & Live",         num: "+3",   ref_: "vs Last Month",   dir: "up",     chip: "BYOM",      color: "#8B5CF6", bgColor: "#F3EEFF" },
+  { label: "BYOM Models",       value: "67",  sublabel: "Approved & Live",         num: "+3",   ref_: "vs Last Month",   dir: "up",     chip: "BYOM",      color: "#059669", bgColor: "#ECFDF5" },
   { label: "Reported Issues",   value: "2",   sublabel: "Open Across All Apps",    num: "+2",   ref_: "vs Last Week",    dir: "up",     chip: "ISSUES",    color: "#DC2626", bgColor: "#FEF2F2" },
 ];
 
@@ -68,8 +68,8 @@ const PLATFORM_SECTIONS = [
   { icon: Users,   label: "Partners",  value: "37 active · 2 pending review", color: "#0284C7", bgColor: "#E0F2FE",  note: "1 suspended account" },
   { icon: Upload,  label: "Publish",   value: "3 live · 2 in review",         color: "#D97706", bgColor: "#FFFBEB",  note: "2 open issues" },
   { icon: Cpu,     label: "Compute",   value: "18 nodes · 9 clusters",        color: "#059669", bgColor: "#ECFDF5",  note: "2 running jobs" },
-  { icon: Box,     label: "BYOM",      value: "67 approved · 12 in review",   color: "#8B5CF6", bgColor: "#F3EEFF",  note: "5 added this week" },
-  { icon: Package, label: "App Store", value: "2.4k installs · 5 categories", color: "#7C3AED", bgColor: "#F3EEFF",  note: "+340 this month" },
+  { icon: Box,     label: "BYOM",      value: "67 approved · 12 in review",   color: "#059669", bgColor: "#ECFDF5",  note: "5 added this week" },
+  { icon: Package, label: "App Store", value: "2.4k installs · 5 categories", color: "#0284C7", bgColor: "#E0F2FE",  note: "+340 this month" },
 ];
 
 // ─── Activity feed ────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ export function MarketplaceDashboard() {
                 <div className="w-7 h-7 rounded-[4px] flex items-center justify-center" style={{ backgroundColor: s.bgColor }}>
                   <s.icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                 </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: s.color }}>{s.label}</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-800">{s.label}</span>
               </div>
               <p className="text-[12px] font-semibold text-neutral-800 leading-snug">{s.value}</p>
               <p className="text-[10px] text-neutral-400">{s.note}</p>

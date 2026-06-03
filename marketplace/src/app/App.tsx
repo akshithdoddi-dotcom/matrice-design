@@ -7,6 +7,7 @@ import { ComputePage } from "@/app/components/pages/ComputePage";
 import { BYOMPage } from "@/app/components/pages/BYOMPage";
 import { PublishPage } from "@/app/components/pages/PublishPage";
 import { SettingsPage } from "@/app/components/pages/Settings";
+import { AppStorePage } from "@/app/components/pages/AppStorePage";
 
 interface MarketplaceAppProps {
   onPlatformSwitch?: (app: string) => void;
@@ -31,6 +32,7 @@ export default function App({ onPlatformSwitch }: MarketplaceAppProps = {}) {
       case "partners":  return <PartnersPage />;
       case "publish":   return <PublishPage />;
       case "compute":   return <ComputePage />;
+      case "appstore":  return <AppStorePage />;
       case "byom":      return <BYOMPage />;
       case "settings":  return <SettingsPage isDark={isDark} onToggleDark={() => setIsDark((d) => !d)} />;
       default: return (

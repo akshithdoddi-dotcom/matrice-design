@@ -16,13 +16,13 @@ import {
 export type Page = "dashboard" | "services" | "partners" | "publish" | "appstore" | "compute" | "byom" | "settings" | "docs" | "tutorials" | "help";
 
 const MAIN_NAV: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "services",  label: "Services",  icon: Layers },
-  { id: "partners",  label: "Partners",  icon: Users },
-  { id: "publish",   label: "Publish",   icon: Upload },
-  { id: "appstore",  label: "App Store", icon: Store },
-  { id: "compute",   label: "Compute",   icon: Server },
-  { id: "byom",      label: "BYOM",      icon: Box },
+  { id: "dashboard", label: "Dashboard",    icon: LayoutDashboard },
+  { id: "appstore",  label: "App Store",    icon: Store },
+  { id: "publish",   label: "Applications", icon: Upload },
+  { id: "byom",      label: "BYOM",         icon: Box },
+  { id: "compute",   label: "Compute",      icon: Server },
+  { id: "services",  label: "Services",     icon: Layers },
+  { id: "partners",  label: "Partners",     icon: Users },
 ];
 
 const FOOTER_NAV: NavItem[] = [
@@ -53,7 +53,11 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
       onPlatformSwitch={onPlatformSwitch}
       isDark={isDark}
       onToggleDark={onToggleDark}
-      contentClassName={activePage === "settings" ? "p-0 min-h-0" : undefined}
+      contentClassName={
+        activePage === "settings" ? "p-0 min-h-0" :
+        activePage === "appstore" ? "p-0 overflow-x-hidden" :
+        undefined
+      }
     >
       {children}
     </AppShell>
