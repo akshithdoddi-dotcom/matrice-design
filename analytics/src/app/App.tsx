@@ -37,6 +37,8 @@ import { ServiceAnalytics } from "@/app/components/pages/ServiceAnalytics";
 import { SettingsPage } from "@/app/components/pages/Settings";
 import { StaffMonitoring } from "@/app/components/pages/StaffMonitoring";
 import { MicroservicesPage } from "@/app/components/pages/MicroservicesPage";
+import { IncidentLifecyclePage } from "@/app/components/pages/IncidentLifecyclePage";
+import { Dashboard2Page } from "@/app/components/pages/Dashboard2Page";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
 import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 
@@ -444,7 +446,9 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
 
   // ── Page title map ───────────────────────────────────────────────────────────
   const PAGE_TITLES: Record<string, string> = {
-    dashboard:            "Dashboard",
+    dashboard:              "Dashboard",
+    "dashboard-2":          "Dashboard 2",
+    "incident-lifecycle":   "Incident Lifecycle",
     volume:               "Volume Analytics",
     incident:             "Incident Analytics",
     zone:                 "Zone Analytics",
@@ -465,7 +469,9 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
       {activePage === "settings" ? (
         <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
       ) : null}
-      <div className={cn("bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 min-h-full", activePage === "settings" && "hidden")}>
+      {activePage === "incident-lifecycle" ? <IncidentLifecyclePage /> : null}
+      {activePage === "dashboard-2" ? <Dashboard2Page /> : null}
+      <div className={cn("bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 min-h-full", (activePage === "settings" || activePage === "incident-lifecycle" || activePage === "dashboard-2") && "hidden")}>
         <div className="max-w-full overflow-x-hidden">
 
           <section className="w-full">

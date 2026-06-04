@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef } from "react";
 import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -37,11 +37,13 @@ import {
   Filter,
   Activity,
   ChevronDown,
+  ChevronLeft,
   PanelLeft,
   PanelLeftClose,
   Sparkles,
   X,
   Send,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   Sidebar,
@@ -117,7 +119,9 @@ const platforms: { icon: React.ElementType; label: string; shortcut: string; app
 
 // ── Sidebar navigation ────────────────────────────────────────────────────────
 const mainNavItems: { id: Page; label: string; icon: React.ElementType; badge?: number }[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "dashboard",          label: "Dashboard",           icon: LayoutDashboard },
+  { id: "dashboard-2",        label: "Dashboard 2",         icon: LayoutDashboard },
+  { id: "incident-lifecycle", label: "Incident Lifecycle",  icon: Activity,        badge: 3 },
   { id: "volume", label: "Volume Analytics", icon: TrendingUp },
   { id: "incident", label: "Incident Analytics", icon: ShieldAlert, badge: 3 },
   { id: "zone", label: "Zone Analytics", icon: MapPin },
@@ -188,7 +192,15 @@ const FREQ_DATA = [
 ];
 
 // ── Vision Intelligence Search Results View ───────────────────────────────────
-function SearchResultsView({ query, onClear }: { query: string; onClear: () => void }) {
+function SearchResultsView({
+  query,
+  onClear,
+  onEditQuery,
+}: {
+  query:        string;
+  onClear:      () => void;
+  onEditQuery:  () => void;
+}) {
   const maxN = Math.max(...FREQ_DATA.map(d => d.n));
 
   const confColor = (c: number) =>
@@ -198,20 +210,37 @@ function SearchResultsView({ query, onClear }: { query: string; onClear: () => v
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-6 overflow-auto">
-      {/* Query bar */}
+      {/* ── Context bar ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 bg-white border border-[#00775B]/25 rounded-lg px-4 py-2 shadow-sm">
-          <Sparkles className="w-4 h-4 text-[#00775B] shrink-0" />
-          <span className="text-sm font-medium text-neutral-700 flex-1" style={{ fontFamily: "Inter, sans-serif" }}>
-            {query}
-          </span>
-          <span className="text-[10px] font-mono text-neutral-400">{AUDIT_LOG_DATA.length} results · 2025-05-20</span>
-        </div>
+        {/* Exit action — single, authoritative */}
         <button
           onClick={onClear}
-          className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium text-neutral-500 hover:text-neutral-800 border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors shadow-sm"
+          className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium text-neutral-500 hover:text-neutral-800 border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors shadow-sm shrink-0"
+          style={{ fontFamily: "Inter, sans-serif" }}
         >
-          <X className="w-3.5 h-3.5" /> Clear search
+          <ChevronLeft className="w-3.5 h-3.5" /> Exit Search
+        </button>
+
+        {/* Click-to-edit query chip */}
+        <button
+          title="Click to edit query (⌘K)"
+          onClick={onEditQuery}
+          className="group flex items-center gap-2 flex-1 bg-white border border-[#00775B]/30 hover:border-[#00775B]/70 rounded-lg px-4 py-2 shadow-sm transition-all text-left"
+          style={{ fontFamily: "Inter, sans-serif" }}
+        >
+          <Sparkles className="w-4 h-4 text-[#00775B] shrink-0" />
+          <span className="text-sm font-medium text-neutral-700 flex-1 truncate">
+            {query}
+          </span>
+          {/* pencil hint */}
+          <svg
+            className="w-3.5 h-3.5 shrink-0 text-[#00775B] opacity-0 group-hover:opacity-100 transition-opacity"
+            viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"
+          >
+            <path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" strokeLinejoin="round" />
+            <path d="M9.5 4.5l2 2" />
+          </svg>
+          <span className="text-[10px] font-mono text-neutral-400 shrink-0 ml-1">{AUDIT_LOG_DATA.length} results</span>
         </button>
       </div>
 
@@ -310,48 +339,345 @@ function SearchResultsView({ query, onClear }: { query: string; onClear: () => v
 }
 
 // ── Matrice Spark Chat Drawer ─────────────────────────────────────────────────
-const COPILOT_SUGGESTIONS = [
+
+const SPARK_SANS: React.CSSProperties = { fontFamily: "Inter, sans-serif" };
+const SPARK_MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono','Fira Code','Cascadia Code',monospace" };
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface SparkNavCard {
+  page:  Page;
+  label: string;
+  /** 2–3 data-asset micro-chips shown beneath the nav button */
+  chips: { icon: string; label: string }[];
+}
+
+interface SparkMessage {
+  id:        string;
+  role:      "user" | "assistant";
+  text:      string;
+  navCard?:  SparkNavCard;
+  followUps?: string[];
+  isTyping?: boolean;
+}
+
+// ── Technical token formatter ─────────────────────────────────────────────────
+// Any token matching the pattern is wrapped in 12px JetBrains Mono for
+// precision monitoring clarity (EVT-*, CAM-*, PLN-*, TRJ-*, RPT-*, HH:MM:SS, N%)
+const _SPLIT = /(\b(?:EVT|CAM|PLN|TRJ|RPT|SOP)-[\w.-]+\b|\b\d{2}:\d{2}:\d{2}\b|\b\d{1,4}%\b)/g;
+const _MATCH = /^(?:(?:EVT|CAM|PLN|TRJ|RPT|SOP)-[\w.-]+|\d{2}:\d{2}:\d{2}|\d{1,4}%)$/;
+
+function FmtText({ text }: { text: string }) {
+  const parts = text.split(_SPLIT);
+  return (
+    <>
+      {parts.map((p, i) =>
+        _MATCH.test(p) ? (
+          <code
+            key={i}
+            style={{ ...SPARK_MONO, fontSize: "11px", color: "rgba(52,211,153,0.92)",
+              background: "rgba(255,255,255,0.07)", padding: "1px 5px",
+              borderRadius: "3px", border: "1px solid rgba(255,255,255,0.10)" }}
+          >
+            {p}
+          </code>
+        ) : (
+          <span key={i}>{p}</span>
+        )
+      )}
+    </>
+  );
+}
+
+// Paragraph-aware wrapper: splits on \n\n for paragraphs, \n for line breaks
+function MsgBody({ text }: { text: string }) {
+  return (
+    <div className="space-y-1.5">
+      {text.split(/\n\n+/).map((para, pi) => (
+        <p key={pi} className="leading-relaxed">
+          {para.split("\n").map((line, li) => (
+            <span key={li}>
+              {li > 0 && <br />}
+              <FmtText text={line} />
+            </span>
+          ))}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// Three-dot typing indicator
+function TypingDots() {
+  return (
+    <div className="flex items-center gap-1 py-1 px-0.5">
+      {[0, 1, 2].map(i => (
+        <span
+          key={i}
+          className="w-1.5 h-1.5 rounded-full animate-bounce"
+          style={{ background: "rgba(255,255,255,0.30)", animationDelay: `${i * 0.15}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Navigation card appended to the bottom of an AI bubble
+function NavCard({ card, onNavigate }: { card: SparkNavCard; onNavigate?: (p: Page) => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+
+      {/* ── Tier 1: Primary action button ────────────────────────────────────
+           Resting  : teal text on dark teal-tinted fill, teal border outline
+           Hover    : filled teal plate, white text, brighter border + ↗ shift
+      ───────────────────────────────────────────────────────────────────────── */}
+      <button
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={() => onNavigate?.(card.page)}
+        className="flex items-center gap-2 w-full px-3 py-2.5 rounded-md text-left"
+        style={{
+          ...SPARK_SANS, fontSize: "12px", fontWeight: 600,
+          transition: "background 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
+          // Resting: dark teal tint — matches screenshot exactly
+          background: hovered ? "rgba(0,119,91,0.35)"        : "rgba(0,119,91,0.12)",
+          border:     `1px solid ${hovered
+                          ? "rgba(52,211,153,0.65)"
+                          : "rgba(0,149,109,0.45)"}`,
+          // Resting: bright teal label; Hover: white for max contrast on filled plate
+          color:      hovered ? "#FFFFFF"                    : "rgba(52,211,153,0.95)",
+        }}
+      >
+        <ArrowUpRight
+          className="w-3.5 h-3.5 shrink-0"
+          style={{
+            transition: "transform 150ms ease-out",
+            transform:  hovered ? "translate(2px,-2px)" : "translate(0,0)",
+          }}
+        />
+        View {card.label}
+      </button>
+
+      {/* ── Tier 2: Hollow informational chips — no fill, outline-only ── */}
+      <div className="mt-2.5">
+        <span style={{ ...SPARK_SANS, fontSize: "11px", color: "rgba(148,163,184,0.65)" }}>
+          Data Insights waiting for you:
+        </span>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {card.chips.map((chip, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1"
+              style={{
+                ...SPARK_MONO, fontSize: "11px",
+                padding:      "2px 6px",
+                borderRadius: "3px",
+                // Hollow — no background fill so chips read as informational, not clickable
+                background:   "transparent",
+                border:       "1px solid rgba(255,255,255,0.18)",
+                // High-contrast neutral-200 for sharp readability without hover
+                color:        "rgba(226,232,240,0.80)",
+              }}
+            >
+              <span style={{ fontSize: "10px" }}>{chip.icon}</span>
+              {chip.label}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Response corpus ───────────────────────────────────────────────────────────
+const SPARK_CORPUS: {
+  keywords:  string[];
+  text:      string;
+  navCard?:  SparkNavCard;
+  followUps: string[];
+}[] = [
+  {
+    keywords: ["incident", "critical", "alert", "intrusion", "breach", "unauthorized"],
+    text: "Scanning today's incident log against pipeline PLN-0042…\n\nI found 3 critical events unresolved:\n• EVT-2841 · CAM-04 · 14:23:41 — Unauthorized Access (94%)\n• EVT-2839 · CAM-02 · 14:11:05 — After-Hours Access, Server Room (98%)\n• EVT-2834 · CAM-01 · 13:14:19 — Fence Breach, Perimeter (89%)\n\nPeak window: 13:00–15:00. All 3 are pending acknowledgment and require immediate review.",
+    navCard: {
+      page:  "incident",
+      label: "Incident Analytics",
+      chips: [
+        { icon: "📋", label: "Event Log"       },
+        { icon: "📊", label: "Timeline View"   },
+        { icon: "⚠️", label: "Unresolved Flags" },
+      ],
+    },
+    followUps: ["Break down by camera zone", "Filter to Building A only", "Export incident report PDF"],
+  },
+  {
+    keywords: ["compliance", "ppe", "violation", "gap", "safety vest", "hard hat"],
+    text: "Running compliance audit for the last 7 days…\n\nI found 11 PPE violations across 4 zones:\n• CAM-08 · Fitness Center — 4 violations (Mon–Wed)\n• CAM-07 · Loading Dock — 3 violations\n• CAM-03 · Fire Exit B — 2 violations\n• CAM-15 · Lobby East — 2 violations\n\nCurrent compliance score: 78% (↓6% vs last week). Hard-hat non-compliance is the primary driver — 7 of 11 violations.",
+    navCard: {
+      page:  "compliance",
+      label: "Compliance",
+      chips: [
+        { icon: "📋", label: "Audit Logs"         },
+        { icon: "📈", label: "Trend Curves"        },
+        { icon: "⚠️", label: "Violation Triggers"  },
+      ],
+    },
+    followUps: ["Which zones are worst this week?", "Compare to last month's score", "Set PPE alert threshold"],
+  },
+  {
+    keywords: ["peak", "volume", "activity", "crowd", "density", "busy", "footfall", "traffic"],
+    text: "Analysing footfall patterns across all cameras for the last 24 h…\n\nTop zones by detection volume:\n1. Lobby East · CAM-15 — 1,240 detections\n2. Main Gate · CAM-01 — 988 detections\n3. Cafeteria · CAM-08 — 876 detections\n\nPeak window: 12:00–14:00 (avg 47 persons/frame).\n\nAnomaly flagged: CAM-11 (Parking Lot) recorded a 3× spike at 03:22:00 — 19 detections in a normally empty zone. Not yet flagged in the incident log.",
+    navCard: {
+      page:  "volume",
+      label: "Volume Analytics",
+      chips: [
+        { icon: "📊", label: "Hourly Heatmap"  },
+        { icon: "⚡", label: "Anomaly Spikes"  },
+        { icon: "📹", label: "Camera Counts"   },
+      ],
+    },
+    followUps: ["Show CAM-11 footage at 03:22:00", "What triggered the parking spike?", "Compare week-over-week volume"],
+  },
+  {
+    keywords: ["safety", "report", "generate", "export", "summary", "slip", "fall"],
+    text: "Generating safety report for the active period…\n\nReport ID: RPT-20260522-04 · Pipeline: PLN-0042\n\nKey findings:\n• 7 safety events logged in the past 24 h\n• 2 slip/fall risks flagged at CAM-08 · 13:22:44\n• PPE compliance: 78% (threshold 85%)\n• Door-held-open at CAM-03 · 13:30:08 — 100% confidence\n\nReport ready. Requires safety manager sign-off before distribution.",
+    navCard: {
+      page:  "safety",
+      label: "Safety Analytics",
+      chips: [
+        { icon: "🛡️", label: "Risk Scores"      },
+        { icon: "📋", label: "Shift Reports"    },
+        { icon: "🚪", label: "Exit Violations"  },
+      ],
+    },
+    followUps: ["Export as PDF", "Who needs to sign off?", "Schedule weekly auto-report"],
+  },
+  {
+    keywords: ["identity", "facial", "recognition", "person", "who", "subject", "trajectory"],
+    text: "Running identity correlation across all camera feeds…\n\nSubject matched across 3 zones:\n• CAM-04 · 14:23:41 — Entry, Building A (97%)\n• CAM-15 · 14:25:12 — Lobby East transit\n• CAM-02 · 14:31:07 — Server Room approach (flagged)\n\nTrajectory ID: TRJ-00441. Subject traversed 3 restricted zones in 7 min 26 s. The Server Room approach directly triggered EVT-2839.",
+    navCard: {
+      page:  "facial-recognition",
+      label: "Facial Recognition",
+      chips: [
+        { icon: "👁️", label: "Trail Replay"    },
+        { icon: "🗺️", label: "Zone Map"        },
+        { icon: "🔗", label: "Identity Links"  },
+      ],
+    },
+    followUps: ["Replay full trajectory TRJ-00441", "Cross-reference access control logs", "Add subject to watchlist"],
+  },
+  {
+    keywords: ["zone", "area", "building", "sector", "location", "map"],
+    text: "Analysing zone activity heatmap for the current shift…\n\nHigh-activity zones:\n• Zone: Entry — 1,228 events (14:00–15:00)\n• Zone: Server Room — 3 flagged events, all unresolved\n• Zone: Loading Dock — 6 PPE events, Mon–Fri\n\nQuiet zones with anomalous activity: Parking Lot (03:22:00 spike, see CAM-11).",
+    navCard: {
+      page:  "zone",
+      label: "Zone Analytics",
+      chips: [
+        { icon: "🔥", label: "Activity Heatmap" },
+        { icon: "⏱️", label: "Dwell Times"      },
+        { icon: "🗺️", label: "Zone Paths"       },
+      ],
+    },
+    followUps: ["Drill into Server Room zone", "Show Loading Dock PPE trend", "Compare zone activity 14:00–16:00"],
+  },
+];
+
+const SPARK_DEFAULT = {
+  text: "I've run your query against the live analytics pipeline.\n\nNo direct module match found, but I can cross-reference incident logs, camera feeds, compliance records, zone data, and identity trails.\n\nCould you narrow the scope? For example:\n• A time range (e.g., 08:00–16:00)\n• A target zone (e.g., Building A, Server Room)\n• An event type (e.g., PPE violation, intrusion)",
+  followUps: ["Try: Critical incidents today", "Try: PPE compliance this week", "Try: Peak activity zones"],
+};
+
+// Starter chips shown only before the first user turn
+const STARTER_CHIPS = [
   "Summarize critical incidents today",
   "Show compliance gaps this week",
-  "Analyze peak activity zones",
+  "Analyse peak activity zones",
   "Generate safety report",
 ];
 
-function CopilotDrawer({ onClose }: { onClose: () => void }) {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([
+// ── CopilotDrawer ─────────────────────────────────────────────────────────────
+function CopilotDrawer({
+  onClose,
+  onNavigate,
+}: {
+  onClose:     () => void;
+  onNavigate?: (page: Page) => void;
+}) {
+  const [input,          setInput]          = useState("");
+  const [hasInteracted,  setHasInteracted]  = useState(false);
+  const [messages,       setMessages]       = useState<SparkMessage[]>([
     {
-      role: "assistant",
-      text: "Hello! I'm Matrice Spark. I can analyze incidents, query camera feeds, identify compliance gaps, and generate reports across your surveillance infrastructure.",
+      id:       "init",
+      role:     "assistant",
+      text:     "Hello! I'm Matrice Spark. I can analyse incidents, query camera feeds, identify compliance gaps, and generate reports across your surveillance infrastructure.",
+      followUps: [],
     },
   ]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    const trimmed = input.trim();
+  const scrollBottom = useCallback(() => {
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+  }, []);
+
+  const handleSend = useCallback((textOverride?: string) => {
+    const trimmed = (textOverride ?? input).trim();
     if (!trimmed) return;
-    const userMsg = { role: "user", text: trimmed };
-    const botMsg = {
-      role: "assistant",
-      text: `Analyzing "${trimmed}"…\n\nI found 12 related events across 4 camera zones in the last 24 hours. Peak activity was recorded at 12:00–14:00. 3 incidents are flagged as critical and require immediate review. Would you like a detailed breakdown?`,
-    };
-    setMessages(prev => [...prev, userMsg, botMsg]);
+
+    // First interaction — permanently dismiss starter chips
+    setHasInteracted(true);
     setInput("");
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
-  };
+
+    const userMsg: SparkMessage = { id: `u${Date.now()}`, role: "user", text: trimmed };
+    const typingMsg: SparkMessage = { id: `t${Date.now()}`, role: "assistant", text: "", isTyping: true };
+
+    setMessages(prev => [...prev, userMsg, typingMsg]);
+    scrollBottom();
+
+    // Simulate AI latency then resolve with a corpus match
+    const lower = trimmed.toLowerCase();
+    const match = SPARK_CORPUS.find(c => c.keywords.some(k => lower.includes(k)));
+    const resp  = match ?? SPARK_DEFAULT;
+
+    setTimeout(() => {
+      setMessages(prev => [
+        ...prev.filter(m => !m.isTyping),
+        {
+          id:        `a${Date.now()}`,
+          role:      "assistant",
+          text:      resp.text,
+          navCard:   (resp as (typeof SPARK_CORPUS)[0]).navCard,
+          followUps: resp.followUps,
+        },
+      ]);
+      scrollBottom();
+    }, 950);
+  }, [input, scrollBottom]);
+
+  // Derive index of last assistant message (for follow-up chip placement)
+  const lastAssistantIdx = messages.reduce<number>(
+    (acc, m, i) => (m.role === "assistant" ? i : acc), -1
+  );
 
   return (
     <div
-      className="w-[380px] shrink-0 flex flex-col border-l border-white/10 animate-in slide-in-from-right duration-200"
-      style={{ backdropFilter: "blur(16px) saturate(180%)", background: "rgba(15,23,42,0.92)" }}
+      className="w-[380px] shrink-0 flex flex-col animate-in slide-in-from-right duration-200"
+      style={{
+        backdropFilter: "blur(16px) saturate(180%)",
+        background:     "rgba(15,23,42,0.92)",
+        // Rim edge glow: captures edge lighting, separates panel from dashboard grid
+        borderLeft:     "1px solid rgba(255,255,255,0.05)",
+        // Depth vignette: drops a shadow over the underlying interface, establishes layer hierarchy
+        boxShadow:      "-12px 0 30px rgba(15,23,42,0.35)",
+      }}
     >
-      {/* Header */}
+      {/* ── Header ───────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 shrink-0">
         <Sparkles className="w-4 h-4 text-[#00956D]" />
-        <span className="font-semibold text-white text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
-          Matrice Spark
-        </span>
-        <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#00775B]/25 text-[#34D399] font-mono tracking-widest ml-0.5">
+        <span className="font-semibold text-white text-sm" style={SPARK_SANS}>Matrice Spark</span>
+        <span
+          className="text-[9px] px-1.5 py-0.5 rounded-sm tracking-widest ml-0.5"
+          style={{ ...SPARK_MONO, background: "rgba(0,119,91,0.25)", color: "#34D399" }}
+        >
           BETA
         </span>
         <button onClick={onClose} className="ml-auto text-white/40 hover:text-white transition-colors p-0.5 rounded">
@@ -359,25 +685,91 @@ function CopilotDrawer({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 [&::-webkit-scrollbar]:w-0">
-        {messages.map((msg, i) => (
-          <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
-            {msg.role === "assistant" && (
-              <div className="flex items-start gap-2">
-                <div className="w-6 h-6 rounded-full bg-[#00775B]/30 border border-[#00775B]/40 flex items-center justify-center shrink-0 mt-0.5">
-                  <Sparkles className="w-3 h-3 text-[#00956D]" />
-                </div>
-                <div className="max-w-[85%] rounded-lg rounded-tl-none px-3 py-2 text-[12px] leading-relaxed bg-white/8 border border-white/10 text-white/85 whitespace-pre-line"
-                  style={{ fontFamily: "Inter, sans-serif" }}>
+      {/* ── Message thread ───────────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 [&::-webkit-scrollbar]:w-0">
+        {messages.map((msg, idx) => (
+          <div key={msg.id}>
+            {/* ── User bubble ─────────────────────────────────────────── */}
+            {msg.role === "user" && (
+              <div className="flex justify-end">
+                <div
+                  className="max-w-[85%] rounded-lg rounded-tr-none px-3 py-2.5 text-[12px] leading-relaxed border"
+                  style={{
+                    ...SPARK_SANS,
+                    background:  "rgba(255,255,255,0.03)",
+                    borderColor: "rgba(255,255,255,0.10)",
+                    color:       "rgba(255,255,255,0.82)",
+                  }}
+                >
                   {msg.text}
                 </div>
               </div>
             )}
-            {msg.role === "user" && (
-              <div className="max-w-[85%] rounded-lg rounded-tr-none px-3 py-2 text-[12px] leading-relaxed bg-[#00775B] text-white"
-                style={{ fontFamily: "Inter, sans-serif" }}>
-                {msg.text}
+
+            {/* ── Assistant bubble ─────────────────────────────────────── */}
+            {msg.role === "assistant" && (
+              <div className="flex items-start gap-2.5">
+                {/* Avatar */}
+                <div className="w-6 h-6 rounded-full bg-[#00775B]/30 border border-[#00775B]/40 flex items-center justify-center shrink-0 mt-0.5">
+                  <Sparkles className="w-3 h-3 text-[#00956D]" />
+                </div>
+
+                {/* Bubble */}
+                <div
+                  className="flex-1 min-w-0 rounded-lg rounded-tl-none px-3 py-2.5 border"
+                  style={{
+                    ...SPARK_SANS, fontSize: "12px",
+                    background:  "rgba(255,255,255,0.06)",
+                    borderColor: "rgba(255,255,255,0.10)",
+                    color:       "rgba(255,255,255,0.85)",
+                  }}
+                >
+                  {msg.isTyping ? (
+                    <TypingDots />
+                  ) : (
+                    <>
+                      <MsgBody text={msg.text} />
+                      {msg.navCard && (
+                        <NavCard card={msg.navCard} onNavigate={onNavigate} />
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Context-aware follow-up chips (last assistant msg only) ── */}
+            {msg.role === "assistant"
+              && idx === lastAssistantIdx
+              && !msg.isTyping
+              && msg.followUps && msg.followUps.length > 0
+              && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5 pl-[34px]">
+                {msg.followUps.map(chip => (
+                  <button
+                    key={chip}
+                    onClick={() => handleSend(chip)}
+                    className="text-[11px] px-2.5 py-1 rounded-full border transition-colors text-left"
+                    style={{
+                      ...SPARK_SANS,
+                      background:  "rgba(0,119,91,0.10)",
+                      borderColor: "rgba(0,119,91,0.30)",
+                      color:       "rgba(52,211,153,0.85)",
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.background    = "rgba(0,119,91,0.20)";
+                      (e.currentTarget as HTMLElement).style.borderColor   = "rgba(0,119,91,0.55)";
+                      (e.currentTarget as HTMLElement).style.color         = "rgba(52,211,153,1)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.background    = "rgba(0,119,91,0.10)";
+                      (e.currentTarget as HTMLElement).style.borderColor   = "rgba(0,119,91,0.30)";
+                      (e.currentTarget as HTMLElement).style.color         = "rgba(52,211,153,0.85)";
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -385,34 +777,48 @@ function CopilotDrawer({ onClose }: { onClose: () => void }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Suggestion chips */}
-      <div className="px-4 py-2.5 border-t border-white/10 flex flex-wrap gap-1.5 shrink-0">
-        {COPILOT_SUGGESTIONS.map(s => (
-          <button
-            key={s}
-            onClick={() => setInput(s)}
-            className="text-[11px] px-2.5 py-1 rounded-full bg-white/6 border border-white/10 text-white/60 hover:text-white hover:bg-white/12 transition-colors"
-            style={{ fontFamily: "Inter, sans-serif" }}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
+      {/* ── Starter chips — dismissed permanently after first send ──────────── */}
+      {!hasInteracted && (
+        <div className="px-4 pt-2 pb-2.5 border-t border-white/8 flex flex-wrap gap-1.5 shrink-0">
+          {STARTER_CHIPS.map(s => (
+            <button
+              key={s}
+              onClick={() => handleSend(s)}
+              className="text-[11px] px-2.5 py-1 rounded-full border transition-colors"
+              style={{
+                ...SPARK_SANS,
+                background:  "rgba(255,255,255,0.05)",
+                borderColor: "rgba(255,255,255,0.10)",
+                color:       "rgba(255,255,255,0.60)",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,1)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.10)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.60)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Input */}
+      {/* ── Input ────────────────────────────────────────────────────────────── */}
       <div className="px-4 py-3 border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-2 bg-white/8 border border-white/12 rounded-lg px-3 py-2 focus-within:border-[#00775B]/50 transition-colors">
+        <div
+          className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}
+          onFocus={() => {}}
+        >
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder="Ask Matrice Spark..."
-            className="flex-1 bg-transparent text-[12px] text-white placeholder-white/30 outline-none"
-            style={{ fontFamily: "Inter, sans-serif" }}
+            placeholder="Ask Matrice Spark…"
+            className="flex-1 bg-transparent text-[12px] outline-none"
+            style={{ ...SPARK_SANS, color: "rgba(255,255,255,0.88)", caretColor: "#34D399" }}
           />
           <button
-            onClick={handleSend}
-            className={cn("transition-colors p-0.5", input.trim() ? "text-[#00956D] hover:text-[#34D399]" : "text-white/20 cursor-default")}
+            onClick={() => handleSend()}
+            className="transition-colors p-0.5 shrink-0"
+            style={{ color: input.trim() ? "#00956D" : "rgba(255,255,255,0.18)" }}
           >
             <Send className="w-3.5 h-3.5" />
           </button>
@@ -432,9 +838,11 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
   const platformPanelRef = useRef<HTMLDivElement>(null);
 
   // Vision Intelligence Search (query/active driven by Command Palette)
-  const [searchQuery,  setSearchQuery]  = useState("");
-  const [searchActive, setSearchActive] = useState(false);
-  const [paletteOpen,  setPaletteOpen]  = useState(false);
+  const [searchQuery,         setSearchQuery]         = useState("");
+  const [searchActive,        setSearchActive]        = useState(false);
+  const [paletteOpen,         setPaletteOpen]         = useState(false);
+  /** Pre-fill string for the palette when re-opened from an active results context */
+  const [paletteInitialQuery, setPaletteInitialQuery] = useState("");
 
   // Copilot drawer
   const [copilotOpen, setCopilotOpen] = useState(false);
@@ -456,17 +864,24 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
     return () => clearInterval(id);
   }, []);
 
-  // Global Cmd+K / Ctrl+K → open command palette
+  // Global Cmd+K / Ctrl+K → open command palette.
+  // Pre-fills the current query when search results are visible so the operator
+  // can iterate on a prompt without retyping it from scratch.
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setPaletteOpen(o => !o);
+        if (paletteOpen) {
+          setPaletteOpen(false);
+        } else {
+          setPaletteInitialQuery(searchActive ? searchQuery : "");
+          setPaletteOpen(true);
+        }
       }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, []);
+  }, [paletteOpen, searchActive, searchQuery]);
 
   // Close platform panel on outside click
   useEffect(() => {
@@ -638,15 +1053,15 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
 
           {/* Right: actions */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* Search anchor */}
+            {/* Vision Search anchor */}
             <button
-              onClick={() => setPaletteOpen(true)}
+              onClick={() => { setPaletteInitialQuery(""); setPaletteOpen(true); }}
               className="flex items-center gap-2 h-8 px-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/8 hover:border-white/18 text-white/50 hover:text-white transition-all"
               style={{ fontFamily: "Inter, sans-serif" }}
             >
               <Search className="w-3.5 h-3.5" />
-              <span className="hidden md:block text-[12px]">Search</span>
-              <div className="hidden md:flex items-center gap-0.5 ml-0.5">
+              <span className="hidden md:block text-[12px]">Vision Search</span>
+              <div className="hidden md:flex items-center gap-0.5 ml-1">
                 <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/15 bg-white/8" style={{ fontFamily: "JetBrains Mono, monospace" }}>⌘</kbd>
                 <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/15 bg-white/8" style={{ fontFamily: "JetBrains Mono, monospace" }}>K</kbd>
               </div>
@@ -730,7 +1145,11 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
           {/* Main content area */}
           <div className="flex flex-1 flex-col overflow-auto min-w-0">
             {searchActive ? (
-              <SearchResultsView query={searchQuery} onClear={clearSearch} />
+              <SearchResultsView
+                query={searchQuery}
+                onClear={clearSearch}
+                onEditQuery={() => { setPaletteInitialQuery(searchQuery); setPaletteOpen(true); }}
+              />
             ) : (
               <div className={cn(
                 "flex flex-1 flex-col",
@@ -743,7 +1162,10 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
 
           {/* Spark drawer (slides in from right, pushes content left) */}
           {copilotOpen && (
-            <CopilotDrawer onClose={() => setCopilotOpen(false)} />
+            <CopilotDrawer
+              onClose={() => setCopilotOpen(false)}
+              onNavigate={(page) => { onPageChange(page); setCopilotOpen(false); }}
+            />
           )}
         </div>
 
@@ -753,6 +1175,7 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
             platform="analytics"
             onSearch={handlePaletteSearch}
             onClose={() => setPaletteOpen(false)}
+            initialQuery={paletteInitialQuery}
           />
         )}
       </SidebarInset>

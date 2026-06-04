@@ -82,24 +82,31 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface CommandPaletteProps {
-  platform: "vms" | "analytics";
-  onSearch: (query: string) => void;
-  onClose:  () => void;
+  platform:      "vms" | "analytics";
+  onSearch:      (query: string) => void;
+  onClose:       () => void;
+  /** Pre-populate the input and select-all so the operator can edit instantly */
+  initialQuery?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export function CommandPalette({ platform, onSearch, onClose }: CommandPaletteProps) {
-  const [query,       setQuery]       = useState("");
+export function CommandPalette({ platform, onSearch, onClose, initialQuery = "" }: CommandPaletteProps) {
+  const [query,       setQuery]       = useState(initialQuery);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef                      = useRef<HTMLInputElement>(null);
 
   const corpus    = platform === "vms" ? VMS_SUGGESTIONS      : ANALYTICS_SUGGESTIONS;
   const quickTags = platform === "vms" ? QUICK_TAGS_VMS       : QUICK_TAGS_ANALYTICS;
 
-  // Auto-focus
+  // Auto-focus; select-all when pre-populated so operator can overwrite or edit immediately
   useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 30);
+    const t = setTimeout(() => {
+      if (!inputRef.current) return;
+      inputRef.current.focus();
+      if (initialQuery) inputRef.current.select();
+    }, 30);
     return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Escape closes

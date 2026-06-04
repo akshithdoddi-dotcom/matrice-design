@@ -914,9 +914,11 @@ function InspectionModal({ result, onClose }: { result: SearchResult; onClose: (
 // ─── Main VMS Platform ────────────────────────────────────────────────────────
 
 export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
-  const [searchQuery, setSearchQuery]   = useState("");
-  const [searchActive, setSearchActive] = useState(false);
-  const [paletteOpen, setPaletteOpen]   = useState(false);
+  const [searchQuery,        setSearchQuery]        = useState("");
+  const [searchActive,       setSearchActive]       = useState(false);
+  const [paletteOpen,        setPaletteOpen]        = useState(false);
+  /** Query string pre-filled into the palette when re-opened from results context */
+  const [paletteInitialQuery, setPaletteInitialQuery] = useState("");
   const [hoveredFeed, setHoveredFeed]   = useState<string | null>(null);
   const [selectedCams, setSelectedCams]   = useState<Set<string>>(new Set());
   const [platformOpen, setPlatformOpen]   = useState(false);
@@ -960,28 +962,6 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
     return () => document.removeEventListener("mousedown", h);
   }, [platformOpen]);
 
-  // Global Cmd+K / Ctrl+K → open command palette
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setPaletteOpen(o => !o);
-      }
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, []);
-
-  // Escape while search results are visible → restore snapshot
-  useEffect(() => {
-    if (!searchActive) return;
-    const h = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !paletteOpen) clearSearch();
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [searchActive, paletteOpen, clearSearch]);
-
   // Restore snapshot + wipe search state
   const clearSearch = useCallback(() => {
     setSearchQuery("");
@@ -1000,6 +980,37 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
     setSearchQuery(query);
     setSearchActive(true);
   }, [gridCols, sidebarOpen, selectedCams]);
+
+  // Global Cmd+K / Ctrl+K → open command palette.
+  // While search results are visible, pre-fills the current query so the
+  // operator can edit without re-typing.
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        if (paletteOpen) {
+          setPaletteOpen(false);
+        } else {
+          setPaletteInitialQuery(searchActive ? searchQuery : "");
+          setPaletteOpen(true);
+        }
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  // searchQuery / searchActive are intentionally in deps so the handler always
+  // closes over their latest values.
+  }, [paletteOpen, searchActive, searchQuery]);
+
+  // Escape while search results are visible → restore snapshot
+  useEffect(() => {
+    if (!searchActive) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !paletteOpen) clearSearch();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [searchActive, paletteOpen, clearSearch]);
 
   const toggleCamera = (id: string) => {
     setSelectedCams(prev => {
@@ -1179,25 +1190,16 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
 
           <div className="h-4 w-px bg-white/10 mx-1 shrink-0" />
 
-          {/* ── Right utility: Search anchor ──────────────────────────────── */}
-          <div className="flex-1 flex items-center justify-end gap-2">
-            {searchActive && (
-              <button
-                onClick={clearSearch}
-                className="flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium text-white/55 hover:text-white border border-white/10 bg-white/4 hover:bg-white/8 transition-all shrink-0"
-                style={MONO}
-              >
-                <X className="w-2.5 h-2.5" /> Clear Results
-              </button>
-            )}
+          {/* ── Right utility: Vision Search anchor ──────────────────────── */}
+          <div className="flex-1 flex items-center justify-end">
             <button
-              onClick={() => setPaletteOpen(true)}
+              onClick={() => { setPaletteInitialQuery(""); setPaletteOpen(true); }}
               className="flex items-center gap-2 h-8 px-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/8 hover:border-white/18 text-white/50 hover:text-white transition-all shrink-0"
               style={INTER}
             >
               <Search className="w-3.5 h-3.5" />
-              <span className="text-[12px] hidden sm:block">Search</span>
-              <div className="hidden sm:flex items-center gap-0.5 ml-0.5">
+              <span className="text-[12px] hidden sm:block">Vision Search</span>
+              <div className="hidden sm:flex items-center gap-0.5 ml-1">
                 <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/15 bg-white/8" style={MONO}>⌘</kbd>
                 <kbd className="text-[9px] px-1 py-0.5 rounded border border-white/15 bg-white/8" style={MONO}>K</kbd>
               </div>
@@ -1213,25 +1215,61 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
             {/* ── Row 1: Context header ─────────────────────────────────── */}
             <div className="flex items-center gap-3 px-3 py-2 shrink-0 border-b border-white/6 animate-in fade-in duration-150"
               style={{ background: "#030c1a" }}>
+
+              {/* Single exit action — no redundant "Clear Results" anywhere */}
               <button
                 onClick={clearSearch}
                 className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-white/14 bg-white/5 hover:bg-white/10 hover:border-white/22 text-white/80 hover:text-white transition-all shrink-0"
                 style={INTER}
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-medium">Back to Live View</span>
+                <span className="text-[11px] font-medium">Exit Search</span>
               </button>
 
               <div className="h-3.5 w-px bg-white/10 shrink-0" />
 
+              {/* Results summary with click-to-edit query chip */}
               <div className="flex items-center gap-1.5 min-w-0">
                 <Sparkles className="w-3 h-3 text-[#00956D] shrink-0 animate-pulse" />
                 <span className="text-[12px] text-white/55 shrink-0" style={MONO}>
                   {SEARCH_RESULTS.length} clips matching
                 </span>
-                <span className="text-[12px] text-white/85 truncate italic" style={MONO}>
-                  "{searchQuery}"
-                </span>
+
+                {/* ── Interactive query chip: click or ⌘K to edit in-place ── */}
+                <button
+                  title="Click to edit query (⌘K)"
+                  onClick={() => { setPaletteInitialQuery(searchQuery); setPaletteOpen(true); }}
+                  className="group flex items-center gap-1 px-2 py-0.5 rounded border transition-all shrink-0"
+                  style={{
+                    borderColor: "rgba(0,119,91,0.35)",
+                    background:  "rgba(0,119,91,0.10)",
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,149,109,0.65)";
+                    (e.currentTarget as HTMLElement).style.background  = "rgba(0,119,91,0.20)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,119,91,0.35)";
+                    (e.currentTarget as HTMLElement).style.background  = "rgba(0,119,91,0.10)";
+                  }}
+                >
+                  <span
+                    className="text-[12px] italic max-w-[260px] truncate"
+                    style={{ ...MONO, color: "rgba(255,255,255,0.88)" }}
+                  >
+                    "{searchQuery}"
+                  </span>
+                  {/* pencil hint — only visible on hover */}
+                  <svg
+                    className="w-2.5 h-2.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: "#34D399" }}
+                    viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"
+                  >
+                    <path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" strokeLinejoin="round" />
+                    <path d="M9.5 4.5l2 2" />
+                  </svg>
+                </button>
+
                 <span className="text-[12px] text-white/35 shrink-0" style={MONO}>
                   · Live + Archive
                 </span>
@@ -1239,7 +1277,7 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
 
               <div className="flex-1" />
               <span className="text-[10px] text-white/22 shrink-0 hidden lg:block" style={MONO}>
-                ESC to restore
+                ⌘K to edit · ESC to exit
               </span>
             </div>
 
@@ -1371,12 +1409,13 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
             style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}
           >
             {displayFeeds.map((feed, i) => (
+              // i === 1 is pinned to hovered state for design-capture purposes
               <CameraGridCell
                 key={feed.id + i}
                 feed={feed}
                 searchActive={searchActive}
                 searchResult={searchActive ? SEARCH_RESULTS[i] : undefined}
-                isHovered={hoveredFeed === feed.id + i}
+                isHovered={i === 1 || hoveredFeed === feed.id + i}
                 onHover={() => setHoveredFeed(feed.id + i)}
                 onLeave={() => setHoveredFeed(null)}
                 onResultClick={setSelectedResult}
@@ -1397,6 +1436,7 @@ export function VMSPlatform({ onPlatformSwitch }: VMSProps) {
           platform="vms"
           onSearch={handlePaletteSearch}
           onClose={() => setPaletteOpen(false)}
+          initialQuery={paletteInitialQuery}
         />
       )}
     </div>

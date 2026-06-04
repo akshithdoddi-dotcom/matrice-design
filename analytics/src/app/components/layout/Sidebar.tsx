@@ -8,7 +8,7 @@ import {
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export type Page =
-  | "dashboard" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
+  | "dashboard" | "dashboard-2" | "incident-lifecycle" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
   | "facial-recognition" | "license-plates" | "cameras" | "metrics" | "compliance"
   | "design-system" | "settings" | "service" | "sample-analytics" | "microservices";
 

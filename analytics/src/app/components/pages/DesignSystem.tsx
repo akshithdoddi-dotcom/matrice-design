@@ -31,6 +31,9 @@ import {
   Columns3,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
+import { IncidentCardVariantSheet } from "@/app/components/pages/IncidentCardVariantSheet";
+import { IncidentCardV11Sheet } from "@/app/components/pages/IncidentCardV11Sheet";
+import { IncidentCardV12Sheet } from "@/app/components/pages/IncidentCardV12Sheet";
 
 // ─── Sandbox Theme Context ────────────────────────────────────────────────────
 // Default "light" means ALL components outside the Provider stay unaffected.
@@ -5834,9 +5837,16 @@ const TABLE_TABS: { id: TableTabId; version: string; label: string; badge: strin
 
 type TabId = "v1" | "v1-1" | "v1-2";
 const CARD_TABS: { id: TabId; version: string; label: string; badge: string; badgeColor: string }[] = [
-  { id: "v1",   version: "v1.0", label: "Standard",      badge: "Stable",  badgeColor: "#2B7FFF" },
-  { id: "v1-1", version: "v1.1", label: "High-Tech HUD", badge: "Latest",  badgeColor: "#00A63E" },
-  { id: "v1-2", version: "v1.2", label: "Card Catalogue", badge: "New",    badgeColor: "#EA580C" },
+  { id: "v1",   version: "v1.0", label: "Standard",        badge: "Stable",  badgeColor: "#2B7FFF" },
+  { id: "v1-1", version: "v1.1", label: "High-Tech HUD",   badge: "Latest",  badgeColor: "#00A63E" },
+  { id: "v1-2", version: "v1.2", label: "Card Catalogue",  badge: "New",     badgeColor: "#EA580C" },
+];
+
+type IncidentTabId = "inc-v1" | "inc-v1-1" | "inc-v1-2";
+const INCIDENT_TABS: { id: IncidentTabId; version: string; label: string; badge: string; badgeColor: string }[] = [
+  { id: "inc-v1",   version: "v1.0", label: "Incident Cards v1.0", badge: "Stable", badgeColor: "#8B5CF6" },
+  { id: "inc-v1-1", version: "v1.1", label: "Incident Cards v1.1", badge: "",       badgeColor: "#64748B" },
+  { id: "inc-v1-2", version: "v1.2", label: "Incident Cards v1.2", badge: "New",    badgeColor: "#00775B" },
 ];
 
 type AccordionTabId = "v1-acc" | "v1-1-acc" | "v1-2-acc";
@@ -5848,9 +5858,10 @@ const ACCORDION_TABS: { id: AccordionTabId; version: string; label: string; badg
 
 export const DesignSystem = () => {
   const [activeTab, setActiveTab] = useState<TabId>("v1-1");
-  const [componentType, setComponentType] = useState<"card" | "table" | "accordion">("card");
+  const [componentType, setComponentType] = useState<"card" | "table" | "accordion" | "incident">("card");
   const [tableTab, setTableTab] = useState<TableTabId>("v2base");
   const [accordionTab, setAccordionTab] = useState<AccordionTabId>("v1-acc");
+  const [incidentTab, setIncidentTab] = useState<IncidentTabId>("inc-v1");
   const [sandboxTheme, setSandboxTheme] = useState<"light" | "dark">("light");
 
   return (
@@ -5904,7 +5915,7 @@ export const DesignSystem = () => {
         {/* Component type selector */}
         <div className="flex items-center gap-0 py-5">
           <div className="rounded-[6px] p-0.5 bg-[#F1F5F9] border border-[#E2E8F0] flex items-center">
-            {(["card", "table", "accordion"] as const).map((type) => {
+            {(["card", "table", "accordion", "incident"] as const).map((type) => {
               const isActive = componentType === type;
               return (
                 <button
@@ -5917,7 +5928,7 @@ export const DesignSystem = () => {
                     border: isActive ? "none" : "1px solid #E2E8F0",
                   }}
                 >
-                  {type === "card" ? "Cards" : type === "table" ? "Tables" : "Accordion"}
+                  {type === "card" ? "Cards" : type === "table" ? "Tables" : type === "accordion" ? "Accordion" : "Incident Cards"}
                 </button>
               );
             })}
@@ -5926,14 +5937,15 @@ export const DesignSystem = () => {
 
         {/* Tab strip */}
         <div className="flex items-end gap-0 border-b border-[#E2E8F0] mt-0">
-          {(componentType === "card" ? CARD_TABS : componentType === "table" ? TABLE_TABS : ACCORDION_TABS).map((tab) => {
-            const active = componentType === "card" ? activeTab === tab.id : componentType === "table" ? tableTab === tab.id : accordionTab === tab.id;
+          {(componentType === "card" ? CARD_TABS : componentType === "table" ? TABLE_TABS : componentType === "incident" ? INCIDENT_TABS : ACCORDION_TABS).map((tab) => {
+            const active = componentType === "card" ? activeTab === tab.id : componentType === "table" ? tableTab === tab.id : componentType === "incident" ? incidentTab === tab.id : accordionTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => {
                   if (componentType === "card") setActiveTab(tab.id as TabId);
                   else if (componentType === "table") setTableTab(tab.id as TableTabId);
+                  else if (componentType === "incident") setIncidentTab(tab.id as IncidentTabId);
                   else setAccordionTab(tab.id as AccordionTabId);
                 }}
                 className={cn(
@@ -5969,6 +5981,15 @@ export const DesignSystem = () => {
             {activeTab === "v1"   && <V1Content />}
             {activeTab === "v1-1" && <V1_1Content />}
             {activeTab === "v1-2" && <V1_2Content />}
+          </div>
+        )}
+
+        {/* Incident Cards tab content */}
+        {componentType === "incident" && (
+          <div className="py-8 animate-in fade-in duration-300">
+            {incidentTab === "inc-v1"   && <IncidentCardVariantSheet />}
+            {incidentTab === "inc-v1-1" && <IncidentCardV11Sheet />}
+            {incidentTab === "inc-v1-2" && <IncidentCardV12Sheet />}
           </div>
         )}
 
