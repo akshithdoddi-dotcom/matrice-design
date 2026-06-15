@@ -18,7 +18,7 @@ function figmaAssetResolver() {
 
 export default defineConfig({
   server: {
-    port: 5175,
+    port: 5177,
     strictPort: true,
   },
   plugins: [

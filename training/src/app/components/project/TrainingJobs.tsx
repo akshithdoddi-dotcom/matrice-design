@@ -19,10 +19,10 @@ import { cn } from "@/app/lib/utils";
 const TEAL = "#00775B";
 
 const STATS: StatCardData[] = [
-  { label: "Total Runs",    value: "4",     sublabel: "All Jobs",      num: "+2",   ref_: "vs Last Week",  dir: "up",     chip: "RUNS",     color: "#0284C7", bgColor: "#E0F2FE" },
-  { label: "Running",       value: "2",     sublabel: "Active Now",    num: "+1",   ref_: "vs Yesterday",  dir: "up",     chip: "RUNNING",  color: TEAL,      bgColor: "#E5FFF9" },
-  { label: "Best Accuracy", value: "94.2%", sublabel: "Top Epoch",     num: "+1.3%",ref_: "vs Prev Run",   dir: "up",     chip: "ACCURACY", color: "#D97706", bgColor: "#FFFBEB" },
-  { label: "Compute Hours", value: "10.2h", sublabel: "This Month",    num: "+3h",  ref_: "vs Last Month", dir: "up",     chip: "COMPUTE",  color: "#7C3AED", bgColor: "#F3EEFF" },
+  { label: "Total Runs",    value: "4",     sublabel: "All Jobs",      num: "+2",   ref_: "vs Last Week",  dir: "up",     chip: "RUNS",     color: "#64748B", bgColor: "#F1F5F9" },
+  { label: "Running",       value: "2",     sublabel: "Active Now",    num: "+1",   ref_: "vs Yesterday",  dir: "up",     chip: "RUNNING",  color: "#64748B", bgColor: "#F1F5F9" },
+  { label: "Best Accuracy", value: "94.2%", sublabel: "Top Epoch",     num: "+1.3%",ref_: "vs Prev Run",   dir: "up",     chip: "ACCURACY", color: "#64748B", bgColor: "#F1F5F9" },
+  { label: "Compute Hours", value: "10.2h", sublabel: "This Month",    num: "+3h",  ref_: "vs Last Month", dir: "up",     chip: "COMPUTE",  color: "#64748B", bgColor: "#F1F5F9" },
 ];
 
 // ─── Mock Jobs ────────────────────────────────────────────────────────────────
@@ -139,6 +139,7 @@ function JobsTab({ onView }: { onView: (j: TrainingJob) => void }) {
         )},
       ]}
       data={MOCK_PROJECT_JOBS}
+      onRowClick={(row) => onView(row)}
     />
   );
 }

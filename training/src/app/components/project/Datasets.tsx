@@ -13,10 +13,9 @@ import { cn } from "@/app/lib/utils";
 const TEAL = "#00775B";
 
 const STATS: StatCardData[] = [
-  { label: "Total Datasets",      value: "3",       sublabel: "In Project",        num: "+1",    ref_: "vs Last Week",   dir: "up",     chip: "DATASETS", color: "#0284C7", bgColor: "#E0F2FE" },
-  { label: "Total Items",         value: "19.8k",   sublabel: "Across Datasets",   num: "+2k",   ref_: "vs Last Upload",  dir: "up",     chip: "ITEMS",    color: "#0284C7", bgColor: "#E0F2FE" },
-  { label: "Total Size",          value: "6.7 GB",  sublabel: "Stored",            num: "+1.2GB",ref_: "vs Last Upload",  dir: "up",     chip: "SIZE",     color: "#D97706", bgColor: "#FFFBEB" },
-  { label: "Train / Val / Test",  value: "70/20/10",sublabel: "Avg Split",         num: "—",     ref_: "—",               dir: "neutral",chip: "SPLIT",    color: "#059669", bgColor: "#ECFDF5" },
+  { label: "Total Datasets", value: "3",       sublabel: "In Project",      num: "+1",     ref_: "vs Last Week",  dir: "up", chip: "DATASETS", color: "#64748B", bgColor: "#F1F5F9" },
+  { label: "Total Items",    value: "19.8k",   sublabel: "Across Datasets", num: "+2k",    ref_: "vs Last Upload", dir: "up", chip: "ITEMS",    color: "#64748B", bgColor: "#F1F5F9" },
+  { label: "Total Size",     value: "6.7 GB",  sublabel: "Stored",          num: "+1.2GB", ref_: "vs Last Upload", dir: "up", chip: "SIZE",     color: "#64748B", bgColor: "#F1F5F9" },
 ];
 
 const MOCK_PROJECT_DATASETS: Dataset[] = [
@@ -296,7 +295,7 @@ export function Datasets({ project: _project, initialDatasetId }: DatasetsProps)
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {STATS.map((d) => <StatCard key={d.label} d={d} />)}
       </div>
       <div className="bg-white rounded-md border border-neutral-200 shadow-sm overflow-hidden">

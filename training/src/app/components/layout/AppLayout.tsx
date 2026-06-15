@@ -33,7 +33,7 @@ const PROJECT_NAV: NavItem[] = [
   { id: "dashboard",   label: "Dashboard",   icon: LayoutDashboard },
   { id: "home",        label: "Home",        icon: Home },
   { id: "datasets",    label: "Datasets",    icon: Database },
-  { id: "training",    label: "Training",    icon: Cpu },
+  { id: "training",    label: "Models",      icon: Cpu },
   { id: "deployments", label: "Deployments", icon: Rocket },
 ];
 

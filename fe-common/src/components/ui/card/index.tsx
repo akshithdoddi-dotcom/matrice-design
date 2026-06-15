@@ -11,9 +11,6 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
       ref={ref}
       className={cn(
         "relative w-full bg-surface border border-border rounded-lg",
-        "transition-all duration-(--duration-normal) ease-(--ease-snappy)",
-        "hover:border-(--primary-main)",
-        "focus-within:border-(--primary-main)",
         className,
       )}
       {...props}
