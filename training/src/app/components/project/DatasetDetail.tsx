@@ -1162,7 +1162,7 @@ function AnnotationTab() {
               <p className="text-[13px] font-semibold text-neutral-800">Create New Version</p>
               <p className="text-[11px] text-neutral-400 mt-0.5">Save annotation changes as a new dataset version</p>
             </div>
-            <Switch checked={createNewVersion} onCheckedChange={setCreateNewVersion} />
+            <Switch checked={createNewVersion} onCheckedChange={setCreateNewVersion} className="[&[data-state=unchecked]]:bg-neutral-300" />
           </Card>
 
           {/* Label management */}
@@ -1438,7 +1438,7 @@ function AugmentationTab() {
         <div className="px-4 py-3.5 border-b border-neutral-100">
           <div className="flex items-center justify-between mb-3">
             <Label className="text-[12px] font-semibold text-neutral-700">New Version</Label>
-            <Switch checked={newVersion} onCheckedChange={setNewVersion} />
+            <Switch checked={newVersion} onCheckedChange={setNewVersion} className="[&[data-state=unchecked]]:bg-neutral-300" />
           </div>
           {newVersion && (
             <div className="flex flex-col gap-1.5">
@@ -1457,7 +1457,7 @@ function AugmentationTab() {
           </div>
           <div className="flex items-center justify-between">
             <Label className="text-[12px] text-neutral-600">Auto Select</Label>
-            <Switch checked={autoSelect} onCheckedChange={setAutoSelect} />
+            <Switch checked={autoSelect} onCheckedChange={setAutoSelect} className="[&[data-state=unchecked]]:bg-neutral-300" />
           </div>
         </div>
 
@@ -1635,7 +1635,7 @@ function ImageGenerationTab() {
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <Label className="text-[12px] font-semibold text-neutral-700">New Version</Label>
-              <Switch checked={newVersion} onCheckedChange={setNewVersion} />
+              <Switch checked={newVersion} onCheckedChange={setNewVersion} className="[&[data-state=unchecked]]:bg-neutral-300" />
             </div>
             {newVersion && (
               <div className="flex flex-col gap-1.5">

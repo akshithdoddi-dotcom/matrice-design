@@ -249,7 +249,7 @@ function AddModelsTab() {
                 { value: "openvino",  label: "OpenVINO" },
               ]} value={exportFmt} onChange={setExportFmt} className="w-36" />
               <div className="flex items-center gap-2 mt-5 ml-2">
-                <Switch checked={showNames} onCheckedChange={setShowNames} />
+                <Switch checked={showNames} onCheckedChange={setShowNames} className="[&[data-state=unchecked]]:bg-neutral-300" />
                 <span className="text-[12px] text-neutral-600">Display Model Names</span>
               </div>
               <button

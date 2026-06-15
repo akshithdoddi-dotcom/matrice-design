@@ -540,8 +540,8 @@ const PARAM_GROUPS = [
   {
     id: "optimizer",
     label: "Optimizer",
-    color: "#0284C7",
-    bgColor: "#F0F7FF",
+    color: "#00775B",
+    bgColor: "#F0FBF7",
     icon: Zap,
     params: [
       { key: "optimizer",    label: "Optimizer",    chip: true  },
@@ -553,8 +553,8 @@ const PARAM_GROUPS = [
   {
     id: "scheduler",
     label: "LR Scheduler",
-    color: "#7C3AED",
-    bgColor: "#FAF5FF",
+    color: "#00775B",
+    bgColor: "#F0FBF7",
     icon: Settings2,
     params: [
       { key: "lr_scheduler", label: "Scheduler Type", chip: true  },
@@ -614,7 +614,7 @@ function HyperparametersTab() {
             {([
               { label: "Dataset", value: "ImageNet",  chip: false },
               { label: "Metric",  value: "acc@1",     chip: true, chipColor: "#00775B", chipBg: "#E5FFF9" },
-              { label: "Split",   value: "val",       chip: true, chipColor: "#475569",  chipBg: "#F1F5F9" },
+              { label: "Split",   value: "val",       chip: true, chipColor: "#00775B", chipBg: "#E5FFF9" },
             ] as { label: string; value: string; chip: boolean; chipColor?: string; chipBg?: string }[]).map(({ label, value, chip, chipColor, chipBg }) => (
               <div key={label} className="flex items-center justify-between px-5 py-3">
                 <span className="text-[11px] text-neutral-500">{label}</span>
@@ -632,10 +632,10 @@ function HyperparametersTab() {
             <div className="px-5 py-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-neutral-500">Score</span>
-                <span className="font-mono font-bold text-[22px] text-[#0284C7] leading-none">84.23</span>
+                <span className="font-mono font-bold text-[22px] text-[#00775B] leading-none">84.23</span>
               </div>
               <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#0284C7]" style={{ width: "84.23%" }} />
+                <div className="h-full rounded-full bg-[#00775B]" style={{ width: "84.23%" }} />
               </div>
               <div className="flex justify-between text-[9px] font-mono text-neutral-400">
                 <span>0</span><span>50</span><span>100</span>
@@ -685,10 +685,9 @@ function HyperparametersTab() {
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                       <div className="h-full rounded-full"
-                        style={{ width: `${pct}%`, backgroundColor: isActive ? "#00775B" : "#7C3AED" }} />
+                        style={{ width: `${pct}%`, backgroundColor: isActive ? "#00775B" : "#D1D5DB" }} />
                     </div>
-                    <span className="font-mono text-[11px] font-bold shrink-0 w-10 text-right"
-                      style={{ color: isActive ? "#00775B" : "#7C3AED" }}>
+                    <span className={cn("font-mono text-[11px] font-bold shrink-0 w-10 text-right", isActive ? "text-[#00775B]" : "text-neutral-400")}>
                       {arch.paramsM}M
                     </span>
                   </div>
@@ -848,12 +847,20 @@ function TrainingAnalysisTab() {
 // TAB 4 — MODEL TEST
 // ═══════════════════════════════════════════════════════════════════════════════
 
+const EXISTING_DEPLOYMENTS = [
+  { value: "dep-001", label: "prod-skin-v1  ·  Running" },
+  { value: "dep-002", label: "staging-skin-v2  ·  Stopped" },
+  { value: "dep-003", label: "test-skin-v1  ·  Running" },
+];
+
 function ModelTestTab() {
-  const [uploadMode, setUploadMode] = useState<"upload" | "url">("upload");
-  const [imageUrl,   setImageUrl]   = useState("");
-  const [dragging,   setDragging]   = useState(false);
-  const [predicted,  setPredicted]  = useState<null | { cls: string; confidence: number }>(null);
-  const [loading,    setLoading]    = useState(false);
+  const [deployMode,         setDeployMode]         = useState<"existing" | "new">("existing");
+  const [selectedDeployment, setSelectedDeployment] = useState("");
+  const [uploadMode,         setUploadMode]         = useState<"upload" | "url">("upload");
+  const [imageUrl,           setImageUrl]           = useState("");
+  const [dragging,           setDragging]           = useState(false);
+  const [predicted,          setPredicted]          = useState<null | { cls: string; confidence: number }>(null);
+  const [loading,            setLoading]            = useState(false);
 
   const handlePredict = () => {
     setLoading(true);
@@ -866,64 +873,117 @@ function ModelTestTab() {
   return (
     <div className="p-6 bg-[#F8FAFC] min-w-0">
       <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-          <button className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#004e3d] transition-colors">
-            Create Deployment <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Sub-tabs */}
-        <div className="flex border-b border-neutral-100">
-          {(["upload", "url"] as const).map((m) => (
-            <button key={m} onClick={() => setUploadMode(m)}
-              className={cn("px-5 py-3 text-[12px] font-semibold border-b-2 transition-colors",
-                uploadMode === m ? "text-[#00775B] border-[#00775B]" : "text-neutral-500 border-transparent hover:text-neutral-700")}>
-              {m === "upload" ? "Upload Image" : "Image URL"}
-            </button>
-          ))}
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-neutral-100">
+          <h3 className="text-[14px] font-semibold text-neutral-800">Run Prediction</h3>
+          <p className="text-[11px] text-neutral-400 mt-0.5">Select a deployment and provide an image to run inference.</p>
         </div>
 
         <div className="p-6 flex flex-col gap-5">
-          {uploadMode === "upload" && (
-            <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => { e.preventDefault(); setDragging(false); }}
-              className={cn("flex flex-col items-center justify-center gap-4 py-16 rounded-md border-2 border-dashed transition-colors cursor-pointer",
-                dragging ? "border-[#00775B] bg-[#00775B]/5" : "border-neutral-300 bg-neutral-50 hover:border-[#00775B]/50 hover:bg-neutral-100/50")}>
-              <div className="w-14 h-14 rounded-full bg-[#00775B] flex items-center justify-center shadow-lg">
-                <CloudUpload className="w-7 h-7 text-white" />
-              </div>
-              <div className="text-center">
-                <p className="text-[14px] font-semibold text-neutral-700">Drag &amp; Drop image here or Browse</p>
-                <p className="text-[12px] text-neutral-400 mt-1">Supported formats: .jpeg, .png</p>
-              </div>
+          {/* ── Deployment selector ── */}
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">Deployment</p>
+            <div className="flex gap-2">
+              {(["existing", "new"] as const).map((mode) => (
+                <button key={mode} onClick={() => setDeployMode(mode)}
+                  className={cn(
+                    "h-8 px-4 rounded-md text-[12px] font-semibold transition-colors",
+                    deployMode === mode
+                      ? "bg-[#00775B] text-white"
+                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                  )}>
+                  {mode === "existing" ? "Use Existing" : "Create New"}
+                </button>
+              ))}
             </div>
-          )}
 
-          {uploadMode === "url" && (
-            <div className="flex flex-col gap-2">
-              <Label className="text-xs text-neutral-600">Image URL</Label>
-              <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg" className="h-10 text-sm" />
-              <p className="text-[10px] text-neutral-400">Paste a direct URL to a publicly accessible image file</p>
+            {deployMode === "existing" ? (
+              <FESelect
+                label=""
+                placeholder="Select a deployment…"
+                value={selectedDeployment}
+                onChange={(v) => setSelectedDeployment((v as string) ?? "")}
+                options={EXISTING_DEPLOYMENTS}
+                searchable={false}
+              />
+            ) : (
+              <div className="flex items-center gap-3 p-4 rounded-lg border border-dashed border-neutral-300 bg-neutral-50">
+                <div className="flex-1">
+                  <p className="text-[12px] font-semibold text-neutral-700">No deployment yet</p>
+                  <p className="text-[11px] text-neutral-400 mt-0.5">Create a deployment to run predictions on live traffic.</p>
+                </div>
+                <button className="flex items-center gap-2 h-8 px-4 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#004e3d] transition-colors flex-shrink-0">
+                  Create Deployment <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-neutral-100" />
+
+          {/* ── Image input ── */}
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">Input Image</p>
+            <div className="flex gap-1 bg-neutral-100 p-1 rounded-lg w-fit">
+              {(["upload", "url"] as const).map((m) => (
+                <button key={m} onClick={() => setUploadMode(m)}
+                  className={cn(
+                    "px-4 py-1.5 text-[12px] font-semibold rounded-md transition-colors",
+                    uploadMode === m ? "bg-white text-neutral-800 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                  )}>
+                  {m === "upload" ? "Upload Image" : "Image URL"}
+                </button>
+              ))}
             </div>
-          )}
 
+            {uploadMode === "upload" && (
+              <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setDragging(false); }}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-4 py-14 rounded-xl border-2 border-dashed transition-colors cursor-pointer",
+                  dragging ? "border-[#00775B] bg-[#00775B]/5" : "border-neutral-200 bg-neutral-50 hover:border-[#00775B]/40 hover:bg-neutral-100/60"
+                )}>
+                <div className="w-12 h-12 rounded-full bg-[#00775B] flex items-center justify-center shadow-md">
+                  <CloudUpload className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-center">
+                  <p className="text-[13px] font-semibold text-neutral-700">Drag &amp; Drop image here</p>
+                  <p className="text-[12px] text-neutral-400 mt-0.5">or <span className="text-[#00775B] font-semibold">Browse</span> to choose a file</p>
+                  <p className="text-[11px] text-neutral-300 mt-2">Supported formats: .jpeg, .png</p>
+                </div>
+              </div>
+            )}
+
+            {uploadMode === "url" && (
+              <div className="flex flex-col gap-2">
+                <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg" className="h-10 text-sm" />
+                <p className="text-[11px] text-neutral-400">Paste a direct URL to a publicly accessible image file.</p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Predict ── */}
           <button onClick={handlePredict} disabled={loading}
-            className={cn("w-full h-12 rounded-md text-[14px] font-bold text-white transition-all",
-              loading ? "bg-[#004e3d]" : "bg-[#00775B] hover:bg-[#004e3d]")}>
-            {loading ? <span className="flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Running Inference…</span> : "Predict"}
+            className={cn(
+              "w-full h-11 rounded-lg text-[13px] font-bold text-white transition-all",
+              loading ? "bg-[#004e3d]" : "bg-[#00775B] hover:bg-[#004e3d]"
+            )}>
+            {loading
+              ? <span className="flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Running Inference…</span>
+              : "Predict"}
           </button>
 
-          {/* Prediction result */}
+          {/* ── Prediction result ── */}
           {predicted && (
-            <div className="flex items-start gap-4 p-5 rounded-md bg-[#E5FFF9] border border-[#00775B]/20">
+            <div className="flex items-start gap-4 p-5 rounded-xl bg-[#E5FFF9] border border-[#00775B]/20">
               <div className="w-10 h-10 rounded-full bg-[#00775B] flex items-center justify-center flex-shrink-0">
                 <CheckCircle className="w-5 h-5 text-white" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-[12px] font-semibold text-[#00775B]">Prediction Result</p>
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-6 mt-2">
                   <div>
                     <p className="text-[10px] text-[#00775B]/70 uppercase tracking-wide">Class</p>
                     <p className="text-[20px] font-bold text-[#021d18] capitalize">{predicted.cls}</p>
@@ -1456,74 +1516,79 @@ function ExportTab() {
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
       {/* ── Export Model form ── */}
-      <Card className="p-6 flex flex-col gap-5">
-        <h3 className="text-[15px] font-semibold text-neutral-800">Export Model</h3>
-
-        {/* Model name */}
-        <FEInput
-          label="Export Model Name"
-          placeholder="e.g. resnet50-export-v1"
-          value={modelName}
-          onChange={(e) => setModelName(e.target.value)}
-        />
-
-        {/* Export format select */}
-        <FESelect
-          label="Export Format"
-          placeholder="Select a format…"
-          value={format || null}
-          onChange={(v) => setFormat((v as string) ?? "")}
-          options={EXPORT_FORMATS.map(({ id, label, ext }) => ({
-            value: id,
-            label: `${label} (${ext})`,
-          }))}
-          searchable={false}
-        />
-
-        {/* Compute select */}
-        <FESelect
-          label="Compute"
-          placeholder="Select compute target…"
-          value={compute}
-          onChange={(v) => setCompute((v as string) ?? "auto")}
-          options={[
-            { value: "auto", label: "Automatically launch a new instance" },
-            { value: "v100", label: "NVIDIA V100" },
-            { value: "a100", label: "NVIDIA A100" },
-            { value: "cpu",  label: "CPU only" },
-          ]}
-          searchable={false}
-        />
-
-        {/* Pruning toggle */}
-        <div className="flex items-center justify-between py-1 border-t border-neutral-100">
+      <Card className="overflow-hidden">
+        <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
           <div>
-            <p className="text-[12px] font-semibold text-neutral-700">Apply Pruning</p>
-            <p className="text-[10px] text-neutral-400 mt-0.5">Removes ~30% of weights with minimal accuracy loss</p>
+            <h3 className="text-[14px] font-semibold text-neutral-800">Export Model</h3>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Package your trained model for deployment or inference.</p>
           </div>
-          <Switch checked={pruning} onCheckedChange={setPruning} />
-        </div>
-
-        {/* Export button */}
-        <div className="flex justify-end gap-3 pt-1">
           {done && (
-            <button className="flex items-center gap-2 h-10 px-5 rounded-md border border-[#00775B] text-[#00775B] text-sm font-semibold hover:bg-[#00775B]/5 transition-colors">
-              <Download className="w-4 h-4" /> Download
+            <button className="flex items-center gap-2 h-8 px-4 rounded-lg border border-[#00775B] text-[#00775B] text-[12px] font-semibold hover:bg-[#00775B]/5 transition-colors">
+              <Download className="w-3.5 h-3.5" /> Download
             </button>
           )}
-          <button
-            onClick={handleExport}
-            disabled={exporting || !format}
-            className={cn(
-              "flex items-center gap-2 h-10 px-8 rounded-md text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-              done ? "bg-emerald-600" : "bg-[#00775B] hover:bg-[#006649]",
-            )}>
-            {exporting
-              ? <><RefreshCw className="w-4 h-4 animate-spin" /> Exporting…</>
-              : done
-              ? <><CheckCircle className="w-4 h-4" /> Complete</>
-              : "Export"}
-          </button>
+        </div>
+
+        <div className="p-6 flex flex-col gap-6">
+          {/* Row 1: Name + Compute */}
+          <div className="grid grid-cols-2 gap-4">
+            <FEInput
+              label="Export Name"
+              placeholder="e.g. resnet50-export-v1"
+              value={modelName}
+              onChange={(e) => setModelName(e.target.value)}
+            />
+            <FESelect
+              label="Compute"
+              placeholder="Select compute…"
+              value={compute}
+              onChange={(v) => setCompute((v as string) ?? "auto")}
+              options={[
+                { value: "auto", label: "Automatically launch a new instance" },
+                { value: "v100", label: "NVIDIA V100" },
+                { value: "a100", label: "NVIDIA A100" },
+                { value: "cpu",  label: "CPU only" },
+              ]}
+              searchable={false}
+            />
+          </div>
+
+          {/* Format picker */}
+          <FESelect
+            label="Export Format"
+            placeholder="Select a format…"
+            value={format}
+            onChange={(v) => setFormat((v as string) ?? "")}
+            options={EXPORT_FORMATS.map(({ id, label, ext, desc }) => ({
+              value: id,
+              label: `${label}  (${ext})  —  ${desc}`,
+            }))}
+            searchable={false}
+          />
+
+          {/* Options row + action */}
+          <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
+            <div className="flex items-center gap-3">
+              <Switch checked={pruning} onCheckedChange={setPruning} className="[&[data-state=unchecked]]:bg-neutral-300" />
+              <div>
+                <p className="text-[12px] font-semibold text-neutral-700">Apply Pruning</p>
+                <p className="text-[10px] text-neutral-400">Removes ~30% of weights with minimal accuracy loss</p>
+              </div>
+            </div>
+            <button
+              onClick={handleExport}
+              disabled={exporting || !format}
+              className={cn(
+                "flex items-center gap-2 h-9 px-6 rounded-lg text-[13px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed",
+                done ? "bg-emerald-600" : "bg-[#00775B] hover:bg-[#006649]",
+              )}>
+              {exporting
+                ? <><RefreshCw className="w-4 h-4 animate-spin" /> Exporting…</>
+                : done
+                ? <><CheckCircle className="w-4 h-4" /> Complete</>
+                : "Export"}
+            </button>
+          </div>
         </div>
       </Card>
 

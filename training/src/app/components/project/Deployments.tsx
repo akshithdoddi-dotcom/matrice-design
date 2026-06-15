@@ -124,7 +124,7 @@ function ScheduleCard({ entry, index, onRemove, onChange }: {
         </div>
         <div className="flex items-center gap-3">
           <Label className="text-xs text-neutral-600">Every Day</Label>
-          <Switch checked={entry.custom} onCheckedChange={(v) => onChange({ custom: v })} />
+          <Switch checked={entry.custom} onCheckedChange={(v) => onChange({ custom: v })} className="[&[data-state=unchecked]]:bg-neutral-300" />
           <Label className="text-xs text-neutral-600">Custom</Label>
         </div>
       </div>
@@ -138,7 +138,7 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
   return (
     <div className="flex items-center justify-between px-4 py-3.5 border-b border-neutral-100">
       <Label className="text-[13px] text-neutral-700 font-normal cursor-pointer">{label}</Label>
-      <Switch checked={checked} onCheckedChange={onChange} />
+      <Switch checked={checked} onCheckedChange={onChange} className="[&[data-state=unchecked]]:bg-neutral-300" />
     </div>
   );
 }
@@ -1900,64 +1900,67 @@ function DeploymentDetail({ dep, onBack }: { dep: Deployment; onBack: () => void
           };
 
           return (
-            <div className="p-6 flex flex-col gap-5 overflow-auto">
-              {/* Basic fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <F label="Alias"         errorKey="alias"        value={kafkaAlias}        onChange={setKafkaAlias}        error={kafkaErrors.alias} />
-                <F label="Instance ID"   errorKey="instanceId"   value={kafkaInstanceId}   onChange={setKafkaInstanceId}   error={kafkaErrors.instanceId} />
-                <F label="Instance Type" errorKey="instanceType" value={kafkaInstanceType} onChange={setKafkaInstanceType} error={kafkaErrors.instanceType} />
+            <div className="p-6 flex flex-col gap-4 overflow-auto">
 
-                <div>
-                  <Label className="text-[11px] text-neutral-500 mb-1 block">Service Provider</Label>
-                  <Select value={kafkaProvider} onValueChange={(v) => { setKafkaProvider(v); setKafkaErrors((p) => ({ ...p, provider: "" })); }}>
-                    <SelectTrigger className={cn("h-9 text-[13px]", kafkaErrors.provider && "border-red-400")}>
-                      <SelectValue placeholder="Select provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["AWS", "GCP", "Azure", "On-Premise"].map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {kafkaErrors.provider && <p className="text-[10px] text-red-500 mt-0.5">{kafkaErrors.provider}</p>}
+              {/* Section 1 — Identity */}
+              <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-neutral-100 bg-neutral-50/60">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Instance Identity</p>
+                </div>
+                <div className="p-5 grid grid-cols-2 gap-4">
+                  <F label="Alias" errorKey="alias" value={kafkaAlias} onChange={setKafkaAlias} error={kafkaErrors.alias} />
+                  <F label="Instance ID" errorKey="instanceId" value={kafkaInstanceId} onChange={setKafkaInstanceId} error={kafkaErrors.instanceId} />
+                  <F label="Instance Type" errorKey="instanceType" value={kafkaInstanceType} onChange={setKafkaInstanceType} error={kafkaErrors.instanceType} />
+                  <div>
+                    <Label className="text-[11px] text-neutral-500 mb-1 block">Service Provider</Label>
+                    <Select value={kafkaProvider} onValueChange={(v) => { setKafkaProvider(v); setKafkaErrors((p) => ({ ...p, provider: "" })); }}>
+                      <SelectTrigger className={cn("h-9 text-[13px]", kafkaErrors.provider && "border-red-400")}>
+                        <SelectValue placeholder="Select provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["AWS", "GCP", "Azure", "On-Premise"].map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {kafkaErrors.provider && <p className="text-[10px] text-red-500 mt-0.5">{kafkaErrors.provider}</p>}
+                  </div>
                 </div>
               </div>
 
-              {/* Shutdown Settings */}
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-[11px] font-semibold text-neutral-500 whitespace-nowrap">Shutdown Settings</span>
-                  <div className="flex-1 h-px bg-neutral-200" />
+              {/* Section 2 — Shutdown Settings */}
+              <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-neutral-100 bg-neutral-50/60">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Shutdown Settings</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <F label="Launch Duration"    value={kafkaLaunchDur}   onChange={setKafkaLaunchDur}   type="number" error={kafkaErrors.launchDur} />
-                  <F label="Shutdown Threshold" value={kafkaShutdownThr} onChange={setKafkaShutdownThr} type="number" error={kafkaErrors.shutdownThr} />
+                <div className="p-5 grid grid-cols-2 gap-4">
+                  <F label="Launch Duration" errorKey="launchDur" value={kafkaLaunchDur} onChange={setKafkaLaunchDur} type="number" error={kafkaErrors.launchDur} />
+                  <F label="Shutdown Threshold" errorKey="shutdownThr" value={kafkaShutdownThr} onChange={setKafkaShutdownThr} type="number" error={kafkaErrors.shutdownThr} />
                 </div>
               </div>
 
-              {/* Advance Settings */}
-              <div className="border border-neutral-200 rounded-lg overflow-hidden">
+              {/* Section 3 — Advanced Settings (collapsible) */}
+              <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setKafkaAdvOpen((v) => !v)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-neutral-50 transition-colors">
-                  <span className="text-[13px] font-semibold text-neutral-700">Advance Settings</span>
+                  className="w-full flex items-center justify-between px-5 py-3 hover:bg-neutral-50 transition-colors">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Advanced Settings</p>
                   <svg className={cn("w-4 h-4 text-neutral-400 transition-transform", kafkaAdvOpen && "rotate-180")}
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <path d="m6 9 6 6 6-6" />
                   </svg>
                 </button>
-
                 {kafkaAdvOpen && (
-                  <div className="px-4 pb-4 pt-3 bg-white border-t border-neutral-100 grid grid-cols-4 gap-3">
+                  <div className="border-t border-neutral-100 p-5 grid grid-cols-4 gap-4">
                     {([
                       { label: "OS",              value: kafkaOs,       set: setKafkaOs },
-                      { label: "OS Version",       value: kafkaOsVersion,set: setKafkaOsVersion },
-                      { label: "GPU Type",         value: kafkaGpuType,  set: setKafkaGpuType },
-                      { label: "GPU Count",        value: kafkaGpuCount, set: setKafkaGpuCount, type: "number" },
-                      { label: "Total GPU Memory", value: kafkaGpuMem,   set: setKafkaGpuMem,   type: "number" },
-                      { label: "RAM",              value: kafkaRam,      set: setKafkaRam,       type: "number" },
-                      { label: "Storage",          value: kafkaStorage,  set: setKafkaStorage,   type: "number" },
-                      { label: "Machine Name",     value: kafkaMachine,  set: setKafkaMachine },
-                      { label: "CPU Type",         value: kafkaCpuType,  set: setKafkaCpuType,  colSpan: 2 },
-                      { label: "Encryption Key",   value: kafkaEncKey,   set: setKafkaEncKey,   colSpan: 2 },
+                      { label: "OS Version",      value: kafkaOsVersion,set: setKafkaOsVersion },
+                      { label: "GPU Type",        value: kafkaGpuType,  set: setKafkaGpuType },
+                      { label: "GPU Count",       value: kafkaGpuCount, set: setKafkaGpuCount, type: "number" },
+                      { label: "GPU Memory",      value: kafkaGpuMem,   set: setKafkaGpuMem,   type: "number" },
+                      { label: "RAM",             value: kafkaRam,      set: setKafkaRam,       type: "number" },
+                      { label: "Storage",         value: kafkaStorage,  set: setKafkaStorage,   type: "number" },
+                      { label: "Machine Name",    value: kafkaMachine,  set: setKafkaMachine },
+                      { label: "CPU Type",        value: kafkaCpuType,  set: setKafkaCpuType,  colSpan: 2 },
+                      { label: "Encryption Key",  value: kafkaEncKey,   set: setKafkaEncKey,   colSpan: 2 },
                     ] as { label: string; value: string; set: (v: string) => void; type?: string; colSpan?: number }[]).map(({ label, value, set, type = "text", colSpan = 1 }) => (
                       <div key={label} className={colSpan === 2 ? "col-span-2" : ""}>
                         <Label className="text-[11px] text-neutral-500 mb-1 block">{label}</Label>
@@ -1968,14 +1971,15 @@ function DeploymentDetail({ dep, onBack }: { dep: Deployment; onBack: () => void
                 )}
               </div>
 
-              {/* Add button */}
-              <div className="flex justify-end pt-1">
+              {/* Action */}
+              <div className="flex justify-end">
                 <button
                   onClick={() => { if (validate()) alert("Kafka instance added!"); }}
-                  className="h-9 px-6 rounded bg-[#00775B] text-white text-[13px] font-semibold hover:bg-[#006649] transition-colors">
-                  Add
+                  className="h-9 px-6 rounded-lg bg-[#00775B] text-white text-[13px] font-semibold hover:bg-[#006649] transition-colors">
+                  Add Instance
                 </button>
               </div>
+
             </div>
           );
         })()}
