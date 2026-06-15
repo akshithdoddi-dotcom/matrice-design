@@ -512,54 +512,63 @@ export function TrainingDashboard({ onOpenProject }: TrainingDashboardProps) {
 
         {/* Account Settings */}
         {activeTab === "settings" && (
-          <div className="p-6 max-w-2xl flex flex-col gap-6">
+          <div className="p-6 flex flex-col gap-8">
 
-            {/* Account Number */}
-            <div>
-              <h3 className="text-[13px] font-semibold text-neutral-800 mb-3">Account Number</h3>
-              <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[13px] font-mono font-semibold text-neutral-800">9782886768719887307619115</p>
-                  <p className="text-[11px] text-neutral-400 mt-1">This is the number that is specific to your account. Please make sure to keep it safe and secure.</p>
+            {/* Top row: Account Number + Current Plan */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Account Number */}
+              <div className="bg-white border border-neutral-200 rounded-xl p-5 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Account Number</span>
+                  <button
+                    onClick={() => navigator.clipboard.writeText("9782886768719887307619115")}
+                    className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-neutral-200 text-[11px] font-medium text-neutral-500 hover:bg-neutral-50 hover:text-[#00775B] hover:border-[#00775B]/30 transition-colors"
+                  >
+                    <Copy className="w-3 h-3" /> Copy
+                  </button>
                 </div>
-                <button
-                  onClick={() => navigator.clipboard.writeText("9782886768719887307619115")}
-                  className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#00775B] flex items-center justify-center text-white hover:bg-[#006649] transition-colors"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
+                <p className="text-[13px] font-mono font-semibold text-neutral-800 break-all leading-relaxed">9782886768719887307619115</p>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">Keep this number safe and secure — it uniquely identifies your account.</p>
               </div>
-            </div>
 
-            {/* Current Plan */}
-            <div>
-              <h3 className="text-[13px] font-semibold text-neutral-800 mb-3">Current Plan</h3>
-              <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
-                <p className="text-[13px] font-semibold text-neutral-800">Enterprise</p>
-                <p className="text-[11px] text-neutral-500 mt-1">Ideal for enterprises, our Custom Enterprise plan offers bespoke deployment, dedicated engineers, and SLAs, meeting unique demands.</p>
+              {/* Current Plan */}
+              <div className="bg-white border border-neutral-200 rounded-xl p-5 flex flex-col gap-3">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Current Plan</span>
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#00775B] text-white text-[11px] font-bold tracking-wide">ENTERPRISE</span>
+                  <button className="h-8 px-4 rounded-lg border border-neutral-200 text-[12px] font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors">
+                    Manage Plan
+                  </button>
+                </div>
+                <p className="text-[11px] text-neutral-500 leading-relaxed">Bespoke deployment, dedicated engineers, and SLAs tailored to your organisation's unique demands.</p>
               </div>
             </div>
 
             {/* Usage */}
             <div>
-              <h3 className="text-[13px] font-semibold text-neutral-800 mb-3">Usage</h3>
-              <div className="flex flex-col gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">Usage</p>
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Users",            desc: "User accounts and permissions within the Account.",                                   value: "18",         pct: 72 },
-                  { label: "Projects",          desc: "Each project is a container for organizing tasks, images, versions, and trained models.", value: "284",        pct: 88 },
-                  { label: "Images",            desc: "Each image repository stores and manages image files for use in various projects.",    value: "6137318",    pct: 94 },
-                  { label: "Data Storage (MB)", desc: "Amount of storage utilized in megabytes (MB).",                                      value: "386894.13",  pct: 91 },
+                  { label: "Users",        desc: "Accounts & permissions",      value: "18",        pct: 72 },
+                  { label: "Projects",     desc: "Training containers",          value: "284",       pct: 88 },
+                  { label: "Images",       desc: "Image files across projects",  value: "6,137,318", pct: 94 },
+                  { label: "Data Storage", desc: "386,894 MB utilized",          value: "386.9 GB",  pct: 91 },
                 ].map(({ label, desc, value, pct }) => (
-                  <div key={label} className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between gap-4 mb-2.5">
+                  <div key={label} className="bg-white border border-neutral-200 rounded-xl p-4 flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-[12px] font-semibold text-neutral-800">{label}</p>
+                        <p className="text-[13px] font-semibold text-neutral-800">{label}</p>
                         <p className="text-[11px] text-neutral-400 mt-0.5">{desc}</p>
                       </div>
-                      <span className="text-[13px] font-semibold text-neutral-800 shrink-0">{value}</span>
+                      <span className="text-[18px] font-bold text-neutral-800 shrink-0">{value}</span>
                     </div>
-                    <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-[#00775B] rounded-full" style={{ width: `${pct}%` }} />
+                    <div>
+                      <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-[#00775B] transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-[10px] text-neutral-400">{pct}% used</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -568,35 +577,34 @@ export function TrainingDashboard({ onOpenProject }: TrainingDashboardProps) {
 
             {/* Credits */}
             <div>
-              <h3 className="text-[13px] font-semibold text-neutral-800 mb-3">Credits</h3>
-              <div className="flex flex-col gap-3">
-                <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between gap-4 mb-2.5">
-                    <div>
-                      <p className="text-[12px] font-semibold text-neutral-800">Subscription Credits</p>
-                      <p className="text-[11px] text-neutral-400 mt-0.5">These credits renew monthly as per subscription plan and expires at the end of each month.</p>
-                    </div>
-                    <span className="text-[13px] font-semibold text-neutral-800 shrink-0">0</span>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">Credits</p>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Subscription */}
+                <div className="bg-white border border-neutral-200 rounded-xl p-5 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[13px] font-semibold text-neutral-800">Subscription</p>
+                    <span className="text-[22px] font-bold text-neutral-300">0</span>
                   </div>
-                  <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#00775B] rounded-full" style={{ width: "0%" }} />
+                  <p className="text-[11px] text-neutral-400 leading-relaxed">Renews monthly with your plan. Expires at the end of each billing cycle.</p>
+                  <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden mt-auto">
+                    <div className="h-full bg-neutral-300 rounded-full" style={{ width: "0%" }} />
                   </div>
                 </div>
 
-                <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between gap-4 mb-2.5">
-                    <div>
-                      <p className="text-[12px] font-semibold text-neutral-800">Purchased Credits</p>
-                      <p className="text-[11px] text-neutral-400 mt-0.5">These credits are bought by the user and do not have an expiry date.</p>
-                    </div>
-                    <span className="text-[13px] font-semibold text-neutral-800 shrink-0">9605957</span>
+                {/* Purchased */}
+                <div className="bg-white border border-[#00775B]/20 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#00775B]/[0.03] to-transparent pointer-events-none" />
+                  <div className="flex items-center justify-between">
+                    <p className="text-[13px] font-semibold text-neutral-800">Purchased</p>
+                    <span className="text-[22px] font-bold text-[#00775B]">9,605,957</span>
                   </div>
-                  <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-3">
+                  <p className="text-[11px] text-neutral-400 leading-relaxed">Bought credits never expire. Use them anytime across all your projects.</p>
+                  <div className="h-1.5 bg-[#00775B]/10 rounded-full overflow-hidden">
                     <div className="h-full bg-[#00775B] rounded-full" style={{ width: "90%" }} />
                   </div>
-                  <button className="w-full h-9 rounded bg-[#021d18] text-white text-[12px] font-semibold hover:bg-[#00775B] transition-colors flex items-center justify-center gap-1.5">
+                  <button className="mt-1 h-8 px-4 rounded-lg bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#006649] transition-colors self-start flex items-center gap-1.5">
                     Learn More
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
                   </button>
                 </div>
               </div>
