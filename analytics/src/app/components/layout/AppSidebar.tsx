@@ -22,7 +22,7 @@ import {
   LayoutDashboard, ShieldAlert, MapPin, TrendingUp, ShoppingBag,
   Settings, HelpCircle, Check, ChevronsUpDown,
   ScanFace, CarFront, Video, ClipboardCheck, Map, Fingerprint,
-  Headphones, BarChart3, Shield, MonitorPlay,
+  Headphones, BarChart3, Shield, MonitorPlay, PenTool,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 
@@ -36,11 +36,12 @@ interface Props {
 }
 
 const PLATFORMS = [
-  { id: "vms",       name: "Matrice VMS",         shortcut: "1", icon: MonitorPlay, url: null },
-  { id: "analytics", name: "Matrice Analytics",   shortcut: "2", icon: BarChart3,   url: "http://localhost:5177", active: true },
-  { id: "support",   name: "Matrice Support",     shortcut: "3", icon: Headphones,  url: "http://localhost:5174" },
-  { id: "support2",  name: "Support Platform 2",  shortcut: "4", icon: Headphones,  url: "http://localhost:5175" },
-  { id: "internal",  name: "Matrice Internal",    shortcut: "5", icon: Shield,      url: null },
+  { id: "vms",        name: "Matrice VMS",         shortcut: "1", icon: MonitorPlay, url: null },
+  { id: "analytics",  name: "Matrice Analytics",   shortcut: "2", icon: BarChart3,   url: "http://localhost:5177", active: true },
+  { id: "support",    name: "Matrice Support",     shortcut: "3", icon: Headphones,  url: "http://localhost:5174" },
+  { id: "support2",   name: "Support Platform 2",  shortcut: "4", icon: Headphones,  url: "http://localhost:5175" },
+  { id: "internal",   name: "Matrice Internal",    shortcut: "5", icon: Shield,      url: null },
+  { id: "annotation", name: "Matrice Annotation",  shortcut: "6", icon: PenTool,     url: "http://localhost:5180" },
 ];
 
 const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType; badge?: number }[] = [

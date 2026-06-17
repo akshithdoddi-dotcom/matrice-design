@@ -5,6 +5,7 @@ const SupportApp = lazy(() => import("@support/app/App"));
 const Support2App = lazy(() => import("@support2/app/App"));
 const FEComponentsApp = lazy(() => import("@fe-common/preview/App"));
 const InternalApp = lazy(() => import("@internal/app/App"));
+const AnnotationApp = lazy(() => import("@annotation/app/App"));
 import { SeverityIcon } from "@fe-common/components/ui/SeverityIcon";
 import { Page } from "@/app/components/layout/Sidebar";
 import { AppLayout } from "@/app/components/layout/AppLayout";
@@ -214,7 +215,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
-type ActiveApp = "analytics" | "training" | "marketplace" | "support" | "support2" | "fe-common" | "vms" | "internal";
+type ActiveApp = "analytics" | "training" | "marketplace" | "support" | "support2" | "fe-common" | "vms" | "internal" | "annotation";
 
 /** Root switcher — picks which app to render based on platform selection */
 export default function App() {
@@ -228,6 +229,7 @@ export default function App() {
   if (activeApp === "support2")    return <Suspense fallback={null}><Support2App      onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "fe-common")   return <Suspense fallback={null}><FEComponentsApp  onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "internal")    return <Suspense fallback={null}><InternalApp      onPlatformSwitch={handleSwitch} /></Suspense>;
+  if (activeApp === "annotation")  return <Suspense fallback={null}><AnnotationApp /></Suspense>;
   return <AnalyticsApp onPlatformSwitch={handleSwitch} />;
 }
 
