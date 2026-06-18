@@ -13,6 +13,7 @@ import {
 import { ZONE_DATA } from "./data/mockData";
 import type { QualityTerminology, ZoneMetric } from "./data/types";
 import { QualitySlidePanel } from "./components/panels/QualitySlidePanel";
+import { QuickQualityMetricsRow } from "./components/monitoring/QuickQualityMetricsRow";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getPaginationItems(current: number, total: number): (number | "…")[] {
@@ -1687,6 +1688,33 @@ export const MonitoringView = ({ terminology, appId, groups = [] }: Props) => {
 
           </div>
         </div>
+
+        {/* ── Quick Quality Metrics Row ─────────────────────────────────────── */}
+        <QuickQualityMetricsRow
+          defectTrendData={[
+            { date: "Day 1", defects: 8 },
+            { date: "Day 2", defects: 12 },
+            { date: "Day 3", defects: 10 },
+            { date: "Day 4", defects: 15 },
+            { date: "Day 5", defects: 13 },
+            { date: "Day 6", defects: 11 },
+            { date: "Today", defects: appData.alertCards.length },
+          ]}
+          defectTypeData={[
+            { name: "Critical", count: criticalCount, color: "#EF4444" },
+            { name: "High", count: highCount, color: "#F59E0B" },
+            { name: "Medium", count: appData.feedEvents.filter(e => e.severity === "MEDIUM").length, color: "#3B82F6" },
+          ]}
+          zoneInsightsData={[
+            { zone: "Z1", defects: 2 },
+            { zone: "Z2", defects: 4 },
+            { zone: "Z3", defects: 3 },
+            { zone: "Z4", defects: 5 },
+            { zone: "Z5", defects: 1 },
+          ]}
+          passRate={passRate}
+          totalInspected={appData.batches.length * 5}
+        />
 
         {/* ── Row 2: Live Feed — full width ─────────────────────────────────── */}
         <div className="bg-white rounded-[4px] border border-neutral-100 shadow-sm overflow-hidden flex flex-col">

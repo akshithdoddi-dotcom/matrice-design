@@ -283,24 +283,24 @@ function SummaryTab() {
     {
       label: "Test Accuracy", value: "84.19%", sublabel: "acc@1 · test split",
       num: "+1.3%", ref_: "vs baseline", dir: "up", chip: "ACC@1",
-      color: "#00775B", bgColor: "#F0FBF7",
+      color: "#64748B", bgColor: "#F1F5F9",
       sparkline: [74, 78, 80, 80, 82, 83, 84, 84.19],
     },
     {
       label: "Val Accuracy", value: "86.1%", sublabel: "acc@1 · val split",
       num: "Epoch 50", ref_: "final epoch", dir: "up", chip: "VAL",
-      color: "#0284C7", bgColor: "#F0F7FF",
+      color: "#64748B", bgColor: "#F1F5F9",
       sparkline: [42, 62, 74, 81, 84, 85, 86, 86.1],
     },
     {
       label: "Total Samples", value: "3,297", sublabel: `${MODEL.trainCount} train · ${MODEL.testCount} test · ${MODEL.valCount} val`,
       num: `${MODEL.valCount}`, ref_: "val samples", dir: "neutral", chip: "DATA",
-      color: "#7C3AED", bgColor: "#FAF5FF",
+      color: "#64748B", bgColor: "#F1F5F9",
     },
     {
       label: "Model Params", value: "21.5M", sublabel: "EfficientNetV2-S",
       num: "FP32", ref_: "no pruning", dir: "neutral", chip: "PARAMS",
-      color: "#D97706", bgColor: "#FFFBEB",
+      color: "#64748B", bgColor: "#F1F5F9",
     },
   ];
 
@@ -436,7 +436,7 @@ function SummaryTab() {
             </button>
           </div>
 
-          {/* Chart area */}
+          {/* Chart / Table area */}
           <div className="flex-1 p-5 flex flex-col gap-3">
             {/* Quick metric chips */}
             <div className="flex items-center gap-2 flex-wrap">
@@ -452,32 +452,63 @@ function SummaryTab() {
                 </div>
               ))}
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={PERF_DATA} layout="vertical" margin={{ top: 4, right: 32, bottom: 24, left: 56 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                <XAxis type="number" domain={[0, 0.9]} tick={{ fontSize: 10, fill: "#94A3B8" }}
-                  label={{ value: metricFilter, position: "insideBottom", offset: -14, fontSize: 10, fill: "#94A3B8" }} />
-                <YAxis type="category" dataKey="category" tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} width={60} />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null;
-                    return (
-                      <div className="bg-white border border-neutral-200 rounded-[4px] px-3 py-2 shadow text-[11px]">
-                        <p className="font-semibold text-neutral-800 capitalize mb-1">{label}</p>
-                        {payload.map((p) => (
-                          <p key={p.dataKey} className="font-mono" style={{ color: p.fill }}>
-                            {String(p.dataKey)}: {Number(p.value).toFixed(4)}
-                          </p>
-                        ))}
+            {viewMode === "grid" ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={PERF_DATA} layout="vertical" margin={{ top: 4, right: 32, bottom: 24, left: 56 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                  <XAxis type="number" domain={[0, 0.9]} tick={{ fontSize: 10, fill: "#94A3B8" }}
+                    label={{ value: metricFilter, position: "insideBottom", offset: -14, fontSize: 10, fill: "#94A3B8" }} />
+                  <YAxis type="category" dataKey="category" tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} width={60} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <div className="bg-white border border-neutral-200 rounded-[4px] px-3 py-2 shadow text-[11px]">
+                          <p className="font-semibold text-neutral-800 capitalize mb-1">{label}</p>
+                          {payload.map((p) => (
+                            <p key={p.dataKey} className="font-mono" style={{ color: p.fill }}>
+                              {String(p.dataKey)}: {Number(p.value).toFixed(4)}
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Bar dataKey="val"  name={`${MODEL.name.slice(0, 22)}… (val)`}  fill="#06B6D4" barSize={20} radius={[0, 2, 2, 0]} />
+                  <Bar dataKey="test" name={`${MODEL.name.slice(0, 22)}… (test)`} fill={TEAL}     barSize={20} radius={[0, 2, 2, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <DataTable<{ id: number; category: string; val: number; test: number }>
+                columns={[
+                  { id: "category", header: "Class", accessorKey: "category",
+                    cell: ({ row }) => <span className="capitalize font-medium text-neutral-700 text-[12px]">{row.category}</span> },
+                  { id: "val",  header: "Val Score",  accessorKey: "val",  align: "right",
+                    cell: ({ row }) => (
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-cyan-500" style={{ width: `${(row.val / 0.9) * 100}%` }} />
+                        </div>
+                        <span className="font-mono text-[11px] font-semibold text-cyan-600">{row.val.toFixed(4)}</span>
                       </div>
-                    );
-                  }}
-                />
-                <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                <Bar dataKey="val"  name={`${MODEL.name.slice(0, 22)}… (val)`}  fill="#06B6D4" barSize={20} radius={[0, 2, 2, 0]} />
-                <Bar dataKey="test" name={`${MODEL.name.slice(0, 22)}… (test)`} fill={TEAL}     barSize={20} radius={[0, 2, 2, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+                    ) },
+                  { id: "test", header: "Test Score", accessorKey: "test", align: "right",
+                    cell: ({ row }) => (
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-[#00775B]" style={{ width: `${(row.test / 0.9) * 100}%` }} />
+                        </div>
+                        <span className="font-mono text-[11px] font-semibold text-[#00775B]">{row.test.toFixed(4)}</span>
+                      </div>
+                    ) },
+                ]}
+                data={PERF_DATA.map((r, i) => ({ id: i, ...r }))}
+                rowIdKey="id"
+                pagination="none"
+                toolbar={false}
+              />
+            )}
           </div>
         </div>
       </Card>
@@ -509,8 +540,8 @@ const PARAM_GROUPS = [
   {
     id: "optimizer",
     label: "Optimizer",
-    color: "#0284C7",
-    bgColor: "#F0F7FF",
+    color: "#00775B",
+    bgColor: "#F0FBF7",
     icon: Zap,
     params: [
       { key: "optimizer",    label: "Optimizer",    chip: true  },
@@ -522,8 +553,8 @@ const PARAM_GROUPS = [
   {
     id: "scheduler",
     label: "LR Scheduler",
-    color: "#7C3AED",
-    bgColor: "#FAF5FF",
+    color: "#00775B",
+    bgColor: "#F0FBF7",
     icon: Settings2,
     params: [
       { key: "lr_scheduler", label: "Scheduler Type", chip: true  },
@@ -538,46 +569,6 @@ function HyperparametersTab() {
 
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
-
-      {/* ── Param group cards ── */}
-      <div className="grid grid-cols-3 gap-4">
-        {PARAM_GROUPS.map((group) => {
-          const GroupIcon = group.icon;
-          return (
-            <Card key={group.id} className="overflow-hidden">
-              {/* Group header */}
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50">
-                <GroupIcon className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">
-                  {group.label}
-                </h3>
-                <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-500">
-                  {group.params.length}
-                </span>
-              </div>
-              {/* Params list */}
-              <div className="divide-y divide-neutral-100">
-                {group.params.map(({ key, label, chip }) => {
-                  const value = MODEL.params[key as keyof typeof MODEL.params];
-                  return (
-                    <div key={key} className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50/60 transition-colors">
-                      <span className="text-[11px] text-neutral-500 shrink-0 mr-3">{label}</span>
-                      {chip ? (
-                        <span className="inline-flex items-center h-5 px-2.5 rounded-[4px] text-[10px] font-bold uppercase tracking-wide shrink-0"
-                          style={{ backgroundColor: `${group.color}14`, color: group.color }}>
-                          {value}
-                        </span>
-                      ) : (
-                        <span className="font-mono text-[13px] font-semibold text-neutral-800">{value}</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
 
       {/* ── Model Info + Benchmark Results + Architectures — same row ── */}
       <div className="grid grid-cols-3 gap-4">
@@ -618,13 +609,12 @@ function HyperparametersTab() {
           <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50">
             <FlaskConical className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">Benchmark Results</h3>
-            <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-500">1</span>
           </div>
           <div className="divide-y divide-neutral-100">
             {([
               { label: "Dataset", value: "ImageNet",  chip: false },
               { label: "Metric",  value: "acc@1",     chip: true, chipColor: "#00775B", chipBg: "#E5FFF9" },
-              { label: "Split",   value: "val",       chip: true, chipColor: "#475569",  chipBg: "#F1F5F9" },
+              { label: "Split",   value: "val",       chip: true, chipColor: "#00775B", chipBg: "#E5FFF9" },
             ] as { label: string; value: string; chip: boolean; chipColor?: string; chipBg?: string }[]).map(({ label, value, chip, chipColor, chipBg }) => (
               <div key={label} className="flex items-center justify-between px-5 py-3">
                 <span className="text-[11px] text-neutral-500">{label}</span>
@@ -642,10 +632,10 @@ function HyperparametersTab() {
             <div className="px-5 py-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-neutral-500">Score</span>
-                <span className="font-mono font-bold text-[22px] text-[#0284C7] leading-none">84.23</span>
+                <span className="font-mono font-bold text-[22px] text-[#00775B] leading-none">84.23</span>
               </div>
               <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#0284C7]" style={{ width: "84.23%" }} />
+                <div className="h-full rounded-full bg-[#00775B]" style={{ width: "84.23%" }} />
               </div>
               <div className="flex justify-between text-[9px] font-mono text-neutral-400">
                 <span>0</span><span>50</span><span>100</span>
@@ -659,9 +649,6 @@ function HyperparametersTab() {
           <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50">
             <Layers className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">Model Architectures</h3>
-            <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-500">
-              {MODEL.architectures.length}
-            </span>
           </div>
           <div className="divide-y divide-neutral-100">
             {MODEL.architectures.map((arch) => {
@@ -698,10 +685,9 @@ function HyperparametersTab() {
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                       <div className="h-full rounded-full"
-                        style={{ width: `${pct}%`, backgroundColor: isActive ? "#00775B" : "#7C3AED" }} />
+                        style={{ width: `${pct}%`, backgroundColor: isActive ? "#00775B" : "#D1D5DB" }} />
                     </div>
-                    <span className="font-mono text-[11px] font-bold shrink-0 w-10 text-right"
-                      style={{ color: isActive ? "#00775B" : "#7C3AED" }}>
+                    <span className={cn("font-mono text-[11px] font-bold shrink-0 w-10 text-right", isActive ? "text-[#00775B]" : "text-neutral-400")}>
                       {arch.paramsM}M
                     </span>
                   </div>
@@ -714,6 +700,44 @@ function HyperparametersTab() {
         </Card>
 
       </div>
+
+      {/* ── Param group cards ── */}
+      <div className="grid grid-cols-3 gap-4">
+        {PARAM_GROUPS.map((group) => {
+          const GroupIcon = group.icon;
+          return (
+            <Card key={group.id} className="overflow-hidden">
+              {/* Group header */}
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+                <GroupIcon className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">
+                  {group.label}
+                </h3>
+              </div>
+              {/* Params list */}
+              <div className="divide-y divide-neutral-100">
+                {group.params.map(({ key, label, chip }) => {
+                  const value = MODEL.params[key as keyof typeof MODEL.params];
+                  return (
+                    <div key={key} className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50/60 transition-colors">
+                      <span className="text-[11px] text-neutral-500 shrink-0 mr-3">{label}</span>
+                      {chip ? (
+                        <span className="inline-flex items-center h-5 px-2.5 rounded-[4px] text-[10px] font-bold uppercase tracking-wide shrink-0"
+                          style={{ backgroundColor: `${group.color}14`, color: group.color }}>
+                          {value}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[13px] font-semibold text-neutral-800">{value}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
     </div>
   );
 }
@@ -823,12 +847,20 @@ function TrainingAnalysisTab() {
 // TAB 4 — MODEL TEST
 // ═══════════════════════════════════════════════════════════════════════════════
 
+const EXISTING_DEPLOYMENTS = [
+  { value: "dep-001", label: "prod-skin-v1  ·  Running" },
+  { value: "dep-002", label: "staging-skin-v2  ·  Stopped" },
+  { value: "dep-003", label: "test-skin-v1  ·  Running" },
+];
+
 function ModelTestTab() {
-  const [uploadMode, setUploadMode] = useState<"upload" | "url">("upload");
-  const [imageUrl,   setImageUrl]   = useState("");
-  const [dragging,   setDragging]   = useState(false);
-  const [predicted,  setPredicted]  = useState<null | { cls: string; confidence: number }>(null);
-  const [loading,    setLoading]    = useState(false);
+  const [deployMode,         setDeployMode]         = useState<"existing" | "new">("existing");
+  const [selectedDeployment, setSelectedDeployment] = useState("");
+  const [uploadMode,         setUploadMode]         = useState<"upload" | "url">("upload");
+  const [imageUrl,           setImageUrl]           = useState("");
+  const [dragging,           setDragging]           = useState(false);
+  const [predicted,          setPredicted]          = useState<null | { cls: string; confidence: number }>(null);
+  const [loading,            setLoading]            = useState(false);
 
   const handlePredict = () => {
     setLoading(true);
@@ -841,64 +873,117 @@ function ModelTestTab() {
   return (
     <div className="p-6 bg-[#F8FAFC] min-w-0">
       <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-          <button className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#004e3d] transition-colors">
-            Create Deployment <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Sub-tabs */}
-        <div className="flex border-b border-neutral-100">
-          {(["upload", "url"] as const).map((m) => (
-            <button key={m} onClick={() => setUploadMode(m)}
-              className={cn("px-5 py-3 text-[12px] font-semibold border-b-2 transition-colors",
-                uploadMode === m ? "text-[#00775B] border-[#00775B]" : "text-neutral-500 border-transparent hover:text-neutral-700")}>
-              {m === "upload" ? "Upload Image" : "Image URL"}
-            </button>
-          ))}
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-neutral-100">
+          <h3 className="text-[14px] font-semibold text-neutral-800">Run Prediction</h3>
+          <p className="text-[11px] text-neutral-400 mt-0.5">Select a deployment and provide an image to run inference.</p>
         </div>
 
         <div className="p-6 flex flex-col gap-5">
-          {uploadMode === "upload" && (
-            <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => { e.preventDefault(); setDragging(false); }}
-              className={cn("flex flex-col items-center justify-center gap-4 py-16 rounded-md border-2 border-dashed transition-colors cursor-pointer",
-                dragging ? "border-[#00775B] bg-[#00775B]/5" : "border-neutral-300 bg-neutral-50 hover:border-[#00775B]/50 hover:bg-neutral-100/50")}>
-              <div className="w-14 h-14 rounded-full bg-[#00775B] flex items-center justify-center shadow-lg">
-                <CloudUpload className="w-7 h-7 text-white" />
-              </div>
-              <div className="text-center">
-                <p className="text-[14px] font-semibold text-neutral-700">Drag &amp; Drop image here or Browse</p>
-                <p className="text-[12px] text-neutral-400 mt-1">Supported formats: .jpeg, .png</p>
-              </div>
+          {/* ── Deployment selector ── */}
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">Deployment</p>
+            <div className="flex gap-2">
+              {(["existing", "new"] as const).map((mode) => (
+                <button key={mode} onClick={() => setDeployMode(mode)}
+                  className={cn(
+                    "h-8 px-4 rounded-md text-[12px] font-semibold transition-colors",
+                    deployMode === mode
+                      ? "bg-[#00775B] text-white"
+                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                  )}>
+                  {mode === "existing" ? "Use Existing" : "Create New"}
+                </button>
+              ))}
             </div>
-          )}
 
-          {uploadMode === "url" && (
-            <div className="flex flex-col gap-2">
-              <Label className="text-xs text-neutral-600">Image URL</Label>
-              <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg" className="h-10 text-sm" />
-              <p className="text-[10px] text-neutral-400">Paste a direct URL to a publicly accessible image file</p>
+            {deployMode === "existing" ? (
+              <FESelect
+                label=""
+                placeholder="Select a deployment…"
+                value={selectedDeployment}
+                onChange={(v) => setSelectedDeployment((v as string) ?? "")}
+                options={EXISTING_DEPLOYMENTS}
+                searchable={false}
+              />
+            ) : (
+              <div className="flex items-center gap-3 p-4 rounded-lg border border-dashed border-neutral-300 bg-neutral-50">
+                <div className="flex-1">
+                  <p className="text-[12px] font-semibold text-neutral-700">No deployment yet</p>
+                  <p className="text-[11px] text-neutral-400 mt-0.5">Create a deployment to run predictions on live traffic.</p>
+                </div>
+                <button className="flex items-center gap-2 h-8 px-4 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#004e3d] transition-colors flex-shrink-0">
+                  Create Deployment <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-neutral-100" />
+
+          {/* ── Image input ── */}
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">Input Image</p>
+            <div className="flex gap-1 bg-neutral-100 p-1 rounded-lg w-fit">
+              {(["upload", "url"] as const).map((m) => (
+                <button key={m} onClick={() => setUploadMode(m)}
+                  className={cn(
+                    "px-4 py-1.5 text-[12px] font-semibold rounded-md transition-colors",
+                    uploadMode === m ? "bg-white text-neutral-800 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                  )}>
+                  {m === "upload" ? "Upload Image" : "Image URL"}
+                </button>
+              ))}
             </div>
-          )}
 
+            {uploadMode === "upload" && (
+              <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setDragging(false); }}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-4 py-14 rounded-xl border-2 border-dashed transition-colors cursor-pointer",
+                  dragging ? "border-[#00775B] bg-[#00775B]/5" : "border-neutral-200 bg-neutral-50 hover:border-[#00775B]/40 hover:bg-neutral-100/60"
+                )}>
+                <div className="w-12 h-12 rounded-full bg-[#00775B] flex items-center justify-center shadow-md">
+                  <CloudUpload className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-center">
+                  <p className="text-[13px] font-semibold text-neutral-700">Drag &amp; Drop image here</p>
+                  <p className="text-[12px] text-neutral-400 mt-0.5">or <span className="text-[#00775B] font-semibold">Browse</span> to choose a file</p>
+                  <p className="text-[11px] text-neutral-300 mt-2">Supported formats: .jpeg, .png</p>
+                </div>
+              </div>
+            )}
+
+            {uploadMode === "url" && (
+              <div className="flex flex-col gap-2">
+                <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg" className="h-10 text-sm" />
+                <p className="text-[11px] text-neutral-400">Paste a direct URL to a publicly accessible image file.</p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Predict ── */}
           <button onClick={handlePredict} disabled={loading}
-            className={cn("w-full h-12 rounded-md text-[14px] font-bold text-white transition-all",
-              loading ? "bg-[#004e3d]" : "bg-[#00775B] hover:bg-[#004e3d]")}>
-            {loading ? <span className="flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Running Inference…</span> : "Predict"}
+            className={cn(
+              "w-full h-11 rounded-lg text-[13px] font-bold text-white transition-all",
+              loading ? "bg-[#004e3d]" : "bg-[#00775B] hover:bg-[#004e3d]"
+            )}>
+            {loading
+              ? <span className="flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Running Inference…</span>
+              : "Predict"}
           </button>
 
-          {/* Prediction result */}
+          {/* ── Prediction result ── */}
           {predicted && (
-            <div className="flex items-start gap-4 p-5 rounded-md bg-[#E5FFF9] border border-[#00775B]/20">
+            <div className="flex items-start gap-4 p-5 rounded-xl bg-[#E5FFF9] border border-[#00775B]/20">
               <div className="w-10 h-10 rounded-full bg-[#00775B] flex items-center justify-center flex-shrink-0">
                 <CheckCircle className="w-5 h-5 text-white" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-[12px] font-semibold text-[#00775B]">Prediction Result</p>
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-6 mt-2">
                   <div>
                     <p className="text-[10px] text-[#00775B]/70 uppercase tracking-wide">Class</p>
                     <p className="text-[20px] font-bold text-[#021d18] capitalize">{predicted.cls}</p>
@@ -980,270 +1065,302 @@ const CLASS_REPORT_ROWS: ClassReportRow[] = [
   },
 ];
 
+type EvalResult = {
+  id: string;
+  dataset: string;
+  version: string;
+  splitTypes: string;
+  accuracy: string;
+  macroF1: string;
+  aucRoc: string;
+  updatedAt: string;
+  status: "complete" | "running" | "failed";
+};
+
+const EVAL_RESULTS: EvalResult[] = [
+  { id: "eval-001", dataset: "Skin Cancer Classification", version: "v1.0", splitTypes: "test, val", accuracy: "84.19%", macroF1: "0.882", aucRoc: "0.924", updatedAt: "Nov 10, 2024", status: "complete" },
+  { id: "eval-002", dataset: "Skin Cancer Classification", version: "v0.9", splitTypes: "test",      accuracy: "81.4%",  macroF1: "0.861", aucRoc: "0.908", updatedAt: "Nov 02, 2024", status: "complete" },
+];
+
+const EVAL_COLUMNS: ColumnDef<EvalResult>[] = [
+  {
+    id: "dataset",
+    header: "Dataset Name",
+    accessorKey: "dataset",
+    cell: ({ row }) => <span className="text-[12px] font-medium text-neutral-800">{row.dataset}</span>,
+  },
+  {
+    id: "version",
+    header: "Dataset Version",
+    accessorKey: "version",
+    cell: ({ row }) => <span className="font-mono text-[11px] text-neutral-500">{row.version}</span>,
+  },
+  {
+    id: "splitTypes",
+    header: "Split Types",
+    accessorKey: "splitTypes",
+    cell: ({ row }) => <span className="text-[11px] text-neutral-500">{row.splitTypes}</span>,
+  },
+  {
+    id: "accuracy",
+    header: "Accuracy",
+    accessorKey: "accuracy",
+    align: "right",
+    cell: ({ row }) => <span className="font-mono font-semibold text-[11px] text-[#00775B]">{row.accuracy}</span>,
+  },
+  {
+    id: "macroF1",
+    header: "Macro F1",
+    accessorKey: "macroF1",
+    align: "right",
+    cell: ({ row }) => <span className="font-mono text-[11px] text-neutral-700">{row.macroF1}</span>,
+  },
+  {
+    id: "aucRoc",
+    header: "AUC-ROC",
+    accessorKey: "aucRoc",
+    align: "right",
+    cell: ({ row }) => <span className="font-mono text-[11px] text-[#7C3AED]">{row.aucRoc}</span>,
+  },
+  {
+    id: "updatedAt",
+    header: "Last Updated",
+    accessorKey: "updatedAt",
+    align: "right",
+    cell: ({ row }) => <span className="text-[11px] text-neutral-400">{row.updatedAt}</span>,
+  },
+  {
+    id: "status",
+    header: "Status",
+    accessorKey: "status",
+    cell: ({ row }) => {
+      const cfg = row.status === "complete"
+        ? { label: "Complete", color: "#00775B", bg: "#E5FFF9" }
+        : row.status === "running"
+        ? { label: "Running",  color: "#0284C7", bg: "#EFF6FF" }
+        : { label: "Failed",   color: "#DC2626", bg: "#FEF2F2" };
+      return (
+        <span className="inline-flex items-center h-5 px-2 rounded text-[10px] font-bold"
+          style={{ color: cfg.color, backgroundColor: cfg.bg }}>
+          {cfg.label}
+        </span>
+      );
+    },
+  },
+];
+
 function EvaluationTab() {
-  const [splitSel, setSplitSel] = useState("test");
-  const [thresh,   setThresh]   = useState(0.5);
+  const [compute,      setCompute]      = useState("auto");
+  const [showForm,     setShowForm]     = useState(false);
+  const [splitFilter,  setSplitFilter]  = useState(["test", "val"]);
+  const [metricFilter, setMetricFilter] = useState("acc@1");
+  const [labelFilter,  setLabelFilter]  = useState(["all"]);
+  const [modelsFilter, setModelsFilter] = useState(["Skin-Cancer-Exp-1-1"]);
+  const [classRange,   setClassRange]   = useState([0, 20]);
+  const [viewMode,     setViewMode]     = useState<"grid" | "list">("grid");
 
-  const cm = CONFUSION.matrix;
-  const maxVal = Math.max(...cm.flat());
-
-  const cellHeat = (v: number) => {
-    const t = v / maxVal;
-    return `rgba(0, 119, 91, ${0.1 + t * 0.7})`;
-  };
-
-  // Classification report DataTable columns
-  const reportColumns: ColumnDef<ClassReportRow>[] = [
-    {
-      id: "cls",
-      header: "Class",
-      accessorKey: "cls",
-      cell: ({ row }) => (
-        <span className={cn("capitalize font-medium text-neutral-700", row.isAvg && "font-semibold text-neutral-900")}>
-          {row.cls}
-        </span>
-      ),
-    },
-    {
-      id: "precision",
-      header: "Precision",
-      accessorKey: "precision",
-      align: "right",
-      cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-2">
-          {!row.isAvg && (
-            <div className="w-12 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${row.precision * 100}%`, backgroundColor: row.precision > 0.88 ? TEAL : row.precision > 0.82 ? "#F59E0B" : "#EF4444" }} />
-            </div>
-          )}
-          <span className="font-mono text-neutral-700">{row.precision.toFixed(3)}</span>
-        </div>
-      ),
-    },
-    {
-      id: "recall",
-      header: "Recall",
-      accessorKey: "recall",
-      align: "right",
-      cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-2">
-          {!row.isAvg && (
-            <div className="w-12 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${row.recall * 100}%`, backgroundColor: row.recall > 0.88 ? TEAL : row.recall > 0.82 ? "#F59E0B" : "#EF4444" }} />
-            </div>
-          )}
-          <span className="font-mono text-neutral-700">{row.recall.toFixed(3)}</span>
-        </div>
-      ),
-    },
-    {
-      id: "f1",
-      header: "F1-Score",
-      accessorKey: "f1",
-      align: "right",
-      cell: ({ row }) => (
-        <span className={cn("font-mono font-semibold", row.f1 > 0.88 ? "text-[#00775B]" : row.f1 > 0.82 ? "text-amber-600" : "text-red-500")}>
-          {row.f1.toFixed(3)}
-        </span>
-      ),
-    },
-    {
-      id: "support",
-      header: "Support",
-      accessorKey: "support",
-      align: "right",
-      cell: ({ row }) => <span className="font-mono text-neutral-500">{row.support.toLocaleString()}</span>,
-    },
-  ];
 
   return (
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
-      {/* ── Filter / summary bar ── */}
-      <Card className="p-4 flex items-end gap-4 flex-wrap">
-        <div className="flex flex-col gap-1.5 w-40">
-          <Label className="text-xs text-neutral-600">Evaluation Split</Label>
-          <Select value={splitSel} onValueChange={setSplitSel}>
-            <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="test">Test Set</SelectItem>
-              <SelectItem value="val">Validation Set</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* ── Create Evaluation form ── */}
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-700">New Evaluation</h3>
+          <button
+            onClick={() => setShowForm(f => !f)}
+            className="text-[11px] font-medium text-[#00775B] hover:underline">
+            {showForm ? "Cancel" : "+ Create"}
+          </button>
         </div>
-        <div className="flex flex-col gap-2 flex-1 min-w-[160px]">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs text-neutral-600">Decision Threshold</Label>
-            <span className="text-[11px] font-mono font-semibold text-[#00775B]">{thresh.toFixed(2)}</span>
-          </div>
-          <Slider value={[thresh]} onValueChange={([v]) => setThresh(v)} min={0.1} max={0.9} step={0.05}
-            className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
-        </div>
-        <div className="flex items-center gap-3 text-[11px] ml-auto">
-          {[
-            { label: "Accuracy", value: "84.19%", color: TEAL },
-            { label: "Macro F1", value: "0.882",  color: "#0284C7" },
-            { label: "AUC-ROC",  value: AUC.toFixed(3), color: "#7C3AED" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="flex flex-col items-center px-4 py-2 rounded-md bg-neutral-50 border border-neutral-200">
-              <span className="text-neutral-400 text-[10px] uppercase tracking-wide">{label}</span>
-              <span className="font-bold font-mono text-[16px]" style={{ color }}>{value}</span>
+        {showForm && (
+          <div className="p-5 flex flex-col gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs text-neutral-600">Dataset</Label>
+                <Select defaultValue="skin-cancer">
+                  <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="skin-cancer">Skin Cancer Classification</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs text-neutral-600">Split Types</Label>
+                <Select value={splitSel} onValueChange={setSplitSel}>
+                  <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="test">Test Set</SelectItem>
+                    <SelectItem value="val">Validation Set</SelectItem>
+                    <SelectItem value="test,val">Test + Val</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs text-neutral-600">Compute</Label>
+                <Select value={compute} onValueChange={setCompute}>
+                  <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Automatically launch a new instance</SelectItem>
+                    <SelectItem value="matrice">Matrice Cloud GPU</SelectItem>
+                    <SelectItem value="aws">AWS p3.2xlarge</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          ))}
-        </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowForm(false)}
+                className="h-8 px-4 rounded-md bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#005f48] transition-colors">
+                Run Evaluation
+              </button>
+            </div>
+          </div>
+        )}
       </Card>
 
-      {/* ── Confusion Matrix + ROC side by side ── */}
-      <div className="grid grid-cols-2 gap-5">
-
-        {/* Confusion Matrix */}
-        <Card className="overflow-hidden">
-          <SectionHead title="Confusion Matrix" sub={`${splitSel === "test" ? "Test" : "Validation"} split · ${CONFUSION.labels.length} classes`} />
-          <div className="p-6 flex flex-col items-center gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 self-start ml-14">Predicted →</p>
-            <div className="flex gap-2">
-              <div className="flex items-center pr-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400"
-                  style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actual ↓</p>
-              </div>
-              <div className="flex flex-col gap-0">
-                <div className="flex items-center mb-1">
-                  <div className="w-20 h-7" />
-                  {CONFUSION.labels.map((l) => (
-                    <div key={l} className="w-28 h-7 flex items-center justify-center">
-                      <span className="text-[11px] font-semibold text-neutral-600 capitalize">{l}</span>
-                    </div>
-                  ))}
-                </div>
-                {cm.map((row, ri) => (
-                  <div key={ri} className="flex items-center">
-                    <div className="w-20 h-24 flex items-center justify-end pr-3">
-                      <span className="text-[11px] font-semibold text-neutral-600 capitalize">{CONFUSION.labels[ri]}</span>
-                    </div>
-                    {row.map((val, ci) => (
-                      <div key={ci} className="w-28 h-24 flex flex-col items-center justify-center rounded-md m-0.5 relative"
-                        style={{ backgroundColor: ri === ci ? cellHeat(val) : `rgba(239,68,68,${0.05 + (val / maxVal) * 0.35})` }}>
-                        <span className="text-[24px] font-bold font-mono" style={{ color: ri === ci ? "#00775B" : "#DC2626" }}>{val}</span>
-                        <span className="text-[10px] text-neutral-500 mt-0.5">
-                          {((val / cm[ri].reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%
-                        </span>
-                        <span className={cn("absolute top-1.5 right-2 text-[8px] font-bold uppercase", ri === ci ? "text-[#00775B]" : "text-red-400")}>
-                          {ri === ci ? "✓" : "✗"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-4 mt-2 text-[10px]">
-              <div className="flex items-center gap-1.5"><div className="w-4 h-4 rounded-md bg-[#00775B]/40" /> <span className="text-neutral-500">Correct (TP / TN)</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-4 h-4 rounded-md bg-red-200" /> <span className="text-neutral-500">Incorrect (FP / FN)</span></div>
-            </div>
-          </div>
-        </Card>
-
-        {/* ROC Curve */}
-        <Card className="overflow-hidden">
-          <SectionHead title="ROC Curve" sub={`AUC = ${AUC.toFixed(3)} · ${splitSel === "test" ? "Test" : "Val"} split`} />
-          <div className="p-5 flex flex-col gap-4">
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={ROC_DATA} margin={{ top: 8, right: 24, bottom: 28, left: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="fpr" type="number" domain={[0, 1]}
-                  tick={{ fontSize: 10, fill: "#94A3B8" }}
-                  label={{ value: "False Positive Rate", position: "insideBottom", offset: -16, fontSize: 10, fill: "#94A3B8" }} />
-                <YAxis dataKey="tpr" type="number" domain={[0, 1]}
-                  tick={{ fontSize: 10, fill: "#94A3B8" }}
-                  label={{ value: "True Positive Rate", angle: -90, position: "insideLeft", offset: 12, fontSize: 10, fill: "#94A3B8" }} />
-                <Tooltip content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  const d = payload[0].payload;
-                  return (
-                    <div className="bg-white border border-neutral-200 rounded px-2.5 py-1.5 shadow text-[11px]">
-                      <p className="font-mono">FPR: {d.fpr.toFixed(3)} · TPR: {d.tpr.toFixed(3)}</p>
-                    </div>
-                  );
-                }} />
-                <Line dataKey="tpr" stroke={TEAL} dot={false} strokeWidth={2.5} />
-                <Line data={[{ fpr: 0, tpr: 0 }, { fpr: 1, tpr: 1 }]} dataKey="tpr"
-                  stroke="#E2E8F0" strokeDasharray="4 4" dot={false} strokeWidth={1.5} />
-              </LineChart>
-            </ResponsiveContainer>
-            <div className="flex items-center justify-center gap-4 text-[11px]">
-              <div className="flex items-center gap-1.5"><div className="w-5 h-0.5 bg-[#00775B] rounded" /> <span className="text-neutral-500">ROC (AUC = {AUC.toFixed(3)})</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-5 border-t border-dashed border-neutral-300" /> <span className="text-neutral-500">Random Classifier</span></div>
-            </div>
-            {/* Detailed metrics mini-list */}
-            <div className="pt-3 border-t border-neutral-100 flex flex-col gap-2.5">
-              {[
-                { label: "AUC-ROC",        value: AUC.toFixed(4),  color: "#7C3AED", bar: AUC   },
-                { label: "Accuracy",        value: "0.8419",        color: TEAL,      bar: 0.842 },
-                { label: "Macro Precision", value: "0.8885",        color: "#0284C7", bar: 0.889 },
-                { label: "Macro Recall",    value: "0.8830",        color: "#0284C7", bar: 0.883 },
-                { label: "Macro F1",        value: "0.8822",        color: "#D97706", bar: 0.882 },
-                { label: "Cohen's Kappa",   value: "0.684",         color: "#475569", bar: 0.684 },
-              ].map(({ label, value, color, bar }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <span className="text-[11px] text-neutral-500 w-32 shrink-0">{label}</span>
-                  <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${bar * 100}%`, backgroundColor: color }} />
-                  </div>
-                  <span className="text-[11px] font-mono font-semibold w-12 text-right" style={{ color }}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* ── Classification Report — DataTable with expandable per-threshold rows ── */}
-      <DataTable<ClassReportRow>
-        columns={reportColumns}
-        data={CLASS_REPORT_ROWS}
+      {/* ── Evaluations table with inline expanded detail ── */}
+      <DataTable<EvalResult>
+        columns={EVAL_COLUMNS}
+        data={EVAL_RESULTS}
         rowIdKey="id"
         pagination="none"
         toolbar={false}
+        cardTitle="Evaluation Results"
+        cardSubTitle={`${EVAL_RESULTS.length} evaluations`}
         expandable
         expansionMode="single"
-        showRowCue={false}
-        cardTitle="Classification Report"
-        cardSubTitle="Per-class precision, recall & F1-score — expand a row to see per-threshold breakdown"
-        renderExpandedRow={(row) => (
-          <div className="px-6 py-4 bg-neutral-50/60">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-3 capitalize">
-              {row.cls} — per-threshold metrics
-            </p>
-            <div className="grid grid-cols-4 gap-3">
-              {row.thresholds.map((t) => (
-                <div key={t.threshold}
-                  className={cn(
-                    "p-3 rounded-md border text-[11px] flex flex-col gap-1.5",
-                    Math.abs(t.threshold - thresh) < 0.01
-                      ? "border-[#00775B] bg-[#00775B]/5"
-                      : "border-neutral-200 bg-white",
-                  )}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-neutral-700">τ = {t.threshold.toFixed(1)}</span>
-                    {Math.abs(t.threshold - thresh) < 0.01 && (
-                      <span className="text-[9px] font-bold text-[#00775B] uppercase">Active</span>
-                    )}
+        renderExpandedRow={(evalRow) => (
+          <div className="bg-[#F8FAFC]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-white">
+              <div>
+                <h3 className="text-[13px] font-semibold text-neutral-800">Model Performance</h3>
+                <p className="text-[11px] text-neutral-400 mt-0.5">{evalRow.dataset} · {evalRow.version} · {evalRow.splitTypes}</p>
+              </div>
+              <div className="flex items-center gap-1 bg-neutral-100 rounded-md p-0.5">
+                <button onClick={() => setViewMode("grid")}
+                  className={cn("p-1.5 rounded transition-colors", viewMode === "grid" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setViewMode("list")}
+                  className={cn("p-1.5 rounded transition-colors", viewMode === "list" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex">
+              {/* Filter sidebar */}
+              <div className="w-56 flex-shrink-0 border-r border-neutral-100 p-4 flex flex-col gap-3 bg-neutral-50/30">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Filters</p>
+                <MultiChipSelect label="Select Split Type"
+                  values={splitFilter} onRemove={(v) => setSplitFilter(p => p.filter(x => x !== v))}
+                  options={["train", "test", "val"]} onAdd={(v) => setSplitFilter(p => [...p, v])}
+                  placeholder="Select splits…" />
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs text-neutral-600">Select Metric</Label>
+                  <Select value={metricFilter} onValueChange={setMetricFilter}>
+                    <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["acc@1", "acc@5", "f1_score", "precision", "recall"].map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <MultiChipSelect label="Select Labels"
+                  values={labelFilter} onRemove={(v) => setLabelFilter(p => p.filter(x => x !== v))}
+                  options={["all", "benign", "malignant"]} onAdd={(v) => setLabelFilter(p => [...p, v])}
+                  placeholder="Select labels…" />
+                <MultiChipSelect label="Select Models (max 3)"
+                  values={modelsFilter} onRemove={(v) => setModelsFilter(p => p.filter(x => x !== v))}
+                  options={["Skin-Cancer-Exp-1-1", "RegNet-Y-timm_1280"]}
+                  onAdd={(v) => modelsFilter.length < 3 && setModelsFilter(p => [...p, v])}
+                  placeholder="Select models…" />
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-neutral-600">Number of Classes</Label>
+                    <span className="text-[10px] font-mono text-neutral-400">{classRange[0]}–{classRange[1]}</span>
                   </div>
+                  <Slider value={classRange} onValueChange={setClassRange} min={0} max={20} step={1}
+                    className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
+                </div>
+                <button className="h-9 rounded-[4px] bg-[#00775B] text-white text-[12px] font-semibold hover:bg-[#006649] transition-colors">
+                  Apply Filters
+                </button>
+              </div>
+
+              {/* Chart / Table area */}
+              <div className="flex-1 p-5 flex flex-col gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
                   {[
-                    { label: "Precision", v: t.precision },
-                    { label: "Recall",    v: t.recall    },
-                    { label: "F1",        v: t.f1        },
-                  ].map(({ label, v }) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <span className="text-neutral-400 w-14 shrink-0">{label}</span>
-                      <div className="flex-1 h-1 bg-neutral-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-[#00775B]" style={{ width: `${v * 100}%` }} />
-                      </div>
-                      <span className="font-mono font-semibold text-neutral-700 w-10 text-right">{v.toFixed(3)}</span>
+                    { label: "Accuracy",  value: evalRow.accuracy, color: "#00775B" },
+                    { label: "Macro F1",  value: evalRow.macroF1,  color: "#0284C7" },
+                    { label: "AUC-ROC",   value: evalRow.aucRoc,   color: "#7C3AED" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="flex items-center gap-2 h-8 px-3 rounded-[4px] border border-neutral-200 bg-white">
+                      <span className="text-[10px] text-neutral-400 uppercase tracking-wide">{label}</span>
+                      <span className="font-mono font-bold text-[12px]" style={{ color }}>{value}</span>
                     </div>
                   ))}
                 </div>
-              ))}
+                {viewMode === "grid" ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={PERF_DATA} layout="vertical" margin={{ top: 4, right: 32, bottom: 24, left: 56 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                      <XAxis type="number" domain={[0, 0.9]} tick={{ fontSize: 10, fill: "#94A3B8" }}
+                        label={{ value: metricFilter, position: "insideBottom", offset: -14, fontSize: 10, fill: "#94A3B8" }} />
+                      <YAxis type="category" dataKey="category" tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} width={60} />
+                      <Tooltip content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null;
+                        return (
+                          <div className="bg-white border border-neutral-200 rounded-[4px] px-3 py-2 shadow text-[11px]">
+                            <p className="font-semibold text-neutral-800 capitalize mb-1">{label}</p>
+                            {payload.map((p) => (
+                              <p key={p.dataKey} className="font-mono" style={{ color: p.fill }}>
+                                {String(p.dataKey)}: {Number(p.value).toFixed(4)}
+                              </p>
+                            ))}
+                          </div>
+                        );
+                      }} />
+                      <Legend iconType="square" iconSize={9} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                      <Bar dataKey="val"  name={`${MODEL.name.slice(0, 22)}… (val)`}  fill="#06B6D4" barSize={20} radius={[0, 2, 2, 0]} />
+                      <Bar dataKey="test" name={`${MODEL.name.slice(0, 22)}… (test)`} fill={TEAL}     barSize={20} radius={[0, 2, 2, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <DataTable<{ id: number; category: string; val: number; test: number }>
+                    columns={[
+                      { id: "category", header: "Class", accessorKey: "category",
+                        cell: ({ row }) => <span className="capitalize font-medium text-neutral-700 text-[12px]">{row.category}</span> },
+                      { id: "val",  header: "Val Score",  accessorKey: "val",  align: "right",
+                        cell: ({ row }) => (
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full bg-cyan-500" style={{ width: `${(row.val / 0.9) * 100}%` }} />
+                            </div>
+                            <span className="font-mono text-[11px] font-semibold text-cyan-600">{row.val.toFixed(4)}</span>
+                          </div>
+                        ) },
+                      { id: "test", header: "Test Score", accessorKey: "test", align: "right",
+                        cell: ({ row }) => (
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full bg-[#00775B]" style={{ width: `${(row.test / 0.9) * 100}%` }} />
+                            </div>
+                            <span className="font-mono text-[11px] font-semibold text-[#00775B]">{row.test.toFixed(4)}</span>
+                          </div>
+                        ) },
+                    ]}
+                    data={PERF_DATA.map((r, i) => ({ id: i, ...r }))}
+                    rowIdKey="id"
+                    pagination="none"
+                    toolbar={false}
+                  />
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1399,74 +1516,79 @@ function ExportTab() {
     <div className="p-6 flex flex-col gap-5 bg-[#F8FAFC] min-w-0">
 
       {/* ── Export Model form ── */}
-      <Card className="p-6 flex flex-col gap-5">
-        <h3 className="text-[15px] font-semibold text-neutral-800">Export Model</h3>
-
-        {/* Model name */}
-        <FEInput
-          label="Export Model Name"
-          placeholder="e.g. resnet50-export-v1"
-          value={modelName}
-          onChange={(e) => setModelName(e.target.value)}
-        />
-
-        {/* Export format select */}
-        <FESelect
-          label="Export Format"
-          placeholder="Select a format…"
-          value={format || null}
-          onChange={(v) => setFormat((v as string) ?? "")}
-          options={EXPORT_FORMATS.map(({ id, label, ext }) => ({
-            value: id,
-            label: `${label} (${ext})`,
-          }))}
-          searchable={false}
-        />
-
-        {/* Compute select */}
-        <FESelect
-          label="Compute"
-          placeholder="Select compute target…"
-          value={compute}
-          onChange={(v) => setCompute((v as string) ?? "auto")}
-          options={[
-            { value: "auto", label: "Automatically launch a new instance" },
-            { value: "v100", label: "NVIDIA V100" },
-            { value: "a100", label: "NVIDIA A100" },
-            { value: "cpu",  label: "CPU only" },
-          ]}
-          searchable={false}
-        />
-
-        {/* Pruning toggle */}
-        <div className="flex items-center justify-between py-1 border-t border-neutral-100">
+      <Card className="overflow-hidden">
+        <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
           <div>
-            <p className="text-[12px] font-semibold text-neutral-700">Apply Pruning</p>
-            <p className="text-[10px] text-neutral-400 mt-0.5">Removes ~30% of weights with minimal accuracy loss</p>
+            <h3 className="text-[14px] font-semibold text-neutral-800">Export Model</h3>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Package your trained model for deployment or inference.</p>
           </div>
-          <Switch checked={pruning} onCheckedChange={setPruning} />
-        </div>
-
-        {/* Export button */}
-        <div className="flex justify-end gap-3 pt-1">
           {done && (
-            <button className="flex items-center gap-2 h-10 px-5 rounded-md border border-[#00775B] text-[#00775B] text-sm font-semibold hover:bg-[#00775B]/5 transition-colors">
-              <Download className="w-4 h-4" /> Download
+            <button className="flex items-center gap-2 h-8 px-4 rounded-lg border border-[#00775B] text-[#00775B] text-[12px] font-semibold hover:bg-[#00775B]/5 transition-colors">
+              <Download className="w-3.5 h-3.5" /> Download
             </button>
           )}
-          <button
-            onClick={handleExport}
-            disabled={exporting || !format}
-            className={cn(
-              "flex items-center gap-2 h-10 px-8 rounded-md text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-              done ? "bg-emerald-600" : "bg-[#00775B] hover:bg-[#006649]",
-            )}>
-            {exporting
-              ? <><RefreshCw className="w-4 h-4 animate-spin" /> Exporting…</>
-              : done
-              ? <><CheckCircle className="w-4 h-4" /> Complete</>
-              : "Export"}
-          </button>
+        </div>
+
+        <div className="p-6 flex flex-col gap-6">
+          {/* Row 1: Name + Compute */}
+          <div className="grid grid-cols-2 gap-4">
+            <FEInput
+              label="Export Name"
+              placeholder="e.g. resnet50-export-v1"
+              value={modelName}
+              onChange={(e) => setModelName(e.target.value)}
+            />
+            <FESelect
+              label="Compute"
+              placeholder="Select compute…"
+              value={compute}
+              onChange={(v) => setCompute((v as string) ?? "auto")}
+              options={[
+                { value: "auto", label: "Automatically launch a new instance" },
+                { value: "v100", label: "NVIDIA V100" },
+                { value: "a100", label: "NVIDIA A100" },
+                { value: "cpu",  label: "CPU only" },
+              ]}
+              searchable={false}
+            />
+          </div>
+
+          {/* Format picker */}
+          <FESelect
+            label="Export Format"
+            placeholder="Select a format…"
+            value={format}
+            onChange={(v) => setFormat((v as string) ?? "")}
+            options={EXPORT_FORMATS.map(({ id, label, ext, desc }) => ({
+              value: id,
+              label: `${label}  (${ext})  —  ${desc}`,
+            }))}
+            searchable={false}
+          />
+
+          {/* Options row + action */}
+          <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
+            <div className="flex items-center gap-3">
+              <Switch checked={pruning} onCheckedChange={setPruning} className="[&[data-state=unchecked]]:bg-neutral-300" />
+              <div>
+                <p className="text-[12px] font-semibold text-neutral-700">Apply Pruning</p>
+                <p className="text-[10px] text-neutral-400">Removes ~30% of weights with minimal accuracy loss</p>
+              </div>
+            </div>
+            <button
+              onClick={handleExport}
+              disabled={exporting || !format}
+              className={cn(
+                "flex items-center gap-2 h-9 px-6 rounded-lg text-[13px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed",
+                done ? "bg-emerald-600" : "bg-[#00775B] hover:bg-[#006649]",
+              )}>
+              {exporting
+                ? <><RefreshCw className="w-4 h-4 animate-spin" /> Exporting…</>
+                : done
+                ? <><CheckCircle className="w-4 h-4" /> Complete</>
+                : "Export"}
+            </button>
+          </div>
         </div>
       </Card>
 
@@ -1492,145 +1614,138 @@ function ExportTab() {
 // TAB 7 — LOGS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const LOG_LEVEL_CONFIG: Record<LogLevel, { color: string; bg: string; icon: typeof Info }> = {
-  INFO:  { color: "#0284C7", bg: "#EFF6FF", icon: Info          },
-  WARN:  { color: "#D97706", bg: "#FFFBEB", icon: AlertTriangle  },
-  ERROR: { color: "#DC2626", bg: "#FEF2F2", icon: XCircle        },
-  DEBUG: { color: "#64748B", bg: "#F8FAFC", icon: Settings2      },
+type LogStatus = "SUCCESS" | "FAILED" | "RUNNING" | "PENDING";
+type LogRow = {
+  id: number;
+  lastUpdated: string;
+  action: string;
+  subAction: string;
+  stepCode: string;
+  status: LogStatus;
+  statusDescription: string;
 };
 
+const LOG_STATUS_CONFIG: Record<LogStatus, { color: string; bg: string }> = {
+  SUCCESS: { color: "#00775B", bg: "#E5FFF9" },
+  FAILED:  { color: "#DC2626", bg: "#FEF2F2" },
+  RUNNING: { color: "#0284C7", bg: "#EFF6FF" },
+  PENDING: { color: "#64748B", bg: "#F1F5F9" },
+};
+
+const LOG_ROWS: LogRow[] = [
+  { id: 1,  lastUpdated: "2024-11-10 14:30:01", action: "INIT",    subAction: "setup_env",      stepCode: "INIT_001", status: "SUCCESS", statusDescription: "Environment initialized successfully" },
+  { id: 2,  lastUpdated: "2024-11-10 14:30:02", action: "DATA",    subAction: "load_dataset",   stepCode: "DATA_001", status: "SUCCESS", statusDescription: "Dataset loaded: 2639 train / 329 val / 329 test" },
+  { id: 3,  lastUpdated: "2024-11-10 14:30:03", action: "MODEL",   subAction: "init_backbone",  stepCode: "MDL_001",  status: "SUCCESS", statusDescription: "EfficientNetV2-S initialized (21.5M params)" },
+  { id: 4,  lastUpdated: "2024-11-10 14:30:05", action: "TRAIN",   subAction: "setup_optimizer",stepCode: "TRN_001",  status: "SUCCESS", statusDescription: "AdamW optimizer configured (lr=0.001)" },
+  { id: 5,  lastUpdated: "2024-11-10 14:30:05", action: "TRAIN",   subAction: "setup_scheduler",stepCode: "TRN_002",  status: "SUCCESS", statusDescription: "StepLR scheduler set (step_size=10, gamma=0.1)" },
+  { id: 6,  lastUpdated: "2024-11-10 14:30:10", action: "TRAIN",   subAction: "epoch",          stepCode: "TRN_003",  status: "SUCCESS", statusDescription: "Epoch 1/50 — train_loss=1.182, val_loss=1.347" },
+  { id: 7,  lastUpdated: "2024-11-10 14:42:15", action: "TRAIN",   subAction: "epoch",          stepCode: "TRN_003",  status: "SUCCESS", statusDescription: "Epoch 10/50 — train_loss=0.612, val_loss=0.731" },
+  { id: 8,  lastUpdated: "2024-11-10 14:55:20", action: "TRAIN",   subAction: "epoch",          stepCode: "TRN_003",  status: "SUCCESS", statusDescription: "Epoch 20/50 — train_loss=0.341, val_loss=0.489" },
+  { id: 9,  lastUpdated: "2024-11-10 15:08:30", action: "TRAIN",   subAction: "checkpoint",     stepCode: "TRN_004",  status: "SUCCESS", statusDescription: "Checkpoint saved at epoch 25 (val_acc=0.831)" },
+  { id: 10, lastUpdated: "2024-11-10 15:22:45", action: "TRAIN",   subAction: "epoch",          stepCode: "TRN_003",  status: "SUCCESS", statusDescription: "Epoch 40/50 — train_loss=0.198, val_loss=0.312" },
+  { id: 11, lastUpdated: "2024-11-10 15:38:10", action: "TRAIN",   subAction: "augmentation",   stepCode: "TRN_005",  status: "FAILED",  statusDescription: "MixUp augmentation skipped — batch size too small" },
+  { id: 12, lastUpdated: "2024-11-10 15:51:48", action: "TRAIN",   subAction: "epoch",          stepCode: "TRN_003",  status: "SUCCESS", statusDescription: "Epoch 50/50 — train_loss=0.162, val_loss=0.289" },
+  { id: 13, lastUpdated: "2024-11-10 16:01:05", action: "EVAL",    subAction: "run_inference",  stepCode: "EVL_001",  status: "SUCCESS", statusDescription: "Inference complete on test split (329 samples)" },
+  { id: 14, lastUpdated: "2024-11-10 16:02:10", action: "EVAL",    subAction: "compute_metrics",stepCode: "EVL_002",  status: "SUCCESS", statusDescription: "Accuracy=84.19%, Macro F1=0.882, AUC=0.924" },
+  { id: 15, lastUpdated: "2024-11-10 16:03:00", action: "EXPORT",  subAction: "save_weights",   stepCode: "EXP_001",  status: "SUCCESS", statusDescription: "Model weights saved to /artifacts/model_best.pt" },
+  { id: 16, lastUpdated: "2024-11-10 16:03:45", action: "EXPORT",  subAction: "convert_onnx",   stepCode: "EXP_002",  status: "RUNNING", statusDescription: "Converting to ONNX format…" },
+  { id: 17, lastUpdated: "2024-11-10 16:04:00", action: "NOTIFY",  subAction: "send_webhook",   stepCode: "NTF_001",  status: "PENDING", statusDescription: "Waiting for ONNX conversion to complete" },
+  { id: 18, lastUpdated: "2024-11-10 16:04:00", action: "CLEANUP", subAction: "free_resources", stepCode: "CLN_001",  status: "PENDING", statusDescription: "Pending post-export cleanup" },
+];
+
+const LOG_COLUMNS: ColumnDef<LogRow>[] = [
+  {
+    accessorKey: "lastUpdated",
+    header: "Last Updated",
+    cell: ({ row }) => (
+      <span className="font-mono text-[11px] text-neutral-500">{row.lastUpdated}</span>
+    ),
+  },
+  {
+    accessorKey: "action",
+    header: "Action",
+    cell: ({ row }) => (
+      <span className="font-mono text-[11px] font-semibold text-neutral-700">{row.action}</span>
+    ),
+  },
+  {
+    accessorKey: "subAction",
+    header: "Sub-Action",
+    cell: ({ row }) => (
+      <span className="font-mono text-[11px] text-neutral-500">{row.subAction}</span>
+    ),
+  },
+  {
+    accessorKey: "stepCode",
+    header: "Step Code",
+    cell: ({ row }) => (
+      <span className="font-mono text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-600">{row.stepCode}</span>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const cfg = LOG_STATUS_CONFIG[row.status];
+      return (
+        <span className="inline-flex items-center h-5 px-2 rounded text-[10px] font-bold"
+          style={{ color: cfg.color, backgroundColor: cfg.bg }}>
+          {row.status}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "statusDescription",
+    header: "Status Description",
+    cell: ({ row }) => (
+      <span className="text-[11px] text-neutral-600">{row.statusDescription}</span>
+    ),
+  },
+];
+
 function LogsTab() {
-  const [levelFilter, setLevelFilter] = useState<LogLevel[]>(["INFO", "WARN", "ERROR", "DEBUG"]);
-  const [search,      setSearch]      = useState("");
-  const [autoScroll,  setAutoScroll]  = useState(true);
-  const [wrap,        setWrap]        = useState(false);
-
-  const filtered = useMemo(() =>
-    MOCK_LOGS.filter((l) =>
-      levelFilter.includes(l.level) &&
-      (search === "" || l.msg.toLowerCase().includes(search.toLowerCase()) || l.source.toLowerCase().includes(search.toLowerCase()))
-    ), [levelFilter, search]);
-
-  const toggleLevel = (l: LogLevel) =>
-    setLevelFilter(p => p.includes(l) ? p.filter(x => x !== l) : [...p, l]);
-
   return (
-    <div className="flex flex-col h-[640px] bg-[#F8FAFC] min-w-0">
-
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-neutral-200 bg-white flex-wrap">
-        {/* Level filters */}
-        <div className="flex items-center gap-1.5">
-          {(["INFO", "WARN", "ERROR", "DEBUG"] as LogLevel[]).map((l) => {
-            const cfg = LOG_LEVEL_CONFIG[l];
-            const active = levelFilter.includes(l);
-            const LIcon = cfg.icon;
-            return (
-              <button key={l} onClick={() => toggleLevel(l)}
-                className={cn("flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[10px] font-bold transition-all",
-                  active ? "border-current" : "border-neutral-200 text-neutral-400 hover:border-neutral-300")}
-                style={active ? { color: cfg.color, backgroundColor: cfg.bg, borderColor: `${cfg.color}40` } : {}}>
-                <LIcon className="w-3 h-3" />
-                {l}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search */}
-        <div className="relative flex-1 max-w-xs">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search logs…" className="pl-8 h-7 text-[11px]" />
-        </div>
-
-        <div className="ml-auto flex items-center gap-3 text-[11px]">
-          <label className="flex items-center gap-1.5 cursor-pointer text-neutral-500 hover:text-neutral-700">
-            <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} className="w-3 h-3 accent-[#00775B]" />
-            Wrap lines
-          </label>
-          <label className="flex items-center gap-1.5 cursor-pointer text-neutral-500 hover:text-neutral-700">
-            <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} className="w-3 h-3 accent-[#00775B]" />
-            Auto-scroll
-          </label>
-          <button className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors">
-            <Copy className="w-3 h-3" /> Copy All
-          </button>
-          <button className="flex items-center gap-1.5 h-7 px-3 rounded-md border border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors">
-            <Download className="w-3 h-3" /> Download
-          </button>
-        </div>
-      </div>
-
-      {/* Log count summary */}
-      <div className="flex items-center gap-4 px-5 py-1.5 bg-neutral-50 border-b border-neutral-100 text-[10px]">
-        <span className="text-neutral-400">Showing <span className="font-semibold text-neutral-700">{filtered.length}</span> of {MOCK_LOGS.length} entries</span>
-        {(["INFO", "WARN", "ERROR", "DEBUG"] as LogLevel[]).map((l) => {
-          const count = MOCK_LOGS.filter(x => x.level === l).length;
-          const cfg = LOG_LEVEL_CONFIG[l];
+    <div className="p-6 bg-[#F8FAFC]">
+      <DataTable<LogRow>
+        columns={LOG_COLUMNS}
+        data={LOG_ROWS}
+        rowIdKey="id"
+        pagination="none"
+        toolbar={false}
+        expandable
+        expansionMode="single"
+        renderExpandedRow={(row) => {
+          const cfg = LOG_STATUS_CONFIG[row.status];
           return (
-            <span key={l} className="font-semibold" style={{ color: cfg.color }}>{count} {l}</span>
-          );
-        })}
-      </div>
-
-      {/* Log stream */}
-      <div className="flex-1 overflow-y-auto font-mono text-[11px] bg-[#0C1B16]">
-        {filtered.map((log, i) => {
-          const cfg = LOG_LEVEL_CONFIG[log.level];
-          const LIcon = cfg.icon;
-          return (
-            <div key={i}
-              className={cn("flex items-start gap-0 border-b transition-colors group",
-                log.level === "ERROR" ? "border-red-900/30 bg-red-950/30 hover:bg-red-950/50" :
-                log.level === "WARN"  ? "border-amber-900/20 bg-amber-950/20 hover:bg-amber-950/30" :
-                log.level === "DEBUG" ? "border-neutral-800/50 hover:bg-white/3" :
-                "border-neutral-800/40 hover:bg-white/3")}>
-              {/* Line number */}
-              <span className="w-10 flex-shrink-0 text-center py-2 text-neutral-600 select-none border-r border-neutral-800/50 text-[10px]">
-                {i + 1}
-              </span>
-              {/* Timestamp */}
-              <span className="flex-shrink-0 w-36 py-2 px-3 text-neutral-500 border-r border-neutral-800/30">
-                {log.ts.split(" ")[1]}
-              </span>
-              {/* Level badge */}
-              <span className="flex-shrink-0 w-14 py-2 flex items-center justify-center" style={{ color: cfg.color }}>
-                <LIcon className="w-3 h-3" />
-              </span>
-              {/* Source */}
-              <span className="flex-shrink-0 w-20 py-2 px-1 text-[#4CAF7D] border-r border-neutral-800/30 truncate">
-                [{log.source}]
-              </span>
-              {/* Message */}
-              <span className={cn("py-2 px-3 text-neutral-300 flex-1",
-                wrap ? "whitespace-pre-wrap break-all" : "whitespace-nowrap overflow-hidden text-ellipsis",
-                log.level === "ERROR" ? "text-red-300" :
-                log.level === "WARN"  ? "text-amber-300" : "")}>
-                {log.msg}
-              </span>
-              {/* Copy row button (shows on hover) */}
-              <button className="opacity-0 group-hover:opacity-100 transition-opacity py-2 px-2 text-neutral-500 hover:text-white">
-                <Copy className="w-3 h-3" />
-              </button>
+            <div className="px-6 py-4 bg-[#F8FAFC] flex flex-col gap-3">
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: "Last Updated", value: row.lastUpdated },
+                  { label: "Action",       value: row.action },
+                  { label: "Sub-Action",   value: row.subAction },
+                  { label: "Step Code",    value: row.stepCode },
+                  { label: "Status",       value: row.status, colored: true },
+                ].map(({ label, value, colored }) => (
+                  <div key={label} className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{label}</span>
+                    {colored ? (
+                      <span className="inline-flex items-center h-5 w-fit px-2 rounded text-[10px] font-bold"
+                        style={{ color: cfg.color, backgroundColor: cfg.bg }}>{value}</span>
+                    ) : (
+                      <span className="font-mono text-[12px] text-neutral-700">{value}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-1 pt-2 border-t border-neutral-200">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Status Description</span>
+                <span className="text-[12px] text-neutral-700">{row.statusDescription}</span>
+              </div>
             </div>
           );
-        })}
-        {/* Terminal cursor */}
-        <div className="flex items-center gap-2 px-4 py-2 text-neutral-600">
-          <Terminal className="w-3 h-3" />
-          <span className="animate-pulse">█</span>
-        </div>
-      </div>
-
-      {/* Status bar */}
-      <div className="flex items-center gap-3 px-5 py-1.5 bg-[#021d18] border-t border-neutral-800 text-[10px]">
-        <span className="flex items-center gap-1.5 text-[#00775B]">
-          <CheckCircle className="w-3 h-3" /> Training Complete
-        </span>
-        <span className="text-neutral-500">Job: {MODEL.name.slice(0, 28)}…</span>
-        <span className="ml-auto text-neutral-500">{MOCK_LOGS.length} log entries · 2h 21m 47s total</span>
-      </div>
+        }}
+      />
     </div>
   );
 }

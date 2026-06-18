@@ -20,6 +20,13 @@
       "runtimeArgs": ["run", "dev:standalone:support"],
       "port": 5174,
       "autoPort": true
+    },
+    {
+      "name": "Annotation Dev Server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:standalone:annotation"],
+      "port": 5179,
+      "autoPort": true
     }
   ]
 }

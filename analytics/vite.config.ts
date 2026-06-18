@@ -9,6 +9,7 @@ const supportRoot = path.resolve(__dirname, '../support/src')
 const support2Root = path.resolve(__dirname, '../support2/src')
 const feCommonRoot = path.resolve(__dirname, '../fe-common/src')
 const internalRoot = path.resolve(__dirname, '../internal/src')
+const annotationRoot = path.resolve(__dirname, '../annotation/src')
 const analyticsRoot = path.resolve(__dirname, './src')
 const nm = (pkg: string) => path.resolve(__dirname, 'node_modules', pkg)
 
@@ -53,6 +54,9 @@ function crossAppAliasPlugin() {
       if (id.startsWith(internalRoot + '/')) {
         return { code: code.replace(/(['"])@\//g, '$1@internal/'), map: null }
       }
+      if (id.startsWith(annotationRoot + '/')) {
+        return { code: code.replace(/(['"])@\//g, '$1@annotation/'), map: null }
+      }
       return null
     },
   }
@@ -75,6 +79,24 @@ export default defineConfig({
   plugins: [
     crossAppAliasPlugin(),
     figmaAssetResolver(),
+    // Serve annotation/public/ so embedded AnnotationApp can load its images
+    {
+      name: 'serve-annotation-public',
+      configureServer(server) {
+        const annotationPublic = path.resolve(__dirname, '../annotation/public')
+        server.middlewares.use((req, res, next) => {
+          const filePath = path.join(annotationPublic, req.url ?? '/')
+          import('fs').then(fs => {
+            if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+              res.setHeader('Cache-Control', 'no-cache')
+              fs.createReadStream(filePath).pipe(res as any)
+            } else {
+              next()
+            }
+          })
+        })
+      },
+    },
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
     react(),
@@ -139,6 +161,7 @@ export default defineConfig({
       '@support2': support2Root,
       '@fe-common': feCommonRoot,
       '@internal': internalRoot,
+      '@annotation': annotationRoot,
     },
   },
   optimizeDeps: {

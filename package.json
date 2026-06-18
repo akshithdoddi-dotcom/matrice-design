@@ -10,6 +10,7 @@
     "dev:standalone:support2": "npm run dev --prefix support2",
     "dev:standalone:training": "npm run dev --prefix training",
     "dev:standalone:marketplace": "npm run dev --prefix marketplace",
+    "dev:standalone:annotation": "npm run dev --prefix annotation",
     "dev:analytics": "npm run dev --prefix analytics"
   }
 }

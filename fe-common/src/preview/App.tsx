@@ -44,6 +44,7 @@ import {
   Circle,
   FormInput,
   Layout,
+  AlertTriangle,
 } from "lucide-react";
 import { AppShell, type NavItem } from "../components/layout/AppShell";
 import { OverviewPage } from "./pages/OverviewPage";
@@ -89,6 +90,7 @@ import { NotificationMenuPage } from "./pages/NotificationMenuPage";
 import { LinkPage } from "./pages/LinkPage";
 import { RadioGroupPage } from "./pages/RadioGroupPage";
 import { FormTextFieldPage } from "./pages/FormTextFieldPage";
+import { ErrorPagePage } from "./pages/ErrorPagePage";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -134,7 +136,8 @@ type Page =
   | "segmented-control"
   | "table-pagination"
   | "profile-menu"
-  | "notification-menu";
+  | "notification-menu"
+  | "error-page";
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 
@@ -187,6 +190,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: "navbar",        label: "Navbar",       icon: Navigation },
   { id: "profile-menu",  label: "ProfileMenu",  icon: UserCircle },
   { id: "notification-menu", label: "NotificationMenu", icon: BellRing },
+  // ── Pages ──────────────────────────────────────────────────────────────────
+  { id: "error-page",    label: "Error Page",   icon: AlertTriangle },
 ];
 
 // ── Page map ──────────────────────────────────────────────────────────────────
@@ -234,6 +239,7 @@ const PAGE_MAP: Record<Page, React.ComponentType<{ onNavigate?: (page: Page) => 
   "navbar":              NavbarPage,
   "profile-menu":        ProfileMenuPage,
   "notification-menu":   NotificationMenuPage,
+  "error-page":          ErrorPagePage,
 };
 
 // ── App ───────────────────────────────────────────────────────────────────────

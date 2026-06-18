@@ -181,6 +181,8 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
   const [catView,       setCatView]       = useState<"graph" | "table">("graph");
   const [catSplit,      setCatSplit]      = useState("all");
   const [catDist,       setCatDist]       = useState("all");
+  const [catPage,       setCatPage]       = useState(1);
+  const CAT_PAGE_SIZE = 5;
   const [classCountRange, setClassCountRange] = useState<number[]>(() => {
     const max = Math.max(...DETAIL.categories.map((c) => c.train + c.test + c.val), 100);
     return [0, max];
@@ -215,42 +217,8 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
         ))}
       </div>
 
-      {/* ── Row 2: Split Overview (sidebar) + Category Distribution (main) ── */}
-      <div className="flex gap-4 items-start">
-
-        {/* Split Overview — narrow fixed panel */}
-        <Card className="w-56 flex-shrink-0 overflow-hidden">
-          <div className="px-4 pt-4 pb-3 border-b border-neutral-100">
-            <h3 className="text-[13px] font-semibold text-neutral-800">Split Overview</h3>
-            <p className="text-[11px] text-neutral-400 mt-0.5">{total.toLocaleString()} total images</p>
-          </div>
-          <div className="p-4 flex flex-col gap-3">
-            <div className="flex h-2.5 rounded-full overflow-hidden gap-px">
-              {splitSegments.map((s) => (
-                <div key={s.key} className="transition-all"
-                  style={{ width: `${s.pct}%`, backgroundColor: s.color, minWidth: s.pct > 0 ? "2px" : 0 }}
-                  title={`${s.label}: ${s.count.toLocaleString()} (${s.pct}%)`} />
-              ))}
-            </div>
-            <div className="flex flex-col gap-2">
-              {splitSegments.map((s) => (
-                <div key={s.key} className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                    <span className="text-[11px] text-neutral-600 font-medium">{s.label}</span>
-                  </div>
-                  <div>
-                    <span className="text-[12px] font-bold font-mono" style={{ color: s.color }}>{s.count.toLocaleString()}</span>
-                    <span className="text-[10px] text-neutral-400 ml-1">{s.pct}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
-
-        {/* Category Distribution — takes remaining width, filters in sidebar */}
-        <Card className="flex-1 overflow-hidden min-w-0">
+      {/* ── Row 2: Category Distribution ── */}
+        <Card className="overflow-hidden">
           <div className="px-5 pt-4 pb-3 border-b border-neutral-100 flex items-center justify-between gap-3">
             <div>
               <h3 className="text-[13px] font-semibold text-neutral-800">Category Distribution</h3>
@@ -281,7 +249,7 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
                     className="h-8 w-full pl-8 pr-3 text-[12px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]"
                     placeholder="Search Category"
                     value={catSearch}
-                    onChange={(e) => setCatSearch(e.target.value)}
+                    onChange={(e) => { setCatSearch(e.target.value); setCatPage(1); }}
                   />
                 </div>
               </div>
@@ -289,7 +257,7 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
               {/* Select Distribution */}
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[11px] font-medium text-neutral-500">Select Distribution</Label>
-                <Select value={catDist} onValueChange={setCatDist}>
+                <Select value={catDist} onValueChange={(v) => { setCatDist(v); setCatPage(1); }}>
                   <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
@@ -302,7 +270,7 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
               {/* Select Split */}
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[11px] font-medium text-neutral-500">Select Split</Label>
-                <Select value={catSplit} onValueChange={setCatSplit}>
+                <Select value={catSplit} onValueChange={(v) => { setCatSplit(v); setCatPage(1); }}>
                   <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
@@ -384,50 +352,93 @@ function SummaryTab({ dataset }: { dataset: Dataset }) {
                   <Bar dataKey="Val"   stackId="a" fill="#22C55E" name="Val"   radius={[0, 3, 3, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            ) : (
-              <DataTable<{ id: string; name: string; train: number; test: number; val: number; total: number; trainPct: number; colorIdx: number }>
-                columns={[
-                  { id: "name",    header: "Class",   accessorKey: "name",
-                    cell: ({ row }) => (
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
-                        <span className="font-semibold text-neutral-700 capitalize">{row.name}</span>
+            ) : (() => {
+              const allTableRows = categories
+                .filter((c) => c.name.toLowerCase().includes(catSearch.toLowerCase()))
+                .map((c, i) => {
+                  const tot = c.train + c.test + c.val;
+                  return { id: c.name, name: c.name, train: c.train, test: c.test, val: c.val, total: tot, trainPct: Math.round((c.train / tot) * 100), colorIdx: i };
+                });
+              const totalPages = Math.max(1, Math.ceil(allTableRows.length / CAT_PAGE_SIZE));
+              const pagedRows  = allTableRows.slice((catPage - 1) * CAT_PAGE_SIZE, catPage * CAT_PAGE_SIZE);
+              return (
+                <div className="flex flex-col gap-3">
+                  <DataTable<{ id: string; name: string; train: number; test: number; val: number; total: number; trainPct: number; colorIdx: number }>
+                    columns={[
+                      { id: "name",    header: "Class",   accessorKey: "name",
+                        cell: ({ row }) => (
+                          <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
+                            <span className="font-semibold text-neutral-700 capitalize">{row.name}</span>
+                          </div>
+                        ) },
+                      { id: "train",   header: "Train",   accessorKey: "train", align: "right",
+                        cell: ({ row }) => <span className="font-mono text-neutral-600">{row.train.toLocaleString()}</span> },
+                      { id: "test",    header: "Test",    accessorKey: "test",  align: "right",
+                        cell: ({ row }) => <span className="font-mono text-neutral-600">{row.test.toLocaleString()}</span>  },
+                      { id: "val",     header: "Val",     accessorKey: "val",   align: "right",
+                        cell: ({ row }) => <span className="font-mono text-neutral-600">{row.val.toLocaleString()}</span>   },
+                      { id: "total",   header: "Total",   accessorKey: "total", align: "right",
+                        cell: ({ row }) => <span className="font-mono font-bold text-neutral-800">{row.total.toLocaleString()}</span> },
+                      { id: "balance", header: "Balance", accessorKey: "trainPct",
+                        cell: ({ row }) => (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${row.trainPct}%`, backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
+                            </div>
+                            <span className="text-[10px] font-mono text-neutral-400 w-8 text-right">{row.trainPct}%</span>
+                          </div>
+                        ) },
+                    ]}
+                    data={pagedRows}
+                    rowIdKey="id"
+                    pagination="none"
+                    toolbar={false}
+                    showRowCue={false}
+                  />
+                  {allTableRows.length > CAT_PAGE_SIZE && (
+                    <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
+                      <span className="text-[11px] text-neutral-400">
+                        {(catPage - 1) * CAT_PAGE_SIZE + 1}–{Math.min(catPage * CAT_PAGE_SIZE, allTableRows.length)} of {allTableRows.length} classes
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setCatPage(p => Math.max(1, p - 1))}
+                          disabled={catPage === 1}
+                          className="flex items-center justify-center w-7 h-7 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                          <button
+                            key={p}
+                            onClick={() => setCatPage(p)}
+                            className={cn(
+                              "flex items-center justify-center w-7 h-7 rounded border text-[11px] font-medium transition-colors",
+                              p === catPage
+                                ? "bg-[#00775B] border-[#00775B] text-white"
+                                : "border-neutral-200 text-neutral-500 hover:bg-neutral-50"
+                            )}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setCatPage(p => Math.min(totalPages, p + 1))}
+                          disabled={catPage === totalPages}
+                          className="flex items-center justify-center w-7 h-7 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                    ) },
-                  { id: "train",   header: "Train",   accessorKey: "train", align: "right",
-                    cell: ({ row }) => <span className="font-mono text-neutral-600">{row.train.toLocaleString()}</span> },
-                  { id: "test",    header: "Test",    accessorKey: "test",  align: "right",
-                    cell: ({ row }) => <span className="font-mono text-neutral-600">{row.test.toLocaleString()}</span>  },
-                  { id: "val",     header: "Val",     accessorKey: "val",   align: "right",
-                    cell: ({ row }) => <span className="font-mono text-neutral-600">{row.val.toLocaleString()}</span>   },
-                  { id: "total",   header: "Total",   accessorKey: "total", align: "right",
-                    cell: ({ row }) => <span className="font-mono font-bold text-neutral-800">{row.total.toLocaleString()}</span> },
-                  { id: "balance", header: "Balance", accessorKey: "trainPct",
-                    cell: ({ row }) => (
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${row.trainPct}%`, backgroundColor: CAT_COLORS[row.colorIdx % CAT_COLORS.length] }} />
-                        </div>
-                        <span className="text-[10px] font-mono text-neutral-400 w-8 text-right">{row.trainPct}%</span>
-                      </div>
-                    ) },
-                ]}
-                data={categories
-                  .filter((c) => c.name.toLowerCase().includes(catSearch.toLowerCase()))
-                  .map((c, i) => {
-                    const tot = c.train + c.test + c.val;
-                    return { id: c.name, name: c.name, train: c.train, test: c.test, val: c.val, total: tot, trainPct: Math.round((c.train / tot) * 100), colorIdx: i };
-                  })}
-                rowIdKey="id"
-                pagination="none"
-                toolbar={false}
-                showRowCue={false}
-              />
-            )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
         </Card>
-      </div>
     </div>
   );
 }
@@ -750,13 +761,17 @@ function AnalysisTab() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function DataSplittingTab({ dataset }: { dataset: Dataset }) {
-  const [train,    setTrain]    = useState(dataset.trainSplit);
-  const [val,      setVal]      = useState(dataset.valSplit);
-  const [strategy, setStrategy] = useState<"random" | "stratified" | "sequential">("stratified");
-  const [seed,     setSeed]     = useState("42");
-  const [saved,    setSaved]    = useState(false);
+  const [train,       setTrain]       = useState(dataset.trainSplit);
+  const [val,         setVal]         = useState(dataset.valSplit);
+  const [beforeTrain, setBeforeTrain] = useState(dataset.trainSplit);
+  const [beforeVal,   setBeforeVal]   = useState(dataset.valSplit);
+  const [strategy,    setStrategy]    = useState<"random" | "stratified" | "sequential">("stratified");
+  const [seed,        setSeed]        = useState("42");
+  const [saved,       setSaved]       = useState(false);
 
-  const test = Math.max(0, 100 - train - val);
+  const test       = Math.max(0, 100 - train - val);
+  const beforeTest = Math.max(0, 100 - beforeTrain - beforeVal);
+  const hasChanges = train !== beforeTrain || val !== beforeVal;
 
   const handleTrain = (v: number[]) => {
     const t = v[0];
@@ -764,7 +779,16 @@ function DataSplittingTab({ dataset }: { dataset: Dataset }) {
     setVal(Math.min(val, 100 - t));
   };
   const handleVal = (v: number[]) => setVal(Math.min(v[0], 100 - train));
-  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const handleSave = () => {
+    setBeforeTrain(train);
+    setBeforeVal(val);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+  const handleCancel = () => {
+    setTrain(beforeTrain);
+    setVal(beforeVal);
+  };
 
   const SPLIT_SEGMENTS = [
     { key: "train", label: "Train",      value: train, color: TEAL,      onChange: handleTrain, max: 90 },
@@ -776,18 +800,27 @@ function DataSplittingTab({ dataset }: { dataset: Dataset }) {
     <div className="p-6 bg-[#F8FAFC] flex flex-col gap-5 min-w-0">
       <div className="grid grid-cols-3 gap-5">
 
-        {/* Sliders card */}
+        {/* ── Sliders card ──────────────────────────────────────────────── */}
         <Card className="col-span-2 p-5 flex flex-col gap-5">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-neutral-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Split Ratios</h3>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-neutral-400" />
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Split Ratios</h3>
+            </div>
           </div>
 
-          {/* Proportional bar */}
-          <div className="flex h-3 rounded-full overflow-hidden gap-px">
-            <div className="transition-all" style={{ width: `${train}%`, backgroundColor: TEAL }} />
-            <div className="transition-all" style={{ width: `${val}%`, backgroundColor: "#0284C7" }} />
-            <div className="transition-all" style={{ width: `${test}%`, backgroundColor: "#F59E0B" }} />
+          {/* Current bar with label */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-[10px] text-neutral-400">
+              <span>Current</span>
+              <span className="font-mono">{train}% / {val}% / {test}%</span>
+            </div>
+            <div className="flex h-3 rounded-full overflow-hidden gap-px">
+              <div className="transition-all" style={{ width: `${train}%`, backgroundColor: TEAL }} />
+              <div className="transition-all" style={{ width: `${val}%`,   backgroundColor: "#0284C7" }} />
+              <div className="transition-all" style={{ width: `${test}%`,  backgroundColor: "#F59E0B" }} />
+            </div>
           </div>
 
           {/* Legend */}
@@ -803,29 +836,29 @@ function DataSplittingTab({ dataset }: { dataset: Dataset }) {
           </div>
 
           {/* Sliders */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {SPLIT_SEGMENTS.filter(s => s.onChange).map(({ key, label, value, color, onChange, max }) => (
               <div key={key} className="flex items-center gap-3">
-                <span className="text-[11px] font-medium text-neutral-600 w-20">{label}</span>
+                <span className="text-[11px] font-semibold text-neutral-700 w-20">{label}</span>
                 <div className="flex-1">
                   <Slider value={[value]} onValueChange={onChange!} min={0} max={max!} step={5}
                     className="[&_.bg-primary]:bg-[#00775B] [&_.border-primary]:border-[#00775B]" />
                 </div>
-                <span className="text-[12px] font-mono font-bold w-8 text-right" style={{ color }}>{value}%</span>
+                <span className="text-[13px] font-black font-mono w-10 text-right" style={{ color }}>{value}%</span>
               </div>
             ))}
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-medium text-neutral-400 w-20">Test (auto)</span>
               <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${test}%`, backgroundColor: "#F59E0B" }} />
+                <div className="h-full rounded-full transition-all" style={{ width: `${test}%`, backgroundColor: "#F59E0B" }} />
               </div>
-              <span className="text-[12px] font-mono font-bold w-8 text-right text-[#F59E0B]">{test}%</span>
+              <span className="text-[13px] font-black font-mono w-10 text-right text-[#F59E0B]">{test}%</span>
             </div>
-            <p className="text-[10px] text-neutral-400">Test split is calculated automatically (100 − Train − Val)</p>
+            <p className="text-[10px] text-neutral-400 -mt-1">Test split is calculated automatically (100 − Train − Val)</p>
           </div>
 
-          {/* Seed */}
-          <div className="grid grid-cols-2 gap-4 pt-1 border-t border-neutral-100">
+          {/* Seed + Strategy */}
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-neutral-100">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-neutral-600">Random Seed</label>
               <Input value={seed} onChange={(e) => setSeed(e.target.value)} className="h-9 text-sm font-mono" placeholder="42" />
@@ -844,28 +877,88 @@ function DataSplittingTab({ dataset }: { dataset: Dataset }) {
           </div>
         </Card>
 
-        {/* Summary card */}
-        <Card className="p-5 flex flex-col gap-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Configuration</p>
-          {[
-            { label: "Strategy",    value: strategy.charAt(0).toUpperCase() + strategy.slice(1) },
-            { label: "Seed",        value: seed || "42" },
-            { label: "Total Items", value: dataset.itemCount.toLocaleString() },
-            { label: "Est. Train",  value: Math.round(dataset.itemCount * train / 100).toLocaleString() },
-            { label: "Est. Val",    value: Math.round(dataset.itemCount * val   / 100).toLocaleString() },
-            { label: "Est. Test",   value: Math.round(dataset.itemCount * test  / 100).toLocaleString() },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex items-center justify-between py-1.5 border-b border-neutral-50 last:border-0">
-              <span className="text-[11px] text-neutral-500">{label}</span>
-              <span className="text-[11px] font-mono font-semibold text-neutral-800">{value}</span>
+        {/* ── Before / Current + Config card ────────────────────────────── */}
+        <Card className="p-5 flex flex-col gap-4">
+
+          {/* BEFORE */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Before</p>
+            <div className="flex h-2 rounded-full overflow-hidden gap-px">
+              <div style={{ width: `${beforeTrain}%`, backgroundColor: TEAL }}      className="transition-all" />
+              <div style={{ width: `${beforeVal}%`,   backgroundColor: "#0284C7" }} className="transition-all" />
+              <div style={{ width: `${beforeTest}%`,  backgroundColor: "#F59E0B" }} className="transition-all" />
             </div>
-          ))}
+            <div className="flex flex-col gap-1.5 mt-1">
+              {[
+                { label: "Train",      pct: beforeTrain, count: Math.round(dataset.itemCount * beforeTrain / 100), color: TEAL      },
+                { label: "Validation", pct: beforeVal,   count: Math.round(dataset.itemCount * beforeVal   / 100), color: "#0284C7" },
+                { label: "Test",       pct: beforeTest,  count: Math.round(dataset.itemCount * beforeTest  / 100), color: "#F59E0B" },
+              ].map(({ label, pct, count, color }) => (
+                <div key={label} className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                    <span className="text-neutral-500">{label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-neutral-400 font-mono">{count.toLocaleString()}</span>
+                    <span className="font-bold font-mono w-8 text-right" style={{ color }}>{pct}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CURRENT */}
+          <div className="flex flex-col gap-2 pt-3 border-t border-neutral-100">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Current</p>
+            <div className="flex h-2 rounded-full overflow-hidden gap-px">
+              <div style={{ width: `${train}%`, backgroundColor: TEAL }}      className="transition-all" />
+              <div style={{ width: `${val}%`,   backgroundColor: "#0284C7" }} className="transition-all" />
+              <div style={{ width: `${test}%`,  backgroundColor: "#F59E0B" }} className="transition-all" />
+            </div>
+            <div className="flex flex-col gap-1.5 mt-1">
+              {[
+                { label: "Train",      pct: train, color: TEAL      },
+                { label: "Validation", pct: val,   color: "#0284C7" },
+                { label: "Test",       pct: test,  color: "#F59E0B" },
+              ].map(({ label, pct, color }) => (
+                <div key={label} className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                    <span className="text-neutral-500">{label}</span>
+                  </div>
+                  <span className="font-bold font-mono" style={{ color }}>{pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Config rows */}
+          <div className="flex flex-col gap-0 pt-3 border-t border-neutral-100">
+            {[
+              { label: "Strategy",    value: strategy.charAt(0).toUpperCase() + strategy.slice(1) },
+              { label: "Seed",        value: seed || "42" },
+              { label: "Total Items", value: dataset.itemCount.toLocaleString() },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-center justify-between py-2 border-b border-neutral-50 last:border-0">
+                <span className="text-[11px] text-neutral-400">{label}</span>
+                <span className="text-[11px] font-semibold text-neutral-700">{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Save */}
           <button
             onClick={handleSave}
-            className={cn("mt-auto flex items-center justify-center gap-2 h-9 px-5 rounded-md text-sm font-semibold text-white transition-all",
-              saved ? "bg-emerald-500" : "bg-[#00775B] hover:bg-[#006649]")}
+            disabled={!hasChanges && !saved}
+            className={cn(
+              "mt-auto flex items-center justify-center gap-2 h-9 px-5 rounded-md text-sm font-semibold transition-all",
+              saved      ? "bg-emerald-500 text-white" :
+              hasChanges ? "bg-[#00775B] hover:bg-[#006649] text-white" :
+                           "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+            )}
           >
-            {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : "Save Configuration"}
+            {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : "Save"}
           </button>
         </Card>
       </div>
@@ -1028,253 +1121,272 @@ const ANNOTATION_ITEMS = PREVIEW_ITEMS.map((item, i) => ({
 }));
 
 function AnnotationTab() {
-  const [selectedId,    setSelectedId]    = useState<number | null>(null);
-  const [splitFilter,   setSplitFilter]   = useState("all");
-  const [classFilter,   setClassFilter]   = useState("all");
-  const [statusFilter,  setStatusFilter]  = useState("all");
-  const [viewMode,      setViewMode]      = useState<"grid" | "list">("grid");
-  const [activeTool,    setActiveTool]    = useState("rect");
-  const [activeClass,   setActiveClass]   = useState("benign");
+  const [createNewVersion, setCreateNewVersion] = useState(false);
+  const [labelMode,        setLabelMode]        = useState<"add" | "upload">("add");
+  const [annotMode,        setAnnotMode]        = useState<"human" | "ml">("human");
+  const [labelInput,       setLabelInput]       = useState("");
+  const [labels,           setLabels]           = useState(["apple", "banana", "cake", "hot dog", "orange", "carrot", "pizza", "sandwich", "broccoli", "donut", "burger", "sushi", "taco", "hotdog"]);
+  const [guidelines,       setGuidelines]       = useState("");
+  const [labelers,         setLabelers]         = useState([{ id: 1, assignee: "", pct: "100" }]);
+  const [reviewers,        setReviewers]        = useState([{ id: 1, assignee: "", pct: "100" }]);
+  const [labelerOpen,      setLabelerOpen]      = useState<Record<number, boolean>>({ 1: true });
+  const [reviewerOpen,     setReviewerOpen]     = useState<Record<number, boolean>>({ 1: true });
 
-  const filtered = ANNOTATION_ITEMS.filter((item) => {
-    if (splitFilter  !== "all" && item.split             !== splitFilter)  return false;
-    if (classFilter  !== "all" && item.label             !== classFilter)  return false;
-    if (statusFilter !== "all" && item.annotationStatus  !== statusFilter) return false;
-    return true;
-  });
+  const VISIBLE_LABELS = 5;
+  const [showAllLabels, setShowAllLabels] = useState(false);
+  const visibleLabels = showAllLabels ? labels : labels.slice(0, VISIBLE_LABELS);
+  const extraCount = labels.length - VISIBLE_LABELS;
 
-  // ── Editor view (opened on image click) ──────────────────────────────────────
-  if (selectedId !== null) {
-    const item = ANNOTATION_ITEMS[selectedId];
-    return (
-      <div className="flex h-full bg-[#F8FAFC] min-w-0 overflow-hidden">
-        {/* Tool palette */}
-        <div className="w-14 flex-shrink-0 bg-[#021d18] flex flex-col items-center gap-2 pt-4 pb-4">
-          {ANNOTATION_TOOLS.map(({ id, icon, label }) => (
-            <button key={id} title={label} onClick={() => setActiveTool(id)}
-              className={cn("w-9 h-9 rounded-md flex items-center justify-center text-lg transition-colors",
-                activeTool === id ? "bg-[#00775B] text-white" : "text-neutral-400 hover:bg-white/10 hover:text-white")}>
-              {icon}
-            </button>
-          ))}
-          <div className="mt-auto flex flex-col gap-2">
-            <button title="Zoom In"  className="w-9 h-9 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 flex items-center justify-center font-bold text-lg">+</button>
-            <button title="Zoom Out" className="w-9 h-9 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 flex items-center justify-center font-bold text-lg">−</button>
-          </div>
-        </div>
+  const addLabel = () => {
+    const trimmed = labelInput.trim();
+    if (trimmed && !labels.includes(trimmed)) {
+      setLabels(prev => [...prev, trimmed]);
+    }
+    setLabelInput("");
+  };
+  const removeLabel = (l: string) => setLabels(prev => prev.filter(x => x !== l));
 
-        {/* Canvas area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-neutral-200 bg-white text-[11px]">
-            <button onClick={() => setSelectedId(null)} className="text-neutral-400 hover:text-[#00775B] transition-colors">← Back</button>
-            <span className="text-neutral-300">|</span>
-            <span className="text-neutral-500 font-mono">IMG_{String(selectedId + 1).padStart(4, "0")}.jpg</span>
-            <span className="text-neutral-300">|</span>
-            <span className="text-neutral-400">{selectedId + 1} of {ANNOTATION_ITEMS.length}</span>
-            <div className="ml-auto flex items-center gap-2">
-              {(() => { const sc = ANNOT_STATUS_STYLE[item.annotationStatus]; return (
-                <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-semibold border", sc.bg, sc.text, sc.border)}>{sc.label}</span>
-              ); })()}
-              <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-semibold",
-                activeClass === "benign" ? "bg-[#E5FFF9] text-[#00775B]" : "bg-amber-50 text-amber-600")}>{activeClass}</span>
-              <button className="h-6 px-2.5 rounded-[4px] bg-[#00775B] text-white text-[10px] font-semibold hover:bg-[#006649] transition-colors">Save</button>
-            </div>
-          </div>
-          <div className="flex-1 bg-neutral-800 relative overflow-hidden flex items-center justify-center">
-            <div className="relative"
-              style={{ width: 480, height: 480, background: `radial-gradient(circle at 40% 40%, hsl(${item.hue}, 60%, 20%), hsl(${item.hue + 20}, 50%, 12%))` }}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="rounded-full opacity-60"
-                  style={{ width: "55%", height: "55%", background: `radial-gradient(circle, hsl(${item.hue + 5}, 55%, 12%), hsl(${item.hue}, 40%, 7%))` }} />
-              </div>
-              <div className="absolute border-2 border-[#00775B] rounded"
-                style={{ top: "20%", left: "18%", width: "60%", height: "58%" }}>
-                <span className="absolute -top-5 left-0 bg-[#00775B] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-t">{item.label}</span>
-                <div className="absolute -top-1 -left-1 w-2 h-2 bg-[#00775B] rounded-sm" />
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#00775B] rounded-sm" />
-                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#00775B] rounded-sm" />
-                <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#00775B] rounded-sm" />
-              </div>
-            </div>
-          </div>
-        </div>
+  const LABELER_OPTIONS = ["Alice Chen", "Bob Kumar", "Carol Wu", "David Lee", "Emma Patel"];
+  const REVIEWER_OPTIONS = ["Frank Zhang", "Grace Kim", "Henry Osei", "Iris Müller"];
 
-        {/* Right panel: Labels + Annotations */}
-        <div className="w-56 flex-shrink-0 border-l border-neutral-200 bg-white flex flex-col">
-          <div className="px-4 py-3 border-b border-neutral-100">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Labels</p>
-          </div>
-          <div className="p-3 flex flex-col gap-2">
-            {["benign", "malignant"].map((cls) => (
-              <button key={cls} onClick={() => setActiveClass(cls)}
-                className={cn("flex items-center gap-2 px-3 py-2 rounded-md text-[12px] font-medium transition-colors w-full text-left",
-                  activeClass === cls ? "bg-[#E5FFF9] text-[#00775B] border border-[#00775B]/20" : "hover:bg-neutral-50 text-neutral-600 border border-transparent")}>
-                <span className="w-3 h-3 rounded-sm flex-shrink-0"
-                  style={{ backgroundColor: cls === "benign" ? TEAL : "#F59E0B" }} />
-                {cls}
-              </button>
-            ))}
-          </div>
-          <div className="px-4 py-3 border-y border-neutral-100 mt-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Annotations</p>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-            <div className="flex items-center justify-between px-2 py-1.5 bg-[#E5FFF9] rounded-[4px] text-[11px]">
-              <span className="font-medium text-[#00775B]">{item.label} #1</span>
-              <button className="text-neutral-400 hover:text-red-500"><X className="w-3 h-3" /></button>
-            </div>
-          </div>
-          <div className="p-3 border-t border-neutral-100">
-            <button
-              onClick={() => setSelectedId((selectedId + 1) % ANNOTATION_ITEMS.length)}
-              className="w-full h-8 rounded-[4px] bg-[#00775B] text-white text-xs font-semibold hover:bg-[#006649] transition-colors">
-              Save &amp; Next →
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Grid view ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full bg-[#F8FAFC] min-w-0">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-neutral-200 bg-white flex-wrap">
-        <div className="flex items-center gap-3">
-          {([
-            { label: "Split",  value: splitFilter,  onChange: setSplitFilter,  options: [{ v: "all", l: "All" }, { v: "train", l: "Train" }, { v: "test", l: "Test" }, { v: "val", l: "Validation" }] },
-            { label: "Class",  value: classFilter,  onChange: setClassFilter,  options: [{ v: "all", l: "All" }, { v: "benign", l: "Benign" }, { v: "malignant", l: "Malignant" }] },
-            { label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ v: "all", l: "All" }, { v: "labelled", l: "Labelled" }, { v: "unlabelled", l: "Unlabelled" }, { v: "assigned", l: "Assigned" }] },
-          ] as const).map(({ label, value, onChange, options }) => (
-            <div key={label} className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{label}</span>
-              <Select value={value} onValueChange={onChange as (v: string) => void}>
-                <SelectTrigger className="h-8 w-36 text-[11px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {options.map(({ v, l }) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          ))}
-        </div>
-        {/* Status summary pills + view toggle */}
-        <div className="ml-auto flex items-center gap-2">
-          {(["labelled", "unlabelled", "assigned"] as const).map((s) => {
-            const sc = ANNOT_STATUS_STYLE[s];
-            const count = ANNOTATION_ITEMS.filter((i) => i.annotationStatus === s).length;
-            return (
-              <span key={s} className={cn("inline-flex items-center gap-1.5 h-6 px-2.5 rounded-[4px] text-[10px] font-semibold border", sc.bg, sc.text, sc.border)}>
-                {sc.label} <span className="opacity-60">{count}</span>
-              </span>
-            );
-          })}
-          <div className="flex items-center gap-1 bg-neutral-100 rounded-md p-0.5 ml-2">
-            <button onClick={() => setViewMode("grid")}
-              className={cn("p-1.5 rounded transition-colors", viewMode === "grid" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={() => setViewMode("list")}
-              className={cn("p-1.5 rounded transition-colors", viewMode === "list" ? "bg-white shadow-sm text-neutral-800" : "text-neutral-400")}>
-              <List className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="p-6 bg-[#F8FAFC] min-w-0">
+      <div className="grid grid-cols-[1fr_380px] gap-5">
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5">
-        {viewMode === "grid" ? (
-          <div className="grid grid-cols-4 gap-3">
-            {filtered.map((item) => {
-              const sc = ANNOT_STATUS_STYLE[item.annotationStatus];
-              return (
-                <div key={item.id}
-                  onClick={() => setSelectedId(item.id)}
-                  className="relative rounded-[4px] overflow-hidden border border-neutral-200 shadow-sm group cursor-pointer hover:shadow-md hover:border-[#00775B]/40 transition-all">
-                  <div className="aspect-square relative overflow-hidden"
-                    style={{ background: `radial-gradient(circle at 40% 40%, hsl(${item.hue}, 60%, 25%), hsl(${item.hue + 20}, 50%, 12%))` }}>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="rounded-full opacity-60"
-                        style={{ width: "60%", height: "60%", background: `radial-gradient(circle, hsl(${item.hue + 5}, 55%, 15%), hsl(${item.hue}, 40%, 8%))` }} />
-                    </div>
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="h-7 px-3 rounded-[4px] bg-white/90 text-neutral-800 text-[11px] font-semibold">Annotate</span>
-                    </div>
-                    <div className="absolute top-2 left-2">
-                      <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[9px] font-semibold border", sc.bg, sc.text, sc.border)}>
-                        {sc.label}
-                      </span>
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[9px] font-semibold",
-                        item.label === "benign" ? "bg-[#00775B] text-white" : "bg-amber-500 text-white")}>
-                        {item.label}
-                      </span>
-                    </div>
+        {/* ── Left: Labels + Annotation setup ─────────────────────────── */}
+        <div className="flex flex-col gap-4">
+
+          {/* Create New Version toggle */}
+          <Card className="px-5 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-[13px] font-semibold text-neutral-800">Create New Version</p>
+              <p className="text-[11px] text-neutral-400 mt-0.5">Save annotation changes as a new dataset version</p>
+            </div>
+            <Switch checked={createNewVersion} onCheckedChange={setCreateNewVersion} className="[&[data-state=unchecked]]:bg-neutral-300" />
+          </Card>
+
+          {/* Label management */}
+          <Card className="overflow-hidden">
+            {/* Mode tabs */}
+            <div className="flex border-b border-neutral-100">
+              {([
+                { id: "add",    label: "Add Labels",    sub: "Add labels manually"        },
+                { id: "upload", label: "Upload Labels",  sub: "Supported formats: .txt"    },
+              ] as const).map(({ id, label, sub }) => (
+                <button
+                  key={id}
+                  onClick={() => setLabelMode(id)}
+                  className={cn(
+                    "flex-1 px-5 py-3 text-left transition-colors border-r border-neutral-100 last:border-0",
+                    labelMode === id ? "bg-[#E5FFF9]" : "hover:bg-neutral-50"
+                  )}
+                >
+                  <p className={cn("text-[12px] font-semibold", labelMode === id ? "text-[#00775B]" : "text-neutral-700")}>{label}</p>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">{sub}</p>
+                </button>
+              ))}
+            </div>
+
+            <div className="p-5 flex flex-col gap-4">
+              {labelMode === "add" ? (
+                <>
+                  {/* Input row */}
+                  <div className="flex gap-2">
+                    <input
+                      className="flex-1 h-10 px-3 text-[13px] rounded-md border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]"
+                      placeholder="Add Label"
+                      value={labelInput}
+                      onChange={e => setLabelInput(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && addLabel()}
+                    />
+                    <button
+                      onClick={addLabel}
+                      className="h-10 px-5 rounded-md bg-[#00775B] hover:bg-[#006649] text-white text-[13px] font-semibold transition-colors"
+                    >
+                      Add
+                    </button>
                   </div>
-                  <div className="px-2.5 py-2 bg-white border-t border-neutral-100">
-                    <p className="text-[10px] font-mono text-neutral-400">IMG_{String(item.id + 1).padStart(4, "0")}.jpg</p>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-[9px] uppercase tracking-wide text-neutral-400">{item.split}</span>
-                      <span className="text-[9px] text-neutral-300">224×224</span>
+
+                  {/* Tag chips */}
+                  <div className="flex flex-wrap gap-2">
+                    {visibleLabels.map(l => (
+                      <span key={l} className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full border border-neutral-200 bg-white text-[11px] text-neutral-700 font-medium">
+                        {l}
+                        <button onClick={() => removeLabel(l)} className="text-neutral-400 hover:text-red-500 transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    {!showAllLabels && extraCount > 0 && (
+                      <button
+                        onClick={() => setShowAllLabels(true)}
+                        className="inline-flex items-center h-7 px-3 rounded-full bg-[#00775B] text-white text-[11px] font-semibold"
+                      >
+                        +{extraCount} more
+                      </button>
+                    )}
+                    {showAllLabels && (
+                      <button
+                        onClick={() => setShowAllLabels(false)}
+                        className="inline-flex items-center h-7 px-3 rounded-full border border-neutral-200 bg-neutral-50 text-[11px] text-neutral-500 font-medium"
+                      >
+                        Show less
+                      </button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="border-2 border-dashed border-neutral-200 rounded-md p-8 flex flex-col items-center gap-2 text-center cursor-pointer hover:border-[#00775B]/40 hover:bg-[#E5FFF9]/30 transition-colors">
+                  <CloudUpload className="w-8 h-8 text-neutral-300" />
+                  <p className="text-[13px] font-medium text-neutral-600">Drop a .txt file or click to browse</p>
+                  <p className="text-[11px] text-neutral-400">One label per line</p>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Annotation method */}
+          <Card className="overflow-hidden">
+            {/* Mode tabs */}
+            <div className="flex border-b border-neutral-100">
+              {([
+                { id: "human", label: "Human",       sub: "Add annotation manually"  },
+                { id: "ml",    label: "ML Assisted", sub: "Add annotation using ML"  },
+              ] as const).map(({ id, label, sub }) => (
+                <button
+                  key={id}
+                  onClick={() => setAnnotMode(id)}
+                  className={cn(
+                    "flex-1 px-5 py-3 text-left transition-colors border-r border-neutral-100 last:border-0",
+                    annotMode === id ? "bg-[#E5FFF9]" : "hover:bg-neutral-50"
+                  )}
+                >
+                  <p className={cn("text-[12px] font-semibold", annotMode === id ? "text-[#00775B]" : "text-neutral-700")}>{label}</p>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">{sub}</p>
+                </button>
+              ))}
+            </div>
+
+            <div className="p-5 flex flex-col gap-3">
+              {labelers.map((labeler, idx) => (
+                <div key={labeler.id} className="border border-neutral-100 rounded-md overflow-hidden">
+                  <button
+                    onClick={() => setLabelerOpen(o => ({ ...o, [labeler.id]: !o[labeler.id] }))}
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-neutral-50 hover:bg-neutral-100 transition-colors"
+                  >
+                    <span className="text-[12px] font-semibold text-neutral-700">Labeler {idx + 1}</span>
+                    <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", labelerOpen[labeler.id] ? "rotate-180" : "")} />
+                  </button>
+                  {labelerOpen[labeler.id] && (
+                    <div className="p-4 flex flex-col gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-medium text-neutral-500">Assign a Labeler</label>
+                        <Select value={labeler.assignee} onValueChange={v => setLabelers(ls => ls.map(l => l.id === labeler.id ? { ...l, assignee: v } : l))}>
+                          <SelectTrigger className="h-9 text-[12px]"><SelectValue placeholder="Assign a Labeler" /></SelectTrigger>
+                          <SelectContent>
+                            {LABELER_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-medium text-neutral-500">Percentage to Label</label>
+                        <Input
+                          value={labeler.pct}
+                          onChange={e => setLabelers(ls => ls.map(l => l.id === labeler.id ? { ...l, pct: e.target.value } : l))}
+                          className="h-9 text-sm font-mono"
+                          type="number"
+                          min={1}
+                          max={100}
+                        />
+                      </div>
                     </div>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={() => setLabelers(ls => { const id = Math.max(...ls.map(l => l.id)) + 1; setLabelerOpen(o => ({ ...o, [id]: true })); return [...ls, { id, assignee: "", pct: "100" }]; })}
+                className="flex items-center justify-center gap-1.5 h-9 rounded-md border border-dashed border-neutral-200 text-[12px] text-neutral-500 hover:border-[#00775B]/40 hover:text-[#00775B] hover:bg-[#E5FFF9]/30 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Another
+              </button>
+            </div>
+          </Card>
+        </div>
+
+        {/* ── Right: Guidelines + Reviewers ────────────────────────────── */}
+        <div className="flex flex-col gap-4">
+
+          {/* Annotation Guidelines */}
+          <Card className="p-5 flex flex-col gap-3">
+            <p className="text-[13px] font-semibold text-neutral-800">Annotation Guidelines</p>
+            <Textarea
+              value={guidelines}
+              onChange={e => setGuidelines(e.target.value)}
+              placeholder="Annotation Guidelines"
+              className="min-h-[140px] text-[12px] resize-none"
+            />
+          </Card>
+
+          {/* Reviewers */}
+          <Card className="p-5 flex flex-col gap-3">
+            {reviewers.map((reviewer, idx) => (
+              <div key={reviewer.id} className="border border-neutral-100 rounded-md overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-neutral-50">
+                  <span className="text-[12px] font-semibold text-neutral-700">Reviewer {idx + 1}</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setReviewers(rs => rs.filter(r => r.id !== reviewer.id))}
+                      className="h-6 px-2.5 rounded-[4px] bg-[#00775B] text-white text-[10px] font-semibold hover:bg-[#006649] transition-colors"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setReviewerOpen(o => ({ ...o, [reviewer.id]: !o[reviewer.id] }))}
+                      className="w-6 h-6 flex items-center justify-center rounded text-neutral-400 hover:bg-neutral-200 transition-colors"
+                    >
+                      <ChevronDown className={cn("w-4 h-4 transition-transform", reviewerOpen[reviewer.id] ? "rotate-180" : "")} />
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <DataTable<{ id: number; idx: number; label: string; split: string; annotationStatus: AnnotationStatus }>
-            columns={[
-              { id: "idx",      header: "#",        accessorKey: "idx",
-                cell: ({ row }) => <span className="font-mono text-[10px] text-neutral-400">{row.idx}</span> },
-              { id: "filename", header: "Filename", accessorKey: "id",
-                cell: ({ row }) => (
-                  <button onClick={() => setSelectedId(row.id)}
-                    className="font-mono text-[11px] text-[#00775B] hover:underline cursor-pointer">
-                    IMG_{String(row.idx).padStart(4, "0")}.jpg
-                  </button>
-                ) },
-              { id: "class",    header: "Class",    accessorKey: "label",
-                cell: ({ row }) => (
-                  <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-semibold",
-                    row.label === "benign" ? "bg-[#E5FFF9] text-[#00775B]" : "bg-amber-50 text-amber-700")}>
-                    {row.label}
-                  </span>
-                ) },
-              { id: "status",   header: "Status",   accessorKey: "annotationStatus",
-                cell: ({ row }) => {
-                  const sc = ANNOT_STATUS_STYLE[row.annotationStatus];
-                  return (
-                    <span className={cn("inline-flex items-center h-5 px-2 rounded-[4px] text-[10px] font-semibold border", sc.bg, sc.text, sc.border)}>
-                      {sc.label}
-                    </span>
-                  );
-                } },
-              { id: "split",    header: "Split",    accessorKey: "split",
-                cell: ({ row }) => <span className="text-[11px] text-neutral-500 capitalize">{row.split}</span> },
-              { id: "dims",     header: "Dimensions", accessorKey: "id",
-                cell: () => <span className="font-mono text-[10px] text-neutral-400">224×224</span> },
-              { id: "action",   header: "",           accessorKey: "id",
-                cell: ({ row }) => (
-                  <button onClick={() => setSelectedId(row.id)}
-                    className="h-6 px-2.5 rounded-[4px] bg-[#00775B]/10 text-[#00775B] text-[10px] font-semibold hover:bg-[#00775B]/20 transition-colors">
-                    Annotate
-                  </button>
-                ) },
-            ]}
-            data={filtered.map((item) => ({ ...item, idx: item.id + 1 }))}
-            rowIdKey="id"
-            pagination="client"
-            pageSize={24}
-            showRowCue={false}
-          />
-        )}
+                {reviewerOpen[reviewer.id] && (
+                  <div className="p-4 flex flex-col gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-medium text-neutral-500">Assign a Reviewer</label>
+                      <Select value={reviewer.assignee} onValueChange={v => setReviewers(rs => rs.map(r => r.id === reviewer.id ? { ...r, assignee: v } : r))}>
+                        <SelectTrigger className="h-9 text-[12px]"><SelectValue placeholder="Assign a Reviewer" /></SelectTrigger>
+                        <SelectContent>
+                          {REVIEWER_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-medium text-neutral-500">Percentage to Review</label>
+                      <Input
+                        value={reviewer.pct}
+                        onChange={e => setReviewers(rs => rs.map(r => r.id === reviewer.id ? { ...r, pct: e.target.value } : r))}
+                        className="h-9 text-sm font-mono"
+                        type="number"
+                        min={1}
+                        max={100}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={() => setReviewers(rs => { const id = Math.max(...rs.map(r => r.id)) + 1; setReviewerOpen(o => ({ ...o, [id]: true })); return [...rs, { id, assignee: "", pct: "100" }]; })}
+              className="flex items-center justify-center gap-1.5 h-9 rounded-md border border-dashed border-neutral-200 text-[12px] text-neutral-500 hover:border-[#00775B]/40 hover:text-[#00775B] hover:bg-[#E5FFF9]/30 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Another
+            </button>
+          </Card>
+        </div>
       </div>
     </div>
   );
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB 7 — AUGMENTATION
@@ -1326,7 +1438,7 @@ function AugmentationTab() {
         <div className="px-4 py-3.5 border-b border-neutral-100">
           <div className="flex items-center justify-between mb-3">
             <Label className="text-[12px] font-semibold text-neutral-700">New Version</Label>
-            <Switch checked={newVersion} onCheckedChange={setNewVersion} />
+            <Switch checked={newVersion} onCheckedChange={setNewVersion} className="[&[data-state=unchecked]]:bg-neutral-300" />
           </div>
           {newVersion && (
             <div className="flex flex-col gap-1.5">
@@ -1345,7 +1457,7 @@ function AugmentationTab() {
           </div>
           <div className="flex items-center justify-between">
             <Label className="text-[12px] text-neutral-600">Auto Select</Label>
-            <Switch checked={autoSelect} onCheckedChange={setAutoSelect} />
+            <Switch checked={autoSelect} onCheckedChange={setAutoSelect} className="[&[data-state=unchecked]]:bg-neutral-300" />
           </div>
         </div>
 
@@ -1523,7 +1635,7 @@ function ImageGenerationTab() {
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <Label className="text-[12px] font-semibold text-neutral-700">New Version</Label>
-              <Switch checked={newVersion} onCheckedChange={setNewVersion} />
+              <Switch checked={newVersion} onCheckedChange={setNewVersion} className="[&[data-state=unchecked]]:bg-neutral-300" />
             </div>
             {newVersion && (
               <div className="flex flex-col gap-1.5">
