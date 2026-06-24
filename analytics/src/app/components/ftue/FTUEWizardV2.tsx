@@ -1221,7 +1221,7 @@ function Step4Accordion({ cameras, setCameraApps, t }: {
   const [expandedId, setExpandedId] = useState<string | null>(cameras[0]?.id ?? null);
   const allAssigned = cameras.every(c => c.apps.size > 0);
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-[8px] p-4" style={{ backgroundColor: "#F8FAFC" }}>
       {!allAssigned && (
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-[6px] mb-2"
           style={{ background: t.isDark ? "rgba(0,119,91,0.08)" : "#F0FDF8", border: `1px solid ${t.isDark ? "rgba(0,119,91,0.25)" : "rgba(0,119,91,0.2)"}` }}>

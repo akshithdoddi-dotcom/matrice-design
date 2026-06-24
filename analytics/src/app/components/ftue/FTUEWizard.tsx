@@ -592,63 +592,90 @@ export function CameraAppRow({
   const hasApps = selectedApps.size > 0;
 
   return (
-    <div className={cn("rounded-[6px] border overflow-hidden", hasApps ? "border-[#00775B]/30" : "border-[#F59E0B]/40")}>
+    <div className={cn("rounded-[8px] overflow-hidden transition-all duration-200")}
+      style={{
+        backgroundColor: "#FFFFFF",
+        border: `1px solid ${hasApps ? "rgba(0,119,91,0.2)" : "rgba(245,158,11,0.35)"}`,
+        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 10px 15px -3px rgba(0,0,0,0.08)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)"; }}
+    >
+      {/* Collapsed header — identity pane left + count right */}
       <button type="button" onClick={() => onExpand ? onExpand() : setLocalExpanded(v => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-[#FAFAFA] transition-colors text-left" style={INTER}>
-        <div className={cn("w-2 h-2 rounded-full shrink-0 mt-0.5", hasApps ? "bg-[#00775B]" : "bg-[#F59E0B]")} />
-        <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold text-[#0F172A] truncate">{camera.name}</div>
-          <div className="text-[11px] text-[#94A3B8]">{camera.location}</div>
-          {selectedApps.size > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5" style={{ maxWidth: "min(100%, 480px)" }}>
-              {[...selectedApps].map(appId => {
-                const app = AI_APPS.find(a => a.id === appId);
-                if (!app) return null;
-                const Icon = app.icon;
-                return (
-                  <span key={appId} className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px]"
-                    style={{ ...INTER, background: "#00775B15", color: "#00775B" }}>
-                    <Icon className="w-2.5 h-2.5" />
-                    {app.label}
-                  </span>
-                );
-              })}
-            </div>
-          )}
+        className="w-full flex items-center gap-0 text-left transition-colors" style={INTER}>
+
+        {/* Left identity zone */}
+        <div className="flex items-center gap-3 px-5 py-4" style={{ minWidth: "220px", backgroundColor: "#F8FAFC", borderRight: "1px solid #E2E8F0" }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00956D"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+          <div className="min-w-0">
+            <div className="text-[13px] font-semibold text-[#0F172A] truncate">{camera.name}</div>
+            <div className="text-[10px] font-semibold text-[#94A3B8] mt-0.5" style={{ letterSpacing: "0.03em" }}>{camera.location}</div>
+          </div>
         </div>
-        {hasApps ? (
-          <span className="shrink-0 text-[11px] font-semibold text-[#00775B] bg-[#E5FFF9] px-2.5 py-1 rounded-full">
-            {selectedApps.size} app{selectedApps.size !== 1 ? "s" : ""}
-          </span>
-        ) : (
-          <span className="shrink-0 text-[11px] font-semibold text-[#F59E0B] bg-[#FFF8E5] px-2.5 py-1 rounded-full">
-            ⚠ Add 1+ app
-          </span>
-        )}
-        <ChevronDown className={cn("w-4 h-4 text-[#94A3B8] shrink-0 transition-transform duration-150", expanded && "rotate-180")} />
+
+        {/* Right: selected app chips + count + chevron */}
+        <div className="flex-1 flex items-center gap-3 px-5 py-4 bg-white min-w-0">
+          <div className="flex-1 min-w-0">
+            {selectedApps.size > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {[...selectedApps].map(appId => {
+                  const app = AI_APPS.find(a => a.id === appId);
+                  if (!app) return null;
+                  const Icon = app.icon;
+                  return (
+                    <span key={appId} className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px]"
+                      style={{ ...INTER, background: "rgba(0,149,109,0.07)", color: "#00956D", border: "1px solid rgba(0,149,109,0.15)" }}>
+                      <Icon className="w-2.5 h-2.5" />
+                      {app.label}
+                    </span>
+                  );
+                })}
+              </div>
+            ) : (
+              <span className="text-[12px] text-[#CBD5E1]" style={INTER}>No applications assigned yet</span>
+            )}
+          </div>
+          {hasApps ? (
+            <span className="shrink-0 text-[11px] font-semibold text-[#00956D] px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: "rgba(0,149,109,0.08)", border: "1px solid rgba(0,149,109,0.2)" }}>
+              {selectedApps.size} app{selectedApps.size !== 1 ? "s" : ""}
+            </span>
+          ) : (
+            <span className="shrink-0 text-[11px] font-semibold text-[#F59E0B] bg-[#FFF8E5] px-2.5 py-1 rounded-full">
+              ⚠ Add 1+
+            </span>
+          )}
+          <ChevronDown className={cn("w-4 h-4 text-[#CBD5E1] shrink-0 transition-transform duration-150", expanded && "rotate-180")} />
+        </div>
       </button>
 
       {expanded && (
         <div className="border-t border-[#E2E8F0]">
-          <div className="px-3 pt-3 pb-2 border-b border-[#F1F5F9]">
+          {/* Search + filters */}
+          <div className="px-4 pt-3 pb-2.5 border-b border-[#F1F5F9]" style={{ backgroundColor: "#FAFAFA" }}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
               <input type="text" value={appSearch} onChange={e => setAppSearch(e.target.value)}
                 placeholder="Search applications…" style={INTER}
-                className="w-full h-8 pl-9 pr-4 rounded-[4px] border border-[#E2E8F0] bg-[#FAFAFA] text-[12px] text-[#334155] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#00775B] transition-all" />
+                className="w-full h-8 pl-9 pr-4 rounded-[4px] border border-[#E2E8F0] bg-white text-[12px] text-[#334155] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#00956D] transition-all" />
               {appSearch && <button onClick={() => setAppSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2"><X className="w-3 h-3 text-[#94A3B8]" /></button>}
             </div>
             <div className="flex gap-1.5 mt-2 flex-wrap">
               {CATEGORIES.map(cat => (
                 <button key={cat} onClick={() => setActiveCategory(cat)} style={INTER}
                   className={cn("h-6 px-2.5 rounded-full text-[11px] font-semibold transition-all",
-                    activeCategory === cat ? "bg-[#00775B] text-white" : "bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0]")}>
+                    activeCategory === cat ? "bg-[#00956D] text-white" : "bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0]")}>
                   {cat}
                 </button>
               ))}
             </div>
           </div>
-          <div className="overflow-y-auto" style={{ maxHeight: "220px" }}>
+          {/* App grid */}
+          <div className="overflow-y-auto" style={{ maxHeight: "220px", backgroundColor: "#FFFFFF" }}>
             {filteredApps.length === 0 ? (
               <div className="py-8 flex flex-col items-center gap-1" style={INTER}>
                 <Search className="w-7 h-7 text-[#CBD5E1]" />
@@ -664,17 +691,18 @@ export function CameraAppRow({
                       onClick={() => { const n = new Set(selectedApps); n.has(app.id) ? n.delete(app.id) : n.add(app.id); onAppsChange(n); }}
                       style={INTER}
                       className={cn("group flex items-center gap-2.5 px-3 py-2.5 text-left transition-all",
-                        selected ? "bg-[#E5FFF9] border border-[#00775B]" : "bg-white border border-transparent hover:bg-[#FAFAFA]")}>
+                        selected ? "bg-[#F0FDF9]" : "bg-white hover:bg-[#FAFAFA]")}
+                      >
                       <div className="w-7 h-7 rounded-[5px] flex items-center justify-center shrink-0 transition-all"
-                        style={{ backgroundColor: selected ? "#00775B18" : "#F1F5F9" }}>
-                        <Icon className="w-3.5 h-3.5 transition-colors" style={{ color: selected ? "#00775B" : "#94A3B8" }} />
+                        style={{ backgroundColor: selected ? "rgba(0,149,109,0.1)" : "#F1F5F9" }}>
+                        <Icon className="w-3.5 h-3.5 transition-colors" style={{ color: selected ? "#00956D" : "#94A3B8" }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[11px] font-bold text-[#1E293B] truncate">{app.label}</div>
                         <div className="text-[10px] text-[#94A3B8] truncate">{app.desc}</div>
                       </div>
                       <div className={cn("w-3.5 h-3.5 rounded-full shrink-0 flex items-center justify-center transition-all",
-                        selected ? "bg-[#00775B]" : "border border-[#E2E8F0] group-hover:border-[#CBD5E1]")}>
+                        selected ? "bg-[#00956D]" : "border border-[#E2E8F0] group-hover:border-[#CBD5E1]")}>
                         {selected && <Check className="w-2 h-2 text-white" />}
                       </div>
                     </button>
@@ -683,9 +711,10 @@ export function CameraAppRow({
               </div>
             )}
           </div>
-          <div className="px-3 py-2 border-t border-[#F1F5F9] flex justify-between bg-[#FAFAFA]">
+          {/* Footer count */}
+          <div className="px-4 py-2 border-t border-[#F1F5F9] flex justify-between" style={{ backgroundColor: "#FAFAFA" }}>
             <span className="text-[11px] text-[#94A3B8]" style={INTER}>{filteredApps.length} apps</span>
-            {selectedApps.size > 0 && <span className="text-[11px] font-semibold text-[#00775B]" style={INTER}>{selectedApps.size} selected</span>}
+            {selectedApps.size > 0 && <span className="text-[11px] font-semibold text-[#00956D]" style={INTER}>{selectedApps.size} selected</span>}
           </div>
         </div>
       )}
