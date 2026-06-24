@@ -1597,6 +1597,7 @@ function ChannelsSection() {
 function AppearanceSection({ isDark, onToggleDark }: { isDark: boolean; onToggleDark: () => void }) {
   const dark = useDark();
   const [theme, setTheme] = useState<"light" | "dark" | "system">(isDark ? "dark" : "light");
+  useEffect(() => { setTheme(isDark ? "dark" : "light"); }, [isDark]);
   const [persona, setPersona] = useState<"monitoring" | "manager" | "director">("monitoring");
   const [timeFormat, setTimeFormat] = useState<"12h" | "24h">("24h");
   const [density, setDensity] = useState<"compact" | "comfortable">("comfortable");

@@ -106,8 +106,9 @@ const MatriceIcon = () => (
 );
 
 // ── Platform switcher ─────────────────────────────────────────────────────────
-type AppKey = "analytics" | "training" | "marketplace" | "support" | "support2" | "fe-common" | "vms" | "internal" | "annotation";
+type AppKey = "analytics" | "training" | "marketplace" | "support" | "support2" | "fe-common" | "vms" | "internal" | "annotation" | "client-centre";
 const platforms: { icon: React.ElementType; label: string; shortcut: string; app?: AppKey; active?: boolean }[] = [
+  { icon: Layers,     label: "Matrice AI — Client Centre", shortcut: "0", app: "client-centre" },
   { icon: Monitor,    label: "Matrice VMS",         shortcut: "1", app: "vms" },
   { icon: BarChart3,  label: "Matrice Analytics",   shortcut: "2", app: "analytics", active: true },
   { icon: Cpu,        label: "Matrice Training",    shortcut: "3", app: "training" },
@@ -121,23 +122,18 @@ const platforms: { icon: React.ElementType; label: string; shortcut: string; app
 
 // ── Sidebar navigation ────────────────────────────────────────────────────────
 const mainNavItems: { id: Page; label: string; icon: React.ElementType; badge?: number }[] = [
-  { id: "dashboard",          label: "Dashboard",           icon: LayoutDashboard },
-  { id: "dashboard-2",        label: "Dashboard 2",         icon: LayoutDashboard },
-  { id: "incident-lifecycle", label: "Incident Lifecycle",  icon: Activity,        badge: 3 },
-  { id: "volume", label: "Volume Analytics", icon: TrendingUp },
-  { id: "incident", label: "Incident Analytics", icon: ShieldAlert, badge: 3 },
-  { id: "zone", label: "Zone Analytics", icon: MapPin },
-  { id: "quality", label: "Quality Analytics", icon: ShoppingBag },
-  { id: "safety", label: "Safety Analytics", icon: ShieldCheck },
-  { id: "identity", label: "Identity Analytics", icon: Fingerprint },
-  { id: "service", label: "Service Analytics", icon: Timer },
-  { id: "facial-recognition", label: "Facial Recognition", icon: ScanFace },
-  { id: "license-plates", label: "License Plates", icon: CarFront },
-  { id: "cameras", label: "Cameras", icon: Video },
-  { id: "metrics", label: "Metrics & Rules", icon: Map },
-  { id: "compliance", label: "Compliance", icon: ClipboardCheck },
-  { id: "design-system", label: "Component Library", icon: Layers },
-  { id: "sample-analytics", label: "Staff Monitoring", icon: Users },
+  { id: "dashboard",  label: "Dashboard",          icon: LayoutDashboard },
+  { id: "volume",     label: "Volume Analytics",   icon: TrendingUp },
+  { id: "incident",   label: "Incident Analytics", icon: ShieldAlert,    badge: 3 },
+  { id: "zone",       label: "Zone Analytics",     icon: MapPin },
+  { id: "quality",    label: "Quality Analytics",  icon: ShoppingBag },
+  { id: "safety",     label: "Safety Analytics",   icon: ShieldCheck },
+  { id: "identity",   label: "Identity Analytics", icon: Fingerprint },
+  { id: "service",    label: "Service Analytics",  icon: Timer },
+  { id: "cameras",    label: "Cameras",            icon: Video },
+  { id: "metrics",    label: "Metrics & Rules",    icon: Map },
+  { id: "design-system",     label: "Component Library", icon: Layers },
+  { id: "sample-analytics",  label: "Staff Monitoring",  icon: Users },
 ];
 
 const internalNavItems: { id: Page; label: string; icon: React.ElementType }[] = [
@@ -1037,7 +1033,7 @@ export function AppLayout({ activePage, onPageChange, children, isDark = false, 
       </Sidebar>
 
       {/* ── Main area (header + body) ────────────────────────────────────────── */}
-      <SidebarInset className="bg-[#F8FAFC] flex flex-col overflow-hidden">
+      <SidebarInset className="bg-[#F8FAFC] dark:bg-[#020617] flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex h-12 shrink-0 items-center bg-[#021d18] text-white px-4 border-b border-[#00775B]/15 gap-2">
           {/* Left: trigger + divider + page title */}

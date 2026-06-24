@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { FTUEWizard } from "@/app/components/ftue/FTUEWizard";
+import { FTUEWizardV2, VersionSwitcher } from "@/app/components/ftue/FTUEWizardV2";
+import { VMSHomePage } from "@/app/components/ftue/VMSHomePage";
 const TrainingApp = lazy(() => import("@training/app/App"));
 const MarketplaceApp = lazy(() => import("@marketplace/app/App"));
 const SupportApp = lazy(() => import("@support/app/App"));
@@ -22,6 +25,7 @@ import { MonitoringWidgets } from "@/app/components/dashboard/MonitoringWidgets"
 import { ManagerWidgets } from "@/app/components/dashboard/ManagerWidgets";
 import { DirectorDashboard } from "@/app/components/dashboard/DirectorDashboard";
 import { VMSPlatform } from "@/app/components/pages/VMSPlatform";
+const ClientCentreApp = lazy(() => import("@/app/components/pages/ClientCentrePlatform").then(m => ({ default: m.ClientCentrePlatform })));
 import { VolumeAnalytics } from "@/app/components/pages/VolumeAnalytics";
 import { IncidentAnalytics } from "@/app/components/pages/IncidentAnalytics";
 import { ZoneAnalytics } from "@/app/components/pages/ZoneAnalytics";
@@ -40,6 +44,8 @@ import { StaffMonitoring } from "@/app/components/pages/StaffMonitoring";
 import { MicroservicesPage } from "@/app/components/pages/MicroservicesPage";
 import { IncidentLifecyclePage } from "@/app/components/pages/IncidentLifecyclePage";
 import { Dashboard2Page } from "@/app/components/pages/Dashboard2Page";
+import { Dashboard3Page } from "@/app/components/pages/Dashboard3Page";
+import { Dashboard4Page } from "@/app/components/pages/Dashboard4Page";
 import { ALL_INCIDENTS, PROJECTS_DATA, CAMERA_GROUPS, CLIENTS, EMPLOYEES, Incident, IncidentSeverity, LOCATIONS, APPLICATIONS, SEVERITIES } from "@/app/data/mockData";
 import { DataGrid, DataGridColumn, MonoCell, InterCell, GridActions, GridActionButton, StatusCapsule } from "@fe-common/components/ui/DataGrid";
 
@@ -217,14 +223,60 @@ const Modal = ({ isOpen, onClose, title, children, footer, className, headerClas
   );
 };
 
-type ActiveApp = "analytics" | "training" | "marketplace" | "support" | "support2" | "fe-common" | "vms" | "internal" | "annotation";
+type ActiveApp = "analytics" | "training" | "marketplace" | "support" | "support2" | "fe-common" | "vms" | "internal" | "annotation" | "client-centre";
 
 /** Root switcher — picks which app to render based on platform selection */
 export default function App() {
   const [activeApp, setActiveApp] = useState<ActiveApp>("analytics");
-  const handleSwitch = (app: string) => setActiveApp(app as ActiveApp);
+  const [vmsSetupDone, setVmsSetupDone] = useState(false);
+  const [showFTUE, setShowFTUE] = useState(false);
+  const [ftueVersion, setFtueVersion] = useState<"v1" | "v2">("v2");
 
-  if (activeApp === "vms")         return <VMSPlatform onPlatformSwitch={handleSwitch} />;
+  const handleSwitch = (app: string) => {
+    setActiveApp(app as ActiveApp);
+    // Reset FTUE overlay when switching away from VMS
+    if (app !== "vms") setShowFTUE(false);
+  };
+
+  // VMS: show home page, with FTUE overlaid when triggered
+  if (activeApp === "vms") {
+    const handleFTUEComplete = (dest: "vms" | "analytics") => {
+      setVmsSetupDone(true);
+      setShowFTUE(false);
+      setActiveApp(dest === "analytics" ? "analytics" : "vms");
+    };
+
+    if (showFTUE) {
+      if (ftueVersion === "v2") {
+        return (
+          <FTUEWizardV2
+            onComplete={handleFTUEComplete}
+            onSwitchVersion={() => setFtueVersion("v1")}
+            onPlatformSwitch={(app: string) => { setVmsSetupDone(true); setShowFTUE(false); setActiveApp(app as ActiveApp); }}
+            onDismiss={() => setShowFTUE(false)}
+          />
+        );
+      }
+      return (
+        <FTUEWizard
+          onComplete={handleFTUEComplete}
+          onSkip={() => { setVmsSetupDone(true); setShowFTUE(false); }}
+          onSwitchVersion={() => setFtueVersion("v2")}
+          onDismiss={() => setShowFTUE(false)}
+        />
+      );
+    }
+
+    return (
+      <VMSHomePage
+        onLaunchSetup={() => setShowFTUE(true)}
+        onPlatformSwitch={handleSwitch}
+      />
+    );
+  }
+
+  if (activeApp === "vms")            return <VMSPlatform onPlatformSwitch={handleSwitch} />;
+  if (activeApp === "client-centre")  return <Suspense fallback={null}><ClientCentreApp onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "training")    return <Suspense fallback={null}><TrainingApp      onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "marketplace") return <Suspense fallback={null}><MarketplaceApp   onPlatformSwitch={handleSwitch} /></Suspense>;
   if (activeApp === "support")     return <Suspense fallback={null}><SupportApp       onPlatformSwitch={handleSwitch} /></Suspense>;
@@ -239,6 +291,7 @@ export default function App() {
 function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) => void }) {
   const [activePersona, setActivePersona] = useState<Persona>("monitoring");
   const [activePage, setActivePage] = useState<Page>("dashboard");
+  const [dashboardVersion, setDashboardVersion] = useState<"v1" | "v2" | "v3" | "v4">("v3");
 
   // ── Theme ────────────────────────────────────────────────────────────────────
   const [isDark, setIsDark] = useState<boolean>(() => {
@@ -450,6 +503,7 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
   const PAGE_TITLES: Record<string, string> = {
     dashboard:              "Dashboard",
     "dashboard-2":          "Dashboard 2",
+    "dashboard-3":          "Dashboard 3",
     "incident-lifecycle":   "Incident Lifecycle",
     volume:               "Volume Analytics",
     incident:             "Incident Analytics",
@@ -472,8 +526,61 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
         <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
       ) : null}
       {activePage === "incident-lifecycle" ? <IncidentLifecyclePage /> : null}
-      {activePage === "dashboard-2" ? <Dashboard2Page /> : null}
-      <div className={cn("bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 min-h-full", (activePage === "settings" || activePage === "incident-lifecycle" || activePage === "dashboard-2") && "hidden")}>
+      {/* Dashboard v2 / v3 via version switcher */}
+      {activePage === "dashboard" && dashboardVersion === "v2" ? (
+        <div>
+          <div className="flex justify-end px-6 pt-4 pb-0" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="relative">
+              <select value={dashboardVersion} onChange={e => setDashboardVersion(e.target.value as "v1"|"v2"|"v3"|"v4")}
+                className="appearance-none h-8 pl-3 pr-8 rounded-[6px] border border-neutral-200 bg-white text-[12px] font-semibold text-neutral-700 cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]">
+                <option value="v1">Dashboard v1</option>
+                <option value="v2">Dashboard v2</option>
+                <option value="v3">Dashboard v3</option>
+                <option value="v4">Manager Dashboard</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+            </div>
+          </div>
+          <Dashboard2Page />
+        </div>
+      ) : null}
+      {activePage === "dashboard" && dashboardVersion === "v3" ? (
+        <div>
+          <div className="flex justify-end px-6 pt-4 pb-0" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="relative">
+              <select value={dashboardVersion} onChange={e => setDashboardVersion(e.target.value as "v1"|"v2"|"v3"|"v4")}
+                className="appearance-none h-8 pl-3 pr-8 rounded-[6px] border border-neutral-200 bg-white text-[12px] font-semibold text-neutral-700 cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]">
+                <option value="v1">Dashboard v1</option>
+                <option value="v2">Dashboard v2</option>
+                <option value="v3">Dashboard v3</option>
+                <option value="v4">Manager Dashboard</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+            </div>
+          </div>
+          <Dashboard3Page />
+        </div>
+      ) : null}
+      {activePage === "dashboard" && dashboardVersion === "v4" ? (
+        <div>
+          <div className="flex justify-end px-6 pt-4 pb-0" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="relative">
+              <select value={dashboardVersion} onChange={e => setDashboardVersion(e.target.value as "v1"|"v2"|"v3"|"v4")}
+                className="appearance-none h-8 pl-3 pr-8 rounded-[6px] border border-neutral-200 bg-white text-[12px] font-semibold text-neutral-700 cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]">
+                <option value="v1">Dashboard v1</option>
+                <option value="v2">Dashboard v2</option>
+                <option value="v3">Dashboard v3</option>
+                <option value="v4">Manager Dashboard</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+            </div>
+          </div>
+          <Dashboard4Page />
+        </div>
+      ) : null}
+      <div className={cn("bg-[#F8FAFC] dark:bg-[#020617] font-sans text-neutral-900 dark:text-slate-100 min-h-full",
+        (activePage === "settings" || activePage === "incident-lifecycle" ||
+          (activePage === "dashboard" && dashboardVersion !== "v1")) && "hidden")}>
         <div className="max-w-full overflow-x-hidden">
 
           <section className="w-full">
@@ -493,8 +600,24 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
             {activePage === "sample-analytics" && <StaffMonitoring />}
             {activePage === "microservices" && <MicroservicesPage />}
 
-            {activePage === "dashboard" && (
+            {activePage === "dashboard" && dashboardVersion === "v1" && (
               <>
+               {/* Dashboard version dropdown — top-right floating */}
+               <div className="flex justify-end px-6 pt-4 pb-0">
+                  <div className="relative" style={{ fontFamily: "Inter, sans-serif" }}>
+                    <select
+                      value={dashboardVersion}
+                      onChange={e => setDashboardVersion(e.target.value as "v1" | "v2" | "v3" | "v4")}
+                      className="appearance-none h-8 pl-3 pr-8 rounded-[6px] border border-neutral-200 bg-white text-[12px] font-semibold text-neutral-700 cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00775B]/20 focus:border-[#00775B]"
+                    >
+                      <option value="v1">Dashboard v1</option>
+                      <option value="v2">Dashboard v2</option>
+                      <option value="v3">Dashboard v3</option>
+                      <option value="v4">Manager Dashboard</option>
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+                  </div>
+               </div>
                {activePersona === "director" ? (
                   <DirectorDashboard />
                ) : (

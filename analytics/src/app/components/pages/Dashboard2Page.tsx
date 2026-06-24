@@ -39,9 +39,9 @@ const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono','Fira Code','C
 const SANS: React.CSSProperties = { fontFamily: "'Inter',sans-serif", fontSize: "12px" };
 
 // ─── Lifecycle types ──────────────────────────────────────────────────────────
-type LifecycleStage = "detected" | "in_progress" | "escalated" | "cooldown" | "resolved";
+export type LifecycleStage = "detected" | "in_progress" | "escalated" | "cooldown" | "resolved";
 
-interface TimelineNode {
+export interface TimelineNode {
   id: string;
   type: "system" | "human";
   icon: string;
@@ -53,7 +53,7 @@ interface TimelineNode {
   alertIndex?: number;
 }
 
-interface LifecycleRecord {
+export interface LifecycleRecord {
   stage: LifecycleStage;
   assignee: string;
   startedAt: number;
@@ -62,7 +62,7 @@ interface LifecycleRecord {
 }
 
 // ─── Stage display config (all neutral — no severity colors) ─────────────────
-const STAGE_META: Record<LifecycleStage, { label: string; icon: React.ReactNode }> = {
+export const STAGE_META: Record<LifecycleStage, { label: string; icon: React.ReactNode }> = {
   detected:    { label: "DETECTED",    icon: <Circle       className="w-2.5 h-2.5" /> },
   in_progress: { label: "IN PROGRESS", icon: <Settings2    className="w-2.5 h-2.5" /> },
   escalated:   { label: "ESCALATED",   icon: <AlertTriangle className="w-2.5 h-2.5" /> },
@@ -76,14 +76,19 @@ const getSeverityBg = (s: string) => ({
   low: "bg-blue-500", info: "bg-neutral-500", resolved: "bg-green-600",
 })[s] ?? "bg-neutral-500";
 
-const getSeverityHex = (s: string) => ({
+export const getSeverityHex = (s: string) => ({
   critical: "#DC2626", high: "#EA580C", medium: "#CA8A04",
   low: "#3B82F6", info: "#475569", resolved: "#059669",
 })[s] ?? "#475569";
 
 // Staff / manager lists used by assignment dialogs
-const STAFF_LIST    = ["Priya M.", "Jordan K.", "Liam T.", "Aisha R.", "Carlos V.", "Mei L.", "Sam W.", "Taylor R."];
-const MANAGER_LIST  = ["Manager_01 · Alex T.", "Manager_02 · Sarah K.", "Director_01 · James R."];
+export const STAFF_LIST    = ["Priya M.", "Jordan K.", "Liam T.", "Aisha R.", "Carlos V.", "Mei L.", "Sam W.", "Taylor R."];
+export const MANAGER_LIST  = ["Manager_01 · Alex T.", "Manager_02 · Sarah K.", "Director_01 · James R."];
+
+// Typography tokens (exported for Dashboard 3)
+export const D2_MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono','Fira Code','Cascadia Code',monospace", fontSize: "12px" };
+export const D2_SANS: React.CSSProperties = { fontFamily: "'Inter',sans-serif", fontSize: "12px" };
+export const D2_SNAPPY = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 // ─── Live SLA ticker ──────────────────────────────────────────────────────────
 function useTicker(startedAt: number) {
@@ -112,7 +117,7 @@ function StagePill({ stage, size = "sm" }: { stage: LifecycleStage; size?: "xs" 
 }
 
 // ─── Build deterministic multi-alert timeline ────────────────────────────────
-function buildTimeline(inc: Incident): TimelineNode[] {
+export function buildTimeline(inc: Incident): TimelineNode[] {
   const raw = inc.timestamp.replace(/ [AP]M$/, "");
   const [hh, mm] = raw.split(":").map(Number);
   const fmt = (h: number, m: number, s: number) =>
@@ -149,7 +154,7 @@ function buildTimeline(inc: Incident): TimelineNode[] {
 }
 
 // ─── Init lifecycle records ───────────────────────────────────────────────────
-function initRecords(): Map<number, LifecycleRecord> {
+export function initRecords(): Map<number, LifecycleRecord> {
   const m = new Map<number, LifecycleRecord>();
   ALL_INCIDENTS.forEach(inc => {
     const stage: LifecycleStage =
@@ -175,6 +180,7 @@ interface Card2Props {
   record:       LifecycleRecord;
   className?:   string;
   forceHover?:  boolean;
+  isDark?:      boolean;
   onCardClick?: () => void;
   onSelfAssign?: () => void;
   onAssignTo?:   () => void;
@@ -196,7 +202,7 @@ function CircleBtn({ icon, bg, title, onClick }: { icon: React.ReactNode; bg: st
   );
 }
 
-export function IncidentCard2({ incident, record, className, forceHover, onCardClick, onSelfAssign, onAssignTo, onEscalate, onResolve }: Card2Props) {
+export function IncidentCard2({ incident, record, className, forceHover, isDark, onCardClick, onSelfAssign, onAssignTo, onEscalate, onResolve }: Card2Props) {
   const [hov, setHov] = useState(false);
   const { severity, title, timestamp, incidentId, location, camera, image } = incident;
   const sevHex  = getSeverityHex(severity);
@@ -218,7 +224,7 @@ export function IncidentCard2({ incident, record, className, forceHover, onCardC
         isActive && "shadow-lg -translate-y-0.5",
         className,
       )}
-      style={{ width: "260px" }}
+      style={{ width: "260px", borderColor: isDark ? "rgba(255,255,255,0.08)" : undefined }}
     >
       {/* ── Header: severity bg, 52px, dual-row ─────────────────────────── */}
       <div className={cn("flex flex-col justify-center px-3 py-2 gap-0.5 shrink-0", sevBgCl)} style={{ height: "52px" }}>
@@ -1202,7 +1208,7 @@ export function IncidentDetailModal2({ incident, record, open, onClose, onUpdate
 // ═══════════════════════════════════════════════════════════════════════════════
 // Filter dropdown (replicated from App.tsx)
 // ═══════════════════════════════════════════════════════════════════════════════
-function FilterDropdown2({ label, options, selected, onChange, className }: {
+export function FilterDropdown2({ label, options, selected, onChange, className }: {
   label:string; options:string[]; selected:Set<string>; onChange:(v:string)=>void; className?:string;
 }) {
   const [open, setOpen] = useState(false);
@@ -1238,6 +1244,7 @@ const GRID_LIMIT = 8;
 export function Dashboard2Page() {
   const [activePersona, setActivePersona] = useState<Persona>("monitoring");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [activeTab, setActiveTab]   = useState<"all" | "queue" | "unassigned">("all");
   const [selectedIncidents, setSelectedIncidents] = useState<Set<number>>(new Set());
   const [selectedSeverities, setSelectedSeverities] = useState<Set<string>>(new Set());
   const [selectedApps, setSelectedApps] = useState<Set<string>>(new Set());
@@ -1252,16 +1259,25 @@ export function Dashboard2Page() {
   const [cardDialog, setCardDialog] = useState<CardDialog>(null);
 
   const ITEMS_PER_PAGE = 8;
+  const MY_OPERATOR    = "Staff_04"; // current logged-in operator
+  const MY_MAX_LOAD    = 5;
+
   const filteredIncidents = ALL_INCIDENTS.filter(inc => {
     if (selectedSeverities.size > 0 && !selectedSeverities.has(inc.severity)) return false;
     if (selectedApps.size > 0 && !selectedApps.has(inc.application)) return false;
     if (selectedLocs.size > 0 && !selectedLocs.has(inc.location)) return false;
     return true;
   });
-  const visibleGrid = gridExpanded ? filteredIncidents : filteredIncidents.slice(0, GRID_LIMIT);
-  const hasMore = !gridExpanded && filteredIncidents.length > GRID_LIMIT;
-  const totalPages = Math.ceil(filteredIncidents.length / ITEMS_PER_PAGE);
-  const paginated = filteredIncidents.slice((tablePage-1)*ITEMS_PER_PAGE, tablePage*ITEMS_PER_PAGE);
+
+  // Tab-level sub-filters
+  const queueIncs      = filteredIncidents.filter(inc => records.get(inc.id)?.assignee === MY_OPERATOR);
+  const unassignedIncs = filteredIncidents.filter(inc => records.get(inc.id)?.assignee === "Unassigned");
+  const tabFiltered    = activeTab === "queue" ? queueIncs : activeTab === "unassigned" ? unassignedIncs : filteredIncidents;
+
+  const visibleGrid = gridExpanded ? tabFiltered : tabFiltered.slice(0, GRID_LIMIT);
+  const hasMore = !gridExpanded && tabFiltered.length > GRID_LIMIT;
+  const totalPages = Math.ceil(tabFiltered.length / ITEMS_PER_PAGE);
+  const paginated = tabFiltered.slice((tablePage-1)*ITEMS_PER_PAGE, tablePage*ITEMS_PER_PAGE);
 
   const handleFilter = (set: Set<string>, val: string) => {
     const next = new Set(set);
@@ -1300,11 +1316,42 @@ export function Dashboard2Page() {
       <div className="px-0">
         {/* ── Toolbar ──────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900">
-              {activePersona === "manager" ? "Operational Incidents" : "Active Incidents"}
-            </h2>
-            <div className="h-5 px-[6px] rounded-[2px] bg-[#00775B] flex items-center justify-center text-[10px] font-bold text-white">{ALL_INCIDENTS.length}</div>
+          {/* Segmented control — replaces static heading */}
+          <div className="flex items-center gap-1 bg-neutral-100 p-[3px] rounded-[4px] shadow-inner">
+            {([
+              { id: "all"        as const, label: "All Active",      count: filteredIncidents.length,  capacity: null },
+              { id: "queue"      as const, label: "My Queue",        count: queueIncs.length,          capacity: `${queueIncs.length}/${MY_MAX_LOAD} Max Load` },
+              { id: "unassigned" as const, label: "Unassigned Pool", count: unassignedIncs.length,     capacity: null },
+            ]).map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setGridExpanded(false); }}
+                  className={cn(
+                    "flex items-center gap-1.5 h-8 px-3 rounded-[4px] transition-all",
+                    isActive ? "bg-white shadow-sm text-neutral-900" : "text-neutral-500 hover:text-neutral-700",
+                  )}
+                  style={{ fontFamily:"Inter,sans-serif", fontSize:"14px", fontWeight: isActive ? 600 : 500, transitionDuration:"200ms", transitionTimingFunction:"cubic-bezier(0.22,1,0.36,1)" }}
+                >
+                  {tab.label}
+                  <span
+                    className={cn("text-[11px] font-bold px-1.5 py-0.5 rounded-full tabular-nums", isActive ? "bg-[#00775B] text-white" : "bg-neutral-200 text-neutral-500")}
+                    style={{ fontFamily:"JetBrains Mono,monospace" }}
+                  >
+                    {tab.count}
+                  </span>
+                  {tab.id === "queue" && (
+                    <span
+                      className="text-[10px] text-neutral-400 hidden lg:inline"
+                      style={{ fontFamily:"JetBrains Mono,monospace" }}
+                    >
+                      [{tab.capacity}]
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">

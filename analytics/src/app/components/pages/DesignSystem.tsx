@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, createContext, useContext } from "react";
+import { useState, useRef, useCallback, createContext, useContext, useEffect } from "react";
 import {
   Info,
   TrendingUp,
@@ -39,6 +39,17 @@ import { IncidentCardV12Sheet } from "@/app/components/pages/IncidentCardV12Shee
 // Default "light" means ALL components outside the Provider stay unaffected.
 const SandboxThemeCtx = createContext<"light" | "dark">("light");
 const useSandboxTheme = () => useContext(SandboxThemeCtx);
+
+// ─── Global dark mode hook ────────────────────────────────────────────────────
+const useIsDark = () => {
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains("dark")));
+    obs.observe(document.documentElement, { attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type SeverityDir = "up" | "down" | "neutral";
@@ -177,7 +188,9 @@ const SectionHeader = ({
   title: string;
   description: string;
 }) => {
-  const isDark = useSandboxTheme() === "dark";
+  const sandboxDark = useSandboxTheme() === "dark";
+  const globalDark = useIsDark();
+  const isDark = sandboxDark || globalDark;
   return (
     <div className="flex items-start gap-3 mb-5">
       <div
@@ -211,7 +224,8 @@ const Badge = ({ label, color }: { label: string; color: string }) => (
 );
 
 const SpecChip = ({ label, value }: { label: string; value: string }) => {
-  const isDark = useSandboxTheme() === "dark";
+  const sandboxDark = useSandboxTheme() === "dark";
+  const isDark = sandboxDark || useIsDark();
   return (
     <div
       className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[11px]"
@@ -227,7 +241,8 @@ const SpecChip = ({ label, value }: { label: string; value: string }) => {
 };
 
 const Annotation = ({ children }: { children: React.ReactNode }) => {
-  const isDark = useSandboxTheme() === "dark";
+  const sandboxDark = useSandboxTheme() === "dark";
+  const isDark = sandboxDark || useIsDark();
   return (
     <div className="flex items-center gap-1.5 text-[11px]" style={{ color: isDark ? "#475569" : "#64748b" }}>
       <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isDark ? "#00956D" : "#00775B" }} />
@@ -251,18 +266,21 @@ const ShowcaseCanvas = ({ children }: { children: React.ReactNode }) => (
 );
 
 // ─── V1.1 HUD canvas (neutral light bg + subtle dot grid, 4-col grid) ─────────
-const HUDCanvas = ({ children }: { children: React.ReactNode }) => (
-  <div
-    className="rounded-[8px] p-6 relative overflow-hidden border border-[#E2E8F0]"
-    style={{ background: "#F0F2F4" }}
-  >
+const HUDCanvas = ({ children }: { children: React.ReactNode }) => {
+  const isDark = useIsDark();
+  return (
     <div
-      className="absolute inset-0 opacity-30"
-      style={{ backgroundImage: "radial-gradient(circle, #CBD5E1 1px, transparent 1px)", backgroundSize: "20px 20px" }}
-    />
-    <div className="relative grid grid-cols-2 xl:grid-cols-4 gap-4">{children}</div>
-  </div>
-);
+      className="rounded-[8px] p-6 relative overflow-hidden border border-[#E2E8F0] dark:border-white/8"
+      style={{ background: isDark ? "#0f172a" : "#F0F2F4" }}
+    >
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{ backgroundImage: `radial-gradient(circle, ${isDark ? "rgba(255,255,255,0.08)" : "#CBD5E1"} 1px, transparent 1px)`, backgroundSize: "20px 20px" }}
+      />
+      <div className="relative grid grid-cols-2 xl:grid-cols-4 gap-4">{children}</div>
+    </div>
+  );
+};
 
 // ─── Dark table header ────────────────────────────────────────────────────────
 const DarkTableHeader = ({ cols, labels }: { cols: string; labels: string[] }) => (
@@ -287,6 +305,7 @@ const KPICard = ({ variant, isSkeleton = false, frozenCursorFrac }: KPICardProps
   const [isHovered, setIsHovered] = useState(false);
   const [cursorFrac, setCursorFrac] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const isDark = useIsDark();
 
   const isFrozen = frozenCursorFrac !== undefined;
   const activeFrac = isFrozen ? frozenCursorFrac! : cursorFrac;
@@ -302,7 +321,7 @@ const KPICard = ({ variant, isSkeleton = false, frozenCursorFrac }: KPICardProps
   if (isSkeleton) {
     return (
       <div
-        className="w-[280px] rounded-[4px] bg-white p-4 flex flex-col gap-3"
+        className="w-[280px] rounded-[4px] bg-white dark:bg-[#0f172a] p-4 flex flex-col gap-3"
         style={{ border: "1px solid #E2E8F0" }}
       >
         <div className="flex items-center justify-between">
@@ -340,9 +359,11 @@ const KPICard = ({ variant, isSkeleton = false, frozenCursorFrac }: KPICardProps
 
   return (
     <div
-      className="w-[280px] rounded-[4px] bg-white/90 backdrop-blur-sm flex flex-col gap-3 p-4 cursor-default select-none transition-all duration-200"
+      className="w-[280px] rounded-[4px] flex flex-col gap-3 p-4 cursor-default select-none transition-all duration-200"
       style={{
-        border: "1px solid #E2E8F0",
+        background: isDark ? "rgba(15,23,42,0.95)" : "rgba(255,255,255,0.90)",
+        backdropFilter: "blur(8px)",
+        border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0"}`,
         borderTop: `3px solid ${variant.color}`,
         boxShadow: hover
           ? `0 0 18px 4px ${variant.color}28, 0 4px 20px rgba(0,0,0,0.09)`
@@ -435,6 +456,7 @@ const HUDKPICard = ({ variant, isSkeleton = false, frozenCursorFrac }: KPICardPr
   const [isCardHovered, setIsCardHovered] = useState(false);
   const [cursorFrac, setCursorFrac] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const isDark = useIsDark();
 
   const isFrozen = frozenCursorFrac !== undefined;
   const activeFrac = isFrozen ? frozenCursorFrac! : cursorFrac;
@@ -442,7 +464,7 @@ const HUDKPICard = ({ variant, isSkeleton = false, frozenCursorFrac }: KPICardPr
   const showCursor = isFrozen || cursorFrac !== null;
   const hover      = isFrozen || isCardHovered;
 
-  const bg          = variant.bgColor ?? hex2rgba(variant.color, 0.08);
+  const bg = isDark ? hex2rgba(variant.color, 0.10) : (variant.bgColor ?? hex2rgba(variant.color, 0.08));
   const dividerColor = hex2rgba(variant.color, 0.22);
   const badgeBg      = hex2rgba(variant.color, 0.12);
   // Badge text: use deltaNum/deltaRef if set, else split deltaPct
@@ -516,15 +538,15 @@ const HUDKPICard = ({ variant, isSkeleton = false, frozenCursorFrac }: KPICardPr
       {/* ── Top Section ── */}
       <div className="px-4 pt-4 pb-3 flex flex-col">
         {/* Label — Inter Bold 11px, UPPERCASE */}
-        <span className="text-[11px] font-bold uppercase tracking-[0.5px] leading-none" style={{ color: "#475569" }}>
+        <span className="text-[11px] font-bold uppercase tracking-[0.5px] leading-none text-[#475569] dark:text-slate-400">
           {variant.label}
         </span>
         {/* Value + sublabel — grouped, mt-3 gap from label */}
         <div className="flex flex-col gap-[5px] mt-3">
-          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: 24 }}>
+          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a] dark:text-slate-100" style={{ fontSize: 24 }}>
             {variant.value}
           </div>
-          <div className="text-[10px] font-normal text-[#64748b]">{variant.sublabel}</div>
+          <div className="text-[10px] font-normal text-[#64748b] dark:text-slate-400">{variant.sublabel}</div>
         </div>
       </div>
 
@@ -700,13 +722,13 @@ const V1Content = () => {
       {/* §3 Card Architecture & Typography */}
       <section>
         <SectionHeader icon={BookOpen} title="Card Architecture & Typography" description="Following the Precision and Clarity pillars — field-level type specification." />
-        <div className="rounded-[6px] border border-[#E2E8F0] bg-white overflow-hidden shadow-sm">
+        <div className="rounded-[6px] border border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a] overflow-hidden shadow-sm">
           <DarkTableHeader cols="grid-cols-[200px_160px_160px_1fr_140px]" labels={["Field","Text Style","Weight","Color Token","Live Preview"]} />
           {TYPO_ROWS.map((row, idx) => (
-            <div key={row.field} className={cn("grid grid-cols-[200px_160px_160px_1fr_140px] px-5 py-4 items-center border-b border-[#F1F5F9]", idx % 2 === 0 ? "bg-white" : "bg-neutral-50/50")}>
-              <div className="text-[12px] font-bold text-[#0f172a]">{row.field}</div>
-              <div className="text-[12px] text-[#475569]">{row.style}</div>
-              <div className="text-[12px] text-[#475569]">{row.weight}</div>
+            <div key={row.field} className={cn("grid grid-cols-[200px_160px_160px_1fr_140px] px-5 py-4 items-center border-b border-[#F1F5F9] dark:border-white/5", idx % 2 === 0 ? "bg-white dark:bg-[#0f172a]" : "bg-neutral-50/50 dark:bg-[#1e293b]/40")}>
+              <div className="text-[12px] font-bold text-[#0f172a] dark:text-slate-100">{row.field}</div>
+              <div className="text-[12px] text-[#475569] dark:text-slate-400">{row.style}</div>
+              <div className="text-[12px] text-[#475569] dark:text-slate-400">{row.weight}</div>
               <div className="flex items-center gap-2">
                 <span className={cn("inline-flex items-center px-2 py-0.5 rounded-[3px] text-[10px] font-mono text-white", row.tokenBg)}>{row.token}</span>
                 {row.extra && <span className="text-[10px] text-[#94a3b8]">{row.extra}</span>}
@@ -722,13 +744,13 @@ const V1Content = () => {
         <SectionHeader icon={Cpu} title="Severity Color Tokens" description="Top-border and glow source colors. Each token governs border, glow, delta text, and trend icon." />
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {SEVERITY_CARDS.map((v) => (
-            <div key={v.id} className="rounded-[6px] border border-[#E2E8F0] bg-white overflow-hidden shadow-sm">
+            <div key={v.id} className="rounded-[6px] border border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a] overflow-hidden shadow-sm">
               <div className="h-[56px] relative" style={{ backgroundColor: v.color }}>
                 <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 40%, ${v.color}00, rgba(0,0,0,0.18))` }} />
                 <div className="absolute bottom-2 left-3 text-[10px] font-bold text-white/90 uppercase tracking-[0.5px]">{v.name}</div>
               </div>
               <div className="px-3 py-2.5 space-y-1.5">
-                <div className="font-mono text-[11px] font-semibold text-[#334155]">{v.color}</div>
+                <div className="font-mono text-[11px] font-semibold text-[#334155] dark:text-slate-200">{v.color}</div>
                 <div className="flex gap-1.5">
                   <div className="flex-1 h-4 rounded-[2px] bg-neutral-100" style={{ borderTop: `3px solid ${v.color}` }} />
                   <div className="flex-1 h-4 rounded-[2px] bg-white border border-[#E2E8F0]" style={{ boxShadow: `0 0 8px 2px ${v.color}30` }} />
@@ -743,16 +765,16 @@ const V1Content = () => {
       {/* §5 Border & Shadow System */}
       <section>
         <SectionHeader icon={Layers} title="Border & Shadow System" description="Standard, resting-glow, and hover-glow shadow definitions for the v1.0 card." />
-        <div className="rounded-[6px] border border-[#E2E8F0] bg-white overflow-hidden shadow-sm">
+        <div className="rounded-[6px] border border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a] overflow-hidden shadow-sm">
           <DarkTableHeader cols="grid-cols-[180px_1fr_180px]" labels={["State","CSS Value","Preview"]} />
           {[
             { state: "Standard",     css: "border-top: 3px solid {color} · border: 1px solid #E2E8F0",    preview: <div className="w-20 h-7 rounded-[4px] bg-white" style={{ border: "1px solid #E2E8F0", borderTop: "3px solid #00A63E" }} /> },
             { state: "Resting Glow", css: "0 0 8px 1px {color}14, 0 1px 4px rgba(0,0,0,.05)",            preview: <div className="w-20 h-7 rounded-[4px] bg-white" style={{ border: "1px solid #E2E8F0", borderTop: "3px solid #00A63E", boxShadow: "0 0 8px 1px #00A63E22, 0 1px 4px rgba(0,0,0,.05)" }} /> },
             { state: "Hover Glow",   css: "0 0 18px 4px {color}28, 0 4px 20px rgba(0,0,0,.09)",          preview: <div className="w-20 h-7 rounded-[4px] bg-white" style={{ border: "1px solid #E2E8F0", borderTop: "3px solid #00A63E", boxShadow: "0 0 18px 4px #00A63E40, 0 4px 20px rgba(0,0,0,.09)" }} /> },
           ].map((row, idx) => (
-            <div key={row.state} className={cn("grid grid-cols-[180px_1fr_180px] px-5 py-4 items-center border-b border-[#F1F5F9]", idx % 2 === 0 ? "bg-white" : "bg-neutral-50/50")}>
-              <div className="text-[12px] font-bold text-[#0f172a]">{row.state}</div>
-              <div className="font-mono text-[11px] text-[#64748b] pr-4">{row.css}</div>
+            <div key={row.state} className={cn("grid grid-cols-[180px_1fr_180px] px-5 py-4 items-center border-b border-[#F1F5F9] dark:border-white/5", idx % 2 === 0 ? "bg-white dark:bg-[#0f172a]" : "bg-neutral-50/50 dark:bg-[#1e293b]/40")}>
+              <div className="text-[12px] font-bold text-[#0f172a] dark:text-slate-100">{row.state}</div>
+              <div className="font-mono text-[11px] text-[#64748b] dark:text-slate-400 pr-4">{row.css}</div>
               <div>{row.preview}</div>
             </div>
           ))}
@@ -771,7 +793,7 @@ const V1_1Content = () => {
   const TYPO_ROWS_11 = [
     { field: "Label",        changed: false, style: "12px Inter",          weight: "Medium (500)",  token: "--neutral-600",  tokenBg: "bg-neutral-700", extra: "",                          preview: "Safety Compliance",    cls: "text-[12px] font-medium text-[#475569]" },
     { field: "Main Value",   changed: true,  style: "24px JetBrains Mono", weight: "Bold (700)",    token: "--neutral-900",  tokenBg: "bg-neutral-700", extra: "(Tabular Numerals)",         preview: "99.1%",                cls: "font-mono font-bold text-[20px] text-[#0f172a] tabular-nums leading-none" },
-    { field: "Subtitle",     changed: true,  style: "10px Inter",          weight: "Regular (400)", token: "--neutral-500",  tokenBg: "bg-neutral-700", extra: "(Scope / Formula — no time)", preview: "Scope: All Sites",    cls: "text-[10px] font-normal text-[#64748b]" },
+    { field: "Subtitle",     changed: true,  style: "10px Inter",          weight: "Regular (400)", token: "--neutral-500",  tokenBg: "bg-neutral-700", extra: "(Scope / Formula — no time)", preview: "Scope: All Sites",    cls: "text-[10px] font-normal text-[#64748b] dark:text-slate-400" },
     { field: "Trend Badge",  changed: true,  style: "10px JetBrains Mono", weight: "Semibold (600)",token: "Bright Severity",tokenBg: "bg-emerald-800",  extra: "(Solid capsule, white text)",preview: "+0.4%",               cls: "font-mono text-[10px] font-semibold text-white bg-[#00A63E] px-2 py-0.5 rounded-full inline-block" },
   ];
 
@@ -922,7 +944,7 @@ const V1_1Content = () => {
           title="Card Architecture & Typography"
           description="JetBrains Mono for numerical values and trend badge. Inter for labels and subtitles."
         />
-        <div className="rounded-[6px] border border-[#E2E8F0] bg-white overflow-hidden shadow-sm">
+        <div className="rounded-[6px] border border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a] overflow-hidden shadow-sm">
           <DarkTableHeader
             cols="grid-cols-[180px_180px_160px_1fr_180px]"
             labels={["Field", "Text Style", "Weight", "Color Token", "Live Preview"]}
@@ -931,20 +953,20 @@ const V1_1Content = () => {
             <div
               key={row.field}
               className={cn(
-                "grid grid-cols-[180px_180px_160px_1fr_180px] px-5 py-4 items-center border-b border-[#F1F5F9]",
-                idx % 2 === 0 ? "bg-white" : "bg-neutral-50/50"
+                "grid grid-cols-[180px_180px_160px_1fr_180px] px-5 py-4 items-center border-b border-[#F1F5F9] dark:border-white/5",
+                idx % 2 === 0 ? "bg-white dark:bg-[#0f172a]" : "bg-neutral-50/50 dark:bg-[#1e293b]/40"
               )}
             >
               <div className="flex items-center gap-2">
-                <span className="text-[12px] font-bold text-[#0f172a]">{row.field}</span>
+                <span className="text-[12px] font-bold text-[#0f172a] dark:text-slate-100">{row.field}</span>
                 {row.changed && (
                   <span className="text-[8px] font-bold uppercase tracking-[0.5px] px-1.5 py-0.5 rounded-[3px] bg-[#00775B] text-white">
                     v1.1
                   </span>
                 )}
               </div>
-              <div className="text-[12px] text-[#475569]">{row.style}</div>
-              <div className="text-[12px] text-[#475569]">{row.weight}</div>
+              <div className="text-[12px] text-[#475569] dark:text-slate-400">{row.style}</div>
+              <div className="text-[12px] text-[#475569] dark:text-slate-400">{row.weight}</div>
               <div className="flex items-center gap-2">
                 <span className={cn("inline-flex items-center px-2 py-0.5 rounded-[3px] text-[10px] font-mono text-white", row.tokenBg)}>
                   {row.token}
@@ -1000,7 +1022,7 @@ const V1_1Content = () => {
           title="Border & Shadow System"
           description="Full-perimeter 1px bright border on solid tinted surface. Glow and sparkline filter definitions."
         />
-        <div className="rounded-[6px] border border-[#E2E8F0] bg-white overflow-hidden shadow-sm">
+        <div className="rounded-[6px] border border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a] overflow-hidden shadow-sm">
           <DarkTableHeader cols="grid-cols-[200px_1fr_180px]" labels={["State", "CSS Value", "Preview"]} />
           {[
             {
@@ -1037,12 +1059,12 @@ const V1_1Content = () => {
             <div
               key={row.state}
               className={cn(
-                "grid grid-cols-[200px_1fr_180px] px-5 py-4 items-center border-b border-[#F1F5F9]",
-                idx % 2 === 0 ? "bg-white" : "bg-neutral-50/50"
+                "grid grid-cols-[200px_1fr_180px] px-5 py-4 items-center border-b border-[#F1F5F9] dark:border-white/5",
+                idx % 2 === 0 ? "bg-white dark:bg-[#0f172a]" : "bg-neutral-50/50 dark:bg-[#1e293b]/40"
               )}
             >
-              <div className="text-[12px] font-bold text-[#0f172a]">{row.state}</div>
-              <div className="font-mono text-[11px] text-[#64748b] pr-4">{row.css}</div>
+              <div className="text-[12px] font-bold text-[#0f172a] dark:text-slate-100">{row.state}</div>
+              <div className="font-mono text-[11px] text-[#64748b] dark:text-slate-400 pr-4">{row.css}</div>
               <div>{row.preview}</div>
             </div>
           ))}
@@ -1079,12 +1101,15 @@ const V12Card = ({
   color, bgColor, children, className,
 }: { color: string; bgColor: string; children: React.ReactNode; className?: string }) => {
   const [h, setH] = useState(false);
+  const isDark = useIsDark();
+  const darkBg = hex2rgba(color, 0.08);
   return (
     <div
       className={cn("w-full rounded-[4px] flex flex-col cursor-default select-none transition-all duration-200", className)}
       style={{
         minWidth: 280,
-        border: `1px solid ${color}`, background: bgColor,
+        border: `1px solid ${isDark ? hex2rgba(color, 0.5) : color}`,
+        background: isDark ? darkBg : bgColor,
         boxShadow: h
           ? `0 0 18px 4px ${hex2rgba(color, 0.22)}, 0 4px 14px rgba(0,0,0,0.07)`
           : `0 0 6px 1px ${hex2rgba(color, 0.10)}, 0 1px 3px rgba(0,0,0,0.04)`,
@@ -1101,7 +1126,7 @@ const V12Divider = ({ color }: { color: string }) => (
 /** Top label row — 11px bold uppercase neutral + 9px accent chip. Used by all V12 card types. */
 const V12Label = ({ label, chip, color }: { label: string; chip?: string; color: string }) => (
   <div className="px-4 pt-4 flex items-center justify-between">
-    <span className="text-[11px] font-bold uppercase tracking-[0.5px] leading-none" style={{ color: "#475569" }}>{label}</span>
+    <span className="text-[11px] font-bold uppercase tracking-[0.5px] leading-none text-[#475569] dark:text-slate-400">{label}</span>
     {chip && (
       <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-2 py-[3px] rounded-full flex-shrink-0"
         style={{ backgroundColor: hex2rgba(color, 0.14), color }}>
@@ -1155,8 +1180,8 @@ const V12StatCard = ({ d, isSkeleton = false }: { d: StatData; isSkeleton?: bool
       <V12Label label={d.label} chip={d.chip} color={d.color} />
       <div className="px-4 pt-3 pb-4 flex items-end justify-between gap-4">
         <div className="flex flex-col gap-[7px]">
-          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: 28 }}>{d.value}</div>
-          <div className="text-[12px] text-[#64748b]">{d.sublabel}</div>
+          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a] dark:text-slate-100" style={{ fontSize: 28 }}>{d.value}</div>
+          <div className="text-[12px] text-[#64748b] dark:text-slate-400">{d.sublabel}</div>
         </div>
         <BS dir={d.dir} num={d.num} ref_={d.ref_} color={d.color} />
       </div>
@@ -1205,7 +1230,7 @@ const V12AlertCard = ({ d }: { d: AlertData }) => (
         <div className="px-4 pt-3 pb-4 flex items-start justify-between gap-4">
           <div className="flex flex-col gap-[7px] min-w-0">
             <div className="text-[16px] font-semibold text-[#0f172a] leading-tight">{d.zoneName}</div>
-            <div className="text-[12px] text-[#64748b]">{d.description}</div>
+            <div className="text-[12px] text-[#64748b] dark:text-slate-400">{d.description}</div>
           </div>
           <div className="flex flex-col items-center px-4 py-3 rounded-[6px] flex-shrink-0 bg-white/70">
             <span className="font-mono font-bold leading-none" style={{ fontSize: 22, color: d.color }}>{d.compliance}</span>
@@ -1217,7 +1242,7 @@ const V12AlertCard = ({ d }: { d: AlertData }) => (
           <span style={{ color: d.color }} className="text-[11px]">⚠</span>
           <span className="text-[11px] font-bold uppercase tracking-[0.4px]" style={{ color: d.color }}>{d.alertInfo}</span>
           <span className="text-[11px] text-[#94a3b8] mx-1">·</span>
-          <span className="text-[11px] font-mono text-[#64748b]">{d.cameraId}</span>
+          <span className="text-[11px] font-mono text-[#64748b] dark:text-slate-400">{d.cameraId}</span>
         </div>
       </>
     ) : (
@@ -1227,7 +1252,7 @@ const V12AlertCard = ({ d }: { d: AlertData }) => (
           {d.zones?.map((z) => (
             <div key={z.name} className="flex items-center justify-between py-2.5 px-3 rounded-[4px]" style={{ backgroundColor: hex2rgba(d.color, 0.08) }}>
               <div>
-                <div className="text-[13px] font-semibold text-[#0f172a]">{z.name}</div>
+                <div className="text-[13px] font-semibold text-[#0f172a] dark:text-slate-100">{z.name}</div>
                 <div className="text-[11px] text-[#64748b] mt-[5px]">{z.compliance}</div>
               </div>
               <BS dir={z.dir} num={z.num} ref_={z.ref_} color={d.color} />
@@ -1280,7 +1305,7 @@ const V12ZoneCard = ({ d, isSkeleton = false }: { d: ZoneData; isSkeleton?: bool
       <div className="px-4 pt-3 pb-3 flex items-start justify-between gap-4">
         <div className="flex flex-col gap-[7px] min-w-0">
           <div className="text-[14px] font-semibold text-[#0f172a] leading-none">{d.zoneName}</div>
-          <div className="text-[12px] text-[#64748b]">{d.subLabel}</div>
+          <div className="text-[12px] text-[#64748b] dark:text-slate-400">{d.subLabel}</div>
         </div>
         <BS dir={d.dir} num={d.num} ref_={d.ref_} color={d.color} />
       </div>
@@ -1324,10 +1349,10 @@ const V12CapacityCard = ({ d }: { d: CapData }) => (
         style={{ backgroundColor: hex2rgba(d.color, 0.14), color: d.color }}>{d.statusLabel}</span>
     </div>
     <div className="px-4 pt-3 pb-3 flex flex-col gap-[7px]">
-      <div className="text-[14px] font-semibold text-[#0f172a]">{d.zoneName}</div>
+      <div className="text-[14px] font-semibold text-[#0f172a] dark:text-slate-100">{d.zoneName}</div>
       <div className="flex items-baseline gap-2">
-        <span className="font-mono font-bold leading-none text-[#0f172a]" style={{ fontSize: 28 }}>{d.occupancy}%</span>
-        <span className="text-[12px] text-[#64748b]">{d.current}/{d.max} people</span>
+        <span className="font-mono font-bold leading-none text-[#0f172a] dark:text-slate-100" style={{ fontSize: 28 }}>{d.occupancy}%</span>
+        <span className="text-[12px] text-[#64748b] dark:text-slate-400">{d.current}/{d.max} people</span>
       </div>
     </div>
     <div className="px-4 pb-4">
@@ -1403,10 +1428,10 @@ const V12LiveCard = ({ d, frozenCursorFrac }: { d: LiveData; frozenCursorFrac?: 
       <div className="px-4 pt-3 pb-4 flex items-center justify-between gap-4"
         onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <div className="flex flex-col gap-[7px]">
-          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: d.count === "CLEAR" ? 20 : 28 }}>
+          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a] dark:text-slate-100" style={{ fontSize: d.count === "CLEAR" ? 20 : 28 }}>
             {d.count}
           </div>
-          <div className="text-[12px] text-[#64748b]">{d.subtitle}</div>
+          <div className="text-[12px] text-[#64748b] dark:text-slate-400">{d.subtitle}</div>
         </div>
         {/* Sparkline */}
         <div className="relative flex-shrink-0">
@@ -1499,7 +1524,7 @@ const V1_2Content = () => (
             <HUDKPICard variant={v} frozenCursorFrac={i === 0 ? 0.62 : undefined} />
             <div className="flex items-center gap-1.5">
               <Badge label={v.name} color={v.color} />
-              {i === 0 && <span className="text-[9px] font-mono text-[#64748b]">↑ interactive</span>}
+              {i === 0 && <span className="text-[9px] font-mono text-[#64748b] dark:text-slate-400">↑ interactive</span>}
             </div>
           </div>
         ))}
@@ -3359,12 +3384,13 @@ const AccItem = ({
   severity,
 }: AccItemProps) => {
   const s = ACCORDION_SEVERITIES[severity];
+  const isDark = useIsDark();
   return (
     <div
       className="rounded-[6px] overflow-hidden transition-all duration-200"
       style={{
-        border: `1px solid ${isOpen ? s.border : "#E2E8F0"}`,
-        backgroundColor: isOpen ? s.bg : "#ffffff",
+        border: `1px solid ${isOpen ? s.border : isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0"}`,
+        backgroundColor: isOpen ? (isDark ? hex2rgba(s.color, 0.10) : s.bg) : isDark ? "#0f172a" : "#ffffff",
         boxShadow: isOpen ? `0 2px 12px ${s.color}20` : "0 1px 3px rgba(0,0,0,0.04)",
       }}
     >
@@ -3376,15 +3402,15 @@ const AccItem = ({
         {showIcon && (
           <div
             className="w-7 h-7 rounded-[4px] flex items-center justify-center flex-shrink-0 transition-all duration-200"
-            style={{ backgroundColor: isOpen ? `${s.color}18` : "#F1F5F9" }}
+            style={{ backgroundColor: isOpen ? `${s.color}18` : isDark ? "#1e293b" : "#F1F5F9" }}
           >
-            <Icon className="w-3.5 h-3.5 transition-colors duration-200" style={{ color: isOpen ? s.color : "#64748B" }} />
+            <Icon className="w-3.5 h-3.5 transition-colors duration-200" style={{ color: isOpen ? s.color : isDark ? "#94A3B8" : "#64748B" }} />
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div
             className="text-[13px] font-semibold leading-tight truncate transition-colors duration-200"
-            style={{ color: isOpen ? s.color : "#0f172a" }}
+            style={{ color: isOpen ? s.color : isDark ? "#F1F5F9" : "#0f172a" }}
           >
             {title}
           </div>
@@ -3445,7 +3471,7 @@ const AccItem = ({
                     <div className="text-[9px] font-bold uppercase tracking-[0.4px] text-[#94A3B8]">
                       {card.label}
                     </div>
-                    <div className="text-[18px] font-bold font-mono mt-1 leading-none" style={{ color: "#0f172a" }}>
+                    <div className="text-[18px] font-bold font-mono mt-1 leading-none text-[#0f172a] dark:text-slate-100">
                       {card.value}
                     </div>
                     <div className="text-[10px] font-semibold mt-1" style={{ color: card.color }}>
@@ -3486,9 +3512,9 @@ const AccordionContent = () => {
       />
 
       {/* Live preview + controls */}
-      <div className="rounded-[8px] border border-[#E2E8F0] overflow-hidden">
+      <div className="rounded-[8px] border border-[#E2E8F0] dark:border-white/8 overflow-hidden">
         {/* Topbar */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] bg-white">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a]">
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#CBD5E1]">
               Component Sandbox
@@ -3510,7 +3536,7 @@ const AccordionContent = () => {
         {/* Body */}
         <div className="flex">
           {/* Accordion preview */}
-          <div className="flex-1 min-w-0 p-6 space-y-2 bg-[#F8FAFC]">
+          <div className="flex-1 min-w-0 p-6 space-y-2 bg-[#F8FAFC] dark:bg-[#020617]">
             {ACC_ITEMS_DATA.map((item) => (
               <AccItem
                 key={item.id}
@@ -3523,7 +3549,7 @@ const AccordionContent = () => {
           </div>
 
           {/* Controls panel */}
-          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a] p-4 space-y-5 overflow-y-auto">
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">
                 Elements
@@ -3549,7 +3575,7 @@ const AccordionContent = () => {
               </div>
             </div>
 
-            <div className="h-px bg-[#F1F5F9]" />
+            <div className="h-px bg-[#F1F5F9] dark:bg-white/5" />
 
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">
@@ -3565,7 +3591,7 @@ const AccordionContent = () => {
               />
             </div>
 
-            <div className="h-px bg-[#F1F5F9]" />
+            <div className="h-px bg-[#F1F5F9] dark:bg-white/5" />
 
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">
@@ -3953,8 +3979,8 @@ const AccordionContentV11 = () => {
       </div>
 
       {/* Live preview + controls */}
-      <div className="rounded-[8px] border border-[#E2E8F0] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] bg-white">
+      <div className="rounded-[8px] border border-[#E2E8F0] dark:border-white/8 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a]">
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#CBD5E1]">Component Sandbox</span>
             <span className="w-1.5 h-1.5 rounded-full bg-[#00775B]" />
@@ -3972,7 +3998,7 @@ const AccordionContentV11 = () => {
         </div>
 
         <div className="flex">
-          <div className="flex-1 min-w-0 p-6 space-y-2.5 bg-[#F8FAFC]">
+          <div className="flex-1 min-w-0 p-6 space-y-2.5 bg-[#F8FAFC] dark:bg-[#020617]">
             {ACC_ITEMS_DATA.map((item) => (
               <AccItemV11
                 key={item.id}
@@ -3984,7 +4010,7 @@ const AccordionContentV11 = () => {
             ))}
           </div>
 
-          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a] p-4 space-y-5 overflow-y-auto">
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Elements</div>
               <div className="space-y-3">
@@ -4008,7 +4034,7 @@ const AccordionContentV11 = () => {
               </div>
             </div>
 
-            <div className="h-px bg-[#F1F5F9]" />
+            <div className="h-px bg-[#F1F5F9] dark:bg-white/5" />
 
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Content</div>
@@ -4022,7 +4048,7 @@ const AccordionContentV11 = () => {
               />
             </div>
 
-            <div className="h-px bg-[#F1F5F9]" />
+            <div className="h-px bg-[#F1F5F9] dark:bg-white/5" />
 
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Severity</div>
@@ -4489,9 +4515,9 @@ const AccordionContentV12 = () => {
       </div>
 
       {/* Live preview + controls */}
-      <div className="rounded-[8px] border border-[#E2E8F0] overflow-hidden">
+      <div className="rounded-[8px] border border-[#E2E8F0] dark:border-white/8 overflow-hidden">
         {/* Topbar */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] bg-white">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a]">
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#CBD5E1]">Component Sandbox</span>
             <span className="w-1.5 h-1.5 rounded-full bg-[#00775B]" />
@@ -4511,7 +4537,7 @@ const AccordionContentV12 = () => {
         {/* Body */}
         <div className="flex">
           {/* Accordion preview */}
-          <div className="flex-1 min-w-0 p-6 space-y-2 bg-[#F8FAFC]">
+          <div className="flex-1 min-w-0 p-6 space-y-2 bg-[#F8FAFC] dark:bg-[#020617]">
             {ACC_ITEMS_DATA.map((item) => (
               <AccItemV12
                 key={item.id}
@@ -4524,7 +4550,7 @@ const AccordionContentV12 = () => {
           </div>
 
           {/* Controls */}
-          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] bg-white p-4 space-y-5 overflow-y-auto">
+          <div className="w-[272px] flex-shrink-0 border-l border-[#E2E8F0] dark:border-white/8 bg-white dark:bg-[#0f172a] p-4 space-y-5 overflow-y-auto">
             {/* Elements */}
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[0.7px] text-[#94A3B8] mb-3">Elements</div>
@@ -4552,7 +4578,7 @@ const AccordionContentV12 = () => {
               </div>
             </div>
 
-            <div className="h-px bg-[#F1F5F9]" />
+            <div className="h-px bg-[#F1F5F9] dark:bg-white/5" />
 
             {/* Content */}
             <div>
@@ -4567,7 +4593,7 @@ const AccordionContentV12 = () => {
               />
             </div>
 
-            <div className="h-px bg-[#F1F5F9]" />
+            <div className="h-px bg-[#F1F5F9] dark:bg-white/5" />
 
             {/* Severity */}
             <div>
@@ -5863,9 +5889,10 @@ export const DesignSystem = () => {
   const [accordionTab, setAccordionTab] = useState<AccordionTabId>("v1-acc");
   const [incidentTab, setIncidentTab] = useState<IncidentTabId>("inc-v1");
   const [sandboxTheme, setSandboxTheme] = useState<"light" | "dark">("light");
+  const isDark = useIsDark();
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#020617]">
 
       {/* Hero */}
       <div className="bg-gradient-to-r from-[#021D18] via-[#032E24] to-[#043D2E] px-8 py-7 border-b border-white/5">
@@ -5914,7 +5941,7 @@ export const DesignSystem = () => {
 
         {/* Component type selector */}
         <div className="flex items-center gap-0 py-5">
-          <div className="rounded-[6px] p-0.5 bg-[#F1F5F9] border border-[#E2E8F0] flex items-center">
+          <div className="rounded-[6px] p-0.5 bg-[#F1F5F9] dark:bg-[#1e293b] border border-[#E2E8F0] dark:border-white/10 flex items-center">
             {(["card", "table", "accordion", "incident"] as const).map((type) => {
               const isActive = componentType === type;
               return (
@@ -5923,9 +5950,9 @@ export const DesignSystem = () => {
                   onClick={() => setComponentType(type)}
                   className="px-5 py-2 text-[11px] font-bold uppercase tracking-[0.05em] rounded-[4px] transition-all"
                   style={{
-                    backgroundColor: isActive ? "#00775B" : "white",
-                    color: isActive ? "white" : "#64748B",
-                    border: isActive ? "none" : "1px solid #E2E8F0",
+                    backgroundColor: isActive ? "#00775B" : isDark ? "#0f172a" : "white",
+                    color: isActive ? "white" : isDark ? "#94A3B8" : "#64748B",
+                    border: isActive ? "none" : `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0"}`,
                   }}
                 >
                   {type === "card" ? "Cards" : type === "table" ? "Tables" : type === "accordion" ? "Accordion" : "Incident Cards"}
@@ -5936,7 +5963,7 @@ export const DesignSystem = () => {
         </div>
 
         {/* Tab strip */}
-        <div className="flex items-end gap-0 border-b border-[#E2E8F0] mt-0">
+        <div className="flex items-end gap-0 border-b border-[#E2E8F0] dark:border-white/10 mt-0">
           {(componentType === "card" ? CARD_TABS : componentType === "table" ? TABLE_TABS : componentType === "incident" ? INCIDENT_TABS : ACCORDION_TABS).map((tab) => {
             const active = componentType === "card" ? activeTab === tab.id : componentType === "table" ? tableTab === tab.id : componentType === "incident" ? incidentTab === tab.id : accordionTab === tab.id;
             return (
@@ -5952,13 +5979,13 @@ export const DesignSystem = () => {
                   "relative flex items-center gap-2.5 px-6 py-4 text-[12px] font-bold transition-all duration-200 border-b-2 -mb-px",
                   active
                     ? "border-[#00775B] text-[#00775B]"
-                    : "border-transparent text-[#64748b] hover:text-[#334155] hover:border-[#CBD5E1]"
+                    : "border-transparent text-[#64748b] dark:text-slate-400 hover:text-[#334155] dark:hover:text-slate-200 hover:border-[#CBD5E1] dark:hover:border-white/20"
                 )}
               >
                 <span
                   className={cn(
                     "font-mono text-[10px] px-1.5 py-0.5 rounded-[3px] font-bold transition-all",
-                    active ? "bg-[#00775B] text-white" : "bg-neutral-100 text-[#64748b]"
+                    active ? "bg-[#00775B] text-white" : "bg-neutral-100 dark:bg-slate-700 text-[#64748b] dark:text-slate-300"
                   )}
                 >
                   {tab.version}

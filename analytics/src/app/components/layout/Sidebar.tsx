@@ -8,7 +8,7 @@ import {
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export type Page =
-  | "dashboard" | "dashboard-2" | "incident-lifecycle" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
+  | "dashboard" | "dashboard-2" | "dashboard-3" | "incident-lifecycle" | "volume" | "incident" | "zone" | "quality" | "safety" | "identity"
   | "facial-recognition" | "license-plates" | "cameras" | "metrics" | "compliance"
   | "design-system" | "settings" | "service" | "sample-analytics" | "microservices";
 
@@ -37,11 +37,8 @@ const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType; badge?: num
   { id: "safety",             label: "Safety Analytics",    icon: ShieldCheck },
   { id: "identity",           label: "Identity Analytics",  icon: Fingerprint },
   { id: "service",            label: "Service Analytics",   icon: Timer },
-  { id: "facial-recognition", label: "Facial Recognition",  icon: ScanFace },
-  { id: "license-plates",     label: "License Plates",      icon: CarFront },
   { id: "cameras",            label: "Cameras",             icon: Video },
   { id: "metrics",            label: "Metrics & Rules",     icon: Map },
-  { id: "compliance",         label: "Compliance",          icon: ClipboardCheck },
   { id: "design-system",      label: "Component Library",   icon: Layers },
   { id: "sample-analytics",  label: "Staff Monitoring",    icon: Users },
 ];

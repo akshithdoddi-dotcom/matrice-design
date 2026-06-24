@@ -33,6 +33,7 @@ export type Page =
 interface Props {
   activePage: Page;
   onPageChange: (page: Page) => void;
+  onPlatformSwitch?: (app: string) => void;
 }
 
 const PLATFORMS = [
@@ -87,7 +88,7 @@ const MatriceIcon = () => (
   </svg>
 );
 
-export const AppSidebar = ({ activePage, onPageChange }: Props) => {
+export const AppSidebar = ({ activePage, onPageChange, onPlatformSwitch }: Props) => {
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       {/* ── Brand / Platform Switcher ── */}
@@ -124,8 +125,11 @@ export const AppSidebar = ({ activePage, onPageChange }: Props) => {
                   <DropdownMenuItem
                     key={p.id}
                     className="gap-2 p-2 cursor-pointer"
-                    disabled={!p.url}
-                    onClick={() => p.url && window.open(p.url, "_blank")}
+                    disabled={!p.url && !onPlatformSwitch}
+                    onClick={() => {
+                      if (p.id === "vms" && onPlatformSwitch) { onPlatformSwitch("vms"); return; }
+                      if (p.url) window.open(p.url, "_blank");
+                    }}
                   >
                     <div className="flex size-6 items-center justify-center rounded-sm border bg-muted">
                       <p.icon className="size-3.5 shrink-0" />
