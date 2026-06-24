@@ -1458,8 +1458,8 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
   onIncidentClick: (incident: MockIncident) => void;
 }) {
   // Monitor persona: auto-select first pipeline so they never see the chooser
-  const effectivePipeline = persona === "monitor" ? (pipeline ?? DEMO_PIPELINES[0]) : pipeline;
-  const bg     = isDark ? "#020617" : "#F0FDF9";
+  const effectivePipeline = persona === "monitor" ? (pipeline ?? MOCK_PIPELINES[0]) : pipeline;
+  const bg     = isDark ? "#020617" : "#F1F5F9";
   const cardBg = isDark ? "#0f172a" : "#FFFFFF";
   const border = isDark ? "rgba(0,119,91,0.2)" : "#D1FAE5";
   const text   = isDark ? "#F1F5F9" : "#0F172A";
@@ -1469,6 +1469,7 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
   const [gridLayout, setGridLayout] = useState<1|2|3|4>(4);
   const [selectedCamId, setSelectedCamId] = useState(MOCK_CAMERAS[0].id);
   const [camPage, setCamPage] = useState(1);
+  const [plSearchQ, setPlSearchQ] = useState("");
 
   // Focus view: null = grid, string = focused camera id
   const [focusedCamId, setFocusedCamId] = useState<string | null>(null);
@@ -1495,7 +1496,6 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
       const a = PIPELINE_ALERT_COUNTS[p.id] ?? { critical: 0, high: 0 };
       return acc + a.critical + a.high;
     }, 0);
-    const [plSearchQ, setPlSearchQ] = useState("");
     const filteredPipelines = pipelines.filter(p => p.name.toLowerCase().includes(plSearchQ.toLowerCase()));
 
     return (

@@ -566,13 +566,17 @@ export const CATEGORIES: AppCategory[] = ["All", "Safety", "Security", "Retail",
 // ─── Shared: per-camera app assignment row ───────────────────────────────────
 export function CameraAppRow({
   camera, selectedApps, onAppsChange, defaultExpanded = false,
+  expanded: controlledExpanded, onExpand,
 }: {
   camera: CameraDevice;
   selectedApps: Set<string>;
   onAppsChange: (next: Set<string>) => void;
   defaultExpanded?: boolean;
+  expanded?: boolean;
+  onExpand?: () => void;
 }) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [localExpanded, setLocalExpanded] = useState(defaultExpanded);
+  const expanded = controlledExpanded !== undefined ? controlledExpanded : localExpanded;
   const [appSearch, setAppSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<AppCategory>("All");
 
@@ -589,7 +593,7 @@ export function CameraAppRow({
 
   return (
     <div className={cn("rounded-[6px] border overflow-hidden", hasApps ? "border-[#00775B]/30" : "border-[#F59E0B]/40")}>
-      <button type="button" onClick={() => setExpanded(v => !v)}
+      <button type="button" onClick={() => onExpand ? onExpand() : setLocalExpanded(v => !v)}
         className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-[#FAFAFA] transition-colors text-left" style={INTER}>
         <div className={cn("w-2 h-2 rounded-full shrink-0 mt-0.5", hasApps ? "bg-[#00775B]" : "bg-[#F59E0B]")} />
         <div className="flex-1 min-w-0">

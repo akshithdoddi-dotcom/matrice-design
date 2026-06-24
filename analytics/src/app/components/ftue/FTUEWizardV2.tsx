@@ -362,92 +362,73 @@ function CameraFilledIcon({ size = 14, color = "currentColor" }: { size?: number
 
 // ─── Camera Card ─────────────────────────────────────────────────────────────
 function CameraCard({ cam, onRemove, t }: { cam: CameraEntry; onRemove: () => void; t: Theme }) {
-  const protocolColor = cam.protocol === "RTSP" ? "#00775B"
-    : cam.protocol === "IP" ? "#2B7FFF" : "#7C3AED";
-
-  const urlHost = cam.url
-    ? cam.url.replace(/^(rtsp|http|https):\/\//, "").split("/")[0]
-    : cam.protocol === "FILE" ? "video file" : "";
+  const fullPath = cam.url || (cam.protocol === "FILE" ? "video file" : "");
 
   return (
-    <div
-      style={{
-        display: "flex", flexDirection: "column", gap: "6px",
-        padding: "9px 10px",
-        borderRadius: "8px",
-        backgroundColor: t.isDark ? "#0A0F1A" : "#FFFFFF",
-        border: `1px solid ${t.isDark ? "#1E293B" : "#E2E8F0"}`,
-        borderLeft: `3px solid ${protocolColor}`,
-        transition: "box-shadow 0.15s",
-        minWidth: 0, position: "relative",
-      }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow =
-          t.isDark ? "0 3px 10px rgba(0,0,0,0.4)" : "0 3px 10px rgba(0,0,0,0.07)";
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-      }}
-    >
-      {/* Row 1: icon | name | protocol badge | × */}
+    <div style={{
+      display: "flex", flexDirection: "column", gap: "6px",
+      padding: "12px 14px", borderRadius: "4px", maxWidth: "320px",
+      backgroundColor: t.isDark ? "#0A0F1A" : "#FFFFFF",
+      border: `1px solid ${t.isDark ? "#1E293B" : "#E2E8F0"}`,
+      minWidth: 0,
+    }}>
+      {/* Row 1: video icon | name | protocol badge | × */}
       <div style={{ display: "flex", alignItems: "center", gap: "7px", minWidth: 0 }}>
-        <div style={{
-          width: "22px", height: "22px", borderRadius: "5px", flexShrink: 0,
-          backgroundColor: `${protocolColor}12`,
-          border: `1px solid ${protocolColor}22`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <CameraFilledIcon size={11} color={protocolColor} />
-        </div>
-        <div style={{
-          ...INTER, fontSize: "12px", fontWeight: 600, flex: 1, minWidth: 0,
-          color: t.isDark ? "#E2E8F0" : "#0F172A",
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00956D"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <path d="M23 7l-7 5 7 5V7z"/>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+        <span style={{
+          ...INTER, fontSize: "13px", fontWeight: 600, minWidth: 0, flex: 1,
+          color: t.isDark ? "#E2E8F0" : "#1E293B",
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>
           {cam.name}
-        </div>
+        </span>
         <span style={{
-          ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.05em",
-          padding: "2px 6px", borderRadius: "4px", flexShrink: 0,
-          backgroundColor: `${protocolColor}12`,
-          border: `1px solid ${protocolColor}30`,
-          color: protocolColor,
+          ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0em",
+          padding: "1px 4px", borderRadius: "2px", flexShrink: 0,
+          backgroundColor: t.isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9",
+          color: "#64748B",
         }}>
           {cam.protocol}
         </span>
         <button
           onClick={onRemove}
           style={{
-            width: "20px", height: "20px", borderRadius: "4px", flexShrink: 0,
+            width: "16px", height: "16px", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
             backgroundColor: "transparent", border: "none", cursor: "pointer",
-            color: t.isDark ? "#475569" : "#94A3B8", transition: "all 0.15s",
+            color: t.isDark ? "#475569" : "#94A3B8", transition: "color 0.15s",
+            borderRadius: "2px", padding: 0,
           }}
           onMouseEnter={e => {
-            const el = e.currentTarget as HTMLButtonElement;
-            el.style.backgroundColor = t.isDark ? "#2D1B1B" : "#FEE2E2";
-            el.style.color = "#E7000B";
+            (e.currentTarget as HTMLButtonElement).style.color = "#EF4444";
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(239,68,68,0.05)";
           }}
           onMouseLeave={e => {
-            const el = e.currentTarget as HTMLButtonElement;
-            el.style.backgroundColor = "transparent";
-            el.style.color = t.isDark ? "#475569" : "#94A3B8";
+            (e.currentTarget as HTMLButtonElement).style.color = t.isDark ? "#475569" : "#94A3B8";
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
           }}
         >
-          <X style={{ width: "11px", height: "11px" }} />
+          <X style={{ width: "10px", height: "10px" }} />
         </button>
       </div>
-
-      {/* Row 2: host URL */}
-      {urlHost && (
-        <div style={{ paddingLeft: "29px" }}>
-          <div style={{
-            ...MONO, fontSize: "10px",
-            color: t.isDark ? "#475569" : "#64748B",
+      {/* Row 2: PATH label + full URL */}
+      {fullPath && (
+        <div style={{ display: "flex", alignItems: "baseline", gap: "5px", minWidth: 0 }}>
+          <span style={{
+            ...INTER, fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em",
+            color: "#94A3B8", flexShrink: 0, textTransform: "uppercase",
+          }}>PATH:</span>
+          <code style={{
+            ...MONO, fontSize: "11px", color: "#64748B",
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            minWidth: 0, display: "block",
           }}>
-            {urlHost}
-          </div>
+            {fullPath}
+          </code>
         </div>
       )}
     </div>
@@ -688,6 +669,8 @@ function Step1({
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [connState, setConnState] = useState<"idle" | "error" | "success">("idle");
+  const [connTesting, setConnTesting] = useState(false);
 
   const canAdd = name.trim() && (protocol === "FILE" || url.trim());
   const atMax = cameras.length >= MAX_CAMERAS;
@@ -812,17 +795,84 @@ function Step1({
                 <>
                   <div>
                     <DLabel required t={t}>Stream URL</DLabel>
-                    <DInput value={url} onChange={setUrl}
+                    <DInput value={url} onChange={v => { setUrl(v); setConnState("idle"); }}
                       placeholder={protocol === "RTSP" ? "rtsp://192.168.1.100:554/stream" : "http://192.168.1.100/video"} t={t} />
                   </div>
                   <div>
                     <DLabel t={t}>Camera Feed Path</DLabel>
-                    <div className="flex gap-2">
-                      <DInput value="" onChange={() => {}} placeholder="Camera Feed Path (Optional)" t={t} />
-                      <button style={{ ...INTER, borderColor: t.primary, color: t.primary }}
-                        className="shrink-0 h-10 px-4 rounded-[4px] border text-[13px] font-semibold transition-colors whitespace-nowrap hover:opacity-80">
-                        Detect Codec
-                      </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div className="flex gap-2">
+                        <DInput value="" onChange={() => {}} placeholder="Camera Feed Path (Optional)" t={t} />
+                        <button
+                          onClick={() => {
+                            if (connTesting) return;
+                            setConnTesting(true);
+                            setTimeout(() => {
+                              setConnTesting(false);
+                              setConnState(prev => prev === "error" ? "success" : "error");
+                              if (connState === "error") setAdvOpen(true);
+                            }, 1200);
+                          }}
+                          style={{
+                            ...INTER,
+                            borderColor: connState === "success" ? "#00775B" : connState === "error" ? "#E7000B" : t.primary,
+                            color: connState === "success" ? "#00775B" : connState === "error" ? "#E7000B" : t.primary,
+                            backgroundColor: connState === "success" ? "rgba(0,119,91,0.06)" : connState === "error" ? "rgba(231,0,11,0.05)" : "transparent",
+                            opacity: connTesting ? 0.7 : 1,
+                            cursor: connTesting ? "not-allowed" : "pointer",
+                          }}
+                          className="shrink-0 h-10 px-4 rounded-[4px] border text-[13px] font-semibold whitespace-nowrap transition-all">
+                          {connTesting ? "Testing…" : connState === "success" ? "✓ Connected" : connState === "error" ? "Retry Test" : "Test Connection"}
+                        </button>
+                      </div>
+                      {/* Connection result feedback */}
+                      {connState === "error" && !connTesting && (
+                        <div style={{
+                          display: "flex", alignItems: "flex-start", gap: "8px",
+                          padding: "10px 12px", borderRadius: "6px",
+                          backgroundColor: "rgba(231,0,11,0.05)",
+                          border: "1px solid rgba(231,0,11,0.15)",
+                        }}>
+                          <span style={{ fontSize: "14px", flexShrink: 0 }}>⚠️</span>
+                          <div style={{ ...INTER, fontSize: "12px", lineHeight: 1.5 }}>
+                            <div style={{ fontWeight: 600, color: "#E7000B", marginBottom: "2px" }}>Connection failed</div>
+                            <div style={{ color: t.isDark ? "#94A3B8" : "#64748B" }}>
+                              Unable to reach stream at the provided URL. Check that the device is online, the port is open, and the credentials (if any) are correct. Click <strong>Retry Test</strong> to attempt again.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {connState === "success" && !connTesting && (
+                        <div style={{
+                          display: "flex", alignItems: "flex-start", gap: "8px",
+                          padding: "10px 12px", borderRadius: "6px",
+                          backgroundColor: "rgba(0,119,91,0.05)",
+                          border: "1px solid rgba(0,119,91,0.18)",
+                        }}>
+                          <span style={{ fontSize: "14px", flexShrink: 0 }}>✅</span>
+                          <div style={{ ...INTER, fontSize: "12px", lineHeight: 1.5 }}>
+                            <div style={{ fontWeight: 600, color: "#00775B", marginBottom: "4px" }}>Stream verified successfully</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                              {[
+                                ["Codec", "H.264"],
+                                ["Resolution", "1920×1080"],
+                                ["FPS", "25"],
+                                ["Make", "Hikvision DS-2CD"],
+                                ["Latency", "38 ms"],
+                              ].map(([k, v]) => (
+                                <span key={k} style={{
+                                  ...MONO, fontSize: "10px",
+                                  padding: "2px 7px", borderRadius: "4px",
+                                  backgroundColor: t.isDark ? "rgba(0,119,91,0.12)" : "rgba(0,119,91,0.08)",
+                                  color: t.isDark ? "#34D399" : "#00775B",
+                                }}>
+                                  {k}: <strong>{v}</strong>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
@@ -1162,6 +1212,37 @@ function Step3({ pipelineForm, setPipelineForm, t }: {
   );
 }
 
+// ─── Step 4 Accordion (App Assignment) ───────────────────────────────────────
+function Step4Accordion({ cameras, setCameraApps, t }: {
+  cameras: CameraEntry[];
+  setCameraApps: (id: string, apps: Set<string>) => void;
+  t: Theme;
+}) {
+  const [expandedId, setExpandedId] = useState<string | null>(cameras[0]?.id ?? null);
+  const allAssigned = cameras.every(c => c.apps.size > 0);
+  return (
+    <div className="space-y-3">
+      {!allAssigned && (
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-[6px] mb-2"
+          style={{ background: t.isDark ? "rgba(0,119,91,0.08)" : "#F0FDF8", border: `1px solid ${t.isDark ? "rgba(0,119,91,0.25)" : "rgba(0,119,91,0.2)"}` }}>
+          <Zap className="w-4 h-4 shrink-0" style={{ color: t.primary }} />
+          <span className="text-[12px]" style={{ ...INTER, color: t.primary }}>Assign at least 1 application to each camera to proceed.</span>
+        </div>
+      )}
+      {cameras.map(cam => (
+        <CameraAppRow
+          key={cam.id}
+          camera={{ id: cam.id, name: cam.name, location: cam.protocol, group: "All" }}
+          selectedApps={cam.apps}
+          onAppsChange={(next) => setCameraApps(cam.id, next)}
+          expanded={cam.id === expandedId}
+          onExpand={() => setExpandedId(prev => prev === cam.id ? null : cam.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── Step 4 — Launch ──────────────────────────────────────────────────────────
 type LaunchPhase = "confirm" | "booting" | "success";
 
@@ -1200,27 +1281,54 @@ function Step4({ onComplete, onFadeStart, cameras, projectForm, pipelineForm, t,
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 
-        {/* Summary tokens */}
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" as const }}>
-          {[
-            { label: "PROJECT", value: projectForm.name || "Unnamed Project", icon: "◈" },
-            { label: "PIPELINE", value: pipelineForm.name || "Unnamed Pipeline", icon: "⬡" },
-            { label: "CAMERAS", value: `${cameras.length} connected`, icon: "⊙" },
-            { label: "APPLICATIONS", value: `${totalApps} bindings`, icon: "◎" },
-          ].map(tok => (
-            <div key={tok.label} style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              padding: "7px 12px", borderRadius: "6px",
-              backgroundColor: t.isDark ? "#0A0F1A" : "#F8FAFC",
-              border: `1px solid ${t.isDark ? "#1E293B" : "#E2E8F0"}`,
-            }}>
-              <span style={{ ...MONO, fontSize: "11px", color: t.primary }}>{tok.icon}</span>
-              <div>
-                <div style={{ ...MONO, fontSize: "8px", fontWeight: 700, letterSpacing: "0.08em", color: t.sectionLabel }}>{tok.label}</div>
-                <div style={{ ...INTER, fontSize: "12px", fontWeight: 600, color: t.isDark ? "#E2E8F0" : "#0F172A" }}>{tok.value}</div>
-              </div>
+        {/* Deployment Lineage Bar */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 16px", borderRadius: "6px", boxSizing: "border-box" as const,
+          backgroundColor: t.isDark ? "#0A0F1A" : "#FAFAFA",
+          border: `1px solid ${t.isDark ? "#1E293B" : "#E2E8F0"}`,
+        }}>
+          {/* Left: lineage path */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+              <span style={{ ...INTER, fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", color: t.isDark ? "#334155" : "#94A3B8" }}>PROJECT</span>
+              <span style={{ ...INTER, fontSize: "13px", fontWeight: 600, color: t.isDark ? "#E2E8F0" : "#1E293B" }}>
+                {projectForm.name || "Unnamed Project"}
+              </span>
             </div>
-          ))}
+
+            <span style={{ fontSize: "14px", color: t.isDark ? "#1E293B" : "#CBD5E1", userSelect: "none" as const, padding: "0 4px" }}>→</span>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+              <span style={{ ...INTER, fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", color: t.isDark ? "#334155" : "#94A3B8" }}>PIPELINE</span>
+              <span style={{ ...INTER, fontSize: "13px", fontWeight: 600, color: "#00956D", display: "flex", alignItems: "center", gap: "4px" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                {pipelineForm.name || "Unnamed Pipeline"}
+              </span>
+            </div>
+          </div>
+
+          {/* Right: scope metrics */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {[
+              { dot: "#3B82F6", count: cameras.length, label: "camera connected", plural: "cameras connected" },
+              { dot: "#94A3B8", count: totalApps, label: "app binding queued", plural: "app bindings queued" },
+            ].map(m => (
+              <div key={m.label} style={{
+                display: "flex", alignItems: "center", gap: "6px",
+                ...INTER, fontSize: "12px", color: t.isDark ? "#475569" : "#475569",
+                backgroundColor: t.isDark ? "#0F172A" : "#FFFFFF",
+                border: `1px solid ${t.isDark ? "#1E293B" : "#E2E8F0"}`,
+                padding: "4px 10px", borderRadius: "20px",
+              }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: m.dot, flexShrink: 0, display: "inline-block" }} />
+                <strong style={{ fontWeight: 700, color: t.isDark ? "#E2E8F0" : "#1E293B" }}>{m.count}</strong>
+                {m.count === 1 ? m.label : m.plural}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Camera + bindings review */}
@@ -1228,69 +1336,77 @@ function Step4({ onComplete, onFadeStart, cameras, projectForm, pipelineForm, t,
           <div style={{ ...INTER, fontSize: "11px", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: t.sectionLabel, marginBottom: "10px" }}>
             Camera · Application Bindings
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {cameras.map(cam => {
-              const protocolColor = cam.protocol === "RTSP" ? "#00775B" : cam.protocol === "IP" ? "#2B7FFF" : "#7C3AED";
               const urlHost = cam.url ? cam.url.replace(/^(rtsp|http|https):\/\//, "").split("/")[0] : "";
               const boundApps = AI_APPS.filter(a => cam.apps.has(a.id));
               return (
                 <div key={cam.id} style={{
-                  borderRadius: "8px",
+                  display: "flex", alignItems: "center",
+                  padding: "12px 20px",
+                  borderRadius: "4px",
                   backgroundColor: t.isDark ? "#0A0F1A" : "#FFFFFF",
                   border: `1px solid ${t.isDark ? "#1E293B" : "#E2E8F0"}`,
-                  borderLeft: `3px solid ${protocolColor}`,
-                  overflow: "hidden",
+                  borderLeft: "3px solid #00956D",
+                  boxSizing: "border-box" as const, width: "100%",
                 }}>
-                  {/* Camera row */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px" }}>
-                    <div style={{
-                      width: "26px", height: "26px", borderRadius: "6px", flexShrink: 0,
-                      backgroundColor: `${protocolColor}12`, border: `1px solid ${protocolColor}22`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <CameraFilledIcon size={12} color={protocolColor} />
+                  {/* Zone 1: Camera Identity */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: "180px", flexShrink: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00956D"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <path d="M23 7l-7 5 7 5V7z"/>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                      </svg>
+                      <span style={{ ...INTER, fontSize: "13px", fontWeight: 600, color: t.isDark ? "#E2E8F0" : "#1E293B" }}>
+                        {cam.name}
+                      </span>
+                      <span style={{
+                        ...MONO, fontSize: "9px", fontWeight: 700,
+                        padding: "1px 4px", borderRadius: "2px",
+                        backgroundColor: t.isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9",
+                        color: "#64748B",
+                      }}>{cam.protocol}</span>
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ ...INTER, fontSize: "13px", fontWeight: 600, color: t.isDark ? "#E2E8F0" : "#0F172A" }}>{cam.name}</div>
-                      {urlHost && <div style={{ ...MONO, fontSize: "10px", color: t.sectionLabel, marginTop: "1px" }}>{urlHost}</div>}
-                    </div>
-                    <span style={{
-                      ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.05em",
-                      padding: "2px 6px", borderRadius: "4px", flexShrink: 0,
-                      backgroundColor: `${protocolColor}12`, border: `1px solid ${protocolColor}30`, color: protocolColor,
-                    }}>{cam.protocol}</span>
-                    <span style={{
-                      ...INTER, fontSize: "11px", fontWeight: 600, flexShrink: 0,
-                      color: boundApps.length > 0 ? t.primary : t.sectionLabel,
-                    }}>
-                      {boundApps.length} app{boundApps.length !== 1 ? "s" : ""}
-                    </span>
+                    {urlHost && (
+                      <code style={{ ...MONO, fontSize: "11px", color: t.isDark ? "#475569" : "#94A3B8", paddingLeft: "21px" }}>
+                        {urlHost}
+                      </code>
+                    )}
                   </div>
 
-                  {/* App chips row */}
+                  {/* Divider */}
                   <div style={{
-                    padding: "8px 14px 10px 50px",
-                    borderTop: `1px solid ${t.isDark ? "#0F172A" : "#F1F5F9"}`,
-                    backgroundColor: t.isDark ? "#020617" : "#FAFAFA",
-                    display: "flex", flexWrap: "wrap" as const, gap: "6px",
-                  }}>
-                    {boundApps.length > 0 ? boundApps.map(app => (
-                      <span key={app.id} style={{
-                        ...INTER, fontSize: "11px", fontWeight: 500,
-                        padding: "3px 9px", borderRadius: "12px",
-                        backgroundColor: t.isDark ? "#0F172A" : `${t.primary}10`,
-                        border: `1px solid ${t.isDark ? "#1E293B" : `${t.primary}25`}`,
-                        color: t.isDark ? "#94A3B8" : t.primary,
-                        display: "flex", alignItems: "center", gap: "5px",
-                      }}>
-                        <app.icon style={{ width: "10px", height: "10px", flexShrink: 0 }} />
-                        {app.label}
-                      </span>
-                    )) : (
-                      <span style={{ ...INTER, fontSize: "11px", color: t.isDark ? "#334155" : "#CBD5E1", fontStyle: "italic" }}>
-                        No applications bound to this camera
-                      </span>
-                    )}
+                    width: "1px", height: "32px", flexShrink: 0,
+                    backgroundColor: t.isDark ? "#1E293B" : "#E2E8F0",
+                    margin: "0 24px",
+                  }} />
+
+                  {/* Zone 2: Assigned Applications */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: 0 }}>
+                    <span style={{
+                      ...INTER, fontSize: "9px", fontWeight: 700, letterSpacing: "0.05em",
+                      textTransform: "uppercase" as const, color: t.isDark ? "#334155" : "#94A3B8",
+                    }}>Assigned Applications</span>
+                    <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "8px" }}>
+                      {boundApps.length > 0 ? boundApps.map(app => (
+                        <span key={app.id} style={{
+                          ...INTER, fontSize: "12px", fontWeight: 500,
+                          color: "#00956D",
+                          backgroundColor: "rgba(0,149,109,0.06)",
+                          border: "1px solid rgba(0,149,109,0.15)",
+                          padding: "3px 10px", borderRadius: "4px",
+                          display: "flex", alignItems: "center", gap: "5px",
+                        }}>
+                          <app.icon style={{ width: "11px", height: "11px", flexShrink: 0 }} />
+                          {app.label}
+                        </span>
+                      )) : (
+                        <span style={{ ...INTER, fontSize: "11px", color: t.isDark ? "#334155" : "#CBD5E1", fontStyle: "italic" }}>
+                          No applications bound
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -1841,7 +1957,7 @@ export function FTUEWizardV2({ onComplete, onSwitchVersion, onPlatformSwitch, on
         style={{ backgroundColor: t.panel }}>
 
         {/* Top bar */}
-        <div className={cn("shrink-0 flex items-center justify-between pl-24 pr-10 py-5 border-b", t.topBar)}>
+        <div className={cn("shrink-0 flex items-center justify-between pl-12 pr-10 py-5 border-b", t.topBar)}>
           <div style={INTER}>
             <div className="text-[11px] uppercase tracking-[0.1em] mb-1.5" style={{ ...MONO, color: t.monoLabel }}>
               {STEP_MONO_LABELS[step]}
@@ -1866,7 +1982,7 @@ export function FTUEWizardV2({ onComplete, onSwitchVersion, onPlatformSwitch, on
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className={cn("py-8", step === 4 || step === 1 || step === 5 ? "w-full pl-12 pr-10" : "w-full max-w-[600px] pl-24 pr-10")}>
+          <div className={cn("py-8", step === 4 || step === 1 || step === 5 ? "w-full pl-12 pr-10" : "w-full max-w-[600px] pl-12 pr-10")}>
             {step === 1 && <Step1 cameras={cameras} onAddCamera={addCamera} onRemoveCamera={removeCamera} t={t} />}
             {step === 2 && <Step2 form={projectForm} setForm={setProjectForm} t={t} />}
             {step === 3 && (
@@ -1877,23 +1993,7 @@ export function FTUEWizardV2({ onComplete, onSwitchVersion, onPlatformSwitch, on
               />
             )}
             {step === 4 && (
-              <div className="space-y-3">
-                {!cameras.every(c => c.apps.size > 0) && (
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-[6px] mb-2"
-                    style={{ background: t.isDark ? "rgba(0,119,91,0.08)" : "#F0FDF8", border: `1px solid ${t.isDark ? "rgba(0,119,91,0.25)" : "rgba(0,119,91,0.2)"}` }}>
-                    <Zap className="w-4 h-4 shrink-0" style={{ color: t.primary }} />
-                    <span className="text-[12px]" style={{ ...INTER, color: t.primary }}>Assign at least 1 application to each camera to proceed.</span>
-                  </div>
-                )}
-                {cameras.map(cam => (
-                  <CameraAppRow
-                    key={cam.id}
-                    camera={{ id: cam.id, name: cam.name, location: cam.protocol, group: "All" }}
-                    selectedApps={cam.apps}
-                    onAppsChange={(next) => setCameraApps(cam.id, next)}
-                  />
-                ))}
-              </div>
+              <Step4Accordion cameras={cameras} setCameraApps={setCameraApps} t={t} />
             )}
             {step === 5 && (
               <Step4
@@ -1911,7 +2011,7 @@ export function FTUEWizardV2({ onComplete, onSwitchVersion, onPlatformSwitch, on
 
         {/* Footer */}
         {(step < 5 || (step === 5 && launchPhase === "confirm")) && (
-          <div className="shrink-0 pl-24 pr-10 py-5 border-t flex items-center justify-between"
+          <div className={cn("shrink-0 pl-12 pr-10 py-5 border-t flex items-center justify-between")}
             style={{ backgroundColor: t.footerBg, borderColor: t.footerBorder }}>
             <button onClick={() => step > 1 && setStep((step - 1) as WizardStep)} disabled={step === 1}
               className={cn("px-5 py-2.5 rounded-[4px] border text-[14px] font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed", t.backBtn)}
