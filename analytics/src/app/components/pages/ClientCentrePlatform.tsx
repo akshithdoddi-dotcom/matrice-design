@@ -8,7 +8,7 @@ import {
   Monitor, Store, Wrench, Headphones, Shield, FolderOpen,
   Network, HardDrive, Server, ChevronLeft, Zap, BarChart2,
   SlidersHorizontal, Globe, List, LayoutGrid, Maximize2, Users, Tag, Briefcase, PanelLeft, User,
-  Flame, HardHat, Thermometer, ShieldAlert, Car, BellRing,
+  Flame, HardHat, Thermometer, ShieldAlert, Car, BellRing, TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { ALL_INCIDENTS, Incident, IMG_SERVER_ROOM, IMG_INDUSTRIAL, IMG_PARKING, IMG_CROWD, IMG_FIRE } from "@/app/data/mockData";
@@ -2312,10 +2312,10 @@ function IncidentsDashboard({ isDark }: { isDark: boolean }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // APPLICATIONS PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-const ACTIVE_APPS_DATA: { icon: React.ElementType; color: string; name: string; cameras: number; alerts: number }[] = [
-  { icon: Flame,       color: "#EA580C", name: "Fire & Smoke Detection",  cameras: 4, alerts: 14 },
-  { icon: HardHat,     color: "#E19A04", name: "PPE Detection",            cameras: 7, alerts: 0  },
-  { icon: Thermometer, color: "#EA580C", name: "Heat Stress Monitoring",   cameras: 3, alerts: 2  },
+const ACTIVE_APPS_DATA: { icon: React.ElementType; color: string; name: string; cameras: number; alerts: number; cameraList: string[] }[] = [
+  { icon: Flame,       color: "#EA580C", name: "Fire & Smoke Detection",  cameras: 4, alerts: 14, cameraList: ["North Gate Exit Cam", "Main Loading Bay 02", "Server Room Rows A-D", "South Parking Fence"] },
+  { icon: HardHat,     color: "#E19A04", name: "PPE Detection",            cameras: 7, alerts: 0,  cameraList: ["Front Assembly Entrance", "Material Loading Zone", "Workshop Corridor B", "+4 More Active Streams"] },
+  { icon: Thermometer, color: "#EA580C", name: "Heat Stress Monitoring",   cameras: 3, alerts: 2,  cameraList: ["Boiler Room A", "Foundry Floor 2", "Engine Bay West"] },
 ];
 
 const STORE_APPS_DATA: { icon: React.ElementType; color: string; name: string; desc: string }[] = [
@@ -2331,41 +2331,87 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
   const title   = isDark ? "#E2E8F0" : "#0F172A";
   const sub     = isDark ? "#475569" : "#64748B";
   const label   = isDark ? "#334155" : "#94A3B8";
+  const hdr     = isDark ? "#0A0F1A" : "#F8FAFC";
+
+  const [layout, setLayout] = useState<"grid" | "table">("grid");
+  const [openPopover, setOpenPopover] = useState<string | null>(null);
+
+  const AlertBadge = ({ count }: { count: number }) => count > 0 ? (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "4px",
+      fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: "10px",
+      padding: "2px 6px", borderRadius: "3px",
+      background: "rgba(239,68,68,0.10)", border: "1px solid #EF4444", color: "#EF4444",
+    }}>
+      <TriangleAlert style={{ width: "10px", height: "10px", flexShrink: 0 }} />
+      <span style={{ fontFamily: "'JetBrains Mono','Fira Code',monospace" }}>{count}</span> Alert{count !== 1 ? "s" : ""}
+    </span>
+  ) : (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "4px",
+      fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "11px", color: sub,
+    }}>
+      <span style={{ fontFamily: "'JetBrains Mono','Fira Code',monospace" }}>0</span> Alerts Today
+    </span>
+  );
 
   return (
-    <div style={{ padding: "32px", backgroundColor: canvas, minHeight: "100%", ...INTER }}>
+    <div style={{ padding: "32px", backgroundColor: canvas, minHeight: "100%", ...INTER }}
+      onClick={() => setOpenPopover(null)}>
 
-      {/* ── Active Deployments ─────────────────────────────────── */}
+      {/* ── Active Deployments header ───────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <div>
           <h3 style={{ fontSize: "16px", fontWeight: 700, color: title, margin: 0 }}>Active AI Deployments</h3>
           <p style={{ fontSize: "12px", color: sub, marginTop: "3px" }}>Models currently analyzing your live feeds.</p>
         </div>
-        <span style={{
-          fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em",
-          padding: "4px 10px", borderRadius: "20px",
-          backgroundColor: "rgba(0,149,109,0.08)", border: "1px solid rgba(0,149,109,0.2)", color: "#00956D",
-        }}>
-          {ACTIVE_APPS_DATA.length} Apps Active
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{
+            fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em",
+            padding: "4px 10px", borderRadius: "20px",
+            backgroundColor: "rgba(0,149,109,0.08)", border: "1px solid rgba(0,149,109,0.2)", color: "#00956D",
+          }}>
+            {ACTIVE_APPS_DATA.length} Apps Active
+          </span>
+          {/* Layout switcher */}
+          <div style={{
+            display: "flex", backgroundColor: isDark ? "#0F172A" : "#F1F5F9",
+            border: `1px solid ${border}`, borderRadius: "6px", padding: "2px",
+          }}>
+            {([["grid", LayoutGrid], ["table", List]] as const).map(([mode, Icon]) => (
+              <button key={mode} onClick={() => setLayout(mode)} style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: "28px", height: "24px", borderRadius: "4px", border: "none", cursor: "pointer",
+                backgroundColor: layout === mode ? (isDark ? "#1E293B" : "#FFFFFF") : "transparent",
+                color: layout === mode ? (isDark ? "#E2E8F0" : "#0F172A") : label,
+                boxShadow: layout === mode ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+                transition: "all 150ms ease",
+              }}>
+                <Icon style={{ width: "13px", height: "13px" }} />
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
-        gap: "20px", marginBottom: "36px",
-      }}>
-        {ACTIVE_APPS_DATA.map(app => {
-          const AppIcon = app.icon;
-          return (
-          <div key={app.name} style={{
-            display: "flex", flexDirection: "column",
-            backgroundColor: card, border: `1px solid ${border}`,
-            borderRadius: "8px", padding: "20px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-          }}>
-            {/* Card header: identity + toggle */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      {/* ── GRID VIEW ───────────────────────────────────────────── */}
+      {layout === "grid" && (
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
+          gap: "20px", marginBottom: "36px",
+        }}>
+          {ACTIVE_APPS_DATA.map(app => {
+            const AppIcon = app.icon;
+            const popoverOpen = openPopover === app.name;
+            return (
+            <div key={app.name} style={{
+              display: "flex", flexDirection: "column",
+              backgroundColor: card, border: `1px solid ${border}`,
+              borderRadius: "8px", padding: "20px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+            }}>
+              {/* Card header — no toggle */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
                 <div style={{
                   width: "34px", height: "34px", borderRadius: "7px", flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
@@ -2373,73 +2419,175 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
                 }}>
                   <AppIcon style={{ width: "17px", height: "17px", color: app.color }} />
                 </div>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: "13px", fontWeight: 600, color: title, lineHeight: 1.3 }}>{app.name}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "3px" }}>
-                    <span style={{
-                      display: "inline-block", width: "6px", height: "6px", borderRadius: "50%",
-                      backgroundColor: "#00956D",
-                    }} />
+                    <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#00956D" }} />
                     <span style={{ fontSize: "11px", fontWeight: 600, color: "#00956D", letterSpacing: "0.03em" }}>RUNNING</span>
                   </div>
                 </div>
+                <AlertBadge count={app.alerts} />
               </div>
-              {/* Toggle */}
+
+              {/* Metrics zone */}
               <div style={{
-                width: "36px", height: "20px", borderRadius: "10px", cursor: "pointer", flexShrink: 0,
-                backgroundColor: "#00956D", position: "relative",
+                backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
+                border: `1px solid ${border}`, borderRadius: "6px",
+                padding: "10px 14px", marginBottom: "16px",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
               }}>
-                <div style={{
-                  position: "absolute", top: "3px", right: "3px",
-                  width: "14px", height: "14px", borderRadius: "50%", backgroundColor: "#fff",
-                }} />
+                <div style={{ fontSize: "12px", color: sub }}>
+                  <BellRing style={{ width: "12px", height: "12px", color: label, verticalAlign: "middle", marginRight: "5px" }} />
+                  {app.alerts > 0
+                    ? <span style={{ fontWeight: 600, color: "#DC2626" }}>{app.alerts} alerts triggered today</span>
+                    : <span>No alerts today</span>
+                  }
+                </div>
+                {/* Camera popover trigger */}
+                <div style={{ position: "relative" }} onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setOpenPopover(popoverOpen ? null : app.name)} style={{
+                    display: "flex", alignItems: "center", gap: "5px",
+                    fontSize: "12px", fontWeight: 500, color: sub, cursor: "pointer",
+                    background: "transparent", border: "none", padding: 0,
+                  }}>
+                    <Video style={{ width: "12px", height: "12px", color: label }} />
+                    {app.cameras} Cameras
+                    <ChevronDown style={{ width: "11px", height: "11px", color: label, transform: popoverOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                  </button>
+                  {popoverOpen && (
+                    <div style={{
+                      position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30,
+                      backgroundColor: isDark ? "#1E293B" : "#fff",
+                      border: `1px solid ${border}`, borderRadius: "6px",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: "180px", overflow: "hidden",
+                    }}>
+                      {app.cameraList.map((cam, i) => (
+                        <div key={i} style={{
+                          padding: "8px 12px", fontSize: "12px", color: isDark ? "#CBD5E1" : "#334155",
+                          borderBottom: i < app.cameraList.length - 1 ? `1px solid ${border}` : "none",
+                          display: "flex", alignItems: "center", gap: "7px",
+                        }}>
+                          <Video style={{ width: "11px", height: "11px", color: label, flexShrink: 0 }} />
+                          {cam}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Metrics zone */}
-            <div style={{
-              backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
-              border: `1px solid ${border}`,
-              borderRadius: "6px", padding: "10px 14px",
-              marginBottom: "16px",
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                <BellRing style={{ width: "13px", height: "13px", color: app.alerts > 0 ? "#DC2626" : label }} />
-                <span style={{ fontSize: "12px", fontWeight: 600, color: app.alerts > 0 ? "#DC2626" : sub }}>
-                  {app.alerts} Alert{app.alerts !== 1 ? "s" : ""} Today
-                </span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "7px", cursor: "pointer" }}>
-                <Video style={{ width: "13px", height: "13px", color: label }} />
-                <span style={{ fontSize: "12px", color: sub, fontWeight: 500 }}>
-                  {app.cameras} Cameras
-                </span>
-                <ChevronDown style={{ width: "13px", height: "13px", color: label }} />
+              {/* Action footer */}
+              <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
+                <button style={{
+                  flex: 1, fontSize: "12px", fontWeight: 600, padding: "8px 12px",
+                  borderRadius: "6px", cursor: "pointer",
+                  backgroundColor: "#00956D", border: "none", color: "#fff",
+                }}>
+                  Configure Rules
+                </button>
+                <button style={{
+                  flex: 1, fontSize: "12px", fontWeight: 600, padding: "8px 12px",
+                  borderRadius: "6px", cursor: "pointer",
+                  backgroundColor: "transparent",
+                  border: `1px solid ${border}`, color: isDark ? "#94A3B8" : "#475569",
+                }}>
+                  View Live Feeds
+                </button>
               </div>
             </div>
+          ); })}
+        </div>
+      )}
 
-            {/* Action footer */}
-            <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
-              <button style={{
-                flex: 1, fontSize: "12px", fontWeight: 600, padding: "8px 12px",
-                borderRadius: "6px", cursor: "pointer",
-                backgroundColor: "#00956D", border: "none", color: "#fff",
-              }}>
-                Configure Rules
-              </button>
-              <button style={{
-                flex: 1, fontSize: "12px", fontWeight: 600, padding: "8px 12px",
-                borderRadius: "6px", cursor: "pointer",
-                backgroundColor: "transparent",
-                border: `1px solid ${border}`, color: isDark ? "#94A3B8" : "#475569",
-              }}>
-                View Live Feeds
-              </button>
-            </div>
+      {/* ── TABLE VIEW ──────────────────────────────────────────── */}
+      {layout === "table" && (
+        <div style={{
+          borderRadius: "8px", border: `1px solid ${border}`,
+          overflow: "hidden", marginBottom: "36px",
+        }}>
+          {/* Table header row */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 100px 100px 120px 160px 200px",
+            backgroundColor: hdr, borderBottom: `2px solid #00956D`,
+            padding: "0 16px",
+          }}>
+            {["Application", "Status", "Cameras", "Alerts", "Today", "Actions"].map((h, i) => (
+              <div key={h} style={{
+                padding: "10px 0", fontSize: "11px", fontWeight: 700,
+                letterSpacing: "0.05em", textTransform: "uppercase" as const,
+                color: label, textAlign: i >= 4 ? "right" : "left",
+              }}>{h}</div>
+            ))}
           </div>
-        ); })}
-      </div>
+
+          {ACTIVE_APPS_DATA.map((app, idx) => {
+            const AppIcon = app.icon;
+            return (
+            <div key={app.name} style={{
+              display: "grid", gridTemplateColumns: "1fr 100px 100px 120px 160px 200px",
+              backgroundColor: idx % 2 === 1 ? (isDark ? "#080F1A" : "#FAFCFD") : card,
+              borderBottom: idx < ACTIVE_APPS_DATA.length - 1 ? `1px solid ${border}` : "none",
+              padding: "0 16px", alignItems: "center",
+              transition: "background-color 120ms",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = isDark ? "#0D2922" : "#EBF5F1"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = idx % 2 === 1 ? (isDark ? "#080F1A" : "#FAFCFD") : card; }}
+            >
+              {/* App identity */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 0" }}>
+                <div style={{
+                  width: "28px", height: "28px", borderRadius: "6px", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  backgroundColor: `${app.color}12`,
+                }}>
+                  <AppIcon style={{ width: "14px", height: "14px", color: app.color }} />
+                </div>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: title }}>{app.name}</span>
+              </div>
+              {/* Status */}
+              <div style={{ padding: "12px 0" }}>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: "4px",
+                  fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em",
+                  color: "#00956D", backgroundColor: "rgba(0,149,109,0.08)",
+                  padding: "2px 7px", borderRadius: "4px",
+                }}>
+                  <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#00956D", display: "inline-block" }} />
+                  RUNNING
+                </span>
+              </div>
+              {/* Cameras */}
+              <div style={{ padding: "12px 0", fontSize: "13px", color: sub, display: "flex", alignItems: "center", gap: "5px" }}>
+                <Video style={{ width: "12px", height: "12px", color: label }} />
+                {app.cameras}
+              </div>
+              {/* Alerts badge */}
+              <div style={{ padding: "12px 0" }}>
+                <AlertBadge count={app.alerts} />
+              </div>
+              {/* Alerts today text */}
+              <div style={{ padding: "12px 0", fontSize: "12px", color: app.alerts > 0 ? "#DC2626" : sub, fontWeight: app.alerts > 0 ? 600 : 400 }}>
+                {app.alerts > 0 ? `${app.alerts} triggered today` : "No alerts today"}
+              </div>
+              {/* Actions */}
+              <div style={{ padding: "12px 0", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                <button style={{
+                  fontSize: "11px", fontWeight: 600, padding: "5px 10px", borderRadius: "5px", cursor: "pointer",
+                  backgroundColor: "#00956D", border: "none", color: "#fff",
+                }}>
+                  Configure Rules
+                </button>
+                <button style={{
+                  fontSize: "11px", fontWeight: 600, padding: "5px 10px", borderRadius: "5px", cursor: "pointer",
+                  backgroundColor: "transparent", border: `1px solid ${border}`, color: isDark ? "#94A3B8" : "#475569",
+                }}>
+                  View Feeds
+                </button>
+              </div>
+            </div>
+          ); })}
+        </div>
+      )}
 
       {/* ── App Store Teaser ──────────────────────────────────── */}
       <div style={{ marginBottom: "16px" }}>
