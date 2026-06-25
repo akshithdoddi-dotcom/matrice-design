@@ -8,7 +8,7 @@ import {
   Monitor, Store, Wrench, Headphones, Shield, FolderOpen,
   Network, HardDrive, Server, ChevronLeft, Zap, BarChart2,
   SlidersHorizontal, Globe, List, LayoutGrid, Maximize2, Users, Tag, Briefcase, PanelLeft, User,
-  Flame, HardHat, Thermometer, ShieldAlert, Car,
+  Flame, HardHat, Thermometer, ShieldAlert, Car, BellRing,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { ALL_INCIDENTS, Incident, IMG_SERVER_ROOM, IMG_INDUSTRIAL, IMG_PARKING, IMG_CROWD, IMG_FIRE } from "@/app/data/mockData";
@@ -2312,10 +2312,10 @@ function IncidentsDashboard({ isDark }: { isDark: boolean }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // APPLICATIONS PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-const ACTIVE_APPS_DATA: { icon: React.ElementType; color: string; name: string; cameras: number }[] = [
-  { icon: Flame,       color: "#EA580C", name: "Fire & Smoke Detection",  cameras: 4 },
-  { icon: HardHat,     color: "#E19A04", name: "PPE Detection",            cameras: 7 },
-  { icon: Thermometer, color: "#EA580C", name: "Heat Stress Monitoring",   cameras: 3 },
+const ACTIVE_APPS_DATA: { icon: React.ElementType; color: string; name: string; cameras: number; alerts: number }[] = [
+  { icon: Flame,       color: "#EA580C", name: "Fire & Smoke Detection",  cameras: 4, alerts: 14 },
+  { icon: HardHat,     color: "#E19A04", name: "PPE Detection",            cameras: 7, alerts: 0  },
+  { icon: Thermometer, color: "#EA580C", name: "Heat Stress Monitoring",   cameras: 3, alerts: 2  },
 ];
 
 const STORE_APPS_DATA: { icon: React.ElementType; color: string; name: string; desc: string }[] = [
@@ -2350,45 +2350,88 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
         </span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "36px" }}>
+      <div style={{
+        display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
+        gap: "20px", marginBottom: "36px",
+      }}>
         {ACTIVE_APPS_DATA.map(app => {
           const AppIcon = app.icon;
           return (
           <div key={app.name} style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
+            display: "flex", flexDirection: "column",
             backgroundColor: card, border: `1px solid ${border}`,
-            borderRadius: "6px", padding: "14px 20px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            borderRadius: "8px", padding: "20px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
           }}>
-            {/* Identity */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{
-                width: "32px", height: "32px", borderRadius: "6px", flexShrink: 0,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                backgroundColor: `${app.color}12`,
-              }}>
-                <AppIcon style={{ width: "16px", height: "16px", color: app.color }} />
+            {/* Card header: identity + toggle */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{
+                  width: "34px", height: "34px", borderRadius: "7px", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  backgroundColor: `${app.color}12`,
+                }}>
+                  <AppIcon style={{ width: "17px", height: "17px", color: app.color }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: title, lineHeight: 1.3 }}>{app.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "3px" }}>
+                    <span style={{
+                      display: "inline-block", width: "6px", height: "6px", borderRadius: "50%",
+                      backgroundColor: "#00956D",
+                    }} />
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: "#00956D", letterSpacing: "0.03em" }}>RUNNING</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: "13px", fontWeight: 600, color: title }}>{app.name}</div>
-                <span style={{
-                  display: "inline-block", marginTop: "3px",
-                  fontSize: "10px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em",
-                  color: "#00956D", backgroundColor: "rgba(0,149,109,0.08)",
-                  padding: "1px 6px", borderRadius: "4px",
-                }}>Running</span>
+              {/* Toggle */}
+              <div style={{
+                width: "36px", height: "20px", borderRadius: "10px", cursor: "pointer", flexShrink: 0,
+                backgroundColor: "#00956D", position: "relative",
+              }}>
+                <div style={{
+                  position: "absolute", top: "3px", right: "3px",
+                  width: "14px", height: "14px", borderRadius: "50%", backgroundColor: "#fff",
+                }} />
               </div>
             </div>
-            {/* Stats + action */}
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <span style={{ fontSize: "12px", color: sub, display: "flex", alignItems: "center", gap: "5px" }}>
+
+            {/* Metrics zone */}
+            <div style={{
+              backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
+              border: `1px solid ${border}`,
+              borderRadius: "6px", padding: "10px 14px",
+              marginBottom: "16px",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                <BellRing style={{ width: "13px", height: "13px", color: app.alerts > 0 ? "#DC2626" : label }} />
+                <span style={{ fontSize: "12px", fontWeight: 600, color: app.alerts > 0 ? "#DC2626" : sub }}>
+                  {app.alerts} Alert{app.alerts !== 1 ? "s" : ""} Today
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "7px", cursor: "pointer" }}>
                 <Video style={{ width: "13px", height: "13px", color: label }} />
-                Deployed on <strong style={{ color: title }}>{app.cameras}</strong> cameras
-              </span>
+                <span style={{ fontSize: "12px", color: sub, fontWeight: 500 }}>
+                  {app.cameras} Cameras
+                </span>
+                <ChevronDown style={{ width: "13px", height: "13px", color: label }} />
+              </div>
+            </div>
+
+            {/* Action footer */}
+            <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
               <button style={{
-                fontSize: "12px", fontWeight: 600, padding: "5px 12px",
-                borderRadius: "5px", cursor: "pointer",
-                backgroundColor: isDark ? "#0F172A" : "#F1F5F9",
+                flex: 1, fontSize: "12px", fontWeight: 600, padding: "8px 12px",
+                borderRadius: "6px", cursor: "pointer",
+                backgroundColor: "#00956D", border: "none", color: "#fff",
+              }}>
+                Configure Rules
+              </button>
+              <button style={{
+                flex: 1, fontSize: "12px", fontWeight: 600, padding: "8px 12px",
+                borderRadius: "6px", cursor: "pointer",
+                backgroundColor: "transparent",
                 border: `1px solid ${border}`, color: isDark ? "#94A3B8" : "#475569",
               }}>
                 View Live Feeds
