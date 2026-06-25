@@ -1,0 +1,21 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Vite Dev Server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "analytics",
+      "port": 5173,
+      "autoPort": true
+    },
+    {
+      "name": "VMS Dev Server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "vms",
+      "port": 3100,
+      "autoPort": true
+    }
+  ]
+}

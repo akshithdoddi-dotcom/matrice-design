@@ -1,0 +1,26 @@
+{
+  "name": "matrice-vms",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "lucide-react": "0.487.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^6.0.2",
+    "vite": "^6.3.5"
+  }
+}

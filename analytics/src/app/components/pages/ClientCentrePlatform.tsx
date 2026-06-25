@@ -8,6 +8,7 @@ import {
   Monitor, Store, Wrench, Headphones, Shield, FolderOpen,
   Network, HardDrive, Server, ChevronLeft, Zap, BarChart2,
   SlidersHorizontal, Globe, List, LayoutGrid, Maximize2, Users, Tag, Briefcase, PanelLeft, User,
+  Flame, HardHat, Thermometer, ShieldAlert, Car,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { ALL_INCIDENTS, Incident, IMG_SERVER_ROOM, IMG_INDUSTRIAL, IMG_PARKING, IMG_CROWD, IMG_FIRE } from "@/app/data/mockData";
@@ -2311,16 +2312,16 @@ function IncidentsDashboard({ isDark }: { isDark: boolean }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // APPLICATIONS PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-const ACTIVE_APPS_DATA = [
-  { icon: "🔥", name: "Fire & Smoke Detection",  cameras: 4, category: "Safety" },
-  { icon: "🦺", name: "PPE Detection",            cameras: 7, category: "Safety" },
-  { icon: "🌡️", name: "Heat Stress Monitoring",   cameras: 3, category: "Safety" },
+const ACTIVE_APPS_DATA: { icon: React.ElementType; color: string; name: string; cameras: number }[] = [
+  { icon: Flame,       color: "#EA580C", name: "Fire & Smoke Detection",  cameras: 4 },
+  { icon: HardHat,     color: "#E19A04", name: "PPE Detection",            cameras: 7 },
+  { icon: Thermometer, color: "#EA580C", name: "Heat Stress Monitoring",   cameras: 3 },
 ];
 
-const STORE_APPS_DATA = [
-  { icon: "🪪", name: "License Plate Recognition", desc: "Automated ANPR for entry/exit tracking." },
-  { icon: "🚶", name: "Tailgating Detection",       desc: "Identify unauthorized checkpoint access." },
-  { icon: "🚨", name: "Intrusion Analytics",        desc: "Perimeter tripwire breach detection." },
+const STORE_APPS_DATA: { icon: React.ElementType; color: string; name: string; desc: string }[] = [
+  { icon: Car,        color: "#2B7FFF", name: "License Plate Recognition", desc: "Automated ANPR for entry/exit tracking." },
+  { icon: Users,      color: "#EA580C", name: "Tailgating Detection",       desc: "Identify unauthorized checkpoint access." },
+  { icon: ShieldAlert,color: "#E7000B", name: "Intrusion Analytics",        desc: "Perimeter tripwire breach detection." },
 ];
 
 function ApplicationsPage({ isDark }: { isDark: boolean }) {
@@ -2350,7 +2351,9 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "36px" }}>
-        {ACTIVE_APPS_DATA.map(app => (
+        {ACTIVE_APPS_DATA.map(app => {
+          const AppIcon = app.icon;
+          return (
           <div key={app.name} style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             backgroundColor: card, border: `1px solid ${border}`,
@@ -2359,7 +2362,13 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
           }}>
             {/* Identity */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ fontSize: "20px", lineHeight: 1 }}>{app.icon}</span>
+              <div style={{
+                width: "32px", height: "32px", borderRadius: "6px", flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                backgroundColor: `${app.color}12`,
+              }}>
+                <AppIcon style={{ width: "16px", height: "16px", color: app.color }} />
+              </div>
               <div>
                 <div style={{ fontSize: "13px", fontWeight: 600, color: title }}>{app.name}</div>
                 <span style={{
@@ -2386,7 +2395,7 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
               </button>
             </div>
           </div>
-        ))}
+        ); })}
       </div>
 
       {/* ── App Store Teaser ──────────────────────────────────── */}
@@ -2396,7 +2405,9 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
-        {STORE_APPS_DATA.map(app => (
+        {STORE_APPS_DATA.map(app => {
+          const StoreIcon = app.icon;
+          return (
           <div key={app.name} style={{
             backgroundColor: card, border: `1px solid ${border}`,
             borderRadius: "8px", padding: "20px",
@@ -2406,12 +2417,18 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 20px -6px rgba(0,0,0,0.1)"; (e.currentTarget as HTMLDivElement).style.borderColor = isDark ? "#334155" : "#CBD5E1"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; (e.currentTarget as HTMLDivElement).style.borderColor = border; }}
           >
-            <span style={{ fontSize: "24px", lineHeight: 1 }}>{app.icon}</span>
+            <div style={{
+              width: "36px", height: "36px", borderRadius: "8px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backgroundColor: `${app.color}12`,
+            }}>
+              <StoreIcon style={{ width: "18px", height: "18px", color: app.color }} />
+            </div>
             <div style={{ fontSize: "14px", fontWeight: 600, color: title, margin: "12px 0 5px" }}>{app.name}</div>
             <div style={{ fontSize: "12px", color: sub, flex: 1, lineHeight: 1.5 }}>{app.desc}</div>
             <div style={{ marginTop: "14px", fontSize: "12px", fontWeight: 600, color: "#00956D" }}>Get Extension →</div>
           </div>
-        ))}
+        ); })}
 
         {/* App Store redirect — full-width */}
         <div style={{

@@ -679,6 +679,7 @@ function Step1({
     if (!canAdd || atMax) return;
     onAddCamera({ name: name.trim(), protocol, url });
     setName(""); setUrl(""); setFileName(null);
+    setConnState("idle"); setConnTesting(false);
   };
 
   const handleBulkAdd = (cams: Omit<CameraEntry, "id" | "apps">[]) => {
