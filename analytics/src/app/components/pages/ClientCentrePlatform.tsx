@@ -68,7 +68,7 @@ const PLATFORMS: { icon: React.ElementType; label: string; shortcut: string; app
 // ─── Types ────────────────────────────────────────────────────────────────────
 type AppMode = "hub" | "workspace";
 type HubPage = "projects" | "compute" | "network" | "storage" | "databases" | "access-keys" | "invites" | "global-settings";
-type WorkspacePage = "incidents-dashboard" | "live-streaming" | "incidents-log" | "metrics-rules" | "camera-analytics" | "specialized-intel" | "project-cameras" | "pipeline-settings";
+type WorkspacePage = "incidents-dashboard" | "live-streaming" | "incidents-log" | "metrics-rules" | "camera-analytics" | "specialized-intel" | "project-cameras" | "pipeline-settings" | "applications";
 
 interface Project {
   id: string;
@@ -373,6 +373,7 @@ function WorkspaceSidebar({ page, setPage, onBackToHub, onPlatformSwitch, open =
         )}
 
         {section("WORKSPACE CONFIG")}
+        <NavBtn icon={Zap}             label="Applications"       active={page === "applications"}        onClick={() => setPage("applications")} />
         <NavBtn icon={Camera}          label="Project Cameras"    active={page === "project-cameras"}     onClick={() => setPage("project-cameras")} />
         <NavBtn icon={SlidersHorizontal} label="Pipeline Settings" active={page === "pipeline-settings"}  onClick={() => setPage("pipeline-settings")} />
       </nav>
@@ -2308,6 +2309,130 @@ function IncidentsDashboard({ isDark }: { isDark: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// APPLICATIONS PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+const ACTIVE_APPS_DATA = [
+  { icon: "🔥", name: "Fire & Smoke Detection",  cameras: 4, category: "Safety" },
+  { icon: "🦺", name: "PPE Detection",            cameras: 7, category: "Safety" },
+  { icon: "🌡️", name: "Heat Stress Monitoring",   cameras: 3, category: "Safety" },
+];
+
+const STORE_APPS_DATA = [
+  { icon: "🪪", name: "License Plate Recognition", desc: "Automated ANPR for entry/exit tracking." },
+  { icon: "🚶", name: "Tailgating Detection",       desc: "Identify unauthorized checkpoint access." },
+  { icon: "🚨", name: "Intrusion Analytics",        desc: "Perimeter tripwire breach detection." },
+];
+
+function ApplicationsPage({ isDark }: { isDark: boolean }) {
+  const canvas  = isDark ? "#020617" : "#F8FAFC";
+  const card    = isDark ? "#0A0F1A" : "#FFFFFF";
+  const border  = isDark ? "#1E293B" : "#E2E8F0";
+  const title   = isDark ? "#E2E8F0" : "#0F172A";
+  const sub     = isDark ? "#475569" : "#64748B";
+  const label   = isDark ? "#334155" : "#94A3B8";
+
+  return (
+    <div style={{ padding: "32px", backgroundColor: canvas, minHeight: "100%", ...INTER }}>
+
+      {/* ── Active Deployments ─────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <div>
+          <h3 style={{ fontSize: "16px", fontWeight: 700, color: title, margin: 0 }}>Active AI Deployments</h3>
+          <p style={{ fontSize: "12px", color: sub, marginTop: "3px" }}>Models currently analyzing your live feeds.</p>
+        </div>
+        <span style={{
+          fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em",
+          padding: "4px 10px", borderRadius: "20px",
+          backgroundColor: "rgba(0,149,109,0.08)", border: "1px solid rgba(0,149,109,0.2)", color: "#00956D",
+        }}>
+          {ACTIVE_APPS_DATA.length} Apps Active
+        </span>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "36px" }}>
+        {ACTIVE_APPS_DATA.map(app => (
+          <div key={app.name} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            backgroundColor: card, border: `1px solid ${border}`,
+            borderRadius: "6px", padding: "14px 20px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}>
+            {/* Identity */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontSize: "20px", lineHeight: 1 }}>{app.icon}</span>
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: title }}>{app.name}</div>
+                <span style={{
+                  display: "inline-block", marginTop: "3px",
+                  fontSize: "10px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em",
+                  color: "#00956D", backgroundColor: "rgba(0,149,109,0.08)",
+                  padding: "1px 6px", borderRadius: "4px",
+                }}>Running</span>
+              </div>
+            </div>
+            {/* Stats + action */}
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <span style={{ fontSize: "12px", color: sub, display: "flex", alignItems: "center", gap: "5px" }}>
+                <Video style={{ width: "13px", height: "13px", color: label }} />
+                Deployed on <strong style={{ color: title }}>{app.cameras}</strong> cameras
+              </span>
+              <button style={{
+                fontSize: "12px", fontWeight: 600, padding: "5px 12px",
+                borderRadius: "5px", cursor: "pointer",
+                backgroundColor: isDark ? "#0F172A" : "#F1F5F9",
+                border: `1px solid ${border}`, color: isDark ? "#94A3B8" : "#475569",
+              }}>
+                View Live Feeds
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── App Store Teaser ──────────────────────────────────── */}
+      <div style={{ marginBottom: "16px" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: 700, color: title, margin: 0 }}>Available in App Store</h3>
+        <p style={{ fontSize: "12px", color: sub, marginTop: "3px" }}>Enhance your surveillance with specialized AI models.</p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+        {STORE_APPS_DATA.map(app => (
+          <div key={app.name} style={{
+            backgroundColor: card, border: `1px solid ${border}`,
+            borderRadius: "8px", padding: "20px",
+            display: "flex", flexDirection: "column",
+            cursor: "pointer", transition: "box-shadow 0.2s",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 20px -6px rgba(0,0,0,0.1)"; (e.currentTarget as HTMLDivElement).style.borderColor = isDark ? "#334155" : "#CBD5E1"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; (e.currentTarget as HTMLDivElement).style.borderColor = border; }}
+          >
+            <span style={{ fontSize: "24px", lineHeight: 1 }}>{app.icon}</span>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: title, margin: "12px 0 5px" }}>{app.name}</div>
+            <div style={{ fontSize: "12px", color: sub, flex: 1, lineHeight: 1.5 }}>{app.desc}</div>
+            <div style={{ marginTop: "14px", fontSize: "12px", fontWeight: 600, color: "#00956D" }}>Get Extension →</div>
+          </div>
+        ))}
+
+        {/* App Store redirect — full-width */}
+        <div style={{
+          gridColumn: "span 3",
+          background: isDark ? "linear-gradient(135deg,#0F172A 0%,#020617 100%)" : "linear-gradient(135deg,#1E293B 0%,#0F172A 100%)",
+          borderRadius: "8px", padding: "24px 28px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          cursor: "pointer",
+        }}>
+          <div>
+            <div style={{ fontSize: "16px", fontWeight: 700, color: "#FFFFFF", marginBottom: "4px" }}>Explore Matrice App Store</div>
+            <div style={{ fontSize: "13px", color: "#94A3B8" }}>Discover 40+ native AI models ready for instant deployment on your pipelines.</div>
+          </div>
+          <div style={{ fontSize: "28px", color: "#00956D", paddingRight: "8px", flexShrink: 0 }}>→</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PLACEHOLDER PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 function PlaceholderPage({ title, icon: Icon, isDark }: { title: string; icon: React.ElementType; isDark: boolean }) {
@@ -2438,6 +2563,7 @@ export function ClientCentrePlatform({ onPlatformSwitch }: CCProps) {
     if (workspacePage === "specialized-intel")   return <PlaceholderPage title="Specialized Intel"      icon={Brain}           isDark={isDark} />;
     if (workspacePage === "project-cameras")     return <PlaceholderPage title="Project Cameras"        icon={Camera}          isDark={isDark} />;
     if (workspacePage === "pipeline-settings")   return <PlaceholderPage title="Pipeline Settings"      icon={SlidersHorizontal} isDark={isDark} />;
+    if (workspacePage === "applications")        return <ApplicationsPage isDark={isDark} />;
     return null;
   }
 
