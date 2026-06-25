@@ -2397,16 +2397,16 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
       {/* ── GRID VIEW ───────────────────────────────────────────── */}
       {layout === "grid" && (
         <div style={{
-          display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
-          gap: "20px", marginBottom: "36px",
+          display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "16px", marginBottom: "36px",
         }}>
           {ACTIVE_APPS_DATA.map(app => {
             const AppIcon = app.icon;
-            const popoverOpen = openPopover === app.name;
-            // Figma-style gradient band: mint tint of the app's accent color
+            // Icon/accent color: use brand teal for zero-alert apps, keep original color only if alerts > 0
+            const accentColor = app.alerts > 0 ? app.color : "#00956D";
             const bandGrad = isDark
-              ? `linear-gradient(112deg, ${app.color}22 0%, ${app.color}10 100%)`
-              : `linear-gradient(112deg, ${app.color}14 0%, ${app.color}08 100%)`;
+              ? `linear-gradient(112deg, ${accentColor}1A 0%, ${accentColor}0A 100%)`
+              : `linear-gradient(112deg, ${accentColor}12 0%, ${accentColor}06 100%)`;
             return (
             <div key={app.name} style={{
               display: "flex", flexDirection: "column",
@@ -2416,111 +2416,80 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
               transition: "box-shadow 180ms, border-color 180ms",
             }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.boxShadow = `0 6px 18px -4px ${app.color}30`;
-              (e.currentTarget as HTMLDivElement).style.borderColor = `${app.color}60`;
+              (e.currentTarget as HTMLDivElement).style.boxShadow = `0 6px 18px -4px ${accentColor}28`;
+              (e.currentTarget as HTMLDivElement).style.borderColor = `${accentColor}50`;
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
               (e.currentTarget as HTMLDivElement).style.borderColor = border;
             }}
             >
-              {/* ── Top band: gradient + icon + RUNNING pill (Figma-pattern) ── */}
+              {/* ── Top band ── */}
               <div style={{
                 background: bandGrad,
-                padding: "16px 16px 14px",
-                display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+                padding: "14px 14px 12px",
                 borderBottom: `1px solid ${border}`,
               }}>
-                {/* Icon + name */}
+                {/* Row 1: icon + name (single line, truncate) + alert badge */}
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <div style={{
-                    width: "36px", height: "36px", borderRadius: "8px", flexShrink: 0,
+                    width: "32px", height: "32px", borderRadius: "7px", flexShrink: 0,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    backgroundColor: isDark ? `${app.color}22` : "#fff",
-                    border: `1px solid ${app.color}30`,
-                    boxShadow: `0 0 0 3px ${app.color}14`,
+                    backgroundColor: isDark ? `${accentColor}20` : "#fff",
+                    border: `1px solid ${accentColor}28`,
                   }}>
-                    <AppIcon style={{ width: "18px", height: "18px", color: app.color }} />
+                    <AppIcon style={{ width: "16px", height: "16px", color: accentColor }} />
                   </div>
-                  <div>
-                    <div style={{
-                      fontSize: "12px", fontWeight: 800, letterSpacing: "0.04em",
-                      textTransform: "uppercase", color: isDark ? "#E2E8F0" : "#0F172A",
-                      lineHeight: 1.25, maxWidth: "160px",
-                    }}>{app.name}</div>
-                    {/* RUNNING pill — mirrors Figma "Optimize Staffing Levels" label */}
-                    <div style={{
-                      display: "inline-flex", alignItems: "center", gap: "4px",
-                      marginTop: "5px",
-                      backgroundColor: "#00956D", borderRadius: "2px",
-                      padding: "2px 6px",
-                    }}>
-                      <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#A7F3D0", display: "inline-block" }} />
-                      <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", color: "#fff", textTransform: "uppercase" }}>Running</span>
-                    </div>
-                  </div>
+                  <span style={{
+                    flex: 1, minWidth: 0,
+                    fontSize: "11px", fontWeight: 800, letterSpacing: "0.04em",
+                    textTransform: "uppercase", color: isDark ? "#E2E8F0" : "#0F172A",
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  }}>{app.name}</span>
+                  {/* Alert badge — only instance in the card */}
+                  <AlertBadge count={app.alerts} />
                 </div>
-                {/* Alert badge — top-right, appears once only */}
-                <AlertBadge count={app.alerts} />
+                {/* Row 2: RUNNING pill */}
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: "4px",
+                  marginTop: "8px",
+                  backgroundColor: "#00956D", borderRadius: "2px",
+                  padding: "2px 6px",
+                }}>
+                  <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#A7F3D0", display: "inline-block" }} />
+                  <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", color: "#fff", textTransform: "uppercase" }}>Running</span>
+                </div>
               </div>
 
-              {/* ── Stats row ── */}
-              <div style={{
-                display: "flex", alignItems: "stretch",
-                borderBottom: `1px solid ${border}`,
-              }}>
-                {/* Alerts stat */}
+              {/* ── Camera list — shown inline, no click needed ── */}
+              <div style={{ padding: "10px 14px 12px", flex: 1 }}>
                 <div style={{
-                  flex: 1, padding: "12px 14px",
-                  display: "flex", flexDirection: "column", gap: "3px",
-                  borderRight: `1px solid ${border}`,
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  marginBottom: "8px",
                 }}>
-                  <span style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: label }}>Alerts Today</span>
+                  <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: label }}>
+                    Active Cameras
+                  </span>
                   <span style={{
                     fontFamily: "'JetBrains Mono','Fira Code',monospace",
-                    fontSize: "22px", fontWeight: 700, lineHeight: 1,
-                    color: app.alerts > 0 ? "#DC2626" : (isDark ? "#475569" : "#94A3B8"),
-                  }}>{app.alerts}</span>
-                  <span style={{ fontSize: "10px", color: sub }}>{app.alerts > 0 ? "triggered" : "clear"}</span>
+                    fontSize: "11px", fontWeight: 700, color: isDark ? "#94A3B8" : "#475569",
+                  }}>{app.cameras}</span>
                 </div>
-                {/* Cameras stat — clickable popover */}
-                <div style={{ flex: 1, padding: "12px 14px", position: "relative" }} onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setOpenPopover(popoverOpen ? null : app.name)} style={{
-                    background: "none", border: "none", padding: 0, cursor: "pointer",
-                    width: "100%", textAlign: "left", display: "flex", flexDirection: "column", gap: "3px",
-                  }}>
-                    <span style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: label }}>
-                      Cameras
-                      <ChevronDown style={{ width: "10px", height: "10px", marginLeft: "4px", verticalAlign: "middle", color: label, transform: popoverOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
-                    </span>
-                    <span style={{
-                      fontFamily: "'JetBrains Mono','Fira Code',monospace",
-                      fontSize: "22px", fontWeight: 700, lineHeight: 1, color: isDark ? "#94A3B8" : "#334155",
-                    }}>{app.cameras}</span>
-                    <span style={{ fontSize: "10px", color: sub }}>active streams</span>
-                  </button>
-                  {popoverOpen && (
-                    <div style={{
-                      position: "absolute", left: 0, top: "calc(100% + 4px)", zIndex: 30,
-                      backgroundColor: isDark ? "#1E293B" : "#fff",
-                      border: `1px solid ${border}`, borderRadius: "6px",
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.13)", minWidth: "200px", overflow: "hidden",
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {app.cameraList.map((cam, i) => (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: "7px",
+                      padding: "5px 8px", borderRadius: "4px",
+                      backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
+                      border: `1px solid ${border}`,
                     }}>
-                      <div style={{ padding: "8px 12px 6px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: label, borderBottom: `1px solid ${border}` }}>
-                        Active Cameras
-                      </div>
-                      {app.cameraList.map((cam, i) => (
-                        <div key={i} style={{
-                          padding: "7px 12px", fontSize: "12px", color: isDark ? "#CBD5E1" : "#334155",
-                          borderBottom: i < app.cameraList.length - 1 ? `1px solid ${border}` : "none",
-                          display: "flex", alignItems: "center", gap: "8px",
-                        }}>
-                          <Video style={{ width: "11px", height: "11px", color: app.color, flexShrink: 0 }} />
-                          {cam}
-                        </div>
-                      ))}
+                      <Video style={{ width: "10px", height: "10px", color: accentColor, flexShrink: 0 }} />
+                      <span style={{
+                        fontSize: "11px", color: isDark ? "#94A3B8" : "#475569",
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                      }}>{cam}</span>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
 
