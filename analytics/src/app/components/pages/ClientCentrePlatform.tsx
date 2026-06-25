@@ -2403,71 +2403,119 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
           {ACTIVE_APPS_DATA.map(app => {
             const AppIcon = app.icon;
             const popoverOpen = openPopover === app.name;
+            // Figma-style gradient band: mint tint of the app's accent color
+            const bandGrad = isDark
+              ? `linear-gradient(112deg, ${app.color}22 0%, ${app.color}10 100%)`
+              : `linear-gradient(112deg, ${app.color}14 0%, ${app.color}08 100%)`;
             return (
             <div key={app.name} style={{
               display: "flex", flexDirection: "column",
               backgroundColor: card, border: `1px solid ${border}`,
-              borderRadius: "8px", padding: "20px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-            }}>
-              {/* Card header — no toggle */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                <div style={{
-                  width: "34px", height: "34px", borderRadius: "7px", flexShrink: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  backgroundColor: `${app.color}12`,
-                }}>
-                  <AppIcon style={{ width: "17px", height: "17px", color: app.color }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: title, lineHeight: 1.3 }}>{app.name}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "3px" }}>
-                    <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#00956D" }} />
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: "#00956D", letterSpacing: "0.03em" }}>RUNNING</span>
+              borderRadius: "8px", overflow: "hidden",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+              transition: "box-shadow 180ms, border-color 180ms",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLDivElement).style.boxShadow = `0 6px 18px -4px ${app.color}30`;
+              (e.currentTarget as HTMLDivElement).style.borderColor = `${app.color}60`;
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
+              (e.currentTarget as HTMLDivElement).style.borderColor = border;
+            }}
+            >
+              {/* ── Top band: gradient + icon + RUNNING pill (Figma-pattern) ── */}
+              <div style={{
+                background: bandGrad,
+                padding: "16px 16px 14px",
+                display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+                borderBottom: `1px solid ${border}`,
+              }}>
+                {/* Icon + name */}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{
+                    width: "36px", height: "36px", borderRadius: "8px", flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    backgroundColor: isDark ? `${app.color}22` : "#fff",
+                    border: `1px solid ${app.color}30`,
+                    boxShadow: `0 0 0 3px ${app.color}14`,
+                  }}>
+                    <AppIcon style={{ width: "18px", height: "18px", color: app.color }} />
+                  </div>
+                  <div>
+                    <div style={{
+                      fontSize: "12px", fontWeight: 800, letterSpacing: "0.04em",
+                      textTransform: "uppercase", color: isDark ? "#E2E8F0" : "#0F172A",
+                      lineHeight: 1.25, maxWidth: "160px",
+                    }}>{app.name}</div>
+                    {/* RUNNING pill — mirrors Figma "Optimize Staffing Levels" label */}
+                    <div style={{
+                      display: "inline-flex", alignItems: "center", gap: "4px",
+                      marginTop: "5px",
+                      backgroundColor: "#00956D", borderRadius: "2px",
+                      padding: "2px 6px",
+                    }}>
+                      <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#A7F3D0", display: "inline-block" }} />
+                      <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", color: "#fff", textTransform: "uppercase" }}>Running</span>
+                    </div>
                   </div>
                 </div>
+                {/* Alert badge — top-right, appears once only */}
                 <AlertBadge count={app.alerts} />
               </div>
 
-              {/* Metrics zone */}
+              {/* ── Stats row ── */}
               <div style={{
-                backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
-                border: `1px solid ${border}`, borderRadius: "6px",
-                padding: "10px 14px", marginBottom: "16px",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
+                display: "flex", alignItems: "stretch",
+                borderBottom: `1px solid ${border}`,
               }}>
-                <div style={{ fontSize: "12px", color: sub }}>
-                  <BellRing style={{ width: "12px", height: "12px", color: label, verticalAlign: "middle", marginRight: "5px" }} />
-                  {app.alerts > 0
-                    ? <span style={{ fontWeight: 600, color: "#DC2626" }}>{app.alerts} alerts triggered today</span>
-                    : <span>No alerts today</span>
-                  }
+                {/* Alerts stat */}
+                <div style={{
+                  flex: 1, padding: "12px 14px",
+                  display: "flex", flexDirection: "column", gap: "3px",
+                  borderRight: `1px solid ${border}`,
+                }}>
+                  <span style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: label }}>Alerts Today</span>
+                  <span style={{
+                    fontFamily: "'JetBrains Mono','Fira Code',monospace",
+                    fontSize: "22px", fontWeight: 700, lineHeight: 1,
+                    color: app.alerts > 0 ? "#DC2626" : (isDark ? "#475569" : "#94A3B8"),
+                  }}>{app.alerts}</span>
+                  <span style={{ fontSize: "10px", color: sub }}>{app.alerts > 0 ? "triggered" : "clear"}</span>
                 </div>
-                {/* Camera popover trigger */}
-                <div style={{ position: "relative" }} onClick={e => e.stopPropagation()}>
+                {/* Cameras stat — clickable popover */}
+                <div style={{ flex: 1, padding: "12px 14px", position: "relative" }} onClick={e => e.stopPropagation()}>
                   <button onClick={() => setOpenPopover(popoverOpen ? null : app.name)} style={{
-                    display: "flex", alignItems: "center", gap: "5px",
-                    fontSize: "12px", fontWeight: 500, color: sub, cursor: "pointer",
-                    background: "transparent", border: "none", padding: 0,
+                    background: "none", border: "none", padding: 0, cursor: "pointer",
+                    width: "100%", textAlign: "left", display: "flex", flexDirection: "column", gap: "3px",
                   }}>
-                    <Video style={{ width: "12px", height: "12px", color: label }} />
-                    {app.cameras} Cameras
-                    <ChevronDown style={{ width: "11px", height: "11px", color: label, transform: popoverOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                    <span style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: label }}>
+                      Cameras
+                      <ChevronDown style={{ width: "10px", height: "10px", marginLeft: "4px", verticalAlign: "middle", color: label, transform: popoverOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                    </span>
+                    <span style={{
+                      fontFamily: "'JetBrains Mono','Fira Code',monospace",
+                      fontSize: "22px", fontWeight: 700, lineHeight: 1, color: isDark ? "#94A3B8" : "#334155",
+                    }}>{app.cameras}</span>
+                    <span style={{ fontSize: "10px", color: sub }}>active streams</span>
                   </button>
                   {popoverOpen && (
                     <div style={{
-                      position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30,
+                      position: "absolute", left: 0, top: "calc(100% + 4px)", zIndex: 30,
                       backgroundColor: isDark ? "#1E293B" : "#fff",
                       border: `1px solid ${border}`, borderRadius: "6px",
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: "180px", overflow: "hidden",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.13)", minWidth: "200px", overflow: "hidden",
                     }}>
+                      <div style={{ padding: "8px 12px 6px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: label, borderBottom: `1px solid ${border}` }}>
+                        Active Cameras
+                      </div>
                       {app.cameraList.map((cam, i) => (
                         <div key={i} style={{
-                          padding: "8px 12px", fontSize: "12px", color: isDark ? "#CBD5E1" : "#334155",
+                          padding: "7px 12px", fontSize: "12px", color: isDark ? "#CBD5E1" : "#334155",
                           borderBottom: i < app.cameraList.length - 1 ? `1px solid ${border}` : "none",
-                          display: "flex", alignItems: "center", gap: "7px",
+                          display: "flex", alignItems: "center", gap: "8px",
                         }}>
-                          <Video style={{ width: "11px", height: "11px", color: label, flexShrink: 0 }} />
+                          <Video style={{ width: "11px", height: "11px", color: app.color, flexShrink: 0 }} />
                           {cam}
                         </div>
                       ))}
@@ -2476,22 +2524,27 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
                 </div>
               </div>
 
-              {/* Action footer */}
-              <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
+              {/* ── Footer: actions — mirrors Figma tag-row pattern ── */}
+              <div style={{
+                display: "flex", gap: "8px", padding: "12px 14px",
+                alignItems: "center",
+              }}>
                 <button style={{
-                  flex: 1, fontSize: "12px", fontWeight: 600, padding: "8px 12px",
-                  borderRadius: "6px", cursor: "pointer",
+                  flex: 2, fontSize: "12px", fontWeight: 700, padding: "7px 12px",
+                  borderRadius: "5px", cursor: "pointer",
                   backgroundColor: "#00956D", border: "none", color: "#fff",
-                }}>
-                  Configure Rules
-                </button>
-                <button style={{
-                  flex: 1, fontSize: "12px", fontWeight: 600, padding: "8px 12px",
-                  borderRadius: "6px", cursor: "pointer",
-                  backgroundColor: "transparent",
-                  border: `1px solid ${border}`, color: isDark ? "#94A3B8" : "#475569",
+                  letterSpacing: "0.02em",
                 }}>
                   View Live Feeds
+                </button>
+                <button style={{
+                  flex: 1, fontSize: "11px", fontWeight: 600, padding: "7px 10px",
+                  borderRadius: "5px", cursor: "pointer",
+                  backgroundColor: "transparent",
+                  border: `1px solid ${border}`, color: isDark ? "#64748B" : "#64748B",
+                  letterSpacing: "0.02em",
+                }}>
+                  Configure
                 </button>
               </div>
             </div>
