@@ -3007,7 +3007,7 @@ export function ClientCentrePlatform({ onPlatformSwitch }: CCProps) {
         onPlatformSwitch={onPlatformSwitch}
         open={sidebarOpen}
       />
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0">
         <WorkspaceTopBar
           project={activeProject!}
           setProject={p => { setActiveProject(p); setActivePipeline(null); setIsPipelineActive(false); }}
@@ -3024,7 +3024,9 @@ export function ClientCentrePlatform({ onPlatformSwitch }: CCProps) {
           onPersonaSwitch={setPersona}
           onToggleSidebar={() => setSidebarOpen(v => !v)}
         />
-        {workspaceContent()}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {workspaceContent()}
+        </div>
       </div>
     </div>
   );
