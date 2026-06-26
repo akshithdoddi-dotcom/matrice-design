@@ -2312,16 +2312,73 @@ function IncidentsDashboard({ isDark }: { isDark: boolean }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // APPLICATIONS PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-const ACTIVE_APPS_DATA: { icon: React.ElementType; color: string; name: string; cameras: number; alerts: number; cameraList: string[] }[] = [
-  { icon: Flame,       color: "#EA580C", name: "Fire & Smoke Detection",  cameras: 4, alerts: 14, cameraList: ["North Gate Exit Cam", "Main Loading Bay 02", "Server Room Rows A-D", "South Parking Fence"] },
-  { icon: HardHat,     color: "#E19A04", name: "PPE Detection",            cameras: 7, alerts: 0,  cameraList: ["Front Assembly Entrance", "Material Loading Zone", "Workshop Corridor B", "+4 More Active Streams"] },
-  { icon: Thermometer, color: "#EA580C", name: "Heat Stress Monitoring",   cameras: 3, alerts: 2,  cameraList: ["Boiler Room A", "Foundry Floor 2", "Engine Bay West"] },
+type AppFeed    = { name: string; alerts: number };
+type ActiveApp  = { icon: React.ElementType; color: string; name: string; category: string; feeds: AppFeed[] };
+type StoreApp   = { icon: React.ElementType; color: string; name: string; category: string; desc: string; imgUrl?: string };
+
+const ACTIVE_APPS_DATA: ActiveApp[] = [
+  {
+    icon: Flame, color: "#EA580C", name: "Fire & Smoke Detection", category: "SAFETY",
+    feeds: [
+      { name: "North Gate Exit Cam",    alerts: 8 },   // concentrated-critical
+      { name: "Main Loading Bay 02",    alerts: 4 },   // concentrated-warning
+      { name: "Server Room Rows A-D",   alerts: 2 },   // distributed
+      { name: "South Parking Fence",    alerts: 0 },   // nominal
+    ],
+  },
+  {
+    icon: HardHat, color: "#E19A04", name: "PPE Detection", category: "COMPLIANCE",
+    feeds: [
+      { name: "Front Assembly Entrance", alerts: 0 },
+      { name: "Material Loading Zone",   alerts: 0 },
+      { name: "Workshop Corridor B",     alerts: 0 },
+      { name: "Forklift Staging Area",   alerts: 0 },
+      { name: "Exit Gate East",          alerts: 0 },
+      { name: "Roof Access Stairs",      alerts: 0 },
+      { name: "Chemical Store Entry",    alerts: 0 },
+    ],
+  },
+  {
+    icon: Thermometer, color: "#EA580C", name: "Heat Stress Monitoring", category: "SAFETY",
+    feeds: [
+      { name: "Boiler Room A",    alerts: 1 },  // distributed
+      { name: "Foundry Floor 2",  alerts: 2 },  // distributed
+      { name: "Engine Bay West",  alerts: 0 },  // nominal
+    ],
+  },
 ];
 
-const STORE_APPS_DATA: { icon: React.ElementType; color: string; name: string; desc: string }[] = [
-  { icon: Car,        color: "#2B7FFF", name: "License Plate Recognition", desc: "Automated ANPR for entry/exit tracking." },
-  { icon: Users,      color: "#EA580C", name: "Tailgating Detection",       desc: "Identify unauthorized checkpoint access." },
-  { icon: ShieldAlert,color: "#E7000B", name: "Intrusion Analytics",        desc: "Perimeter tripwire breach detection." },
+const STORE_APPS_DATA: StoreApp[] = [
+  {
+    icon: Car,         color: "#2B7FFF", name: "License Plate Recognition",
+    category: "SECURITY", desc: "Automated ANPR for entry and exit point tracking across all vehicle lanes.",
+    imgUrl: "https://www.figma.com/api/mcp/asset/2c1e6e4f-b66e-4762-87c4-bf1c488fd8a0",
+  },
+  {
+    icon: Users,       color: "#EA580C", name: "Tailgating Detection",
+    category: "ACCESS CONTROL", desc: "Identify unauthorised individuals following through secured access checkpoints.",
+    imgUrl: "https://www.figma.com/api/mcp/asset/38a898c8-fc2e-4c0c-bb1c-718d2f3ecab4",
+  },
+  {
+    icon: ShieldAlert, color: "#E7000B", name: "Intrusion Analytics",
+    category: "PERIMETER", desc: "Perimeter tripwire breach detection with sub-second alert latency.",
+    imgUrl: "https://www.figma.com/api/mcp/asset/f4a706e3-6183-4ca2-baf6-adadb451846b",
+  },
+  {
+    icon: Monitor,     color: "#7C3AED", name: "Queue Length Monitoring",
+    category: "OPERATIONS", desc: "Monitor and optimise queue lengths at service points and checkpoints in real-time.",
+    imgUrl: "https://www.figma.com/api/mcp/asset/3e07b1ba-9cc6-4619-a34f-22542a920f4e",
+  },
+  {
+    icon: Users,       color: "#0369A1", name: "People Counting",
+    category: "RETAIL ANALYTICS", desc: "Real-time counting and dwell-time analysis for footfall optimisation across zones.",
+    imgUrl: "https://www.figma.com/api/mcp/asset/f2d103bd-85e7-48a0-b621-9149fc9b6589",
+  },
+  {
+    icon: HardDrive,   color: "#00775B", name: "PPE Compliance Detection",
+    category: "COMPLIANCE", desc: "Detect and alert when workers are not wearing required personal protective equipment.",
+    imgUrl: "https://www.figma.com/api/mcp/asset/a9062ade-22ff-4f2f-8d41-67247237f885",
+  },
 ];
 
 function ApplicationsPage({ isDark }: { isDark: boolean }) {
@@ -2334,7 +2391,10 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
   const hdr     = isDark ? "#0A0F1A" : "#F8FAFC";
 
   const [layout, setLayout] = useState<"grid" | "table">("grid");
-  const [openPopover, setOpenPopover] = useState<string | null>(null);
+  const [openCams, setOpenCams] = useState<string | null>(null);
+
+  // Derived totals from per-feed data
+  const totalAlerts = (app: ActiveApp) => app.feeds.reduce((s, f) => s + f.alerts, 0);
 
   const AlertBadge = ({ count }: { count: number }) => count > 0 ? (
     <span style={{
@@ -2357,163 +2417,195 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
 
   return (
     <div style={{ padding: "32px", backgroundColor: canvas, minHeight: "100%", ...INTER }}
-      onClick={() => setOpenPopover(null)}>
+      onClick={() => setOpenCams(null)}>
 
       {/* ── Active Deployments header ───────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-        <div>
-          <h3 style={{ fontSize: "16px", fontWeight: 700, color: title, margin: 0 }}>Active AI Deployments</h3>
-          <p style={{ fontSize: "12px", color: sub, marginTop: "3px" }}>Models currently analyzing your live feeds.</p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: 700, color: title, margin: 0 }}>
+          Active AI Deployments
           <span style={{
-            fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em",
-            padding: "4px 10px", borderRadius: "20px",
+            marginLeft: "10px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em",
+            padding: "3px 9px", borderRadius: "20px", verticalAlign: "middle",
             backgroundColor: "rgba(0,149,109,0.08)", border: "1px solid rgba(0,149,109,0.2)", color: "#00956D",
           }}>
             {ACTIVE_APPS_DATA.length} Apps Active
           </span>
-          {/* Layout switcher */}
-          <div style={{
-            display: "flex", backgroundColor: isDark ? "#0F172A" : "#F1F5F9",
-            border: `1px solid ${border}`, borderRadius: "6px", padding: "2px",
-          }}>
-            {([["grid", LayoutGrid], ["table", List]] as const).map(([mode, Icon]) => (
-              <button key={mode} onClick={() => setLayout(mode)} style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                width: "28px", height: "24px", borderRadius: "4px", border: "none", cursor: "pointer",
-                backgroundColor: layout === mode ? (isDark ? "#1E293B" : "#FFFFFF") : "transparent",
-                color: layout === mode ? (isDark ? "#E2E8F0" : "#0F172A") : label,
-                boxShadow: layout === mode ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
-                transition: "all 150ms ease",
-              }}>
-                <Icon style={{ width: "13px", height: "13px" }} />
-              </button>
-            ))}
-          </div>
+        </h3>
+        {/* Layout switcher */}
+        <div style={{
+          display: "flex", backgroundColor: isDark ? "#0F172A" : "#F1F5F9",
+          border: `1px solid ${border}`, borderRadius: "6px", padding: "2px",
+        }}>
+          {([["grid", LayoutGrid], ["table", List]] as const).map(([mode, Icon]) => (
+            <button key={mode} onClick={() => setLayout(mode)} style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: "28px", height: "24px", borderRadius: "4px", border: "none", cursor: "pointer",
+              backgroundColor: layout === mode ? (isDark ? "#1E293B" : "#FFFFFF") : "transparent",
+              color: layout === mode ? (isDark ? "#E2E8F0" : "#0F172A") : label,
+              boxShadow: layout === mode ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+              transition: "all 150ms ease",
+            }}>
+              <Icon style={{ width: "13px", height: "13px" }} />
+            </button>
+          ))}
         </div>
       </div>
 
       {/* ── GRID VIEW ───────────────────────────────────────────── */}
       {layout === "grid" && (
         <div style={{
-          display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "16px", marginBottom: "36px",
+          display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+          gap: "16px", marginBottom: "40px",
         }}>
           {ACTIVE_APPS_DATA.map(app => {
             const AppIcon = app.icon;
-            // Icon/accent color: use brand teal for zero-alert apps, keep original color only if alerts > 0
-            const accentColor = app.alerts > 0 ? app.color : "#00956D";
+            const appAlerts = totalAlerts(app);
+            const accentColor = appAlerts > 0 ? app.color : "#00956D";
+            const camOpen = openCams === app.name;
             const bandGrad = isDark
-              ? `linear-gradient(112deg, ${accentColor}1A 0%, ${accentColor}0A 100%)`
-              : `linear-gradient(112deg, ${accentColor}12 0%, ${accentColor}06 100%)`;
+              ? `linear-gradient(112deg, ${accentColor}1A 0%, ${accentColor}08 100%)`
+              : `linear-gradient(112deg, ${accentColor}10 0%, ${accentColor}05 100%)`;
+
             return (
             <div key={app.name} style={{
               display: "flex", flexDirection: "column",
               backgroundColor: card, border: `1px solid ${border}`,
-              borderRadius: "8px", overflow: "hidden",
+              borderRadius: "8px", overflow: "visible",
               boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
               transition: "box-shadow 180ms, border-color 180ms",
             }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.boxShadow = `0 6px 18px -4px ${accentColor}28`;
-              (e.currentTarget as HTMLDivElement).style.borderColor = `${accentColor}50`;
+              (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 16px -4px ${accentColor}28`;
+              (e.currentTarget as HTMLDivElement).style.borderColor = `${accentColor}48`;
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
               (e.currentTarget as HTMLDivElement).style.borderColor = border;
             }}
             >
-              {/* ── Top band ── */}
+              {/* ── Identity band ── */}
               <div style={{
-                background: bandGrad,
-                padding: "14px 14px 12px",
-                borderBottom: `1px solid ${border}`,
+                background: bandGrad, padding: "14px 14px 11px",
+                borderBottom: `1px solid ${border}`, borderRadius: "8px 8px 0 0",
+                display: "flex", alignItems: "center", gap: "10px",
               }}>
-                {/* Row 1: icon + name (single line, truncate) + alert badge */}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{
+                  width: "32px", height: "32px", borderRadius: "7px", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  backgroundColor: isDark ? `${accentColor}20` : "#fff",
+                  border: `1px solid ${accentColor}28`,
+                }}>
+                  <AppIcon style={{ width: "16px", height: "16px", color: accentColor }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    width: "32px", height: "32px", borderRadius: "7px", flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    backgroundColor: isDark ? `${accentColor}20` : "#fff",
-                    border: `1px solid ${accentColor}28`,
-                  }}>
-                    <AppIcon style={{ width: "16px", height: "16px", color: accentColor }} />
-                  </div>
-                  <span style={{
-                    flex: 1, minWidth: 0,
-                    fontSize: "11px", fontWeight: 800, letterSpacing: "0.04em",
+                    fontSize: "11px", fontWeight: 800, letterSpacing: "0.05em",
                     textTransform: "uppercase", color: isDark ? "#E2E8F0" : "#0F172A",
                     whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                  }}>{app.name}</span>
-                  {/* Alert badge — only instance in the card */}
-                  <AlertBadge count={app.alerts} />
-                </div>
-                {/* Row 2: RUNNING pill */}
-                <div style={{
-                  display: "inline-flex", alignItems: "center", gap: "4px",
-                  marginTop: "8px",
-                  backgroundColor: "#00956D", borderRadius: "2px",
-                  padding: "2px 6px",
-                }}>
-                  <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#A7F3D0", display: "inline-block" }} />
-                  <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", color: "#fff", textTransform: "uppercase" }}>Running</span>
-                </div>
-              </div>
-
-              {/* ── Camera list — shown inline, no click needed ── */}
-              <div style={{ padding: "10px 14px 12px", flex: 1 }}>
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  marginBottom: "8px",
-                }}>
-                  <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: label }}>
-                    Active Cameras
-                  </span>
-                  <span style={{
-                    fontFamily: "'JetBrains Mono','Fira Code',monospace",
-                    fontSize: "11px", fontWeight: 700, color: isDark ? "#94A3B8" : "#475569",
-                  }}>{app.cameras}</span>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  {app.cameraList.map((cam, i) => (
-                    <div key={i} style={{
-                      display: "flex", alignItems: "center", gap: "7px",
-                      padding: "5px 8px", borderRadius: "4px",
-                      backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
-                      border: `1px solid ${border}`,
+                  }}>{app.name}</div>
+                  {/* RUNNING pill + category */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "5px" }}>
+                    <div style={{
+                      display: "inline-flex", alignItems: "center", gap: "3px",
+                      backgroundColor: "#00956D", borderRadius: "2px", padding: "1px 5px",
                     }}>
-                      <Video style={{ width: "10px", height: "10px", color: accentColor, flexShrink: 0 }} />
-                      <span style={{
-                        fontSize: "11px", color: isDark ? "#94A3B8" : "#475569",
-                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                      }}>{cam}</span>
+                      <span style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: "#A7F3D0", display: "inline-block" }} />
+                      <span style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.08em", color: "#fff", textTransform: "uppercase" }}>Running</span>
                     </div>
-                  ))}
+                    <span style={{
+                      fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+                      color: accentColor, opacity: 0.8,
+                    }}>{app.category}</span>
+                  </div>
                 </div>
+                {/* Alert badge — only here */}
+                <AlertBadge count={appAlerts} />
               </div>
 
-              {/* ── Footer: actions — mirrors Figma tag-row pattern ── */}
-              <div style={{
-                display: "flex", gap: "8px", padding: "12px 14px",
-                alignItems: "center",
-              }}>
+              {/* ── Camera telemetry trigger ── */}
+              <div style={{ position: "relative" }} onClick={e => e.stopPropagation()}>
+                <button onClick={() => setOpenCams(camOpen ? null : app.name)} style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: "8px",
+                  padding: "10px 14px", background: "none", border: "none", cursor: "pointer",
+                  borderBottom: camOpen ? `1px solid ${border}` : "none",
+                  backgroundColor: camOpen ? (isDark ? "#0F172A" : "#F8FAFC") : "transparent",
+                  transition: "background-color 120ms",
+                }}>
+                  <Video style={{ width: "12px", height: "12px", color: accentColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: isDark ? "#94A3B8" : "#334155", flex: 1, textAlign: "left" }}>
+                    {app.feeds.length} Cameras Connected
+                  </span>
+                  {appAlerts > 0 && (
+                    <span style={{
+                      fontSize: "10px", fontWeight: 700,
+                      fontFamily: "'JetBrains Mono','Fira Code',monospace",
+                      color: "#DC2626",
+                    }}>
+                      {appAlerts} alerts across feeds
+                    </span>
+                  )}
+                  <ChevronDown style={{
+                    width: "12px", height: "12px", color: label, flexShrink: 0,
+                    transform: camOpen ? "rotate(180deg)" : "none", transition: "transform 150ms",
+                  }} />
+                </button>
+
+                {/* ── Camera telemetry panel (inline, not floating) ── */}
+                {camOpen && (
+                  <div style={{
+                    borderBottom: `1px solid ${border}`,
+                    backgroundColor: isDark ? "#080C14" : "#FAFCFD",
+                  }}>
+                    {/* Column header */}
+                    <div style={{
+                      display: "grid", gridTemplateColumns: "1fr auto",
+                      padding: "6px 14px", borderBottom: `1px solid ${border}`,
+                      backgroundColor: isDark ? "#0A0F1A" : "#F1F5F9",
+                    }}>
+                      <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: label }}>Camera Feed</span>
+                      <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: label }}>Alerts</span>
+                    </div>
+                    {app.feeds.map((feed, i) => {
+                      const isCritical = feed.alerts >= 5;
+                      const isWarning  = feed.alerts > 0 && feed.alerts < 5;
+                      const dotColor   = isCritical ? "#DC2626" : isWarning ? "#D97706" : "#22C55E";
+                      const countColor = isCritical ? "#DC2626" : isWarning ? "#D97706" : isDark ? "#334155" : "#CBD5E1";
+                      return (
+                        <div key={i} style={{
+                          display: "grid", gridTemplateColumns: "1fr auto",
+                          alignItems: "center", padding: "7px 14px",
+                          borderBottom: i < app.feeds.length - 1 ? `1px solid ${border}` : "none",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                            <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: dotColor, flexShrink: 0, display: "inline-block" }} />
+                            <span style={{
+                              fontSize: "11px", color: feed.alerts > 0 ? (isDark ? "#CBD5E1" : "#334155") : (isDark ? "#475569" : "#94A3B8"),
+                              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                              fontWeight: feed.alerts > 0 ? 500 : 400,
+                            }}>{feed.name}</span>
+                          </div>
+                          <span style={{
+                            fontSize: "11px", fontWeight: 700, color: countColor,
+                            fontFamily: "'JetBrains Mono','Fira Code',monospace",
+                          }}>
+                            {feed.alerts > 0 ? feed.alerts : "—"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Full-width View Live Feeds CTA ── */}
+              <div style={{ padding: "12px 14px", marginTop: "auto" }}>
                 <button style={{
-                  flex: 2, fontSize: "12px", fontWeight: 700, padding: "7px 12px",
-                  borderRadius: "5px", cursor: "pointer",
+                  width: "100%", fontSize: "12px", fontWeight: 700, padding: "9px 0",
+                  borderRadius: "6px", cursor: "pointer",
                   backgroundColor: "#00956D", border: "none", color: "#fff",
                   letterSpacing: "0.02em",
                 }}>
                   View Live Feeds
-                </button>
-                <button style={{
-                  flex: 1, fontSize: "11px", fontWeight: 600, padding: "7px 10px",
-                  borderRadius: "5px", cursor: "pointer",
-                  backgroundColor: "transparent",
-                  border: `1px solid ${border}`, color: isDark ? "#64748B" : "#64748B",
-                  letterSpacing: "0.02em",
-                }}>
-                  Configure
                 </button>
               </div>
             </div>
@@ -2525,138 +2617,153 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
       {layout === "table" && (
         <div style={{
           borderRadius: "8px", border: `1px solid ${border}`,
-          overflow: "hidden", marginBottom: "36px",
+          overflow: "hidden", marginBottom: "40px",
         }}>
-          {/* Table header row */}
           <div style={{
-            display: "grid", gridTemplateColumns: "1fr 100px 100px 120px 160px 200px",
-            backgroundColor: hdr, borderBottom: `2px solid #00956D`,
-            padding: "0 16px",
+            display: "grid", gridTemplateColumns: "1fr 90px 90px 130px 160px",
+            backgroundColor: hdr, borderBottom: `2px solid #00956D`, padding: "0 16px",
           }}>
-            {["Application", "Status", "Cameras", "Alerts", "Today", "Actions"].map((h, i) => (
+            {(["Application", "Status", "Cameras", "Alerts Today", "Actions"] as const).map((h, i) => (
               <div key={h} style={{
-                padding: "10px 0", fontSize: "11px", fontWeight: 700,
+                padding: "10px 0", fontSize: "10px", fontWeight: 700,
                 letterSpacing: "0.05em", textTransform: "uppercase" as const,
-                color: label, textAlign: i >= 4 ? "right" : "left",
+                color: label, textAlign: i >= 3 ? "right" : "left",
               }}>{h}</div>
             ))}
           </div>
-
           {ACTIVE_APPS_DATA.map((app, idx) => {
             const AppIcon = app.icon;
+            const appAlerts = totalAlerts(app);
+            const accentColor = appAlerts > 0 ? app.color : "#00956D";
             return (
-            <div key={app.name} style={{
-              display: "grid", gridTemplateColumns: "1fr 100px 100px 120px 160px 200px",
-              backgroundColor: idx % 2 === 1 ? (isDark ? "#080F1A" : "#FAFCFD") : card,
-              borderBottom: idx < ACTIVE_APPS_DATA.length - 1 ? `1px solid ${border}` : "none",
-              padding: "0 16px", alignItems: "center",
-              transition: "background-color 120ms",
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = isDark ? "#0D2922" : "#EBF5F1"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = idx % 2 === 1 ? (isDark ? "#080F1A" : "#FAFCFD") : card; }}
-            >
-              {/* App identity */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 0" }}>
-                <div style={{
-                  width: "28px", height: "28px", borderRadius: "6px", flexShrink: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  backgroundColor: `${app.color}12`,
-                }}>
-                  <AppIcon style={{ width: "14px", height: "14px", color: app.color }} />
+              <div key={app.name} style={{
+                display: "grid", gridTemplateColumns: "1fr 90px 90px 130px 160px",
+                backgroundColor: idx % 2 === 1 ? (isDark ? "#080F1A" : "#FAFCFD") : card,
+                borderBottom: idx < ACTIVE_APPS_DATA.length - 1 ? `1px solid ${border}` : "none",
+                padding: "0 16px", alignItems: "center",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = isDark ? "#0D2922" : "#EBF5F1"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = idx % 2 === 1 ? (isDark ? "#080F1A" : "#FAFCFD") : card; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 0" }}>
+                  <div style={{ width: "26px", height: "26px", borderRadius: "6px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: `${accentColor}12` }}>
+                    <AppIcon style={{ width: "13px", height: "13px", color: accentColor }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: title }}>{app.name}</div>
+                    <div style={{ fontSize: "10px", color: label, letterSpacing: "0.04em", textTransform: "uppercase" }}>{app.category}</div>
+                  </div>
                 </div>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: title }}>{app.name}</span>
+                <div style={{ padding: "12px 0" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: 700, color: "#00956D", backgroundColor: "rgba(0,149,109,0.08)", padding: "2px 7px", borderRadius: "4px" }}>
+                    <span style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: "#00956D", display: "inline-block" }} />LIVE
+                  </span>
+                </div>
+                <div style={{ padding: "12px 0", fontSize: "12px", color: sub, display: "flex", alignItems: "center", gap: "5px" }}>
+                  <Video style={{ width: "11px", height: "11px", color: label }} />{app.feeds.length}
+                </div>
+                <div style={{ padding: "12px 0", textAlign: "right" }}>
+                  <AlertBadge count={appAlerts} />
+                </div>
+                <div style={{ padding: "12px 0", display: "flex", justifyContent: "flex-end" }}>
+                  <button style={{ fontSize: "11px", fontWeight: 600, padding: "5px 12px", borderRadius: "5px", cursor: "pointer", backgroundColor: "#00956D", border: "none", color: "#fff" }}>
+                    View Live Feeds
+                  </button>
+                </div>
               </div>
-              {/* Status */}
-              <div style={{ padding: "12px 0" }}>
-                <span style={{
-                  display: "inline-flex", alignItems: "center", gap: "4px",
-                  fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em",
-                  color: "#00956D", backgroundColor: "rgba(0,149,109,0.08)",
-                  padding: "2px 7px", borderRadius: "4px",
-                }}>
-                  <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#00956D", display: "inline-block" }} />
-                  RUNNING
-                </span>
-              </div>
-              {/* Cameras */}
-              <div style={{ padding: "12px 0", fontSize: "13px", color: sub, display: "flex", alignItems: "center", gap: "5px" }}>
-                <Video style={{ width: "12px", height: "12px", color: label }} />
-                {app.cameras}
-              </div>
-              {/* Alerts badge */}
-              <div style={{ padding: "12px 0" }}>
-                <AlertBadge count={app.alerts} />
-              </div>
-              {/* Alerts today text */}
-              <div style={{ padding: "12px 0", fontSize: "12px", color: app.alerts > 0 ? "#DC2626" : sub, fontWeight: app.alerts > 0 ? 600 : 400 }}>
-                {app.alerts > 0 ? `${app.alerts} triggered today` : "No alerts today"}
-              </div>
-              {/* Actions */}
-              <div style={{ padding: "12px 0", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                <button style={{
-                  fontSize: "11px", fontWeight: 600, padding: "5px 10px", borderRadius: "5px", cursor: "pointer",
-                  backgroundColor: "#00956D", border: "none", color: "#fff",
-                }}>
-                  Configure Rules
-                </button>
-                <button style={{
-                  fontSize: "11px", fontWeight: 600, padding: "5px 10px", borderRadius: "5px", cursor: "pointer",
-                  backgroundColor: "transparent", border: `1px solid ${border}`, color: isDark ? "#94A3B8" : "#475569",
-                }}>
-                  View Feeds
-                </button>
-              </div>
-            </div>
-          ); })}
+            );
+          })}
         </div>
       )}
 
-      {/* ── App Store Teaser ──────────────────────────────────── */}
-      <div style={{ marginBottom: "16px" }}>
-        <h3 style={{ fontSize: "16px", fontWeight: 700, color: title, margin: 0 }}>Available in App Store</h3>
-        <p style={{ fontSize: "12px", color: sub, marginTop: "3px" }}>Enhance your surveillance with specialized AI models.</p>
+      {/* ── App Store ──────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "16px" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: 700, color: isDark ? "#E2E8F0" : "#084C3E", margin: 0 }}>Available in App Store</h3>
+        <span style={{ fontSize: "13px", color: sub, letterSpacing: "-0.01em" }}>Recommended for you</span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
         {STORE_APPS_DATA.map(app => {
           const StoreIcon = app.icon;
           return (
           <div key={app.name} style={{
-            backgroundColor: card, border: `1px solid ${border}`,
-            borderRadius: "8px", padding: "20px",
-            display: "flex", flexDirection: "column",
-            cursor: "pointer", transition: "box-shadow 0.2s",
+            borderRadius: "4px", overflow: "hidden",
+            border: "1px solid #E5E7EB",
+            boxShadow: "0 1px 1.5px rgba(0,0,0,0.10), 0 1px 1px rgba(0,0,0,0.10)",
+            display: "flex", flexDirection: "column", cursor: "pointer",
+            transition: "box-shadow 180ms, border-color 180ms",
+            backgroundImage: "linear-gradient(111.75deg, rgb(229,255,249) 20%, rgb(214,252,245) 91%)",
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 20px -6px rgba(0,0,0,0.1)"; (e.currentTarget as HTMLDivElement).style.borderColor = isDark ? "#334155" : "#CBD5E1"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; (e.currentTarget as HTMLDivElement).style.borderColor = border; }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = "0 10px 15px -3px rgba(0,119,91,0.12), 0 4px 6px rgba(0,119,91,0.08)";
+            (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(0,119,91,0.4)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 1.5px rgba(0,0,0,0.10), 0 1px 1px rgba(0,0,0,0.10)";
+            (e.currentTarget as HTMLDivElement).style.borderColor = "#E5E7EB";
+          }}
           >
-            <div style={{
-              width: "36px", height: "36px", borderRadius: "8px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backgroundColor: `${app.color}12`,
-            }}>
-              <StoreIcon style={{ width: "18px", height: "18px", color: app.color }} />
+            {/* Image band — 120px, grey bg with cover image or icon placeholder */}
+            <div style={{ height: "120px", backgroundColor: "#F3F4F6", overflow: "hidden", flexShrink: 0, position: "relative" }}>
+              {app.imgUrl
+                ? <img src={app.imgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: `${app.color}10` }}>
+                    <StoreIcon style={{ width: "32px", height: "32px", color: app.color, opacity: 0.4 }} />
+                  </div>
+                )
+              }
             </div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: title, margin: "12px 0 5px" }}>{app.name}</div>
-            <div style={{ fontSize: "12px", color: sub, flex: 1, lineHeight: 1.5 }}>{app.desc}</div>
-            <div style={{ marginTop: "14px", fontSize: "12px", fontWeight: 600, color: "#00956D" }}>Get Extension →</div>
+            {/* Content */}
+            <div style={{ padding: "12px 12px 8px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
+              {/* Dark green label pill */}
+              <div style={{
+                display: "inline-flex", alignSelf: "flex-start",
+                backgroundColor: "#00775B", borderRadius: "2px", padding: "2px 5px",
+              }}>
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", color: "#fff", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                  {app.category}
+                </span>
+              </div>
+              <div>
+                <div style={{
+                  fontSize: "13px", fontWeight: 600, color: "#101828", letterSpacing: "-0.01em",
+                  textTransform: "uppercase", marginBottom: "5px",
+                }}>{app.name}</div>
+                <div style={{ fontSize: "10px", color: "#6A7282", lineHeight: 1.6 }}>{app.desc}</div>
+              </div>
+            </div>
+            {/* Footer — tag-style */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "8px 12px", borderTop: "1px solid #CCDFDB",
+            }}>
+              <div style={{
+                backgroundColor: "rgba(0,119,91,0.10)", border: "1px solid rgba(0,119,91,0.20)",
+                borderRadius: "2px", padding: "2px 6px",
+              }}>
+                <span style={{ fontSize: "10px", fontWeight: 600, color: "#00775B", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  {app.category.split(" ")[0]}
+                </span>
+              </div>
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "#00956D" }}>Get Application →</span>
+            </div>
           </div>
         ); })}
+      </div>
 
-        {/* App Store redirect — full-width */}
-        <div style={{
-          gridColumn: "span 3",
-          background: isDark ? "linear-gradient(135deg,#0F172A 0%,#020617 100%)" : "linear-gradient(135deg,#1E293B 0%,#0F172A 100%)",
-          borderRadius: "8px", padding: "24px 28px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          cursor: "pointer",
-        }}>
-          <div>
-            <div style={{ fontSize: "16px", fontWeight: 700, color: "#FFFFFF", marginBottom: "4px" }}>Explore Matrice App Store</div>
-            <div style={{ fontSize: "13px", color: "#94A3B8" }}>Discover 40+ native AI models ready for instant deployment on your pipelines.</div>
-          </div>
-          <div style={{ fontSize: "28px", color: "#00956D", paddingRight: "8px", flexShrink: 0 }}>→</div>
+      {/* App Store explore CTA */}
+      <div style={{
+        marginTop: "20px",
+        background: isDark ? "linear-gradient(135deg,#0F172A 0%,#020617 100%)" : "linear-gradient(135deg,#1E293B 0%,#0F172A 100%)",
+        borderRadius: "8px", padding: "22px 28px",
+        display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer",
+      }}>
+        <div>
+          <div style={{ fontSize: "15px", fontWeight: 700, color: "#FFFFFF", marginBottom: "3px" }}>Explore Matrice App Store</div>
+          <div style={{ fontSize: "12px", color: "#94A3B8" }}>Discover 40+ native AI models ready for instant deployment on your pipelines.</div>
         </div>
+        <div style={{ fontSize: "26px", color: "#00956D", flexShrink: 0 }}>→</div>
       </div>
     </div>
   );
