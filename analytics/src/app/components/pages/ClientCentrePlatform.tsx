@@ -9,6 +9,7 @@ import {
   Network, HardDrive, Server, ChevronLeft, Zap, BarChart2,
   SlidersHorizontal, Globe, List, LayoutGrid, Maximize2, Users, Tag, Briefcase, PanelLeft, User,
   Flame, HardHat, Thermometer, ShieldAlert, Car, BellRing, TriangleAlert,
+  X, Eye,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { ALL_INCIDENTS, Incident, IMG_SERVER_ROOM, IMG_INDUSTRIAL, IMG_PARKING, IMG_CROWD, IMG_FIRE } from "@/app/data/mockData";
@@ -2391,7 +2392,9 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
   const hdr     = isDark ? "#0A0F1A" : "#F8FAFC";
 
   const [layout, setLayout] = useState<"grid" | "table">("grid");
-  const [openCams, setOpenCams] = useState<string | null>(null);
+  const [allCamsOpen, setAllCamsOpen] = useState(false);
+  const [tableSearch, setTableSearch] = useState("");
+  const [tableHoveredRow, setTableHoveredRow] = useState<string | null>(null);
 
   // Derived totals from per-feed data
   const totalAlerts = (app: ActiveApp) => app.feeds.reduce((s, f) => s + f.alerts, 0);
@@ -2417,7 +2420,7 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
 
   return (
     <div style={{ padding: "32px", backgroundColor: canvas, minHeight: "100%", ...INTER }}
-      onClick={() => setOpenCams(null)}>
+      onClick={() => setAllCamsOpen(false)}>
 
       {/* ── Active Deployments header ───────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
@@ -2461,7 +2464,7 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
             const AppIcon = app.icon;
             const appAlerts = totalAlerts(app);
             const accentColor = appAlerts > 0 ? app.color : "#00956D";
-            const camOpen = openCams === app.name;
+            const camOpen = allCamsOpen;
             const bandGrad = isDark
               ? `linear-gradient(112deg, ${accentColor}1A 0%, ${accentColor}08 100%)`
               : `linear-gradient(112deg, ${accentColor}10 0%, ${accentColor}05 100%)`;
@@ -2524,7 +2527,7 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
 
               {/* ── Camera telemetry trigger ── */}
               <div style={{ position: "relative" }} onClick={e => e.stopPropagation()}>
-                <button onClick={() => setOpenCams(camOpen ? null : app.name)} style={{
+                <button onClick={() => setAllCamsOpen(!allCamsOpen)} style={{
                   width: "100%", display: "flex", alignItems: "center", gap: "8px",
                   padding: "10px 14px", background: "none", border: "none", cursor: "pointer",
                   borderBottom: camOpen ? `1px solid ${border}` : "none",
@@ -2613,68 +2616,137 @@ function ApplicationsPage({ isDark }: { isDark: boolean }) {
         </div>
       )}
 
-      {/* ── TABLE VIEW ──────────────────────────────────────────── */}
-      {layout === "table" && (
-        <div style={{
-          borderRadius: "8px", border: `1px solid ${border}`,
-          overflow: "hidden", marginBottom: "40px",
-        }}>
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 90px 90px 130px 160px",
-            backgroundColor: hdr, borderBottom: `2px solid #00956D`, padding: "0 16px",
-          }}>
-            {(["Application", "Status", "Cameras", "Alerts Today", "Actions"] as const).map((h, i) => (
-              <div key={h} style={{
-                padding: "10px 0", fontSize: "10px", fontWeight: 700,
-                letterSpacing: "0.05em", textTransform: "uppercase" as const,
-                color: label, textAlign: i >= 3 ? "right" : "left",
-              }}>{h}</div>
-            ))}
-          </div>
-          {ACTIVE_APPS_DATA.map((app, idx) => {
-            const AppIcon = app.icon;
-            const appAlerts = totalAlerts(app);
-            const accentColor = appAlerts > 0 ? app.color : "#00956D";
-            return (
-              <div key={app.name} style={{
-                display: "grid", gridTemplateColumns: "1fr 90px 90px 130px 160px",
-                backgroundColor: idx % 2 === 1 ? (isDark ? "#080F1A" : "#FAFCFD") : card,
-                borderBottom: idx < ACTIVE_APPS_DATA.length - 1 ? `1px solid ${border}` : "none",
-                padding: "0 16px", alignItems: "center",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = isDark ? "#0D2922" : "#EBF5F1"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = idx % 2 === 1 ? (isDark ? "#080F1A" : "#FAFCFD") : card; }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 0" }}>
-                  <div style={{ width: "26px", height: "26px", borderRadius: "6px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: `${accentColor}12` }}>
-                    <AppIcon style={{ width: "13px", height: "13px", color: accentColor }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "12px", fontWeight: 600, color: title }}>{app.name}</div>
-                    <div style={{ fontSize: "10px", color: label, letterSpacing: "0.04em", textTransform: "uppercase" }}>{app.category}</div>
-                  </div>
-                </div>
-                <div style={{ padding: "12px 0" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: 700, color: "#00956D", backgroundColor: "rgba(0,149,109,0.08)", padding: "2px 7px", borderRadius: "4px" }}>
-                    <span style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: "#00956D", display: "inline-block" }} />LIVE
-                  </span>
-                </div>
-                <div style={{ padding: "12px 0", fontSize: "12px", color: sub, display: "flex", alignItems: "center", gap: "5px" }}>
-                  <Video style={{ width: "11px", height: "11px", color: label }} />{app.feeds.length}
-                </div>
-                <div style={{ padding: "12px 0", textAlign: "right" }}>
-                  <AlertBadge count={appAlerts} />
-                </div>
-                <div style={{ padding: "12px 0", display: "flex", justifyContent: "flex-end" }}>
-                  <button style={{ fontSize: "11px", fontWeight: 600, padding: "5px 12px", borderRadius: "5px", cursor: "pointer", backgroundColor: "#00956D", border: "none", color: "#fff" }}>
-                    View Live Feeds
+      {/* ── TABLE VIEW — V2.3 style ─────────────────────────────── */}
+      {layout === "table" && (() => {
+        const teal    = isDark ? "#00956D" : "#00775B";
+        const sec     = isDark ? "#94A3B8" : "#64748B";
+        const surface = isDark ? "#0F172A" : "#ffffff";
+        const hoveredRow    = tableHoveredRow;
+        const setHoveredRow = setTableHoveredRow;
+        const filtered = ACTIVE_APPS_DATA.filter(a =>
+          !tableSearch || a.name.toLowerCase().includes(tableSearch.toLowerCase()) || a.category.toLowerCase().includes(tableSearch.toLowerCase())
+        );
+        const COLS = [
+          { key: "app",      label: "Application", w: 240 },
+          { key: "category", label: "Category",    w: 140 },
+          { key: "status",   label: "Status",       w: 90  },
+          { key: "cameras",  label: "Cameras",      w: 80  },
+          { key: "alerts",   label: "Alerts Today", w: 130 },
+        ] as const;
+        const totalW = COLS.reduce((s, c) => s + c.w, 0);
+
+        return (
+          <div style={{ borderRadius: 8, border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #E2E8F0", overflow: "hidden", marginBottom: 40 }}>
+            {/* Toolbar */}
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "10px 16px 10px", backgroundColor: surface, borderBottom: `2px solid ${teal}` }}>
+              {/* Search */}
+              <div style={{ position: "relative", width: 260, flexShrink: 0 }}>
+                <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: isDark ? "#374151" : "#94A3B8", pointerEvents: "none" }} />
+                <input type="text" placeholder="Search applications…" value={tableSearch}
+                  onChange={e => setTableSearch(e.target.value)}
+                  style={{ width: "100%", height: 32, paddingLeft: 34, paddingRight: tableSearch ? 28 : 4, fontSize: 12, fontFamily: "Inter, sans-serif", color: isDark ? "#E2E8F0" : "#1E293B", backgroundColor: "transparent", border: "none", borderBottom: isDark ? "2px solid rgba(255,255,255,0.1)" : "2px solid #E2E8F0", borderRadius: 0, outline: "none", transition: "border-bottom-color 200ms ease" }}
+                  onFocus={e  => { e.target.style.borderBottomColor = teal; }}
+                  onBlur={e   => { e.target.style.borderBottomColor = isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0"; }}
+                />
+                {tableSearch && (
+                  <button onClick={() => setTableSearch("")}
+                    style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", padding: 0 }}>
+                    <X style={{ width: 12, height: 12 }} />
                   </button>
-                </div>
+                )}
               </div>
-            );
-          })}
-        </div>
-      )}
+              {/* Right cluster */}
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "flex-end", gap: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", color: sec }}>
+                  {filtered.length} of {ACTIVE_APPS_DATA.length} apps
+                </span>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div style={{ overflowX: "auto", backgroundColor: surface }}>
+              {/* Header row */}
+              <div style={{ display: "flex", alignItems: "center", height: 44, backgroundColor: hdr, minWidth: totalW, borderBottom: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #E2E8F0" }}>
+                {COLS.map(col => (
+                  <div key={col.key} style={{ flexShrink: 0, width: col.w, paddingLeft: col.key === "app" ? 16 : 8, paddingRight: 8, display: "flex", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", color: isDark ? "#94A3B8" : "#1E293B", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      {col.label}
+                    </span>
+                  </div>
+                ))}
+                {/* spacer for floating CTA */}
+                <div style={{ flex: 1 }} />
+              </div>
+
+              {/* Rows */}
+              {filtered.length === 0 ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 100, fontSize: 12, color: sec, fontFamily: "Inter, sans-serif" }}>
+                  No applications match "{tableSearch}".{" "}
+                  <button onClick={() => setTableSearch("")} style={{ marginLeft: 8, color: teal, background: "none", border: "none", cursor: "pointer", fontSize: 12, fontFamily: "Inter, sans-serif", fontWeight: 600 }}>Clear</button>
+                </div>
+              ) : filtered.map((app, idx) => {
+                const AppIcon   = app.icon;
+                const appAlerts = totalAlerts(app);
+                const accent    = appAlerts > 0 ? app.color : "#00956D";
+                const isHov     = hoveredRow === app.name;
+                const baseBg    = idx % 2 === 1 ? (isDark ? "#101B26" : "#F8FDFC") : (isDark ? "#0F172A" : "#ffffff");
+                const bg        = isHov ? (isDark ? "#0D2922" : "#EBF5F1") : baseBg;
+
+                const renderCell = (key: string) => {
+                  if (key === "app") return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: `${accent}15` }}>
+                        <AppIcon style={{ width: 14, height: 14, color: accent }} />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", color: isHov ? (isDark ? "#E2E8F0" : "#0F172A") : (isDark ? "#CBD5E1" : "#334155"), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 170 }}>{app.name}</span>
+                    </div>
+                  );
+                  if (key === "category") return (
+                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: isDark ? "#475569" : "#94A3B8", fontFamily: "Inter, sans-serif" }}>{app.category}</span>
+                  );
+                  if (key === "status") return (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "#00956D", backgroundColor: "rgba(0,149,109,0.10)", padding: "2px 7px", borderRadius: 4, fontFamily: "Inter, sans-serif" }}>
+                      <span style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#00956D", display: "inline-block" }} />LIVE
+                    </span>
+                  );
+                  if (key === "cameras") return (
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "'JetBrains Mono','Fira Code',monospace", fontWeight: 500, color: isHov ? (isDark ? "#E2E8F0" : "#0F172A") : sec }}>
+                      <Video style={{ width: 11, height: 11, color: isDark ? "#475569" : "#94A3B8" }} />{app.feeds.length}
+                    </span>
+                  );
+                  if (key === "alerts") return <AlertBadge count={appAlerts} />;
+                  return null;
+                };
+
+                return (
+                  <div key={app.name}
+                    onMouseEnter={() => setHoveredRow(app.name)}
+                    onMouseLeave={() => setHoveredRow(null)}
+                    style={{ display: "flex", alignItems: "center", minHeight: 44, minWidth: totalW, backgroundColor: bg, borderBottom: isDark ? "1px solid rgba(255,255,255,0.04)" : "1px solid #F1F5F9", position: "relative", transition: "background-color 100ms ease" }}>
+                    {/* Left severity strip */}
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, backgroundColor: accent, opacity: isHov ? 1 : 0, transition: "opacity 100ms ease" }} />
+                    {COLS.map(col => (
+                      <div key={col.key} style={{ flexShrink: 0, width: col.w, paddingLeft: col.key === "app" ? 18 : 8, paddingRight: 8, display: "flex", alignItems: "center", minHeight: 44 }}>
+                        {renderCell(col.key)}
+                      </div>
+                    ))}
+                    {/* Floating CTA on hover */}
+                    <div style={{ flex: 1 }} />
+                    <div style={{ position: "sticky", right: 0, zIndex: 4, flexShrink: 0, height: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 6, paddingLeft: 40, paddingRight: 14, background: `linear-gradient(to right, ${bg}00 0%, ${bg} 40px)`, opacity: isHov ? 1 : 0, pointerEvents: isHov ? "auto" : "none", transition: "opacity 120ms ease" }}>
+                      <button
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = teal; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; (e.currentTarget as HTMLButtonElement).style.borderColor = teal; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9"; (e.currentTarget as HTMLButtonElement).style.color = isDark ? "#94A3B8" : "#64748B"; (e.currentTarget as HTMLButtonElement).style.borderColor = isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0"; }}
+                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 5, border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#E2E8F0"}`, backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#F1F5F9", cursor: "pointer", color: isDark ? "#94A3B8" : "#64748B", fontSize: 11, fontWeight: 600, fontFamily: "Inter, sans-serif", transition: "background-color 100ms ease, color 100ms ease, border-color 100ms ease" }}>
+                        <Eye style={{ width: 12, height: 12 }} /> View Live Feeds
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── App Store ──────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "16px" }}>
