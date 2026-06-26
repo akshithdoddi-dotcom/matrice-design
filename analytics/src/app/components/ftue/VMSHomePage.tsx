@@ -5,6 +5,8 @@ import {
   List, Search, Plus, SortAsc, Zap, X, Clock,
   BarChart3, MonitorPlay, Headphones, Shield, Check, ChevronsUpDown,
   ChevronRight, Copy, Play, ArrowLeft, Rocket, Video, ArrowRight, Loader2, CheckCircle2,
+  ArrowUpRight, ArrowDownRight, Minus, Upload, Filter, ChevronLeft,
+  ChevronsLeft, ChevronsRight, ChevronUp,
 } from "lucide-react";
 import { VMSPlatform } from "@/app/components/pages/VMSPlatform";
 import { CLUSTERS, SAMPLE_CAMERAS, CameraAppRow, CAMERA_GROUPS, type CameraGroup } from "@/app/components/ftue/FTUEWizard";
@@ -15,7 +17,7 @@ const MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type VMSNavPage = "projects" | "pipelines" | "streaming";
+type VMSNavPage = "projects" | "pipelines" | "streaming" | "cameras";
 
 interface VMSHomePageProps {
   onLaunchSetup: () => void;
@@ -227,7 +229,8 @@ function VMSSidebar({
           {NAV_ITEMS.map(item => {
             const isActive =
               (item.label === "Projects"  && (activePage === "projects" || activePage === "pipelines")) ||
-              (item.label === "Pipelines" && activePage === "pipelines");
+              (item.label === "Pipelines" && activePage === "pipelines") ||
+              (item.label === "Cameras"   && activePage === "cameras");
             return (
               <button key={item.label} onClick={() => onNavClick(item.label)} style={{
                 ...INTER,
@@ -904,6 +907,660 @@ function PipelinesBreadcrumb({ project, onBack }: { project: Project; onBack: ()
   );
 }
 
+// ─── CAMERAS PAGE ─────────────────────────────────────────────────────────────
+
+interface CamRow {
+  id: string; name: string;
+  status: "ONLINE" | "OFFLINE" | "NO HEARTBEAT";
+  protocol: "RTSP" | "IP" | "FILE";
+  feedPath: string; aspectRatio: string; dimensions: string;
+  fps: number; recording: "ACTIVE" | "INACTIVE";
+}
+
+const CAMS_DATA: CamRow[] = [
+  { id:"c01", name:"business_metric_1xp_prod11",    status:"NO HEARTBEAT", protocol:"FILE", feedPath:"https://s3.us-west-2.amazonaws.com/prod.applications/business_metric_1xp",  aspectRatio:"16:9", dimensions:"1140×562",  fps:30, recording:"INACTIVE" },
+  { id:"c02", name:"Car_Park_30",                    status:"NO HEARTBEAT", protocol:"RTSP", feedPath:"rtsp://admin:Aa12345678@10.11.15.30:554/cam/realmonitor",                   aspectRatio:"16:9", dimensions:"640×480",   fps:10, recording:"INACTIVE" },
+  { id:"c03", name:"Car_Park_45",                    status:"NO HEARTBEAT", protocol:"RTSP", feedPath:"rtsp://admin:A12345678@10.11.15.45:554/cam/realmonitor",                    aspectRatio:"16:9", dimensions:"640×480",   fps:10, recording:"INACTIVE" },
+  { id:"c04", name:"Car_Park_46",                    status:"NO HEARTBEAT", protocol:"RTSP", feedPath:"rtsp://admin:A12345678@10.11.15.46:554/cam/realmonitor",                    aspectRatio:"16:9", dimensions:"640×480",   fps:10, recording:"INACTIVE" },
+  { id:"c05", name:"Alert Test (FIRE)",              status:"NO HEARTBEAT", protocol:"FILE", feedPath:"https://s3.us-west-2.amazonaws.com/prod.applications/alert_test_fire",      aspectRatio:"16:9", dimensions:"640×480",   fps:10, recording:"INACTIVE" },
+  { id:"c06", name:"Alert (FR)",                     status:"NO HEARTBEAT", protocol:"FILE", feedPath:"https://s3.us-west-2.amazonaws.com/prod.applications/alert_fr_feed",        aspectRatio:"16:9", dimensions:"1280×720",  fps:16, recording:"INACTIVE" },
+  { id:"c07", name:"Analytics thor2 fire test",      status:"NO HEARTBEAT", protocol:"FILE", feedPath:"https://s3.us-west-2.amazonaws.com/prod.applications/analytics_thor2",      aspectRatio:"16:9", dimensions:"1920×1080", fps:30, recording:"INACTIVE" },
+  { id:"c08", name:"Alerts (FR 2)",                  status:"NO HEARTBEAT", protocol:"FILE", feedPath:"https://s3.us-west-2.amazonaws.com/prod.applications/alerts_fr2",           aspectRatio:"16:9", dimensions:"1920×1080", fps:17, recording:"INACTIVE" },
+  { id:"c09", name:"Vehicle Type Analytics Thor2",   status:"NO HEARTBEAT", protocol:"FILE", feedPath:"https://s3.us-west-2.amazonaws.com/prod.applications/vehicle_type_analytics",aspectRatio:"16:9", dimensions:"1920×1080", fps:30, recording:"INACTIVE" },
+  { id:"c10", name:"Thor2_Business_analytics",       status:"ONLINE",       protocol:"FILE", feedPath:"https://s3.us-west-2.amazonaws.com/prod.applications/thor2_business",       aspectRatio:"16:9", dimensions:"1920×1080", fps:30, recording:"ACTIVE"   },
+];
+
+// ── Stat card (V12StatCard style, light theme) ─────────────────────────────
+function VMSStatCard({ label, value, sublabel, dir, num, ref_, definition, chip, color, bg }: {
+  label: string; value: string; sublabel: string;
+  dir: "up" | "down" | "neutral"; num: string; ref_: string;
+  definition: string; chip: string; color: string; bg: string;
+}) {
+  const [hov, setHov] = useState(false);
+  const DirIcon = dir === "up" ? ArrowUpRight : dir === "down" ? ArrowDownRight : Minus;
+  return (
+    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ flex: 1, minWidth: 220, borderRadius: 4, border: `1px solid ${color}`, background: bg,
+        boxShadow: hov ? `0 0 18px 4px ${color}38, 0 4px 14px rgba(0,0,0,0.07)` : `0 0 6px 1px ${color}1A, 0 1px 3px rgba(0,0,0,0.04)`,
+        transition: "box-shadow 200ms", cursor: "default", display: "flex", flexDirection: "column",
+    }}>
+      {/* Label row */}
+      <div style={{ padding: "16px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "#475569" }}>{label}</span>
+        <span style={{ ...INTER, fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", padding: "3px 8px", borderRadius: 99, backgroundColor: `${color}24`, color }}>{chip}</span>
+      </div>
+      {/* Value row */}
+      <div style={{ padding: "12px 16px 16px", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          <div style={{ ...MONO, fontSize: 28, fontWeight: 700, color: "#0F172A", lineHeight: 1 }}>{value}</div>
+          <div style={{ ...INTER, fontSize: 12, color: "#64748B" }}>{sublabel}</div>
+        </div>
+        {/* BS badge */}
+        <div style={{ display: "flex", flexDirection: "column", padding: "8px 10px", borderRadius: 6, backgroundColor: `${color}20`, flexShrink: 0 }}>
+          <div style={{ ...MONO, fontSize: 13, fontWeight: 700, color, display: "flex", alignItems: "center", gap: 4, lineHeight: 1 }}>
+            <DirIcon style={{ width: 14, height: 14 }} />{num}
+          </div>
+          <div style={{ ...INTER, fontSize: 10, color: "#94A3B8", marginTop: 5, lineHeight: 1 }}>{ref_}</div>
+        </div>
+      </div>
+      {/* Divider */}
+      <div style={{ height: 1, margin: "0 16px", backgroundColor: `${color}38` }} />
+      {/* Definition */}
+      <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ ...INTER, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "#94A3B8", flexShrink: 0 }}>Definition</span>
+        <span style={{ ...INTER, fontSize: 11, color: "#475569" }}>{definition}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Add Camera Modal ───────────────────────────────────────────────────────────
+interface AddedCam { id: string; name: string; protocol: "RTSP" | "IP" | "FILE"; url: string; }
+
+function AddCameraModal({ onClose }: { onClose: () => void }) {
+  const [tab,        setTab]        = useState<"manual" | "bulk">("manual");
+  const [name,       setName]       = useState("");
+  const [protocol,   setProtocol]   = useState<"RTSP" | "IP" | "FILE">("RTSP");
+  const [url,        setUrl]        = useState("");
+  const [feedPath,   setFeedPath]   = useState("");
+  const [advOpen,    setAdvOpen]    = useState(false);
+  const [fps,        setFps]        = useState(15);
+  const [quality,    setQuality]    = useState(80);
+  const [resolution, setResolution] = useState("720p");
+  const [connState,  setConnState]  = useState<"idle" | "testing" | "error" | "success">("idle");
+  const [cameras,    setCameras]    = useState<AddedCam[]>([]);
+  const [dragging,   setDragging]   = useState(false);
+  const [fileName,   setFileName]   = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const canAdd = name.trim() && (protocol === "FILE" ? !!fileName : url.trim());
+  const MAX    = 10;
+
+  const handleAdd = () => {
+    if (!canAdd || cameras.length >= MAX) return;
+    setCameras(p => [...p, { id: `cam-${Date.now()}`, name: name.trim(), protocol, url }]);
+    setName(""); setUrl(""); setFeedPath(""); setFileName(null); setConnState("idle");
+  };
+
+  const handleTest = () => {
+    if (connState === "testing") return;
+    setConnState("testing");
+    setTimeout(() => setConnState(prev => prev === "testing" ? (Math.random() > 0.4 ? "success" : "error") : prev), 1300);
+  };
+
+  const borderColor = (active: boolean) => active ? "#00775B" : "#E2E8F0";
+  const inputStyle: React.CSSProperties = { ...INTER, width: "100%", height: 40, padding: "0 12px", borderRadius: 6, border: "1.5px solid #E2E8F0", fontSize: 13, color: "#0F172A", outline: "none", backgroundColor: "#FAFAFA", boxSizing: "border-box" as const, transition: "border-color 150ms" };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ width: "min(920px, 96vw)", maxHeight: "90vh", backgroundColor: "#fff", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid #F1F5F9" }}>
+          <div>
+            <div style={{ ...INTER, fontSize: 18, fontWeight: 700, color: "#0F172A" }}>Add Cameras</div>
+            <div style={{ ...INTER, fontSize: 12, color: "#64748B", marginTop: 2 }}>Connect individual cameras or upload in bulk to your workspace.</div>
+          </div>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X style={{ width: 14, height: 14, color: "#64748B" }} />
+          </button>
+        </div>
+
+        {/* Body — scrollable */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
+            {/* LEFT — form */}
+            <div style={{ flex: "0 0 52%", display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Tab switcher */}
+              <div style={{ display: "flex", borderRadius: 8, border: "1px solid #E2E8F0", backgroundColor: "#F1F5F9", padding: 4, gap: 4 }}>
+                {([
+                  { key: "manual" as const, label: "Individual Cameras", sub: "Add one by one",  badge: "ADD"  },
+                  { key: "bulk"   as const, label: "Multiple Cameras",    sub: "Upload a file",   badge: "BULK" },
+                ] as const).map(item => {
+                  const active = tab === item.key;
+                  return (
+                    <button key={item.key} onClick={() => setTab(item.key)} style={{ ...INTER, flex: 1, padding: "9px 14px", borderRadius: 6, fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer", border: "none", transition: "all 0.18s", backgroundColor: active ? "#fff" : "transparent", color: active ? "#0F172A" : "#94A3B8", boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08),0 0 0 1px rgba(0,0,0,0.04)" : "none", textAlign: "left" as const, display: "flex", flexDirection: "column" as const, gap: 2 }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {item.label}
+                        {active && <span style={{ ...MONO, fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 3, backgroundColor: "rgba(0,119,91,0.12)", color: "#00775B" }}>{item.badge}</span>}
+                      </span>
+                      <span style={{ ...INTER, fontSize: 11, fontWeight: 400, color: active ? "#94A3B8" : "#CBD5E1" }}>{item.sub}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {tab === "manual" && (
+                <>
+                  {/* Camera Name */}
+                  <div>
+                    <label style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "#475569", marginBottom: 6, display: "block" }}>
+                      Camera Name <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Main Entrance, Lobby, Loading Bay…"
+                      style={inputStyle}
+                      onFocus={e => { e.currentTarget.style.borderColor = "#00775B"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,119,91,0.1)"; }}
+                      onBlur={e  => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }} />
+                  </div>
+
+                  {/* Protocol */}
+                  <div>
+                    <label style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "#475569", marginBottom: 6, display: "block" }}>
+                      Protocol <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
+                    <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: "1.5px solid #E2E8F0", width: "fit-content" }}>
+                      {(["RTSP", "IP", "FILE"] as const).map(p => (
+                        <button key={p} onClick={() => { setProtocol(p); setConnState("idle"); }}
+                          style={{ ...INTER, padding: "8px 24px", fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none", borderRight: p !== "FILE" ? "1px solid #E2E8F0" : "none", backgroundColor: protocol === p ? "#00775B" : "#FAFAFA", color: protocol === p ? "#fff" : "#64748B", transition: "all 150ms" }}>
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(protocol === "RTSP" || protocol === "IP") && (
+                    <>
+                      {/* Stream URL */}
+                      <div>
+                        <label style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "#475569", marginBottom: 6, display: "block" }}>
+                          Stream URL <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input value={url} onChange={e => { setUrl(e.target.value); setConnState("idle"); }}
+                          placeholder={protocol === "RTSP" ? "rtsp://192.168.1.100:554/stream" : "http://192.168.1.100/video"}
+                          style={inputStyle}
+                          onFocus={e => { e.currentTarget.style.borderColor = "#00775B"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,119,91,0.1)"; }}
+                          onBlur={e  => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }} />
+                      </div>
+                      {/* Feed path + Test */}
+                      <div>
+                        <label style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "#475569", marginBottom: 6, display: "block" }}>Camera Feed Path</label>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input value={feedPath} onChange={e => setFeedPath(e.target.value)} placeholder="Camera Feed Path (Optional)"
+                            style={{ ...inputStyle, flex: 1 }}
+                            onFocus={e => { e.currentTarget.style.borderColor = "#00775B"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,119,91,0.1)"; }}
+                            onBlur={e  => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }} />
+                          <button onClick={handleTest} style={{ ...INTER, flexShrink: 0, height: 40, padding: "0 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: connState === "testing" ? "not-allowed" : "pointer", border: `1.5px solid ${connState === "success" ? "#00775B" : connState === "error" ? "#E7000B" : "#00775B"}`, backgroundColor: connState === "success" ? "rgba(0,119,91,0.06)" : connState === "error" ? "rgba(231,0,11,0.05)" : "transparent", color: connState === "success" ? "#00775B" : connState === "error" ? "#E7000B" : "#00775B", whiteSpace: "nowrap" as const, transition: "all 150ms" }}>
+                            {connState === "testing" ? "Testing…" : connState === "success" ? "✓ Connected" : connState === "error" ? "Retry Test" : "Test Connection"}
+                          </button>
+                        </div>
+                        {connState === "error" && (
+                          <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 6, backgroundColor: "rgba(231,0,11,0.04)", border: "1px solid rgba(231,0,11,0.15)", display: "flex", gap: 8 }}>
+                            <span style={{ fontSize: 14 }}>⚠️</span>
+                            <div style={{ ...INTER, fontSize: 12, lineHeight: 1.5 }}>
+                              <div style={{ fontWeight: 600, color: "#E7000B", marginBottom: 2 }}>Connection failed</div>
+                              <div style={{ color: "#64748B" }}>Unable to reach stream at the provided URL. Check the device is online, port is open, and credentials are correct.</div>
+                            </div>
+                          </div>
+                        )}
+                        {connState === "success" && (
+                          <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 6, backgroundColor: "rgba(0,119,91,0.04)", border: "1px solid rgba(0,119,91,0.18)", display: "flex", gap: 8 }}>
+                            <span style={{ fontSize: 14 }}>✅</span>
+                            <div style={{ ...INTER, fontSize: 12, lineHeight: 1.5 }}>
+                              <div style={{ fontWeight: 600, color: "#00775B", marginBottom: 4 }}>Stream verified successfully</div>
+                              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
+                                {[["Codec","H.264"],["Resolution","1920×1080"],["FPS","25"],["Latency","38 ms"]].map(([k,v]) => (
+                                  <span key={k} style={{ ...MONO, fontSize: 10, padding: "2px 7px", borderRadius: 4, backgroundColor: "rgba(0,119,91,0.08)", color: "#00775B" }}>{k}: <strong>{v}</strong></span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {protocol === "FILE" && (
+                    <div>
+                      <label style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "#475569", marginBottom: 6, display: "block" }}>Video File</label>
+                      <div onClick={() => fileRef.current?.click()}
+                        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                        onDragLeave={() => setDragging(false)}
+                        onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) setFileName(f.name); }}
+                        style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "32px 16px", borderRadius: 8, border: `2px dashed ${dragging ? "#00775B" : "#CBD5E1"}`, backgroundColor: dragging ? "rgba(0,119,91,0.04)" : "#FAFAFA", cursor: "pointer", transition: "all 200ms" }}>
+                        <input ref={fileRef} type="file" accept=".mp4,.avi,.mov,.wmv,.flv" style={{ display: "none" }}
+                          onChange={e => { const f = e.target.files?.[0]; if (f) setFileName(f.name); }} />
+                        <div style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#00775B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Upload style={{ width: 20, height: 20, color: "#fff" }} />
+                        </div>
+                        <div style={{ ...INTER, textAlign: "center" as const }}>
+                          {fileName ? (
+                            <>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: "#00775B" }}>{fileName}</div>
+                              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>Click to change file</div>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A" }}>Drag and drop a video file here</div>
+                              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>or click to browse</div>
+                              <div style={{ fontSize: 11, color: "#CBD5E1", marginTop: 6 }}>Supported: .mp4, .avi, .mov, .wmv, .flv · max 500 MB</div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Advanced accordion */}
+                  <div style={{ borderRadius: 8, border: "1px solid #E2E8F0", overflow: "hidden" }}>
+                    <button onClick={() => setAdvOpen(o => !o)} style={{ ...INTER, width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 14px", background: "#FAFAFA", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#00775B" }}>
+                      <span>+ Advanced Configuration</span>
+                      <ChevronDown style={{ width: 14, height: 14, transform: advOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                    </button>
+                    {advOpen && (
+                      <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 14, borderTop: "1px solid #E2E8F0" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                          <div>
+                            <label style={{ ...INTER, fontSize: 11, fontWeight: 600, color: "#475569", marginBottom: 5, display: "block" }}>Resolution</label>
+                            <div style={{ position: "relative" }}>
+                              <select value={resolution} onChange={e => setResolution(e.target.value)} style={{ ...INTER, width: "100%", height: 38, padding: "0 32px 0 10px", borderRadius: 6, border: "1.5px solid #E2E8F0", fontSize: 13, color: "#0F172A", backgroundColor: "#FAFAFA", appearance: "none" as const, cursor: "pointer" }}>
+                                {["480p","720p","1080p","4K"].map(r => <option key={r}>{r}</option>)}
+                              </select>
+                              <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: "#94A3B8", pointerEvents: "none" }} />
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ ...INTER, fontSize: 11, fontWeight: 600, color: "#475569", marginBottom: 5, display: "block" }}>Camera Make</label>
+                            <input placeholder="e.g. Hikvision" style={{ ...inputStyle, height: 38 }}
+                              onFocus={e => { e.currentTarget.style.borderColor = "#00775B"; }}
+                              onBlur={e  => { e.currentTarget.style.borderColor = "#E2E8F0"; }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                          {[{ label: "Streaming FPS", value: fps, set: setFps, min: 1, max: 60, unit: " fps" }, { label: "Video Quality", value: quality, set: setQuality, min: 10, max: 100, unit: "%" }].map(s => (
+                            <div key={s.label}>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                                <label style={{ ...INTER, fontSize: 11, fontWeight: 600, color: "#475569" }}>{s.label}</label>
+                                <span style={{ ...MONO, fontSize: 11, color: "#00775B" }}>{s.value}{s.unit}</span>
+                              </div>
+                              <input type="range" min={s.min} max={s.max} value={s.value} onChange={e => s.set(Number(e.target.value))}
+                                style={{ width: "100%", accentColor: "#00775B", cursor: "pointer" }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add button — centered */}
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <button onClick={handleAdd} disabled={!canAdd || cameras.length >= MAX}
+                      style={{ ...INTER, display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 24px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: canAdd && cameras.length < MAX ? "pointer" : "not-allowed", backgroundColor: canAdd && cameras.length < MAX ? "#00775B" : "#F1F5F9", color: canAdd && cameras.length < MAX ? "#fff" : "#94A3B8", border: "none", boxShadow: canAdd && cameras.length < MAX ? "0 2px 8px rgba(0,119,91,0.25)" : "none", transition: "all 200ms" }}>
+                      <Plus style={{ width: 14, height: 14 }} />
+                      {cameras.length >= MAX ? `Max ${MAX} cameras reached` : "Add Camera"}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {tab === "bulk" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {/* Step 1: Download templates */}
+                  <div>
+                    <div style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "#94A3B8", marginBottom: 8 }}>1. Download Template</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {[
+                        { ext: "XLSX", label: "Excel Template", sub: "Download, fill and upload", color: "#1D6F42", bg: "rgba(29,111,66,0.08)", border: "rgba(29,111,66,0.19)" },
+                        { ext: "CSV",  label: "CSV Template",   sub: "Download, fill and upload", color: "#2B7FFF", bg: "rgba(43,127,255,0.08)", border: "rgba(43,127,255,0.19)" },
+                      ].map(t => (
+                        <button key={t.ext} onClick={e => e.preventDefault()}
+                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 6, cursor: "pointer", backgroundColor: "#fff", border: "1px solid #E2E8F0", transition: "0.15s", textAlign: "left" as const }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.color; (e.currentTarget as HTMLButtonElement).style.backgroundColor = t.bg; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#E2E8F0"; (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#fff"; }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 5, flexShrink: 0, backgroundColor: t.bg, border: `1px solid ${t.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                            <span style={{ ...MONO, fontSize: 8, fontWeight: 800, color: t.color, letterSpacing: "0.02em" }}>{t.ext}</span>
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ ...INTER, fontSize: 12, fontWeight: 600, color: "#334155" }}>{t.label}</div>
+                            <div style={{ ...INTER, fontSize: 10, color: "#94A3B8", marginTop: 1 }}>{t.sub}</div>
+                          </div>
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, color: "#94A3B8" }}>
+                            <path d="M7 1v8M4 6l3 3 3-3M2 12h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Step 2: Upload */}
+                  <div>
+                    <div style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "#94A3B8", marginBottom: 8 }}>2. Upload Filled File</div>
+                    <div onClick={() => fileRef.current?.click()}
+                      onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                      onDragLeave={() => setDragging(false)}
+                      onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) setFileName(f.name); }}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "32px 16px", borderRadius: 8, border: `2px dashed ${dragging ? "#00775B" : "#CBD5E1"}`, backgroundColor: dragging ? "rgba(0,119,91,0.02)" : "#FAFAFA", cursor: "pointer", transition: "all 200ms" }}>
+                      <input ref={fileRef} type="file" accept=".csv,.xlsx" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) setFileName(f.name); }} />
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: "#F1F5F9", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Upload style={{ width: 18, height: 18, color: "#64748B" }} />
+                      </div>
+                      <div style={{ ...INTER, textAlign: "center" as const }}>
+                        {fileName ? (
+                          <>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#00775B" }}>{fileName}</div>
+                            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>Click to change file</div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>Drag & drop your file here</div>
+                            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>or click to browse · .xlsx, .csv · max 20 MB</div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT — Added cameras */}
+            <div style={{ flex: 1, borderRadius: 10, border: "1px solid #E2E8F0", backgroundColor: "#F8FAFC", overflow: "hidden", minHeight: 320, display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Camera style={{ width: 13, height: 13, color: "#00775B" }} />
+                  <span style={{ ...INTER, fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "#475569" }}>Added Cameras</span>
+                </div>
+                <span style={{ ...MONO, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10, backgroundColor: cameras.length > 0 ? "rgba(0,119,91,0.12)" : "#E2E8F0", border: `1px solid ${cameras.length > 0 ? "rgba(0,119,91,0.3)" : "#CBD5E1"}`, color: cameras.length > 0 ? "#00775B" : "#94A3B8", transition: "all 0.2s" }}>
+                  {cameras.length} / {MAX}
+                </span>
+              </div>
+              <div style={{ flex: 1, padding: 14, overflowY: "auto" }}>
+                {cameras.length === 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 10, padding: "32px 16px", textAlign: "center" as const }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: "#E2E8F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Camera style={{ width: 20, height: 20, color: "#94A3B8" }} />
+                    </div>
+                    <div>
+                      <div style={{ ...INTER, fontSize: 13, fontWeight: 600, color: "#94A3B8", marginBottom: 4 }}>No cameras added yet</div>
+                      <div style={{ ...INTER, fontSize: 11, color: "#CBD5E1" }}>Fill in the form and click "Add Camera"</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+                    {cameras.map(cam => {
+                      const pColor = cam.protocol === "RTSP" ? "#2B7FFF" : cam.protocol === "IP" ? "#7C3AED" : "#00775B";
+                      return (
+                        <div key={cam.id} style={{ borderRadius: 8, border: "1px solid #E2E8F0", backgroundColor: "#fff", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6, position: "relative" }}>
+                          <button onClick={() => setCameras(p => p.filter(c => c.id !== cam.id))}
+                            style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, borderRadius: 4, border: "none", backgroundColor: "#F1F5F9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <X style={{ width: 10, height: 10, color: "#94A3B8" }} />
+                          </button>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <Camera style={{ width: 12, height: 12, color: "#94A3B8", flexShrink: 0 }} />
+                            <span style={{ ...INTER, fontSize: 12, fontWeight: 600, color: "#0F172A", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, paddingRight: 20 }}>{cam.name}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ ...MONO, fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 3, backgroundColor: `${pColor}15`, color: pColor }}>{cam.protocol}</span>
+                            {cam.url && <span style={{ ...MONO, fontSize: 10, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, flex: 1 }}>{cam.url}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, padding: "16px 24px", borderTop: "1px solid #F1F5F9", backgroundColor: "#FAFAFA" }}>
+          <button onClick={onClose} style={{ ...INTER, height: 38, padding: "0 18px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "1.5px solid #E2E8F0", backgroundColor: "#fff", color: "#334155" }}>Cancel</button>
+          <button style={{ ...INTER, height: 38, padding: "0 20px", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none", backgroundColor: cameras.length > 0 ? "#00775B" : "#E2E8F0", color: cameras.length > 0 ? "#fff" : "#94A3B8", boxShadow: cameras.length > 0 ? "0 2px 8px rgba(0,119,91,0.3)" : "none", transition: "all 200ms" }}>
+            Add Cameras{cameras.length > 0 ? ` (${cameras.length})` : ""}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── CamerasPage ────────────────────────────────────────────────────────────────
+function CamerasPage() {
+  const [search,     setSearch]     = useState("");
+  const [showModal,  setShowModal]  = useState(false);
+  const [hovRow,     setHovRow]     = useState<string | null>(null);
+  const [selected,   setSelected]   = useState<Set<string>>(new Set());
+  const [page,       setPage]       = useState(1);
+  const ROWS_PER_PAGE = 10;
+
+  const teal    = "#00956D";
+  const surface = "#fff";
+  const hdr     = "#F8FAFC";
+  const sec     = "#64748B";
+  const border  = "#E2E8F0";
+
+  const filtered = CAMS_DATA.filter(c =>
+    !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.protocol.toLowerCase().includes(search.toLowerCase())
+  );
+  const totalPages    = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
+  const paginated     = filtered.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
+  const pageIds       = paginated.map(r => r.id);
+  const allPageSel    = pageIds.length > 0 && pageIds.every(id => selected.has(id));
+  const someSel       = pageIds.some(id => selected.has(id)) && !allPageSel;
+
+  const toggleAll  = () => setSelected(p => { const n = new Set(p); allPageSel ? pageIds.forEach(id => n.delete(id)) : pageIds.forEach(id => n.add(id)); return n; });
+  const toggleRow  = (id: string) => setSelected(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const statusBadge = (s: CamRow["status"]) => {
+    const cfg = s === "ONLINE" ? { bg: "rgba(5,150,105,0.12)", color: "#059669", label: "ONLINE" }
+      : s === "OFFLINE" ? { bg: "rgba(239,68,68,0.12)", color: "#EF4444", label: "OFFLINE" }
+      : { bg: "rgba(234,88,12,0.12)", color: "#EA580C", label: "NO HEARTBEAT" };
+    return (
+      <span style={{ ...INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", padding: "3px 8px", borderRadius: 4, backgroundColor: cfg.bg, color: cfg.color, whiteSpace: "nowrap" as const }}>
+        {cfg.label}
+      </span>
+    );
+  };
+
+  // V2.3 checkbox
+  const Chk = ({ checked, indeterminate, onChange }: { checked: boolean; indeterminate?: boolean; onChange: () => void }) => (
+    <div onClick={e => { e.stopPropagation(); onChange(); }}
+      style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${checked || indeterminate ? teal : "#CBD5E1"}`, backgroundColor: checked ? teal : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 100ms" }}>
+      {checked && <Check style={{ width: 9, height: 9, color: "#fff" }} />}
+      {indeterminate && !checked && <Minus style={{ width: 9, height: 9, color: teal }} />}
+    </div>
+  );
+
+  const cols = [
+    { key: "name",        label: "Camera Name",  w: 260 },
+    { key: "status",      label: "Status",        w: 130 },
+    { key: "protocol",    label: "Protocol",      w: 80  },
+    { key: "feedPath",    label: "Feed Path",     w: 220 },
+    { key: "aspectRatio", label: "Aspect Ratio",  w: 90  },
+    { key: "dimensions",  label: "Dimensions",    w: 100 },
+    { key: "fps",         label: "Stream FPS",    w: 90  },
+    { key: "recording",   label: "Recording",     w: 90  },
+  ] as const;
+
+  const totalW = 44 + cols.reduce((s, c) => s + c.w, 0);
+
+  const rowBg = (idx: number, hov: boolean, sel: boolean) => {
+    if (hov) return "#EBF5F1";
+    if (sel) return "#F2FAF7";
+    return idx % 2 === 1 ? "#F8FDFC" : "#fff";
+  };
+
+  return (
+    <div style={{ flex: 1, background: "#F1F5F9", borderTopLeftRadius: 16, overflowY: "auto", overflowX: "hidden", padding: 24, minWidth: 0 }}>
+      {/* ── Page header ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <div>
+          <div style={{ ...INTER, fontSize: 20, fontWeight: 700, color: "#0F172A" }}>Cameras</div>
+          <div style={{ ...INTER, fontSize: 12, color: "#64748B", marginTop: 2 }}>{CAMS_DATA.length} cameras · Matrice Primary Account</div>
+        </div>
+        <button onClick={() => setShowModal(true)} style={{ ...INTER, display: "flex", alignItems: "center", gap: 8, height: 36, padding: "0 16px", borderRadius: 6, backgroundColor: "#00775B", border: "none", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,119,91,0.28)" }}>
+          <Plus style={{ width: 15, height: 15 }} /> Add Camera(s)
+        </button>
+      </div>
+
+      {/* ── Stat cards ── */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+        <VMSStatCard label="Cameras Online"     value="1/243"   sublabel="Active live streams"                  dir="up"      num="+1"  ref_="vs yesterday" definition="Reachable cameras streaming live right now"    chip="LIVE"         color="#2B7FFF" bg="#EFF5FF" />
+        <VMSStatCard label="Cameras Offline"    value="0/243"   sublabel="Stream unreachable"                   dir="neutral" num="-0"  ref_="vs yesterday" definition="Cameras the stream can't currently reach"        chip="ALERT"        color="#EF4444" bg="#FFF1F1" />
+        <VMSStatCard label="With Applications"  value="184/243" sublabel="Running at least one inference app"   dir="neutral" num="-0"  ref_="vs yesterday" definition="Cameras running at least one inference app"      chip="APPS"         color="#00775B" bg="#EDFAF5" />
+        <VMSStatCard label="Avg Stream FPS"     value="29"      sublabel="Mean configured frame rate"           dir="neutral" num="-0"  ref_="vs yesterday" definition="Mean configured frame rate across cameras"       chip="PERFORMANCE"  color="#64748B" bg="#F4F6F9" />
+      </div>
+
+      {/* ── Table (V2.3 style) ── */}
+      <div style={{ borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden" }}>
+
+        {/* Toolbar */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "10px 16px 10px", backgroundColor: surface, borderBottom: `2px solid ${teal}` }}>
+          {/* Columns button */}
+          <button style={{ ...INTER, display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, backgroundColor: "#F8FAFC", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#334155" }}>
+            <LayoutGrid style={{ width: 13, height: 13 }} /> Columns
+          </button>
+          {/* Search */}
+          <div style={{ position: "relative", width: 280 }}>
+            <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: "#94A3B8", pointerEvents: "none" }} />
+            <input type="text" placeholder="Search cameras, feed paths…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+              style={{ ...INTER, width: "100%", height: 32, paddingLeft: 34, paddingRight: search ? 28 : 4, fontSize: 12, color: "#1E293B", backgroundColor: "transparent", border: "none", borderBottom: `2px solid ${border}`, borderRadius: 0, outline: "none", transition: "border-bottom-color 200ms" }}
+              onFocus={e  => { e.target.style.borderBottomColor = teal; }}
+              onBlur={e   => { e.target.style.borderBottomColor = border; }} />
+            {search && <button onClick={() => { setSearch(""); setPage(1); }} style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", border: "none", background: "transparent", cursor: "pointer", color: "#94A3B8", padding: 0 }}><X style={{ width: 12, height: 12 }} /></button>}
+          </div>
+          {/* Status filter */}
+          <button style={{ ...INTER, display: "flex", alignItems: "center", gap: 5, padding: "4px 2px", border: "none", borderBottom: `2px solid transparent`, borderRadius: 0, background: "transparent", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#64748B" }}>
+            <Filter style={{ width: 12, height: 12 }} /> Status
+          </button>
+          {/* Right cluster */}
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            {selected.size > 0 && (
+              <span style={{ ...INTER, fontSize: 12, fontWeight: 700, color: teal }}>{selected.size} selected</span>
+            )}
+            <span style={{ ...INTER, fontSize: 12, color: sec }}>{filtered.length} of {CAMS_DATA.length} cameras</span>
+          </div>
+        </div>
+
+        {/* Table scroll area */}
+        <div style={{ overflowX: "auto", backgroundColor: surface }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", height: 44, backgroundColor: hdr, minWidth: totalW, borderBottom: `1px solid ${border}` }}>
+            <div style={{ width: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Chk checked={allPageSel} indeterminate={someSel} onChange={toggleAll} />
+            </div>
+            {cols.map(col => (
+              <div key={col.key} style={{ flexShrink: 0, width: col.w, paddingLeft: 8, paddingRight: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ ...INTER, fontSize: 12, fontWeight: 700, color: "#1E293B", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>{col.label}</span>
+                <SortAsc style={{ width: 10, height: 10, color: "#CBD5E1", flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Rows */}
+          {paginated.length === 0 ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 100, ...INTER, fontSize: 12, color: sec }}>
+              No cameras match "{search}".{" "}<button onClick={() => setSearch("")} style={{ marginLeft: 8, color: teal, background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Clear</button>
+            </div>
+          ) : paginated.map((cam, idx) => {
+            const isSel = selected.has(cam.id);
+            const isHov = hovRow === cam.id;
+            const bg    = rowBg(idx, isHov, isSel);
+
+            return (
+              <div key={cam.id} onMouseEnter={() => setHovRow(cam.id)} onMouseLeave={() => setHovRow(null)}
+                style={{ display: "flex", alignItems: "center", minHeight: 44, minWidth: totalW, backgroundColor: bg, borderBottom: `1px solid #F1F5F9`, position: "relative", transition: "background-color 100ms" }}>
+                {/* Severity strip */}
+                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, backgroundColor: cam.status === "ONLINE" ? "#059669" : cam.status === "OFFLINE" ? "#EF4444" : "#EA580C", opacity: isHov || isSel ? 1 : 0, transition: "opacity 100ms" }} />
+                <div style={{ width: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Chk checked={isSel} onChange={() => toggleRow(cam.id)} />
+                </div>
+                {cols.map(col => {
+                  const s: React.CSSProperties = { ...INTER, fontSize: 12, color: isHov ? "#0F172A" : "#334155" };
+                  const mono: React.CSSProperties = { ...MONO, fontSize: 12, color: isHov ? "#0F172A" : sec };
+                  let cell: React.ReactNode;
+                  if (col.key === "name") cell = (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Camera style={{ width: 13, height: 13, color: "#94A3B8", flexShrink: 0 }} />
+                      <span style={{ ...s, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{cam.name}</span>
+                    </div>
+                  );
+                  else if (col.key === "status") cell = statusBadge(cam.status);
+                  else if (col.key === "protocol") cell = <span style={{ ...MONO, fontSize: 11, fontWeight: 700, color: cam.protocol === "RTSP" ? "#2B7FFF" : cam.protocol === "IP" ? "#7C3AED" : "#00775B" }}>{cam.protocol}</span>;
+                  else if (col.key === "feedPath") cell = <span style={{ ...mono, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: 200 }}>{cam.feedPath}</span>;
+                  else if (col.key === "aspectRatio") cell = <span style={mono}>{cam.aspectRatio}</span>;
+                  else if (col.key === "dimensions")  cell = <span style={mono}>{cam.dimensions}</span>;
+                  else if (col.key === "fps") cell = <span style={mono}>{cam.fps} fps</span>;
+                  else if (col.key === "recording") cell = (
+                    <span style={{ ...INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", padding: "3px 8px", borderRadius: 4, backgroundColor: cam.recording === "ACTIVE" ? "rgba(5,150,105,0.10)" : "rgba(100,116,139,0.10)", color: cam.recording === "ACTIVE" ? "#059669" : "#64748B" }}>{cam.recording}</span>
+                  );
+                  return (
+                    <div key={col.key} style={{ flexShrink: 0, width: col.w, paddingLeft: 8, paddingRight: 8, display: "flex", alignItems: "center", minHeight: 44, overflow: "hidden" }}>
+                      {cell}
+                    </div>
+                  );
+                })}
+                {/* Floating CTA */}
+                <div style={{ position: "sticky", right: 0, zIndex: 4, flexShrink: 0, height: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 4, paddingLeft: 32, paddingRight: 12, background: `linear-gradient(to right, ${bg}00 0%, ${bg} 32px)`, opacity: isHov ? 1 : 0, pointerEvents: isHov ? "auto" : "none", transition: "opacity 120ms" }}>
+                  <button style={{ ...INTER, display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 5, border: `1px solid ${border}`, backgroundColor: "#F1F5F9", cursor: "pointer", color: "#64748B", fontSize: 11, fontWeight: 600, transition: "all 100ms" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = teal; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; (e.currentTarget as HTMLButtonElement).style.borderColor = teal; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#F1F5F9"; (e.currentTarget as HTMLButtonElement).style.color = "#64748B"; (e.currentTarget as HTMLButtonElement).style.borderColor = border; }}>
+                    <Video style={{ width: 12, height: 12 }} /> View
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Pagination */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderTop: `1px solid #F1F5F9`, backgroundColor: surface }}>
+          <span style={{ ...INTER, fontSize: 12, color: sec }}>Showing {(page - 1) * ROWS_PER_PAGE + 1}–{Math.min(page * ROWS_PER_PAGE, filtered.length)} of {filtered.length}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => setPage(1)} disabled={page === 1} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4, border: "none", cursor: page === 1 ? "not-allowed" : "pointer", backgroundColor: "#F1F5F9", color: page === 1 ? "#CBD5E1" : "#475569", transition: "all 120ms" }}>
+              <ChevronsLeft style={{ width: 13, height: 13 }} />
+            </button>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4, border: "none", cursor: page === 1 ? "not-allowed" : "pointer", backgroundColor: "transparent", color: page === 1 ? "#CBD5E1" : "#475569" }}>
+              <ChevronLeft style={{ width: 13, height: 13 }} />
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const p = Math.max(1, Math.min(totalPages - 4, page - 2)) + i;
+              return (
+                <button key={p} onClick={() => setPage(p)} style={{ width: 28, height: 28, borderRadius: 4, border: page === p ? `1px solid ${teal}40` : "none", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", backgroundColor: page === p ? teal : "#F1F5F9", color: page === p ? "#fff" : "#94A3B8", transition: "all 120ms" }}>
+                  {p}
+                </button>
+              );
+            })}
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4, border: "none", cursor: page === totalPages ? "not-allowed" : "pointer", backgroundColor: "transparent", color: page === totalPages ? "#CBD5E1" : "#475569" }}>
+              <ChevronRight style={{ width: 13, height: 13 }} />
+            </button>
+            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4, border: "none", cursor: page === totalPages ? "not-allowed" : "pointer", backgroundColor: "#F1F5F9", color: page === totalPages ? "#CBD5E1" : "#475569" }}>
+              <ChevronsRight style={{ width: 13, height: 13 }} />
+            </button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ ...INTER, fontSize: 12, color: sec }}>Rows per page</span>
+            <select defaultValue={10} style={{ ...INTER, height: 28, padding: "0 8px", borderRadius: 4, border: `1px solid ${border}`, fontSize: 12, color: "#334155", cursor: "pointer" }}>
+              <option>10</option><option>25</option><option>50</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {showModal && <AddCameraModal onClose={() => setShowModal(false)} />}
+    </div>
+  );
+}
+
 // ─── Root component ───────────────────────────────────────────────────────────
 
 export function VMSHomePage({ onLaunchSetup, onPlatformSwitch }: VMSHomePageProps) {
@@ -919,6 +1576,7 @@ export function VMSHomePage({ onLaunchSetup, onPlatformSwitch }: VMSHomePageProp
   const handleNavClick = (label: string) => {
     if (label === "Projects") { setPage("projects"); setSelectedProject(null); setSelectedPipeline(null); }
     if (label === "Pipelines" && selectedProject) setPage("pipelines");
+    if (label === "Cameras")  { setPage("cameras"); setSelectedProject(null); setSelectedPipeline(null); }
   };
 
   const handleSelectProject = (p: Project) => {
@@ -961,6 +1619,7 @@ export function VMSHomePage({ onLaunchSetup, onPlatformSwitch }: VMSHomePageProp
           }
         />
 
+        {page === "cameras" && <CamerasPage />}
         {page === "projects" && (
           <ProjectsContent onSelectProject={handleSelectProject} onLaunchSetup={onLaunchSetup} />
         )}
