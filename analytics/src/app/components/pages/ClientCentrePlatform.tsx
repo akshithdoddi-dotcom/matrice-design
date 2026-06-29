@@ -946,89 +946,144 @@ function ProjectGrid({ projects, onSelectProject, isDark, persona }: {
   const hasIncident = (p: Project) => p.criticalAlerts > 0 || p.highAlerts > 0;
 
   const [searchQ, setSearchQ] = useState("");
-  const filtered = projects.filter(p => p.name.toLowerCase().includes(searchQ.toLowerCase()));
+  const [statusFilter, setStatusFilter] = useState<"all" | "healthy" | "degraded" | "critical">("all");
+  const [sortBy, setSortBy] = useState<"name" | "cameras" | "alerts" | "pipelines">("name");
+
+  const teal  = "#00775B";
+  const bdColor = isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0";
+  const inBg  = isDark ? "#0f172a" : "#F8FAFC";
+
+  const totalCameras  = projects.reduce((s, p) => s + p.cameras, 0);
+  const totalPipelines = projects.reduce((s, p) => s + p.pipelines, 0);
+  const totalApps     = Object.values(PROJECT_APP_STATUS).reduce((s, a) => s + a.active, 0);
+  const criticalCount = projects.reduce((s, p) => s + p.criticalAlerts, 0);
+
+  const filtered = projects
+    .filter(p => p.name.toLowerCase().includes(searchQ.toLowerCase()))
+    .filter(p => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "healthy") return p.status === "healthy";
+      if (statusFilter === "degraded") return p.status === "degraded";
+      if (statusFilter === "critical") return p.criticalAlerts > 0;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "cameras")   return b.cameras - a.cameras;
+      if (sortBy === "alerts")    return (b.criticalAlerts + b.highAlerts) - (a.criticalAlerts + a.highAlerts);
+      if (sortBy === "pipelines") return b.pipelines - a.pipelines;
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <div className="flex-1 overflow-auto" style={{ background: bg }}>
       <div className="mx-auto p-8" style={{ maxWidth: "1200px" }}>
 
         {/* Page header */}
-        <div style={{ marginBottom: "24px" }}>
-          <div className="flex items-center gap-2" style={{ marginBottom: "8px" }}>
-            <Globe className="w-4 h-4" style={{ color: "#00775B" }} />
-            <span className="text-[11px] font-bold tracking-widest uppercase" style={{ ...MONO, color: "#00775B" }}>
-              GLOBAL HUB
-            </span>
+        <div style={{ marginBottom: "20px" }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: "6px" }}>
+            <Globe className="w-4 h-4" style={{ color: teal }} />
+            <span className="text-[11px] font-bold tracking-widest uppercase" style={{ ...MONO, color: teal }}>GLOBAL HUB</span>
           </div>
-          <div className="flex items-end justify-between" style={{ marginBottom: "16px" }}>
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-[28px] font-bold" style={{ ...INTER, color: text, letterSpacing: "-0.02em", marginBottom: "4px" }}>
-                Projects Directory
-              </h1>
-              <p className="text-[14px]" style={{ ...INTER, color: muted, lineHeight: 1.6 }}>
+              <h1 className="text-[22px] font-bold mb-0.5" style={{ ...INTER, color: text }}>Projects Directory</h1>
+              <p className="text-[13px]" style={{ ...INTER, color: muted }}>
                 {projects.length} projects · Select a project to open its workspace
               </p>
             </div>
             <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold text-white"
-              style={{ background: "#00775B", ...INTER, flexShrink: 0 }}>
+              style={{ background: teal, ...INTER, flexShrink: 0 }}>
               <Plus className="w-3.5 h-3.5" />
               New Project
             </button>
           </div>
-          {/* Search */}
-          <div style={{ position: "relative", maxWidth: "360px" }}>
-            <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: isDark ? "#475569" : "#94A3B8", pointerEvents: "none" }} />
-            <input
-              type="text"
-              placeholder="Search projects…"
-              value={searchQ}
-              onChange={e => setSearchQ(e.target.value)}
-              style={{
-                width: "100%", height: 36, paddingLeft: 34, paddingRight: 10,
-                fontSize: 13, ...INTER, color: isDark ? "#E2E8F0" : "#1E293B",
-                background: isDark ? "#0f172a" : "#fff",
-                border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0"}`,
-                borderRadius: 6, outline: "none",
-              }}
-            />
-          </div>
         </div>
 
-        {/* Org-wide stat tiles — v1.1 card spec */}
-        <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: "24px", marginBottom: "32px" }}>
+        {/* Compact stat strip */}
+        <div className="flex items-stretch gap-0" style={{ background: cardBg, border: `1px solid ${bdColor}`, borderRadius: 8, marginBottom: 20, overflow: "hidden" }}>
           {[
-            { label: "Total Projects",   value: projects.length,                                                                                                  icon: FolderOpen,    color: "#00775B" },
-            { label: "Total Cameras",    value: projects.reduce((s, p) => s + p.cameras, 0),                                                                     icon: Camera,        color: "#8B5CF6" },
-            ...(persona === "monitor"
-              ? [{ label: "Active Applications", value: Object.values(PROJECT_APP_STATUS).reduce((s, a) => s + a.active, 0), icon: Zap,       color: "#00956D" }]
-              : [{ label: "Active Pipelines",    value: projects.reduce((s, p) => s + p.pipelines, 0),                       icon: GitBranch, color: "#2B7FFF" }]),
-            { label: "Critical Alerts",  value: projects.reduce((s, p) => s + p.criticalAlerts, 0),                                                              icon: AlertTriangle, color: "#E7000B" },
-          ].map(stat => {
+            { label: "Projects",    value: projects.length,   icon: FolderOpen,    color: teal },
+            { label: "Cameras",     value: totalCameras,      icon: Camera,        color: "#8B5CF6" },
+            { label: persona === "monitor" ? "Active Apps" : "Pipelines",
+                                    value: persona === "monitor" ? totalApps : totalPipelines, icon: persona === "monitor" ? Zap : GitBranch, color: "#2B7FFF" },
+            { label: "Critical Alerts", value: criticalCount, icon: AlertTriangle, color: "#E7000B" },
+          ].map((stat, i, arr) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} style={{ background: cardBg, border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0"}`, borderRadius: "6px",
-                padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-                <div style={{ marginBottom: "16px" }}>
-                  <div className="w-9 h-9 flex items-center justify-center rounded-[6px]"
-                    style={{ background: stat.color + "12" }}>
-                    <Icon className="w-4 h-4" style={{ color: stat.color }} />
-                  </div>
+              <div key={stat.label} style={{ flex: 1, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12,
+                borderRight: i < arr.length - 1 ? `1px solid ${bdColor}` : "none" }}>
+                <div style={{ width: 32, height: 32, borderRadius: 6, background: stat.color + "12", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon style={{ width: 14, height: 14, color: stat.color }} />
                 </div>
-                <div className="text-[32px] font-bold leading-none" style={{ ...MONO,
-                  color: text, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em",
-                  marginBottom: "6px" }}>
-                  {stat.value}
-                </div>
-                <div className="text-[12px] font-semibold uppercase tracking-[0.05em]"
-                  style={{ ...INTER, color: muted }}>
-                  {stat.label}
+                <div>
+                  <div style={{ ...MONO, fontSize: 20, fontWeight: 700, color: text, letterSpacing: "-0.02em", lineHeight: 1 }}>{stat.value}</div>
+                  <div style={{ ...INTER, fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: muted, marginTop: 2 }}>{stat.label}</div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Project cards — adaptive grid: high-density for monitor, 3-col for manager */}
+        {/* Toolbar: search + filters + sort on ONE row */}
+        <div className="flex items-center gap-2 mb-6" style={{ borderBottom: `2px solid ${teal}`, paddingBottom: 10 }}>
+          {/* Search */}
+          <div style={{ position: "relative", width: 260, flexShrink: 0 }}>
+            <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: isDark ? "#475569" : "#94A3B8", pointerEvents: "none" }} />
+            <input type="text" placeholder="Search projects…" value={searchQ} onChange={e => setSearchQ(e.target.value)}
+              style={{ width: "100%", height: 32, paddingLeft: 32, paddingRight: searchQ ? 28 : 8, fontSize: 12, ...INTER, color: isDark ? "#E2E8F0" : "#1E293B", background: "transparent", border: "none", borderBottom: `2px solid ${bdColor}`, outline: "none", transition: "border-color 150ms" }}
+              onFocus={e => { e.currentTarget.style.borderBottomColor = teal; }}
+              onBlur={e  => { e.currentTarget.style.borderBottomColor = bdColor; }} />
+            {searchQ && (
+              <button onClick={() => setSearchQ("")} style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 0, display: "flex" }}>
+                <X style={{ width: 12, height: 12 }} />
+              </button>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 20, background: bdColor, flexShrink: 0 }} />
+
+          {/* Status filter pills */}
+          {(["all", "healthy", "degraded", "critical"] as const).map(s => {
+            const active = statusFilter === s;
+            const dot = s === "healthy" ? "#10B981" : s === "degraded" ? "#F59E0B" : s === "critical" ? "#EF4444" : undefined;
+            return (
+              <button key={s} onClick={() => setStatusFilter(s)}
+                style={{ ...INTER, display: "flex", alignItems: "center", gap: 5, height: 28, padding: "0 10px", borderRadius: 5, fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.04em", cursor: "pointer", border: `1px solid ${active ? teal : bdColor}`, backgroundColor: active ? `${teal}12` : inBg, color: active ? teal : isDark ? "#64748B" : "#64748B", transition: "all 120ms", flexShrink: 0 }}>
+                {dot && <span style={{ width: 6, height: 6, borderRadius: "50%", background: dot, flexShrink: 0, display: "inline-block" }} />}
+                {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            );
+          })}
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 20, background: bdColor, flexShrink: 0 }} />
+
+          {/* Sort */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <span style={{ ...INTER, fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.04em", color: isDark ? "#475569" : "#94A3B8" }}>Sort</span>
+            <div style={{ position: "relative" }}>
+              <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)}
+                style={{ ...INTER, height: 28, padding: "0 28px 0 10px", fontSize: 12, fontWeight: 600, color: isDark ? "#E2E8F0" : "#334155", background: inBg, border: `1px solid ${bdColor}`, borderRadius: 5, outline: "none", cursor: "pointer", appearance: "none" as const }}>
+                <option value="name">Name</option>
+                <option value="cameras">Cameras</option>
+                <option value="alerts">Alerts</option>
+                <option value="pipelines">Pipelines</option>
+              </select>
+              <ChevronDown style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", width: 12, height: 12, color: "#94A3B8", pointerEvents: "none" }} />
+            </div>
+          </div>
+
+          {/* Spacer */}
+          <div style={{ flex: 1 }} />
+
+          {/* Result count */}
+          <span style={{ ...INTER, fontSize: 12, color: isDark ? "#475569" : "#94A3B8", flexShrink: 0 }}>
+            {filtered.length} of {projects.length} projects
+          </span>
+        </div>
+
+        {/* Project cards — adaptive grid */}
         <div style={{
           display: "grid",
           gridTemplateColumns: persona === "monitor"
@@ -1524,11 +1579,18 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
             <Video className="w-5 h-5" style={{ color: teal }} />
             <span className="text-[11px] font-bold tracking-widest uppercase" style={{ ...MONO, color: teal }}>LIVE STREAMING</span>
           </div>
-          <div className="mb-5">
-            <h1 className="text-[22px] font-bold mb-0.5" style={{ ...INTER, color: text }}>Select a pipeline</h1>
-            <p className="text-[13px]" style={{ ...INTER, color: muted }}>
-              {runningCount}/{pipelines.length} running · {alertCount} active alerts
-            </p>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h1 className="text-[22px] font-bold mb-0.5" style={{ ...INTER, color: text }}>Select a pipeline</h1>
+              <p className="text-[13px]" style={{ ...INTER, color: muted }}>
+                {runningCount}/{pipelines.length} running · {alertCount} active alerts
+              </p>
+            </div>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold text-white"
+              style={{ background: teal, ...INTER, flexShrink: 0 }}>
+              <Plus className="w-3.5 h-3.5" />
+              New Pipeline
+            </button>
           </div>
 
           {/* ── Toolbar: search + filters + view toggle on ONE row ── */}
