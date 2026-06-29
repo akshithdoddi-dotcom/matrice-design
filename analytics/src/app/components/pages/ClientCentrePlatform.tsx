@@ -1472,7 +1472,9 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
   const [gridLayout, setGridLayout] = useState<1|2|3|4>(4);
   const [selectedCamId, setSelectedCamId] = useState(MOCK_CAMERAS[0].id);
   const [camPage, setCamPage] = useState(1);
-  const [plSearchQ, setPlSearchQ] = useState("");
+  const [plSearchQ,      setPlSearchQ]      = useState("");
+  const [plStatusFilter, setPlStatusFilter] = useState<"all" | "running" | "degraded" | "stopped">("all");
+  const [plSortBy,       setPlSortBy]       = useState<"name" | "cameras" | "alerts" | "uptime">("name");
 
   // Focus view: null = grid, string = focused camera id
   const [focusedCamId, setFocusedCamId] = useState<string | null>(null);
@@ -1499,7 +1501,19 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
       const a = PIPELINE_ALERT_COUNTS[p.id] ?? { critical: 0, high: 0 };
       return acc + a.critical + a.high;
     }, 0);
-    const filteredPipelines = pipelines.filter(p => p.name.toLowerCase().includes(plSearchQ.toLowerCase()));
+    const filteredPipelines = pipelines
+      .filter(p => p.name.toLowerCase().includes(plSearchQ.toLowerCase()))
+      .filter(p => plStatusFilter === "all" || p.status === plStatusFilter)
+      .sort((a, b) => {
+        if (plSortBy === "cameras") return b.cameras - a.cameras;
+        if (plSortBy === "alerts") return ((PIPELINE_ALERT_COUNTS[b.id]?.critical ?? 0) + (PIPELINE_ALERT_COUNTS[b.id]?.high ?? 0)) - ((PIPELINE_ALERT_COUNTS[a.id]?.critical ?? 0) + (PIPELINE_ALERT_COUNTS[a.id]?.high ?? 0));
+        if (plSortBy === "uptime") return (b.uptime === "—" ? -1 : parseFloat(b.uptime)) - (a.uptime === "—" ? -1 : parseFloat(a.uptime));
+        return a.name.localeCompare(b.name);
+      });
+
+    const teal    = "#00775B";
+    const bdColor = isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0";
+    const inBg    = isDark ? "#0f172a" : "#fff";
 
     return (
       <div className="flex-1 overflow-auto" style={{ background: bg }}>
@@ -1507,50 +1521,87 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
 
           {/* Header */}
           <div className="flex items-center gap-3 mb-2">
-            <Video className="w-5 h-5" style={{ color: "#00775B" }} />
-            <span className="text-[11px] font-bold tracking-widest uppercase" style={{ ...MONO, color: "#00775B" }}>LIVE STREAMING</span>
+            <Video className="w-5 h-5" style={{ color: teal }} />
+            <span className="text-[11px] font-bold tracking-widest uppercase" style={{ ...MONO, color: teal }}>LIVE STREAMING</span>
           </div>
-          <div className="flex items-end justify-between mb-4">
-            <div>
-              <h1 className="text-[22px] font-bold mb-1" style={{ ...INTER, color: text }}>
-                Select a pipeline
-              </h1>
-              <p className="text-[13px]" style={{ ...INTER, color: muted }}>
-                {runningCount}/{pipelines.length} running · {alertCount} active alerts
-              </p>
+          <div className="mb-5">
+            <h1 className="text-[22px] font-bold mb-0.5" style={{ ...INTER, color: text }}>Select a pipeline</h1>
+            <p className="text-[13px]" style={{ ...INTER, color: muted }}>
+              {runningCount}/{pipelines.length} running · {alertCount} active alerts
+            </p>
+          </div>
+
+          {/* ── Toolbar: search + filters + view toggle on ONE row ── */}
+          <div className="flex items-center gap-2 mb-6" style={{ borderBottom: `2px solid ${teal}`, paddingBottom: 10 }}>
+            {/* Search */}
+            <div style={{ position: "relative", width: 260, flexShrink: 0 }}>
+              <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: isDark ? "#475569" : "#94A3B8", pointerEvents: "none" }} />
+              <input type="text" placeholder="Search pipelines…" value={plSearchQ} onChange={e => setPlSearchQ(e.target.value)}
+                style={{ width: "100%", height: 32, paddingLeft: 32, paddingRight: plSearchQ ? 28 : 8, fontSize: 12, ...INTER, color: isDark ? "#E2E8F0" : "#1E293B", background: "transparent", border: "none", borderBottom: `2px solid ${bdColor}`, outline: "none", transition: "border-color 150ms" }}
+                onFocus={e  => { e.currentTarget.style.borderBottomColor = teal; }}
+                onBlur={e   => { e.currentTarget.style.borderBottomColor = bdColor; }} />
+              {plSearchQ && (
+                <button onClick={() => setPlSearchQ("")} style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 0, display: "flex" }}>
+                  <X style={{ width: 12, height: 12 }} />
+                </button>
+              )}
             </div>
-            {/* Layout toggle */}
-            <div className="flex items-center gap-px p-0.5 rounded-[4px]"
-              style={{ background: isDark ? "#1e293b" : "#E2E8F0" }}>
+
+            {/* Divider */}
+            <div style={{ width: 1, height: 20, background: bdColor, flexShrink: 0 }} />
+
+            {/* Status filter pills */}
+            {(["all", "running", "degraded", "stopped"] as const).map(s => {
+              const active = plStatusFilter === s;
+              const dot = s === "running" ? "#10B981" : s === "degraded" ? "#F59E0B" : s === "stopped" ? "#EF4444" : undefined;
+              return (
+                <button key={s} onClick={() => setPlStatusFilter(s)}
+                  style={{ ...INTER, display: "flex", alignItems: "center", gap: 5, height: 28, padding: "0 10px", borderRadius: 5, fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.04em", cursor: "pointer", border: `1px solid ${active ? teal : bdColor}`, backgroundColor: active ? `${teal}12` : inBg, color: active ? teal : isDark ? "#64748B" : "#64748B", transition: "all 120ms", flexShrink: 0 }}>
+                  {dot && <span style={{ width: 6, height: 6, borderRadius: "50%", background: dot, flexShrink: 0, display: "inline-block" }} />}
+                  {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              );
+            })}
+
+            {/* Divider */}
+            <div style={{ width: 1, height: 20, background: bdColor, flexShrink: 0 }} />
+
+            {/* Sort by */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <span style={{ ...INTER, fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.04em", color: isDark ? "#475569" : "#94A3B8" }}>Sort</span>
+              <div style={{ position: "relative" }}>
+                <select value={plSortBy} onChange={e => setPlSortBy(e.target.value as typeof plSortBy)}
+                  style={{ ...INTER, height: 28, padding: "0 28px 0 10px", fontSize: 12, fontWeight: 600, color: isDark ? "#E2E8F0" : "#334155", background: inBg, border: `1px solid ${bdColor}`, borderRadius: 5, outline: "none", cursor: "pointer", appearance: "none" as const }}>
+                  <option value="name">Name</option>
+                  <option value="cameras">Cameras</option>
+                  <option value="alerts">Alerts</option>
+                  <option value="uptime">Uptime</option>
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", width: 12, height: 12, color: "#94A3B8", pointerEvents: "none" }} />
+              </div>
+            </div>
+
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
+
+            {/* Result count */}
+            <span style={{ ...INTER, fontSize: 12, color: isDark ? "#475569" : "#94A3B8", flexShrink: 0 }}>
+              {filteredPipelines.length} of {pipelines.length} pipelines
+            </span>
+
+            {/* Divider */}
+            <div style={{ width: 1, height: 20, background: bdColor, flexShrink: 0 }} />
+
+            {/* View toggle */}
+            <div className="flex items-center gap-px p-0.5 rounded-[4px]" style={{ background: isDark ? "#1e293b" : "#E2E8F0", flexShrink: 0 }}>
               {([["grid", <svg key="g" width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="1" y="1" width="5.5" height="5.5" rx="0.5"/><rect x="7.5" y="1" width="5.5" height="5.5" rx="0.5"/><rect x="1" y="7.5" width="5.5" height="5.5" rx="0.5"/><rect x="7.5" y="7.5" width="5.5" height="5.5" rx="0.5"/></svg>], ["table", <svg key="t" width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="1" y="1" width="12" height="2.5" rx="0.5"/><rect x="1" y="5" width="12" height="2.5" rx="0.5"/><rect x="1" y="9" width="12" height="2.5" rx="0.5"/><rect x="1" y="11.5" width="12" height="1" rx="0.5"/></svg>]] as const).map(([view, icon]) => (
                 <button key={view} onClick={() => setPipelineView(view)}
                   className="flex items-center justify-center w-8 h-7 rounded-[3px] transition-all"
-                  style={{
-                    background: pipelineView === view ? (isDark ? "#0f172a" : "#fff") : "transparent",
-                    color: pipelineView === view ? "#00775B" : isDark ? "#64748B" : "#94A3B8",
-                    boxShadow: pipelineView === view ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                  }}>
+                  style={{ background: pipelineView === view ? (isDark ? "#0f172a" : "#fff") : "transparent", color: pipelineView === view ? teal : isDark ? "#64748B" : "#94A3B8", boxShadow: pipelineView === view ? "0 1px 3px rgba(0,0,0,0.08)" : "none" }}>
                   {icon}
                 </button>
               ))}
             </div>
-          </div>
-          {/* Search */}
-          <div style={{ position: "relative", maxWidth: "360px", marginBottom: "20px" }}>
-            <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: isDark ? "#475569" : "#94A3B8", pointerEvents: "none" }} />
-            <input
-              type="text"
-              placeholder="Search pipelines…"
-              value={plSearchQ}
-              onChange={e => setPlSearchQ(e.target.value)}
-              style={{
-                width: "100%", height: 36, paddingLeft: 34, paddingRight: 10,
-                fontSize: 13, ...INTER, color: isDark ? "#E2E8F0" : "#1E293B",
-                background: isDark ? "#0f172a" : "#fff",
-                border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0"}`,
-                borderRadius: 6, outline: "none",
-              }}
-            />
           </div>
 
           {/* Grid view */}
