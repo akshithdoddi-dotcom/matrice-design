@@ -387,7 +387,7 @@ function DialogShell({ title, children, onCancel }: { title: string; children: R
       onClick={onCancel}
     >
       <div
-        className="w-[420px] bg-white rounded-[8px] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        className="w-[520px] bg-white rounded-[8px] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150"
         onClick={e => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
@@ -521,7 +521,7 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
 
         {/* Member list */}
         {tab === "member" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:220, overflowY:"auto", margin:"0 -4px", padding:"0 4px" }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:360, overflowY:"auto", margin:"0 -4px", padding:"0 4px" }}>
             {filteredMembers.length === 0 && (
               <p style={{ ...SANS, fontSize:12, color:"#94A3B8", textAlign:"center", padding:"16px 0" }}>No members found</p>
             )}
@@ -557,7 +557,7 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
 
         {/* Group list */}
         {tab === "group" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:220, overflowY:"auto", margin:"0 -4px", padding:"0 4px" }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:360, overflowY:"auto", margin:"0 -4px", padding:"0 4px" }}>
             {filteredGroups.length === 0 && (
               <p style={{ ...SANS, fontSize:12, color:"#94A3B8", textAlign:"center", padding:"16px 0" }}>No groups found</p>
             )}
