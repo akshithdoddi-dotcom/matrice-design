@@ -448,43 +448,18 @@ function StaffDropdown({ options, value, onChange, placeholder }: { options: str
 function ActionSuccessView({
   icon, iconBg, headline, sub, onDone,
 }: { icon: React.ReactNode; iconBg: string; headline: string; sub: string; onDone: () => void }) {
-  const [progress, setProgress] = useState(0);
-  const DURATION = 2400;
-  useEffect(() => {
-    const start = Date.now();
-    const raf = () => {
-      const p = Math.min((Date.now() - start) / DURATION, 1);
-      setProgress(p);
-      if (p < 1) requestAnimationFrame(raf);
-      else onDone();
-    };
-    const id = requestAnimationFrame(raf);
-    return () => cancelAnimationFrame(id);
-  }, []);
   return (
-    <div style={{ padding:"40px 32px 32px", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
-      {/* Animated ring + icon */}
-      <div style={{ position:"relative", width:72, height:72 }}>
-        <svg width="72" height="72" viewBox="0 0 72 72" style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }}>
-          <circle cx="36" cy="36" r="32" fill="none" stroke="#E2E8F0" strokeWidth="4" />
-          <circle cx="36" cy="36" r="32" fill="none" stroke={iconBg} strokeWidth="4"
-            strokeDasharray={`${2 * Math.PI * 32}`}
-            strokeDashoffset={`${2 * Math.PI * 32 * (1 - progress)}`}
-            strokeLinecap="round" style={{ transition:"none" }} />
-        </svg>
-        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <div style={{ width:44, height:44, borderRadius:"50%", background:iconBg+"18", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            {icon}
-          </div>
-        </div>
+    <div style={{ padding:"40px 32px 36px", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+      <div style={{ width:56, height:56, borderRadius:"50%", background:iconBg+"15", border:`1.5px solid ${iconBg}30`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {icon}
       </div>
       <div style={{ textAlign:"center" }}>
-        <div style={{ ...SANS, fontSize:16, fontWeight:700, color:"#0F172A", marginBottom:6 }}>{headline}</div>
-        <div style={{ ...SANS, fontSize:13, color:"#64748B", lineHeight:1.5 }}>{sub}</div>
+        <div style={{ ...SANS, fontSize:15, fontWeight:700, color:"#0F172A", marginBottom:6 }}>{headline}</div>
+        <div style={{ ...SANS, fontSize:12, color:"#64748B", lineHeight:1.6, maxWidth:340 }}>{sub}</div>
       </div>
       <button onClick={onDone}
-        style={{ ...SANS, marginTop:8, height:36, padding:"0 24px", borderRadius:4, fontSize:12, fontWeight:600,
-          background:"#F1F5F9", color:"#475569", border:"none", cursor:"pointer" }}>
+        style={{ ...SANS, marginTop:4, height:36, padding:"0 28px", borderRadius:4, fontSize:12, fontWeight:600,
+          background:iconBg, color:"#fff", border:"none", cursor:"pointer" }}>
         Done
       </button>
     </div>
@@ -1025,35 +1000,6 @@ function VideoPlayer2({ incident }: { incident: Incident }) {
 }
 
 // ── Escalation note popup ─────────────────────────────────────────────────────
-function EscalateSuccessRing({ onDone }: { onDone: () => void }) {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const start = Date.now(), DURATION = 2400;
-    const raf = () => {
-      const p = Math.min((Date.now() - start) / DURATION, 1);
-      setProgress(p);
-      if (p < 1) requestAnimationFrame(raf); else onDone();
-    };
-    const id = requestAnimationFrame(raf);
-    return () => cancelAnimationFrame(id);
-  }, []);
-  return (
-    <div style={{ position:"relative", width:72, height:72 }}>
-      <svg width="72" height="72" viewBox="0 0 72 72" style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }}>
-        <circle cx="36" cy="36" r="32" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
-        <circle cx="36" cy="36" r="32" fill="none" stroke="#EA580C" strokeWidth="4"
-          strokeDasharray={`${2 * Math.PI * 32}`}
-          strokeDashoffset={`${2 * Math.PI * 32 * (1 - progress)}`}
-          strokeLinecap="round" style={{ transition:"none" }} />
-      </svg>
-      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ width:44, height:44, borderRadius:"50%", background:"rgba(234,88,12,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <Send style={{ width:20, height:20, color:"#EA580C" }} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function EscalatePopup2({ onSubmit, onCancel }: { onSubmit: (n: string) => void; onCancel: () => void }) {
   const [note, setNote] = useState("");
@@ -1067,17 +1013,19 @@ function EscalatePopup2({ onSubmit, onCancel }: { onSubmit: (n: string) => void;
     <div className="fixed inset-0 z-[70] flex items-center justify-center" style={{ background: "rgba(15,23,42,0.55)", backdropFilter: "blur(8px)" }}>
       <div className="w-[440px] rounded-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         style={{ background: "rgba(15,23,42,0.96)", border: "1px solid rgba(255,255,255,0.10)", boxShadow: "0 24px 64px rgba(0,0,0,0.60)" }}>
-        <div style={{ padding:"40px 32px 32px", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
-          <EscalateSuccessRing onDone={() => { onSubmit(note.trim()); onCancel(); }} />
+        <div style={{ padding:"40px 32px 36px", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+          <div style={{ width:56, height:56, borderRadius:"50%", background:"rgba(234,88,12,0.15)", border:"1.5px solid rgba(234,88,12,0.30)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <Send style={{ width:22, height:22, color:"#EA580C" }} />
+          </div>
           <div style={{ textAlign:"center" }}>
-            <div style={{ ...SANS, fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.92)", marginBottom:6 }}>Escalated to Manager</div>
-            <div style={{ ...SANS, fontSize:13, color:"rgba(255,255,255,0.50)", lineHeight:1.5 }}>
+            <div style={{ ...SANS, fontSize:15, fontWeight:700, color:"rgba(255,255,255,0.92)", marginBottom:6 }}>Escalated to Manager</div>
+            <div style={{ ...SANS, fontSize:12, color:"rgba(255,255,255,0.50)", lineHeight:1.6, maxWidth:340 }}>
               The incident has been escalated. A manager has been notified and will take over.
             </div>
           </div>
           <button onClick={() => { onSubmit(note.trim()); onCancel(); }}
-            style={{ ...SANS, marginTop:8, height:36, padding:"0 24px", borderRadius:4, fontSize:12, fontWeight:600,
-              background:"rgba(255,255,255,0.08)", color:"rgba(255,255,255,0.60)", border:"1px solid rgba(255,255,255,0.10)", cursor:"pointer" }}>
+            style={{ ...SANS, marginTop:4, height:36, padding:"0 28px", borderRadius:4, fontSize:12, fontWeight:600,
+              background:"#EA580C", color:"#fff", border:"none", cursor:"pointer" }}>
             Done
           </button>
         </div>
