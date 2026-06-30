@@ -444,28 +444,88 @@ function StaffDropdown({ options, value, onChange, placeholder }: { options: str
   );
 }
 
+// ── Shared success screen shown inside dialogs after action ───────────────────
+function ActionSuccessView({
+  icon, iconBg, headline, sub, onDone,
+}: { icon: React.ReactNode; iconBg: string; headline: string; sub: string; onDone: () => void }) {
+  const [progress, setProgress] = useState(0);
+  const DURATION = 2400;
+  useEffect(() => {
+    const start = Date.now();
+    const raf = () => {
+      const p = Math.min((Date.now() - start) / DURATION, 1);
+      setProgress(p);
+      if (p < 1) requestAnimationFrame(raf);
+      else onDone();
+    };
+    const id = requestAnimationFrame(raf);
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return (
+    <div style={{ padding:"40px 32px 32px", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+      {/* Animated ring + icon */}
+      <div style={{ position:"relative", width:72, height:72 }}>
+        <svg width="72" height="72" viewBox="0 0 72 72" style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }}>
+          <circle cx="36" cy="36" r="32" fill="none" stroke="#E2E8F0" strokeWidth="4" />
+          <circle cx="36" cy="36" r="32" fill="none" stroke={iconBg} strokeWidth="4"
+            strokeDasharray={`${2 * Math.PI * 32}`}
+            strokeDashoffset={`${2 * Math.PI * 32 * (1 - progress)}`}
+            strokeLinecap="round" style={{ transition:"none" }} />
+        </svg>
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ width:44, height:44, borderRadius:"50%", background:iconBg+"18", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {icon}
+          </div>
+        </div>
+      </div>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ ...SANS, fontSize:16, fontWeight:700, color:"#0F172A", marginBottom:6 }}>{headline}</div>
+        <div style={{ ...SANS, fontSize:13, color:"#64748B", lineHeight:1.5 }}>{sub}</div>
+      </div>
+      <button onClick={onDone}
+        style={{ ...SANS, marginTop:8, height:36, padding:"0 24px", borderRadius:4, fontSize:12, fontWeight:600,
+          background:"#F1F5F9", color:"#475569", border:"none", cursor:"pointer" }}>
+        Done
+      </button>
+    </div>
+  );
+}
+
 // Dialog 1: Self Assign
 export function SelfAssignDialog({ incident, onConfirm, onCancel }: { incident: Incident; onConfirm: () => void; onCancel: () => void }) {
+  const [done, setDone] = useState(false);
   return (
-    <DialogShell title="Assign to yourself?" onCancel={onCancel}>
-      <div className="px-5 py-4 space-y-4">
-        <IncidentMetaStrip incident={incident} />
-        <p style={{ ...SANS, fontSize:"12px", color:"#64748B" }}>
-          You will be assigned as the primary responder and the incident will move to <strong>In Progress</strong>.
-        </p>
-      </div>
-      <div className="px-5 py-3 bg-neutral-50 border-t border-neutral-100 flex items-center justify-end gap-2">
-        <button onClick={onCancel} className="h-9 px-4 rounded-[4px] border border-neutral-200 text-neutral-600 hover:bg-neutral-100 transition-colors" style={{ ...SANS, fontSize:"12px" }}>
-          Cancel
-        </button>
-        <button
-          onClick={onConfirm}
-          className="h-9 px-5 rounded-[4px] flex items-center gap-1.5 text-white font-semibold transition-colors hover:bg-[#009e78]"
-          style={{ ...SANS, fontSize:"12px", background:"#00775B" }}
-        >
-          <User className="w-3.5 h-3.5" /> Yes, Assign to me
-        </button>
-      </div>
+    <DialogShell title={done ? "Assigned" : "Assign to yourself?"} onCancel={done ? onCancel : onCancel}>
+      {done ? (
+        <ActionSuccessView
+          iconBg="#00775B"
+          icon={<User style={{ width:22, height:22, color:"#00775B" }} />}
+          headline="Incident Assigned to You"
+          sub={`You are now the primary responder for ${incident.title}. The incident has moved to In Progress.`}
+          onDone={() => { onConfirm(); onCancel(); }}
+        />
+      ) : (
+        <>
+          <div className="px-5 py-4 space-y-4">
+            <IncidentMetaStrip incident={incident} />
+            <p style={{ ...SANS, fontSize:"12px", color:"#64748B" }}>
+              You will be assigned as the primary responder and the incident will move to <strong>In Progress</strong>.
+            </p>
+          </div>
+          <div className="px-5 py-3 bg-neutral-50 border-t border-neutral-100 flex items-center justify-end gap-2">
+            <button onClick={onCancel} className="h-9 px-4 rounded-[4px] border border-neutral-200 text-neutral-600 hover:bg-neutral-100 transition-colors" style={{ ...SANS, fontSize:"12px" }}>
+              Cancel
+            </button>
+            <button
+              onClick={() => setDone(true)}
+              className="h-9 px-5 rounded-[4px] flex items-center gap-1.5 text-white font-semibold transition-colors hover:bg-[#009e78]"
+              style={{ ...SANS, fontSize:"12px", background:"#00775B" }}
+            >
+              <User className="w-3.5 h-3.5" /> Yes, Assign to me
+            </button>
+          </div>
+        </>
+      )}
     </DialogShell>
   );
 }
@@ -475,6 +535,7 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
   const [tab, setTab]       = useState<"member" | "group">("member");
   const [query, setQuery]   = useState("");
   const [selected, setSelected] = useState<{ id: string; name: string; type: "member" | "group" } | null>(null);
+  const [done, setDone]     = useState(false);
   const teal = "#00775B";
 
   const filteredMembers = TEAM_MEMBERS.filter(m =>
@@ -489,6 +550,18 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
     r === "monitoring" ? "Monitoring Staff" : r === "manager" ? "Manager" : "Director";
   const memberInitialBg = (id: string) =>
     ({ u1:"#7C3AED", u2:"#0284C7", u3:"#059669", u4:"#D97706", u5:"#DC2626", u6:"#0891B2" }[id] ?? "#64748B");
+
+  if (done && selected) return (
+    <DialogShell title="Assigned" onCancel={onCancel}>
+      <ActionSuccessView
+        iconBg="#00775B"
+        icon={<Users style={{ width:22, height:22, color:"#00775B" }} />}
+        headline="Incident Assigned"
+        sub={`${incident.title} has been assigned to ${selected.type === "group" ? "group" : "member"} ${selected.name}.`}
+        onDone={() => { onConfirm(selected.name); onCancel(); }}
+      />
+    </DialogShell>
+  );
 
   return (
     <DialogShell title="Assign incident" onCancel={onCancel}>
@@ -625,7 +698,7 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
             Cancel
           </button>
           <button
-            onClick={() => selected && onConfirm(selected.name)}
+            onClick={() => { if (selected) setDone(true); }}
             className="h-9 px-5 rounded-[4px] flex items-center gap-1.5 text-white font-semibold transition-colors"
             style={{ ...SANS, fontSize:"12px", background: selected ? teal : "#94A3B8", cursor: selected ? "pointer" : "default" }}
           >
@@ -678,26 +751,39 @@ export function EscalateConfirmDialog({ incident, onConfirm, onCancel }: { incid
 
 // Dialog 4: Resolve
 export function ResolveDialog({ incident, onConfirm, onCancel }: { incident: Incident; onConfirm: () => void; onCancel: () => void }) {
+  const [done, setDone] = useState(false);
   return (
-    <DialogShell title="Resolve this incident?" onCancel={onCancel}>
-      <div className="px-5 py-4 space-y-4">
-        <IncidentMetaStrip incident={incident} />
-        <p style={{ ...SANS, fontSize:"12px", color:"#64748B" }}>
-          Marking as resolved will close the ticket and lock the audit timeline. This action cannot be undone.
-        </p>
-      </div>
-      <div className="px-5 py-3 bg-neutral-50 border-t border-neutral-100 flex items-center justify-end gap-2">
-        <button onClick={onCancel} className="h-9 px-4 rounded-[4px] border border-neutral-200 text-neutral-600 hover:bg-neutral-100 transition-colors" style={{ ...SANS, fontSize:"12px" }}>
-          Cancel
-        </button>
-        <button
-          onClick={onConfirm}
-          className="h-9 px-5 rounded-[4px] flex items-center gap-1.5 text-white font-semibold transition-colors hover:bg-emerald-700"
-          style={{ ...SANS, fontSize:"12px", background:"#00775B" }}
-        >
-          <Check className="w-3.5 h-3.5" strokeWidth={3} /> Resolve
-        </button>
-      </div>
+    <DialogShell title={done ? "Resolved" : "Resolve this incident?"} onCancel={done ? onCancel : onCancel}>
+      {done ? (
+        <ActionSuccessView
+          iconBg="#059669"
+          icon={<Check style={{ width:22, height:22, color:"#059669", strokeWidth:3 } as React.CSSProperties} />}
+          headline="Incident Resolved"
+          sub={`${incident.title} has been closed and the audit timeline has been locked.`}
+          onDone={() => { onConfirm(); onCancel(); }}
+        />
+      ) : (
+        <>
+          <div className="px-5 py-4 space-y-4">
+            <IncidentMetaStrip incident={incident} />
+            <p style={{ ...SANS, fontSize:"12px", color:"#64748B" }}>
+              Marking as resolved will close the ticket and lock the audit timeline. This action cannot be undone.
+            </p>
+          </div>
+          <div className="px-5 py-3 bg-neutral-50 border-t border-neutral-100 flex items-center justify-end gap-2">
+            <button onClick={onCancel} className="h-9 px-4 rounded-[4px] border border-neutral-200 text-neutral-600 hover:bg-neutral-100 transition-colors" style={{ ...SANS, fontSize:"12px" }}>
+              Cancel
+            </button>
+            <button
+              onClick={() => setDone(true)}
+              className="h-9 px-5 rounded-[4px] flex items-center gap-1.5 text-white font-semibold transition-colors hover:bg-emerald-700"
+              style={{ ...SANS, fontSize:"12px", background:"#00775B" }}
+            >
+              <Check className="w-3.5 h-3.5" strokeWidth={3} /> Resolve
+            </button>
+          </div>
+        </>
+      )}
     </DialogShell>
   );
 }
@@ -939,10 +1025,66 @@ function VideoPlayer2({ incident }: { incident: Incident }) {
 }
 
 // ── Escalation note popup ─────────────────────────────────────────────────────
+function EscalateSuccessRing({ onDone }: { onDone: () => void }) {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const start = Date.now(), DURATION = 2400;
+    const raf = () => {
+      const p = Math.min((Date.now() - start) / DURATION, 1);
+      setProgress(p);
+      if (p < 1) requestAnimationFrame(raf); else onDone();
+    };
+    const id = requestAnimationFrame(raf);
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return (
+    <div style={{ position:"relative", width:72, height:72 }}>
+      <svg width="72" height="72" viewBox="0 0 72 72" style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }}>
+        <circle cx="36" cy="36" r="32" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
+        <circle cx="36" cy="36" r="32" fill="none" stroke="#EA580C" strokeWidth="4"
+          strokeDasharray={`${2 * Math.PI * 32}`}
+          strokeDashoffset={`${2 * Math.PI * 32 * (1 - progress)}`}
+          strokeLinecap="round" style={{ transition:"none" }} />
+      </svg>
+      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ width:44, height:44, borderRadius:"50%", background:"rgba(234,88,12,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <Send style={{ width:20, height:20, color:"#EA580C" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EscalatePopup2({ onSubmit, onCancel }: { onSubmit: (n: string) => void; onCancel: () => void }) {
   const [note, setNote] = useState("");
+  const [done, setDone] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { ref.current?.focus(); }, []);
+
+  const handleSubmit = () => { setDone(true); };
+
+  if (done) return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center" style={{ background: "rgba(15,23,42,0.55)", backdropFilter: "blur(8px)" }}>
+      <div className="w-[440px] rounded-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        style={{ background: "rgba(15,23,42,0.96)", border: "1px solid rgba(255,255,255,0.10)", boxShadow: "0 24px 64px rgba(0,0,0,0.60)" }}>
+        <div style={{ padding:"40px 32px 32px", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+          <EscalateSuccessRing onDone={() => { onSubmit(note.trim()); onCancel(); }} />
+          <div style={{ textAlign:"center" }}>
+            <div style={{ ...SANS, fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.92)", marginBottom:6 }}>Escalated to Manager</div>
+            <div style={{ ...SANS, fontSize:13, color:"rgba(255,255,255,0.50)", lineHeight:1.5 }}>
+              The incident has been escalated. A manager has been notified and will take over.
+            </div>
+          </div>
+          <button onClick={() => { onSubmit(note.trim()); onCancel(); }}
+            style={{ ...SANS, marginTop:8, height:36, padding:"0 24px", borderRadius:4, fontSize:12, fontWeight:600,
+              background:"rgba(255,255,255,0.08)", color:"rgba(255,255,255,0.60)", border:"1px solid rgba(255,255,255,0.10)", cursor:"pointer" }}>
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center" style={{ background: "rgba(15,23,42,0.55)", backdropFilter: "blur(8px)" }} onClick={onCancel}>
       <div
@@ -963,14 +1105,14 @@ function EscalatePopup2({ onSubmit, onCancel }: { onSubmit: (n: string) => void;
             placeholder="Describe the escalation reason…" rows={3}
             className="w-full rounded-[4px] resize-none outline-none"
             style={{ ...SANS, fontSize: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.85)", padding: "10px 12px", lineHeight: 1.65 }}
-            onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) onSubmit(note.trim()); if (e.key === "Escape") onCancel(); }}
+            onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit(); if (e.key === "Escape") onCancel(); }}
           />
           <div className="flex items-center justify-between mt-4">
             <span style={{ ...MONO, fontSize: "10px", color: "rgba(255,255,255,0.22)" }}>⌘↵ submit · ESC cancel</span>
             <div className="flex gap-2">
               <button onClick={onCancel} className="h-8 px-4 rounded-md" style={{ ...SANS, fontSize: "12px", color: "rgba(255,255,255,0.50)", border: "1px solid rgba(255,255,255,0.10)", background: "transparent" }}>Cancel</button>
               <button
-                onClick={() => onSubmit(note.trim())}
+                onClick={handleSubmit}
                 className="h-8 px-4 rounded-md flex items-center gap-1.5"
                 style={{ ...SANS, fontSize: "12px", fontWeight: 600, color: "#fff", background: "#EA580C", transition: `all 200ms ${SNAPPY}` }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 16px rgba(234,88,12,0.45)"; }}
