@@ -85,6 +85,21 @@ export const getSeverityHex = (s: string) => ({
 export const STAFF_LIST    = ["Priya M.", "Jordan K.", "Liam T.", "Aisha R.", "Carlos V.", "Mei L.", "Sam W.", "Taylor R."];
 export const MANAGER_LIST  = ["Manager_01 · Alex T.", "Manager_02 · Sarah K.", "Director_01 · James R."];
 
+// Shared members + groups (mirrors Settings page data)
+export const TEAM_MEMBERS = [
+  { id: "u3", name: "Riya Sharma",   initials: "RS", role: "monitoring", lastActive: "5m ago" },
+  { id: "u4", name: "James Wilson",  initials: "JW", role: "monitoring", lastActive: "18m ago" },
+  { id: "u5", name: "Sarah Chen",    initials: "SC", role: "monitoring", lastActive: "Invited" },
+  { id: "u6", name: "David Kumar",   initials: "DK", role: "monitoring", lastActive: "1h ago" },
+  { id: "u2", name: "Akshith Doddi", initials: "AD", role: "manager",    lastActive: "2h ago" },
+  { id: "u1", name: "Mohammed Usman",initials: "MU", role: "director",   lastActive: "Now" },
+];
+export const TEAM_GROUPS = [
+  { id: "g1", name: "Night Watch",   description: "Night shift surveillance team", memberIds: ["u3","u4"],    channels: ["email","sms"] },
+  { id: "g2", name: "QA Inspectors", description: "Quality control monitoring",    memberIds: ["u4","u6"],    channels: ["email","slack"] },
+  { id: "g3", name: "Security Lead", description: "Escalation point for threats",  memberIds: ["u3"],         channels: ["email","sms","slack"] },
+];
+
 // Typography tokens (exported for Dashboard 3)
 export const D2_MONO: React.CSSProperties = { fontFamily: "'JetBrains Mono','Fira Code','Cascadia Code',monospace", fontSize: "12px" };
 export const D2_SANS: React.CSSProperties = { fontFamily: "'Inter',sans-serif", fontSize: "12px" };
@@ -457,27 +472,135 @@ export function SelfAssignDialog({ incident, onConfirm, onCancel }: { incident: 
 
 // Dialog 2: Assign To..
 export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: Incident; onConfirm: (name: string) => void; onCancel: () => void }) {
-  const [selected, setSelected] = useState("");
+  const [tab, setTab]       = useState<"member" | "group">("member");
+  const [query, setQuery]   = useState("");
+  const [selected, setSelected] = useState<{ id: string; name: string; type: "member" | "group" } | null>(null);
+  const teal = "#00775B";
+
+  const filteredMembers = TEAM_MEMBERS.filter(m =>
+    m.name.toLowerCase().includes(query.toLowerCase())
+  );
+  const filteredGroups = TEAM_GROUPS.filter(g =>
+    g.name.toLowerCase().includes(query.toLowerCase()) ||
+    g.description.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const roleLabel = (r: string) =>
+    r === "monitoring" ? "Monitoring Staff" : r === "manager" ? "Manager" : "Director";
+  const memberInitialBg = (id: string) =>
+    ({ u1:"#7C3AED", u2:"#0284C7", u3:"#059669", u4:"#D97706", u5:"#DC2626", u6:"#0891B2" }[id] ?? "#64748B");
+
   return (
-    <DialogShell title="Assign to a team member" onCancel={onCancel}>
+    <DialogShell title="Assign incident" onCancel={onCancel}>
       <div className="px-5 py-4 space-y-4">
         <IncidentMetaStrip incident={incident} />
-        <div>
-          <p style={{ ...SANS, fontSize:"11px", fontWeight:700, color:"#475569", letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:"8px" }}>Select Staff Member</p>
-          <StaffDropdown options={STAFF_LIST} value={selected} onChange={setSelected} placeholder="Search staff…" />
+
+        {/* Tabs */}
+        <div style={{ display:"flex", borderRadius:6, border:"1px solid #E2E8F0", background:"#F1F5F9", padding:3, gap:3 }}>
+          {(["member","group"] as const).map(t => (
+            <button key={t} onClick={() => { setTab(t); setSelected(null); setQuery(""); }}
+              style={{ flex:1, padding:"7px 12px", borderRadius:4, fontSize:12, fontWeight:600, ...SANS,
+                background: tab === t ? "#fff" : "transparent",
+                color: tab === t ? teal : "#64748B",
+                border: "none", cursor:"pointer",
+                boxShadow: tab === t ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                transition:"all 120ms" }}>
+              {t === "member" ? "Team Member" : "User Group"}
+            </button>
+          ))}
         </div>
+
+        {/* Search */}
+        <div style={{ position:"relative" }}>
+          <SearchIcon style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", width:13, height:13, color:"#94A3B8", pointerEvents:"none" }} />
+          <input value={query} onChange={e => setQuery(e.target.value)}
+            placeholder={tab === "member" ? "Search by name…" : "Search groups…"}
+            style={{ ...SANS, width:"100%", height:36, paddingLeft:32, paddingRight:10, fontSize:12, color:"#0F172A",
+              background:"#fff", border:"1px solid #E2E8F0", borderRadius:6, outline:"none", boxSizing:"border-box" as const }} />
+        </div>
+
+        {/* Member list */}
+        {tab === "member" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:220, overflowY:"auto" }}>
+            {filteredMembers.length === 0 && (
+              <p style={{ ...SANS, fontSize:12, color:"#94A3B8", textAlign:"center", padding:"16px 0" }}>No members found</p>
+            )}
+            {filteredMembers.map(m => {
+              const active = selected?.id === m.id;
+              return (
+                <button key={m.id} onClick={() => setSelected({ id: m.id, name: m.name, type:"member" })}
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:6, border:`1px solid ${active ? teal : "#E2E8F0"}`,
+                    background: active ? `${teal}0D` : "#fff", cursor:"pointer", textAlign:"left", transition:"all 100ms" }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", background: memberInitialBg(m.id), display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <span style={{ ...SANS, fontSize:11, fontWeight:700, color:"#fff" }}>{m.initials}</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ ...SANS, fontSize:13, fontWeight:600, color:"#0F172A" }}>{m.name}</div>
+                    <div style={{ ...SANS, fontSize:11, color:"#64748B" }}>{roleLabel(m.role)} · Active {m.lastActive}</div>
+                  </div>
+                  {active && <CheckCircle2 style={{ width:15, height:15, color:teal, flexShrink:0 }} />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Group list */}
+        {tab === "group" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:220, overflowY:"auto" }}>
+            {filteredGroups.length === 0 && (
+              <p style={{ ...SANS, fontSize:12, color:"#94A3B8", textAlign:"center", padding:"16px 0" }}>No groups found</p>
+            )}
+            {filteredGroups.map(g => {
+              const active = selected?.id === g.id;
+              const members = TEAM_MEMBERS.filter(m => g.memberIds.includes(m.id));
+              return (
+                <button key={g.id} onClick={() => setSelected({ id: g.id, name: g.name, type:"group" })}
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:6, border:`1px solid ${active ? teal : "#E2E8F0"}`,
+                    background: active ? `${teal}0D` : "#fff", cursor:"pointer", textAlign:"left", transition:"all 100ms" }}>
+                  {/* Avatar stack */}
+                  <div style={{ display:"flex", flexShrink:0 }}>
+                    {members.slice(0,3).map((m, i) => (
+                      <div key={m.id} style={{ width:28, height:28, borderRadius:"50%", background: memberInitialBg(m.id), display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #fff", marginLeft: i > 0 ? -8 : 0 }}>
+                        <span style={{ ...SANS, fontSize:9, fontWeight:700, color:"#fff" }}>{m.initials}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ ...SANS, fontSize:13, fontWeight:600, color:"#0F172A" }}>{g.name}</div>
+                    <div style={{ ...SANS, fontSize:11, color:"#64748B" }}>{g.description} · {members.length} member{members.length !== 1 ? "s" : ""}</div>
+                    <div style={{ display:"flex", gap:4, marginTop:4 }}>
+                      {g.channels.map(c => (
+                        <span key={c} style={{ ...SANS, fontSize:10, fontWeight:600, color:"#64748B", background:"#F1F5F9", border:"1px solid #E2E8F0", borderRadius:4, padding:"1px 6px" }}>
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {active && <CheckCircle2 style={{ width:15, height:15, color:teal, flexShrink:0 }} />}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
-      <div className="px-5 py-3 bg-neutral-50 border-t border-neutral-100 flex items-center justify-end gap-2">
-        <button onClick={onCancel} className="h-9 px-4 rounded-[4px] border border-neutral-200 text-neutral-600 hover:bg-neutral-100 transition-colors" style={{ ...SANS, fontSize:"12px" }}>
-          Cancel
-        </button>
-        <button
-          onClick={() => selected && onConfirm(selected)}
-          className="h-9 px-5 rounded-[4px] flex items-center gap-1.5 text-white font-semibold transition-colors"
-          style={{ ...SANS, fontSize:"12px", background: selected ? "#00775B" : "#94A3B8", cursor: selected ? "pointer" : "default" }}
-        >
-          <Users className="w-3.5 h-3.5" /> Assign
-        </button>
+
+      <div className="px-5 py-3 bg-neutral-50 border-t border-neutral-100 flex items-center justify-between gap-2">
+        <span style={{ ...SANS, fontSize:11, color:"#94A3B8" }}>
+          {selected ? `Assigning to: ${selected.name}` : "Select a member or group above"}
+        </span>
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={onCancel} className="h-9 px-4 rounded-[4px] border border-neutral-200 text-neutral-600 hover:bg-neutral-100 transition-colors" style={{ ...SANS, fontSize:"12px" }}>
+            Cancel
+          </button>
+          <button
+            onClick={() => selected && onConfirm(selected.name)}
+            className="h-9 px-5 rounded-[4px] flex items-center gap-1.5 text-white font-semibold transition-colors"
+            style={{ ...SANS, fontSize:"12px", background: selected ? teal : "#94A3B8", cursor: selected ? "pointer" : "default" }}
+          >
+            <Users className="w-3.5 h-3.5" /> Assign
+          </button>
+        </div>
       </div>
     </DialogShell>
   );
