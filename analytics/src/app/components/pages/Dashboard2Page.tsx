@@ -521,7 +521,7 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
 
         {/* Member list */}
         {tab === "member" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:220, overflowY:"auto" }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:220, overflowY:"auto", margin:"0 -4px", padding:"0 4px" }}>
             {filteredMembers.length === 0 && (
               <p style={{ ...SANS, fontSize:12, color:"#94A3B8", textAlign:"center", padding:"16px 0" }}>No members found</p>
             )}
@@ -529,16 +529,26 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
               const active = selected?.id === m.id;
               return (
                 <button key={m.id} onClick={() => setSelected({ id: m.id, name: m.name, type:"member" })}
-                  style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:6, border:`1px solid ${active ? teal : "#E2E8F0"}`,
-                    background: active ? `${teal}0D` : "#fff", cursor:"pointer", textAlign:"left", transition:"all 100ms" }}>
-                  <div style={{ width:32, height:32, borderRadius:"50%", background: memberInitialBg(m.id), display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    <span style={{ ...SANS, fontSize:11, fontWeight:700, color:"#fff" }}>{m.initials}</span>
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:6,
+                    border: `1.5px solid ${active ? teal : "transparent"}`,
+                    background: active ? `${teal}12` : "#F8FAFC",
+                    cursor:"pointer", textAlign:"left", transition:"all 120ms",
+                    boxShadow: active ? `0 0 0 3px ${teal}18` : "none" }}>
+                  <div style={{ width:34, height:34, borderRadius:"50%", background: memberInitialBg(m.id), display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }}>
+                    <span style={{ ...SANS, fontSize:12, fontWeight:700, color:"#fff" }}>{m.initials}</span>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ ...SANS, fontSize:13, fontWeight:600, color:"#0F172A" }}>{m.name}</div>
-                    <div style={{ ...SANS, fontSize:11, color:"#64748B" }}>{roleLabel(m.role)} · Active {m.lastActive}</div>
+                    <div style={{ ...SANS, fontSize:13, fontWeight:600, color: active ? teal : "#0F172A" }}>{m.name}</div>
+                    <div style={{ ...SANS, fontSize:11, color:"#64748B", marginTop:1 }}>
+                      <span style={{ background: m.role === "monitoring" ? "#E5F0FF" : m.role === "manager" ? "#E5FFF9" : "#F3E8FF", color: m.role === "monitoring" ? "#2B7FFF" : m.role === "manager" ? "#00775B" : "#7C3AED", padding:"1px 6px", borderRadius:4, fontWeight:600, fontSize:10, marginRight:6 }}>
+                        {roleLabel(m.role)}
+                      </span>
+                      Active {m.lastActive}
+                    </div>
                   </div>
-                  {active && <CheckCircle2 style={{ width:15, height:15, color:teal, flexShrink:0 }} />}
+                  <div style={{ width:18, height:18, borderRadius:"50%", border:`1.5px solid ${active ? teal : "#CBD5E1"}`, background: active ? teal : "transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 120ms" }}>
+                    {active && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
                 </button>
               );
             })}
@@ -547,37 +557,50 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
 
         {/* Group list */}
         {tab === "group" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:220, overflowY:"auto" }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:220, overflowY:"auto", margin:"0 -4px", padding:"0 4px" }}>
             {filteredGroups.length === 0 && (
               <p style={{ ...SANS, fontSize:12, color:"#94A3B8", textAlign:"center", padding:"16px 0" }}>No groups found</p>
             )}
             {filteredGroups.map(g => {
               const active = selected?.id === g.id;
               const members = TEAM_MEMBERS.filter(m => g.memberIds.includes(m.id));
+              const channelColors: Record<string, { bg: string; color: string }> = {
+                email: { bg:"#E5F0FF", color:"#2B7FFF" },
+                sms:   { bg:"#FFF7E6", color:"#CA8A04" },
+                slack: { bg:"#F3E8FF", color:"#7C3AED" },
+              };
               return (
                 <button key={g.id} onClick={() => setSelected({ id: g.id, name: g.name, type:"group" })}
-                  style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:6, border:`1px solid ${active ? teal : "#E2E8F0"}`,
-                    background: active ? `${teal}0D` : "#fff", cursor:"pointer", textAlign:"left", transition:"all 100ms" }}>
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:6,
+                    border: `1.5px solid ${active ? teal : "transparent"}`,
+                    background: active ? `${teal}12` : "#F8FAFC",
+                    cursor:"pointer", textAlign:"left", transition:"all 120ms",
+                    boxShadow: active ? `0 0 0 3px ${teal}18` : "none" }}>
                   {/* Avatar stack */}
-                  <div style={{ display:"flex", flexShrink:0 }}>
+                  <div style={{ display:"flex", flexShrink:0, marginRight:2 }}>
                     {members.slice(0,3).map((m, i) => (
-                      <div key={m.id} style={{ width:28, height:28, borderRadius:"50%", background: memberInitialBg(m.id), display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #fff", marginLeft: i > 0 ? -8 : 0 }}>
+                      <div key={m.id} style={{ width:30, height:30, borderRadius:"50%", background: memberInitialBg(m.id), display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #fff", marginLeft: i > 0 ? -10 : 0, boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }}>
                         <span style={{ ...SANS, fontSize:9, fontWeight:700, color:"#fff" }}>{m.initials}</span>
                       </div>
                     ))}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ ...SANS, fontSize:13, fontWeight:600, color:"#0F172A" }}>{g.name}</div>
-                    <div style={{ ...SANS, fontSize:11, color:"#64748B" }}>{g.description} · {members.length} member{members.length !== 1 ? "s" : ""}</div>
-                    <div style={{ display:"flex", gap:4, marginTop:4 }}>
-                      {g.channels.map(c => (
-                        <span key={c} style={{ ...SANS, fontSize:10, fontWeight:600, color:"#64748B", background:"#F1F5F9", border:"1px solid #E2E8F0", borderRadius:4, padding:"1px 6px" }}>
-                          {c}
-                        </span>
-                      ))}
+                    <div style={{ ...SANS, fontSize:13, fontWeight:600, color: active ? teal : "#0F172A" }}>{g.name}</div>
+                    <div style={{ ...SANS, fontSize:11, color:"#64748B", marginTop:1 }}>{g.description} · {members.length} member{members.length !== 1 ? "s" : ""}</div>
+                    <div style={{ display:"flex", gap:4, marginTop:5 }}>
+                      {g.channels.map(c => {
+                        const ch = channelColors[c] ?? { bg:"#F1F5F9", color:"#64748B" };
+                        return (
+                          <span key={c} style={{ ...SANS, fontSize:10, fontWeight:700, color:ch.color, background:ch.bg, borderRadius:4, padding:"2px 7px", letterSpacing:"0.02em" }}>
+                            {c}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
-                  {active && <CheckCircle2 style={{ width:15, height:15, color:teal, flexShrink:0 }} />}
+                  <div style={{ width:18, height:18, borderRadius:"50%", border:`1.5px solid ${active ? teal : "#CBD5E1"}`, background: active ? teal : "transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 120ms" }}>
+                    {active && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
                 </button>
               );
             })}
@@ -585,10 +608,18 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
         )}
       </div>
 
-      <div className="px-5 py-3 bg-neutral-50 border-t border-neutral-100 flex items-center justify-between gap-2">
-        <span style={{ ...SANS, fontSize:11, color:"#94A3B8" }}>
-          {selected ? `Assigning to: ${selected.name}` : "Select a member or group above"}
-        </span>
+      {/* Selection summary bar */}
+      <div style={{ padding:"10px 20px", background: selected ? `${teal}0C` : "#F8FAFC", borderTop:`1px solid ${selected ? teal+"30" : "#E2E8F0"}`, display:"flex", alignItems:"center", gap:10, transition:"all 200ms", minHeight:44 }}>
+        {selected ? (
+          <>
+            <div style={{ width:7, height:7, borderRadius:"50%", background:teal, flexShrink:0 }} />
+            <span style={{ ...SANS, fontSize:12, fontWeight:600, color:teal, flex:1 }}>
+              {selected.type === "group" ? "Group" : "Member"}: <strong>{selected.name}</strong>
+            </span>
+          </>
+        ) : (
+          <span style={{ ...SANS, fontSize:12, color:"#94A3B8", flex:1 }}>Select a member or group above</span>
+        )}
         <div style={{ display:"flex", gap:8 }}>
           <button onClick={onCancel} className="h-9 px-4 rounded-[4px] border border-neutral-200 text-neutral-600 hover:bg-neutral-100 transition-colors" style={{ ...SANS, fontSize:"12px" }}>
             Cancel
