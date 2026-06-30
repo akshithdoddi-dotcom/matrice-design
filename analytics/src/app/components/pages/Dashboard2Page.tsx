@@ -689,7 +689,21 @@ export function AssignToDialog({ incident, onConfirm, onCancel }: { incident: In
 export function EscalateConfirmDialog({ incident, onConfirm, onCancel }: { incident: Incident; onConfirm: (manager: string, note: string) => void; onCancel: () => void }) {
   const [manager, setManager] = useState("");
   const [note,    setNote]    = useState("");
+  const [done,    setDone]    = useState(false);
   const sevHexLocal = getSeverityHex(incident.severity);
+
+  if (done) return (
+    <DialogShell title="Escalated" onCancel={onCancel}>
+      <ActionSuccessView
+        iconBg="#EA580C"
+        icon={<AlertTriangle style={{ width:22, height:22, fill:"#EA580C", color:"#fff" }} />}
+        headline="Escalated to Manager"
+        sub={`${incident.title} has been escalated to ${manager}. They have been notified and will take over.`}
+        onDone={() => { onConfirm(manager, note.trim()); onCancel(); }}
+      />
+    </DialogShell>
+  );
+
   return (
     <DialogShell title="Escalate to Manager" onCancel={onCancel}>
       <div className="px-5 py-4 space-y-4">
@@ -713,7 +727,7 @@ export function EscalateConfirmDialog({ incident, onConfirm, onCancel }: { incid
           Cancel
         </button>
         <button
-          onClick={() => manager && onConfirm(manager, note.trim())}
+          onClick={() => { if (manager) setDone(true); }}
           className="h-9 px-5 rounded-[4px] flex items-center gap-1.5 text-white font-semibold transition-colors"
           style={{ ...SANS, fontSize:"12px", background: manager ? "#EA580C" : "#94A3B8", cursor: manager ? "pointer" : "default" }}
         >
