@@ -9,7 +9,7 @@ import {
   Network, HardDrive, Server, ChevronLeft, Zap, BarChart2,
   SlidersHorizontal, Globe, List, LayoutGrid, Maximize2, Users, Tag, Briefcase, PanelLeft, User,
   Flame, HardHat, Thermometer, ShieldAlert, Car, BellRing, TriangleAlert,
-  X, Eye,
+  X, Eye, Info,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { ALL_INCIDENTS, Incident, IMG_SERVER_ROOM, IMG_INDUSTRIAL, IMG_PARKING, IMG_CROWD, IMG_FIRE } from "@/app/data/mockData";
@@ -928,6 +928,345 @@ function ProjectCard({ project, incident, isDark, cardBg, text, sub, statusColor
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// NEW PROJECT MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function NewProjectModal({ onClose, isDark }: { onClose: () => void; isDark: boolean }) {
+  const [name, setName]           = useState("");
+  const [industry, setIndustry]   = useState("");
+  const [region, setRegion]       = useState("");
+  const [tags, setTags]           = useState("");
+  const [tagList, setTagList]     = useState<string[]>([]);
+  const [advanced, setAdvanced]   = useState(false);
+  const [compute, setCompute]     = useState("matrice");
+  const [storage, setStorage]     = useState("matrice");
+  const [devices, setDevices]     = useState("nvidia-gpu");
+
+  const cardBg = isDark ? "#0f172a" : "#fff";
+  const text   = isDark ? "#F1F5F9" : "#0F172A";
+  const muted  = isDark ? "#94A3B8" : "#64748B";
+  const border = isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0";
+  const inputBg = isDark ? "#020617" : "#fff";
+  const teal = "#00775B";
+
+  const inputStyle: React.CSSProperties = {
+    ...INTER, width: "100%", height: 40, padding: "0 12px", fontSize: 13,
+    color: text, background: inputBg, border: `1px solid ${border}`,
+    borderRadius: 8, outline: "none", boxSizing: "border-box",
+  };
+  const labelStyle: React.CSSProperties = {
+    ...INTER, fontSize: 11, fontWeight: 600, textTransform: "uppercase",
+    letterSpacing: "0.06em", color: muted, marginBottom: 6, display: "block",
+  };
+  const selectStyle: React.CSSProperties = {
+    ...INTER, width: "100%", height: 40, padding: "0 12px", fontSize: 13,
+    color: text, background: inputBg, border: `1px solid ${border}`,
+    borderRadius: 8, outline: "none", appearance: "none", cursor: "pointer",
+  };
+
+  const addTag = () => {
+    const t = tags.trim();
+    if (t && !tagList.includes(t)) setTagList(prev => [...prev, t]);
+    setTags("");
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ width: "min(560px, 96vw)", maxHeight: "90vh", backgroundColor: cardBg, borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: `1px solid ${border}` }}>
+          <div>
+            <div style={{ ...INTER, fontSize: 18, fontWeight: 700, color: text }}>Create Project</div>
+            <div style={{ ...INTER, fontSize: 12, color: muted, marginTop: 2 }}>Set up a new workspace for your cameras and pipelines.</div>
+          </div>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${border}`, background: isDark ? "#1e293b" : "#F8FAFC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X style={{ width: 14, height: 14, color: muted }} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* Project name */}
+          <div>
+            <label style={labelStyle}>Project Name <span style={{ color: "#E7000B" }}>*</span></label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Matrice HQ, Downtown Retail…" style={inputStyle} />
+          </div>
+
+          {/* Industry + Region */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div>
+              <label style={labelStyle}>Industry</label>
+              <div style={{ position: "relative" }}>
+                <select value={industry} onChange={e => setIndustry(e.target.value)} style={selectStyle}>
+                  <option value="">Select industry</option>
+                  <option value="retail">Retail</option>
+                  <option value="logistics">Logistics & Warehousing</option>
+                  <option value="manufacturing">Manufacturing</option>
+                  <option value="airport">Airport / Transport</option>
+                  <option value="corporate">Corporate / Office</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="education">Education</option>
+                  <option value="government">Government</option>
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: muted, pointerEvents: "none" }} />
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Region</label>
+              <div style={{ position: "relative" }}>
+                <select value={region} onChange={e => setRegion(e.target.value)} style={selectStyle}>
+                  <option value="">Select region</option>
+                  <option value="mumbai">Mumbai</option>
+                  <option value="delhi">Delhi NCR</option>
+                  <option value="bangalore">Bangalore</option>
+                  <option value="hyderabad">Hyderabad</option>
+                  <option value="pune">Pune</option>
+                  <option value="chennai">Chennai</option>
+                  <option value="kolkata">Kolkata</option>
+                  <option value="other">Other</option>
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: muted, pointerEvents: "none" }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label style={labelStyle}>Tags</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={tags} onChange={e => setTags(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); }}}
+                placeholder="Add a tag and press Enter or Add" style={{ ...inputStyle, flex: 1 }} />
+              <button onClick={addTag} style={{ ...INTER, height: 40, padding: "0 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: teal, border: "none", cursor: "pointer", flexShrink: 0 }}>
+                Add
+              </button>
+            </div>
+            {tagList.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                {tagList.map(t => (
+                  <span key={t} style={{ ...INTER, display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, background: `${teal}14`, color: teal, border: `1px solid ${teal}30`, borderRadius: 5, padding: "3px 8px" }}>
+                    {t}
+                    <button onClick={() => setTagList(prev => prev.filter(x => x !== t))} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: teal, opacity: 0.7 }}>
+                      <X style={{ width: 10, height: 10 }} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Advanced Options */}
+          <div style={{ borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden" }}>
+            <button onClick={() => setAdvanced(v => !v)}
+              style={{ ...INTER, width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", background: isDark ? "#0f172a" : "#F8FAFC", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: teal }}>
+              <Settings style={{ width: 14, height: 14 }} />
+              Advanced Options
+              <ChevronDown style={{ width: 14, height: 14, marginLeft: "auto", transform: advanced ? "rotate(180deg)" : "none", transition: "transform 200ms" }} />
+            </button>
+            {advanced && (
+              <div style={{ padding: 16, borderTop: `1px solid ${border}`, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, background: cardBg }}>
+                <div>
+                  <label style={labelStyle}>Compute Type</label>
+                  <div style={{ position: "relative" }}>
+                    <select value={compute} onChange={e => setCompute(e.target.value)} style={selectStyle}>
+                      <option value="matrice">Matrice</option>
+                      <option value="aws">AWS</option>
+                      <option value="gcp">GCP</option>
+                      <option value="azure">Azure</option>
+                      <option value="on-prem">On-Premise</option>
+                    </select>
+                    <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: muted, pointerEvents: "none" }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Storage Type</label>
+                  <div style={{ position: "relative" }}>
+                    <select value={storage} onChange={e => setStorage(e.target.value)} style={selectStyle}>
+                      <option value="matrice">Matrice</option>
+                      <option value="s3">AWS S3</option>
+                      <option value="gcs">Google Cloud Storage</option>
+                      <option value="blob">Azure Blob</option>
+                    </select>
+                    <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: muted, pointerEvents: "none" }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Supported Devices</label>
+                  <div style={{ position: "relative" }}>
+                    <select value={devices} onChange={e => setDevices(e.target.value)} style={selectStyle}>
+                      <option value="nvidia-gpu">Nvidia GPU</option>
+                      <option value="cpu">CPU Only</option>
+                      <option value="jetson">Jetson Edge</option>
+                      <option value="tpu">TPU</option>
+                    </select>
+                    <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: muted, pointerEvents: "none" }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>License</label>
+                  <div style={{ position: "relative" }}>
+                    <select style={selectStyle}>
+                      <option value="">Select license</option>
+                      <option value="standard">Standard</option>
+                      <option value="professional">Professional</option>
+                      <option value="enterprise">Enterprise</option>
+                    </select>
+                    <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: muted, pointerEvents: "none" }} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", borderTop: `1px solid ${border}`, background: isDark ? "#0f172a" : "#F8FAFC" }}>
+          <span style={{ ...INTER, fontSize: 12, color: muted, display: "flex", alignItems: "center", gap: 6 }}>
+            <Info style={{ width: 13, height: 13 }} />
+            All fields except name are optional
+          </span>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={onClose} style={{ ...INTER, height: 36, padding: "0 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: text, background: "transparent", border: `1px solid ${border}`, cursor: "pointer" }}>
+              Cancel
+            </button>
+            <button style={{ ...INTER, height: 36, padding: "0 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: name.trim() ? teal : "#94A3B8", border: "none", cursor: name.trim() ? "pointer" : "default" }}
+              onClick={() => { if (name.trim()) onClose(); }}>
+              Create Project
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW PIPELINE MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function NewPipelineModal({ onClose, isDark }: { onClose: () => void; isDark: boolean }) {
+  const [name, setName]         = useState("");
+  const [desc, setDesc]         = useState("");
+  const [camSearch, setCamSearch] = useState("");
+  const [selectedCams, setSelectedCams] = useState<string[]>([]);
+
+  const cardBg = isDark ? "#0f172a" : "#fff";
+  const text   = isDark ? "#F1F5F9" : "#0F172A";
+  const muted  = isDark ? "#94A3B8" : "#64748B";
+  const border = isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0";
+  const inputBg = isDark ? "#020617" : "#fff";
+  const teal = "#00775B";
+
+  const MOCK_CAMS = ["CAM-L01 — Lobby A", "CAM-L02 — Lobby B", "CAM-P01 — Parking Gate", "CAM-RC03 — Roof Corner", "CAM-BE01 — Back Exit", "CAM-T01 — Turnstile", "CAM-F03 — Factory Floor", "CAM-S01 — Server Room"];
+  const filteredCams = MOCK_CAMS.filter(c => c.toLowerCase().includes(camSearch.toLowerCase()) && !selectedCams.includes(c));
+
+  const inputStyle: React.CSSProperties = {
+    ...INTER, width: "100%", height: 40, padding: "0 12px", fontSize: 13,
+    color: text, background: inputBg, border: `1px solid ${border}`,
+    borderRadius: 8, outline: "none", boxSizing: "border-box",
+  };
+  const labelStyle: React.CSSProperties = {
+    ...INTER, fontSize: 11, fontWeight: 600, textTransform: "uppercase",
+    letterSpacing: "0.06em", color: muted, marginBottom: 6, display: "block",
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ width: "min(600px, 96vw)", maxHeight: "90vh", backgroundColor: cardBg, borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: `1px solid ${border}` }}>
+          <div>
+            <div style={{ ...INTER, fontSize: 18, fontWeight: 700, color: text }}>Create Pipeline</div>
+            <div style={{ ...INTER, fontSize: 12, color: muted, marginTop: 2 }}>Define a new inference pipeline and assign cameras to it.</div>
+          </div>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${border}`, background: isDark ? "#1e293b" : "#F8FAFC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X style={{ width: 14, height: 14, color: muted }} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* Pipeline name */}
+          <div>
+            <label style={labelStyle}>Pipeline Name <span style={{ color: "#E7000B" }}>*</span></label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Main-Entrance-Pipeline, Perimeter-Monitor…" style={inputStyle} />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label style={labelStyle}>Description</label>
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Describe what this pipeline monitors…"
+              style={{ ...inputStyle, height: 72, padding: "10px 12px", resize: "none", lineHeight: 1.5 } as React.CSSProperties} />
+          </div>
+
+          {/* Camera selector */}
+          <div>
+            <label style={labelStyle}>Select Cameras</label>
+            <div style={{ position: "relative" }}>
+              <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: muted, pointerEvents: "none" }} />
+              <input value={camSearch} onChange={e => setCamSearch(e.target.value)} placeholder="Search cameras by name…"
+                style={{ ...inputStyle, paddingLeft: 32, borderBottomLeftRadius: camSearch && filteredCams.length ? 0 : 8, borderBottomRightRadius: camSearch && filteredCams.length ? 0 : 8 }} />
+            </div>
+            {/* Dropdown list */}
+            {camSearch && filteredCams.length > 0 && (
+              <div style={{ border: `1px solid ${border}`, borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "hidden", maxHeight: 160, overflowY: "auto", background: cardBg }}>
+                {filteredCams.map(c => (
+                  <button key={c} onClick={() => { setSelectedCams(prev => [...prev, c]); setCamSearch(""); }}
+                    style={{ ...INTER, width: "100%", padding: "9px 12px", fontSize: 13, color: text, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", borderBottom: `1px solid ${border}`, display: "flex", alignItems: "center", gap: 8 }}>
+                    <Camera style={{ width: 13, height: 13, color: muted, flexShrink: 0 }} />
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Selected cameras list */}
+            {selectedCams.length > 0 && (
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                {selectedCams.map((c, i) => (
+                  <div key={c} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: `1px solid ${border}`, background: isDark ? "#0f172a" : "#F8FAFC" }}>
+                    <span style={{ ...MONO, fontSize: 11, color: muted, width: 18, flexShrink: 0 }}>{i + 1}.</span>
+                    <Camera style={{ width: 13, height: 13, color: teal, flexShrink: 0 }} />
+                    <span style={{ ...INTER, fontSize: 13, color: text, flex: 1 }}>{c}</span>
+                    <button onClick={() => setSelectedCams(prev => prev.filter(x => x !== c))}
+                      style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, ...INTER, fontSize: 12, fontWeight: 600, color: "#EF4444" }}>
+                      <X style={{ width: 12, height: 12 }} />
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {selectedCams.length === 0 && !camSearch && (
+              <p style={{ ...INTER, fontSize: 12, color: muted, marginTop: 8 }}>No cameras selected yet. Search above to add cameras to this pipeline.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", borderTop: `1px solid ${border}`, background: isDark ? "#0f172a" : "#F8FAFC" }}>
+          <span style={{ ...INTER, fontSize: 12, color: muted, display: "flex", alignItems: "center", gap: 6 }}>
+            <Info style={{ width: 13, height: 13 }} />
+            Cameras can be added or removed after creation
+          </span>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={onClose} style={{ ...INTER, height: 36, padding: "0 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: text, background: "transparent", border: `1px solid ${border}`, cursor: "pointer" }}>
+              Cancel
+            </button>
+            <button style={{ ...INTER, height: 36, padding: "0 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: name.trim() ? teal : "#94A3B8", border: "none", cursor: name.trim() ? "pointer" : "default" }}
+              onClick={() => { if (name.trim()) onClose(); }}>
+              Create Pipeline
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PROJECT GRID (Hub main canvas)
 // ─────────────────────────────────────────────────────────────────────────────
 function ProjectGrid({ projects, onSelectProject, isDark, persona }: {
@@ -948,6 +1287,7 @@ function ProjectGrid({ projects, onSelectProject, isDark, persona }: {
   const [searchQ, setSearchQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "healthy" | "degraded" | "critical">("all");
   const [sortBy, setSortBy] = useState<"name" | "cameras" | "alerts" | "pipelines">("name");
+  const [showNewProject, setShowNewProject] = useState(false);
 
   const teal  = "#00775B";
   const bdColor = isDark ? "rgba(255,255,255,0.10)" : "#E2E8F0";
@@ -975,6 +1315,7 @@ function ProjectGrid({ projects, onSelectProject, isDark, persona }: {
     });
 
   return (
+    <>
     <div className="flex-1 overflow-auto" style={{ background: bg }}>
       <div className="mx-auto p-8" style={{ maxWidth: "1200px" }}>
 
@@ -991,7 +1332,7 @@ function ProjectGrid({ projects, onSelectProject, isDark, persona }: {
                 {projects.length} projects · Select a project to open its workspace
               </p>
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold text-white"
+            <button onClick={() => setShowNewProject(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold text-white"
               style={{ background: teal, ...INTER, flexShrink: 0 }}>
               <Plus className="w-3.5 h-3.5" />
               New Project
@@ -1112,6 +1453,8 @@ function ProjectGrid({ projects, onSelectProject, isDark, persona }: {
         </div>
       </div>
     </div>
+    {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} isDark={isDark} />}
+    </>
   );
 }
 
@@ -1530,6 +1873,7 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
   const [plSearchQ,      setPlSearchQ]      = useState("");
   const [plStatusFilter, setPlStatusFilter] = useState<"all" | "running" | "degraded" | "stopped">("all");
   const [plSortBy,       setPlSortBy]       = useState<"name" | "cameras" | "alerts" | "uptime">("name");
+  const [showNewPipeline, setShowNewPipeline] = useState(false);
 
   // Focus view: null = grid, string = focused camera id
   const [focusedCamId, setFocusedCamId] = useState<string | null>(null);
@@ -1571,6 +1915,7 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
     const inBg    = isDark ? "#0f172a" : "#fff";
 
     return (
+      <>
       <div className="flex-1 overflow-auto" style={{ background: bg }}>
         <div className="max-w-[1200px] mx-auto p-8">
 
@@ -1586,7 +1931,7 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
                 {runningCount}/{pipelines.length} running · {alertCount} active alerts
               </p>
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold text-white"
+            <button onClick={() => setShowNewPipeline(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold text-white"
               style={{ background: teal, ...INTER, flexShrink: 0 }}>
               <Plus className="w-3.5 h-3.5" />
               New Pipeline
@@ -1684,6 +2029,8 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
 
         </div>
       </div>
+      {showNewPipeline && <NewPipelineModal onClose={() => setShowNewPipeline(false)} isDark={isDark} />}
+      </>
     );
   }
 
