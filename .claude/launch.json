@@ -22,6 +22,13 @@
       "autoPort": true
     },
     {
+      "name": "Marketplace Dev Server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:standalone:marketplace"],
+      "port": 5176,
+      "autoPort": true
+    },
+    {
       "name": "Annotation Dev Server",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:standalone:annotation"],

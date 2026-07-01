@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
-  Search, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
+  Search, X, ChevronDown,
   Plane, UtensilsCrossed, Building2, GraduationCap, Cross, ShoppingCart, HardHat, ShoppingBag,
   HeartPulse, Tag, Truck, BookOpen, Hotel, Factory, Briefcase,
   Camera, Users, Shield, BarChart2, Cpu, Eye, AlertTriangle, Car, Trash2, Flame,
@@ -83,35 +83,87 @@ const INDUSTRIES: { label: Industry; Icon: React.ComponentType<{ className?: str
 const APP_CATEGORIES: Category[] = ["Most Common", "Infrastructure", "Safety & Compliance", "Operations & Analytics"];
 
 const CATEGORY_COUNTS: Record<Category, number> = {
-  "Most Common":          APPS.filter(a => a.categories.includes("Most Common")).length,
-  "Infrastructure":       APPS.filter(a => a.categories.includes("Infrastructure")).length,
-  "Safety & Compliance":  APPS.filter(a => a.categories.includes("Safety & Compliance")).length,
-  "Operations & Analytics": APPS.filter(a => a.categories.includes("Operations & Analytics")).length,
+  "Most Common":             APPS.filter(a => a.categories.includes("Most Common")).length,
+  "Infrastructure":          APPS.filter(a => a.categories.includes("Infrastructure")).length,
+  "Safety & Compliance":     APPS.filter(a => a.categories.includes("Safety & Compliance")).length,
+  "Operations & Analytics":  APPS.filter(a => a.categories.includes("Operations & Analytics")).length,
 };
 
-// ─── Primitives ────────────────────────────────────────────────────────────────
+// ─── Scenario Dropdown ─────────────────────────────────────────────────────────
 
-function FilterChip<T extends string>({
-  label, Icon, active, onClick,
+function ScenarioDropdown({
+  selected,
+  onSelect,
+  dark = true,
 }: {
-  label: T;
-  Icon: React.ComponentType<{ className?: string }>;
-  active: boolean;
-  onClick: () => void;
+  selected: Scenario | null;
+  onSelect: (s: Scenario | null) => void;
+  dark?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const SelectedIcon = selected ? SCENARIOS.find(s => s.label === selected)?.Icon : null;
+
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 px-3 h-8 rounded-[4px] border text-[11px] font-semibold whitespace-nowrap transition-all",
-        active
-          ? "bg-[#00775B] border-[#00775B] text-white"
-          : "bg-white border-neutral-200 text-neutral-600 hover:border-[#00775B]/50 hover:text-[#00775B]"
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "inline-flex items-center gap-1.5 px-3.5 h-8 rounded-full border text-[11px] font-semibold whitespace-nowrap transition-all",
+          dark
+            ? selected
+              ? "rounded-full bg-white text-[#00775B] border-white shadow-sm"
+              : "rounded-full bg-white/8 border-white/15 text-white/60 hover:bg-white/15 hover:text-white/80"
+            : selected
+              ? "rounded-[4px] bg-[#00775B]/10 text-[#00775B] border-[#00775B]/30"
+              : "rounded-[4px] bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-800"
+        )}
+      >
+        {SelectedIcon && <SelectedIcon className="w-3 h-3 shrink-0" />}
+        {selected ?? "Scenario"}
+        <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-[8px] border border-neutral-200 shadow-2xl z-50 py-1 overflow-hidden">
+          {selected && (
+            <>
+              <button
+                onClick={() => { onSelect(null); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-semibold text-neutral-500 hover:bg-neutral-50 transition-colors"
+              >
+                <X className="w-3 h-3" /> Clear scenario
+              </button>
+              <div className="h-px bg-neutral-100 my-1" />
+            </>
+          )}
+          {SCENARIOS.map(({ label, Icon }) => (
+            <button
+              key={label}
+              onClick={() => { onSelect(label); setOpen(false); }}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 text-[11px] font-semibold transition-colors",
+                selected === label
+                  ? "text-[#00775B] bg-[#00775B]/5"
+                  : "text-neutral-700 hover:bg-neutral-50"
+              )}
+            >
+              <Icon className="w-3.5 h-3.5 text-neutral-400" />
+              {label}
+            </button>
+          ))}
+        </div>
       )}
-    >
-      <Icon className="w-3 h-3 shrink-0" />
-      {label}
-    </button>
+    </div>
   );
 }
 
@@ -122,7 +174,6 @@ type AppDetail = {
   outcomeHighlight: string;
   decisions: { icon: React.ComponentType<{ className?: string }>; title: string; subtitle: string }[];
   keyDrivers: string[];
-  // Chart
   chartTitle: string;
   chartSubtitle: string;
   chartBarA: string;
@@ -130,7 +181,6 @@ type AppDetail = {
   chartData: { name: string; inbound: number; outbound: number }[];
   chartLimit: number;
   limitLabel: string;
-  // Metrics
   metric1Label: string;
   metric1Value: string;
   metric1Delta: string;
@@ -338,14 +388,12 @@ function AppDetailModal({ app, onClose }: { app: App; onClose: () => void }) {
                   </div>
                 </>
               )}
-              {/* bounding box overlays */}
               <div className="absolute top-10 left-12 w-28 h-20 border-2 rounded-sm opacity-60" style={{ borderColor: "#00ff88" }}>
                 <span className="absolute -top-4 left-0 text-[9px] font-bold text-[#00ff88]">Detection 97%</span>
               </div>
               <div className="absolute top-16 right-16 w-20 h-16 border-2 border-dashed rounded-sm opacity-50" style={{ borderColor: "#ffd166" }}>
                 <span className="absolute -top-4 left-0 text-[9px] font-bold text-[#ffd166]">Track 94%</span>
               </div>
-              {/* badge */}
               <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" />
                 <span className="text-[9px] font-bold text-white tracking-widest uppercase">AI Vision Stream</span>
@@ -500,10 +548,11 @@ function AppDetailModal({ app, onClose }: { app: App; onClose: () => void }) {
   );
 }
 
+// ─── App Card ─────────────────────────────────────────────────────────────────
+
 function AppCard({ app, onClick }: { app: App; onClick?: () => void }) {
   return (
     <div onClick={onClick} className="rounded-[6px] border border-neutral-200 bg-white overflow-hidden hover:border-[#00775B]/40 hover:shadow-md transition-all cursor-pointer group">
-      {/* Image */}
       <div className="w-full h-[120px] relative overflow-hidden" style={{ backgroundColor: app.color }}>
         {app.image ? (
           <>
@@ -520,7 +569,6 @@ function AppCard({ app, onClick }: { app: App; onClick?: () => void }) {
         <Camera className="absolute bottom-2 right-2 w-3 h-3 text-white/30" />
       </div>
 
-      {/* Badge */}
       <div className="px-3 pt-2.5">
         <span
           className="inline-block text-[8px] font-bold tracking-widest uppercase px-1.5 py-0.5 rounded-[3px] text-white"
@@ -530,19 +578,16 @@ function AppCard({ app, onClick }: { app: App; onClick?: () => void }) {
         </span>
       </div>
 
-      {/* Title */}
       <div className="px-3 pt-1.5">
         <p className="text-[11px] font-bold text-neutral-800 uppercase leading-tight group-hover:text-[#00775B] transition-colors line-clamp-2">
           {app.name}
         </p>
       </div>
 
-      {/* Description */}
       <div className="px-3 pt-1.5">
         <p className="text-[10px] text-neutral-500 leading-relaxed line-clamp-2">{app.description}</p>
       </div>
 
-      {/* Tags */}
       <div className="px-3 pt-2 pb-3 flex flex-wrap gap-1">
         {app.tags.map((t) => (
           <span
@@ -557,120 +602,42 @@ function AppCard({ app, onClick }: { app: App; onClick?: () => void }) {
   );
 }
 
-const PAGE_SIZE = 4;
+// ─── Industry Tab Bar ─────────────────────────────────────────────────────────
 
-// ─── Featured Apps row (simple, no collapse) ──────────────────────────────────
+const INDUSTRY_TAB_LABELS: (Industry | "All")[] = ["All", ...INDUSTRIES.map(i => i.label)];
 
-function FeaturedAppsRow({ apps, onAppClick }: { apps: App[]; onAppClick?: (app: App) => void }) {
-  const [page, setPage] = useState(0);
-  const totalPages = Math.ceil(apps.length / PAGE_SIZE);
-  const visible = apps.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
-
-  return (
-    <div className="px-6 py-5 border-b border-neutral-100">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-[14px] font-bold text-neutral-800">Featured Apps</h2>
-          <p className="text-[11px] text-neutral-400 mt-0.5">Recommended for you</p>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-neutral-400">{page + 1} / {totalPages}</span>
-            <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}
-              className="w-7 h-7 rounded-[4px] border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
-              className="w-7 h-7 rounded-[4px] border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-      <div className="grid grid-cols-4 gap-3">
-        {visible.map((app) => <AppCard key={app.id} app={app} onClick={() => onAppClick?.(app)} />)}
-      </div>
-    </div>
-  );
-}
-
-// ─── Category section (collapsible + pagination in header) ────────────────────
-
-function CategorySection({ category, apps, count, onAppClick }: {
-  category: Category;
-  apps: App[];
-  count: number;
-  onAppClick?: (app: App) => void;
+function IndustryTabBar({
+  active,
+  onSelect,
+  selectedScenario,
+  onSelectScenario,
+}: {
+  active: Industry | "All";
+  onSelect: (t: Industry | "All") => void;
+  selectedScenario: Scenario | null;
+  onSelectScenario: (s: Scenario | null) => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [page, setPage] = useState(0);
-  const totalPages = Math.ceil(apps.length / PAGE_SIZE);
-  const visible = apps.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
-
   return (
-    <div className="border-b border-neutral-100">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3.5 hover:bg-neutral-50 transition-colors">
-        {/* Left: accent + title + count */}
-        <div className="flex items-center gap-3">
-          <span className="w-1 h-5 rounded-none bg-[#00775B] shrink-0" />
-          <h2 className="text-[13px] font-bold text-neutral-800">{category}</h2>
-          <span className="inline-flex items-center h-5 px-2 rounded-full bg-neutral-100 text-[10px] font-semibold text-neutral-500">
-            {count}
-          </span>
-        </div>
-
-        {/* Right: pagination + hide/show */}
-        <div className="flex items-center gap-2">
-          {totalPages > 1 && !collapsed && (
-            <>
-              <span className="text-[10px] text-neutral-400">{page + 1} / {totalPages}</span>
-              <button
-                onClick={(e) => { e.stopPropagation(); setPage((p) => Math.max(0, p - 1)); }}
-                disabled={page === 0}
-                className="w-7 h-7 rounded-[4px] border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setPage((p) => Math.min(totalPages - 1, p + 1)); }}
-                disabled={page === totalPages - 1}
-                className="w-7 h-7 rounded-[4px] border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-              <div className="w-px h-4 bg-neutral-200 mx-1" />
-            </>
-          )}
+    <div className="sticky top-0 z-20 bg-white border-b border-neutral-200 flex items-center px-6 gap-0">
+      <div className="flex items-center flex-1 overflow-x-auto no-scrollbar">
+        {INDUSTRY_TAB_LABELS.map((label) => (
           <button
-            onClick={() => setCollapsed((c) => !c)}
+            key={label}
+            onClick={() => onSelect(label)}
             className={cn(
-              "flex items-center gap-1.5 px-2.5 h-7 rounded-[4px] border text-[11px] font-semibold transition-colors",
-              collapsed
-                ? "border-neutral-200 text-neutral-500 bg-white hover:border-neutral-300"
-                : "border-[#00775B]/30 text-[#00775B] bg-[#00775B]/5 hover:bg-[#00775B]/10"
+              "shrink-0 px-4 h-11 text-[11px] font-bold tracking-wider uppercase whitespace-nowrap border-b-2 transition-all",
+              active === label
+                ? "border-[#00775B] text-[#00775B]"
+                : "border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300"
             )}
           >
-            {collapsed ? <><ChevronDown className="w-3.5 h-3.5" /> Show</> : <><ChevronUp className="w-3.5 h-3.5" /> Hide</>}
+            {label}
           </button>
-        </div>
+        ))}
       </div>
-
-      {/* Cards */}
-      {!collapsed && (
-        <div className="px-6 pb-5">
-          {apps.length === 0 ? (
-            <div className="py-6 flex flex-col items-center gap-2">
-              <Camera className="w-8 h-8 text-neutral-300" />
-              <p className="text-[12px] text-neutral-400">No apps match the current filters</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-4 gap-3">
-              {visible.map((app) => <AppCard key={app.id} app={app} onClick={() => onAppClick?.(app)} />)}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="shrink-0 pl-4 border-l border-neutral-200 ml-2">
+        <ScenarioDropdown selected={selectedScenario} onSelect={onSelectScenario} dark={false} />
+      </div>
     </div>
   );
 }
@@ -679,22 +646,13 @@ function CategorySection({ category, apps, count, onAppClick }: {
 
 export function AppStorePage() {
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
-  const [selectedIndustry, setSelectedIndustry] = useState<Industry | null>(null);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<Industry | "All">("All");
   const [activeApp, setActiveApp] = useState<App | null>(null);
-
-  const hasFilters = selectedScenario !== null || selectedIndustry !== null || search.trim() !== "";
-
-  const resetFilters = () => {
-    setSelectedScenario(null);
-    setSelectedIndustry(null);
-    setSearch("");
-  };
 
   const filterApps = (apps: App[]) => {
     return apps.filter((app) => {
       if (selectedScenario && !app.scenarios.includes(selectedScenario)) return false;
-      if (selectedIndustry && !app.industries.includes(selectedIndustry)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         if (!app.name.toLowerCase().includes(q) && !app.description.toLowerCase().includes(q)) return false;
@@ -703,113 +661,97 @@ export function AppStorePage() {
     });
   };
 
-  const featuredApps = filterApps(APPS.filter((a) => a.featured));
+  const visibleApps = filterApps(
+    activeTab === "All" ? APPS : APPS.filter((a) => a.industries.includes(activeTab as Industry))
+  );
+
+  const hasFilters = selectedScenario !== null || search.trim() !== "";
+
+  const resetFilters = () => {
+    setSelectedScenario(null);
+    setSearch("");
+    setActiveTab("All");
+  };
 
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
-      {/* ── Page header ──────────────────────────────────────────────────────── */}
-      <div className="px-6 pt-5 pb-5 bg-[#F2FAF6] border-b border-neutral-200">
 
-        {/* Title row */}
-        <div className="flex items-center justify-between gap-4 mb-5">
-          <div>
-            <h1 className="text-[20px] font-bold text-neutral-900 leading-tight">Where is your camera?</h1>
-            <p className="text-[11px] text-neutral-500 mt-0.5">Select a scenario or industry to filter applications</p>
+      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
+      <div
+        className="relative overflow-hidden border-b border-[#002a1e]"
+        style={{ background: "linear-gradient(150deg, #001f17 0%, #003d2e 45%, #005c44 100%)" }}
+      >
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "22px 22px" }}
+        />
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{ background: "radial-gradient(ellipse 60% 60% at 50% 0%, #00775B55, transparent)" }}
+        />
+
+        <div className="relative px-8 pt-11 pb-9 flex flex-col items-center text-center">
+          <div className="inline-flex items-center gap-1.5 bg-white/8 border border-white/12 rounded-full px-3.5 py-1 text-[9px] font-bold tracking-[0.12em] text-white/50 uppercase mb-5">
+            <Camera className="w-3 h-3" />
+            AI Vision Applications
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {hasFilters && (
+          <h1 className="text-[30px] font-bold text-white leading-tight tracking-tight mb-2">
+            Where is your camera?
+          </h1>
+          <p className="text-[13px] text-white/50 max-w-[360px] mb-8 leading-relaxed">
+            Browse and deploy AI-powered computer vision apps tailored to your environment.
+          </p>
+          <div className="relative w-full max-w-[520px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by application, use case, or keyword…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-12 pl-11 pr-11 text-[13px] bg-white rounded-full border-0 outline-none shadow-2xl placeholder:text-neutral-400 focus:ring-2 focus:ring-[#00ff99]/20 transition-all"
+            />
+            {search && (
               <button
-                onClick={resetFilters}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[4px] border border-neutral-300 bg-white text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors"
+                onClick={() => setSearch("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
               >
-                <X className="w-3 h-3" />
-                Reset filters
+                <X className="w-4 h-4" />
               </button>
             )}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Search apps..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-8 pl-8 pr-3 w-48 text-[11px] bg-white border border-neutral-200 rounded-[4px] outline-none placeholder:text-neutral-400 focus:border-[#00775B] transition-colors"
-              />
-            </div>
           </div>
-        </div>
-
-        {/* Filter strips — two columns separated by a divider */}
-        <div className="flex gap-0">
-
-          {/* Scenarios column */}
-          <div className="flex flex-col gap-2 w-0 flex-1 min-w-0 overflow-hidden">
-            <p className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">Scenarios</p>
-            <div className="flex flex-wrap gap-1.5">
-              {SCENARIOS.map(({ label, Icon }) => (
-                <FilterChip
-                  key={label}
-                  label={label}
-                  Icon={Icon}
-                  active={selectedScenario === label}
-                  onClick={() => setSelectedScenario(selectedScenario === label ? null : label)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="w-px bg-neutral-200 mx-5 self-stretch shrink-0" />
-
-          {/* Industries column */}
-          <div className="flex flex-col gap-2 w-0 flex-1 min-w-0 overflow-hidden">
-            <p className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">Industries</p>
-            <div className="flex flex-wrap gap-1.5">
-              {INDUSTRIES.map(({ label, Icon }) => (
-                <FilterChip
-                  key={label}
-                  label={label}
-                  Icon={Icon}
-                  active={selectedIndustry === label}
-                  onClick={() => setSelectedIndustry(selectedIndustry === label ? null : label)}
-                />
-              ))}
-            </div>
-          </div>
-
         </div>
       </div>
+
+      {/* ── Tab bar ──────────────────────────────────────────────────────────── */}
+      <IndustryTabBar
+        active={activeTab}
+        onSelect={setActiveTab}
+        selectedScenario={selectedScenario}
+        onSelectScenario={setSelectedScenario}
+      />
 
       {/* ── Modal ────────────────────────────────────────────────────────────── */}
       {activeApp && <AppDetailModal app={activeApp} onClose={() => setActiveApp(null)} />}
 
-      {/* ── Content ───────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-0">
-
-        {/* Featured Apps */}
-        {featuredApps.length > 0 && <FeaturedAppsRow apps={featuredApps} onAppClick={setActiveApp} />}
-
-        {/* Category sections */}
-        {APP_CATEGORIES.map((category) => {
-          const apps = filterApps(APPS.filter((a) => a.categories.includes(category)));
-          const count = hasFilters ? apps.length : CATEGORY_COUNTS[category];
-          return <CategorySection key={category} category={category} apps={apps} count={count} onAppClick={setActiveApp} />;
-        })}
-
-        {/* Empty state when filters return nothing */}
-        {hasFilters && featuredApps.length === 0 && APP_CATEGORIES.every(
-          (cat) => filterApps(APPS.filter((a) => a.categories.includes(cat))).length === 0
-        ) && (
+      {/* ── Flat card grid ───────────────────────────────────────────────────── */}
+      <div className="px-6 py-5">
+        {visibleApps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <Camera className="w-10 h-10 text-neutral-300" />
             <p className="text-[13px] font-semibold text-neutral-500">No apps match your filters</p>
-            <p className="text-[11px] text-neutral-400">Try adjusting your scenario, industry, or search query</p>
+            <p className="text-[11px] text-neutral-400">Try adjusting your search or scenario</p>
             <button
               onClick={resetFilters}
               className="mt-2 inline-flex items-center gap-1.5 h-8 px-4 rounded-[4px] bg-[#00775B] text-white text-[11px] font-semibold hover:bg-[#006649] transition-colors"
             >
               <X className="w-3 h-3" /> Reset filters
             </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 gap-3">
+            {visibleApps.map((app) => (
+              <AppCard key={app.id} app={app} onClick={() => setActiveApp(app)} />
+            ))}
           </div>
         )}
       </div>
