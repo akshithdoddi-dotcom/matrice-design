@@ -144,15 +144,57 @@ interface CameraFeed {
 }
 
 const MOCK_CAMERAS: CameraFeed[] = [
-  { id: "CAM-L01",  name: "Main Entrance",       location: "Building A — Ground", status: "alert",  alertType: "INTRUSION DETECTED",  alertSeverity: "critical", timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
-  { id: "CAM-L02",  name: "Executive Office",    location: "Floor 3 — West Wing", status: "alert",  alertType: "UNAUTHORISED ACCESS", alertSeverity: "high",     timestamp: "17:28 PM", thumbnail: IMG_SERVER_ROOM },
-  { id: "CAM-P01",  name: "Parking Lot B",       location: "Exterior North",      status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_PARKING    },
-  { id: "CAM-S01",  name: "Server Room",         location: "Basement — IT Hub",   status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_SERVER_ROOM },
-  { id: "CAM-RC03", name: "Reception",           location: "Ground Floor",        status: "alert",  alertType: "PPE VIOLATION",       alertSeverity: "high",     timestamp: "17:26 PM", thumbnail: IMG_CROWD      },
-  { id: "CAM-BE01", name: "Back Exit",           location: "Building A — Rear",   status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
-  { id: "CAM-T01",  name: "Employee Turnstile",  location: "Floor 1 — Lobby",    status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
-  { id: "CAM-F03",  name: "Factory Floor",       location: "Zone C — Assembly",   status: "alert",  alertType: "FIRE HAZARD",         alertSeverity: "critical", timestamp: "17:15 PM", thumbnail: IMG_FIRE       },
-  { id: "CAM-R04",  name: "Rooftop North",       location: "Rooftop — Section 4", status: "offline", disabledReason: "Connection lost — no signal from device",                       timestamp: "17:02 PM", thumbnail: IMG_INDUSTRIAL },
+  // Page 1
+  { id: "CAM-L01",  name: "Main Entrance",         location: "Building A — Ground",   status: "alert",   alertType: "INTRUSION DETECTED",  alertSeverity: "critical", timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-L02",  name: "Executive Office",      location: "Floor 3 — West Wing",   status: "alert",   alertType: "UNAUTHORISED ACCESS", alertSeverity: "high",     timestamp: "17:28 PM", thumbnail: IMG_SERVER_ROOM },
+  { id: "CAM-P01",  name: "Parking Lot B",         location: "Exterior North",         status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_PARKING    },
+  { id: "CAM-S01",  name: "Server Room",           location: "Basement — IT Hub",     status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_SERVER_ROOM },
+  { id: "CAM-RC03", name: "Reception",             location: "Ground Floor",           status: "alert",   alertType: "PPE VIOLATION",       alertSeverity: "high",     timestamp: "17:26 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-BE01", name: "Back Exit",             location: "Building A — Rear",     status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-T01",  name: "Employee Turnstile",    location: "Floor 1 — Lobby",       status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-F03",  name: "Factory Floor",         location: "Zone C — Assembly",     status: "alert",   alertType: "FIRE HAZARD",         alertSeverity: "critical", timestamp: "17:15 PM", thumbnail: IMG_FIRE       },
+  { id: "CAM-R04",  name: "Rooftop North",         location: "Rooftop — Section 4",   status: "offline", disabledReason: "Connection lost — no signal from device",   timestamp: "17:02 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-G01",  name: "Gate 1 — Arrivals",    location: "Terminal B — Level 0",  status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-G02",  name: "Gate 2 — Departures",  location: "Terminal B — Level 1",  status: "online",                                                               timestamp: "17:29 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-G03",  name: "Gate 3 — Security",    location: "Terminal B — Level 1",  status: "alert",   alertType: "TAILGATING",          alertSeverity: "high",     timestamp: "17:27 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-C01",  name: "Corridor A",            location: "Floor 2 — East Wing",   status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_PARKING    },
+  { id: "CAM-C02",  name: "Corridor B",            location: "Floor 2 — West Wing",   status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_PARKING    },
+  { id: "CAM-ST01", name: "Stairwell North",       location: "Building B — Stairs",   status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-EL01", name: "Elevator Lobby",        location: "Floor 1 — Central",     status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  // Page 2
+  { id: "CAM-LB01", name: "Loading Bay A",         location: "Warehouse — Dock 1",    status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-LB02", name: "Loading Bay B",         location: "Warehouse — Dock 2",    status: "alert",   alertType: "LOITERING",           alertSeverity: "high",     timestamp: "17:22 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-P02",  name: "Parking Lot C",         location: "Exterior South",         status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_PARKING    },
+  { id: "CAM-P03",  name: "Parking Lot D",         location: "Exterior East",          status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_PARKING    },
+  { id: "CAM-OF01", name: "Open Floor 1",          location: "Floor 4 — Operations",  status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-OF02", name: "Open Floor 2",          location: "Floor 4 — Analytics",   status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-SR02", name: "Server Room B",         location: "Basement — DR Site",    status: "alert",   alertType: "TEMPERATURE ALERT",   alertSeverity: "critical", timestamp: "17:20 PM", thumbnail: IMG_SERVER_ROOM },
+  { id: "CAM-BZ01", name: "Boardroom",             location: "Floor 5 — East",        status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-CF01", name: "Cafeteria",             location: "Floor 1 — South",       status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-GY01", name: "Gym Entrance",          location: "Floor B1 — Wellness",   status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-RT01", name: "Rooftop South",         location: "Rooftop — Section 1",   status: "offline", disabledReason: "Hardware failure — sensor error",           timestamp: "16:58 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-FP01", name: "Fire Pump Room",        location: "Basement — Level 2",    status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_SERVER_ROOM },
+  { id: "CAM-ST02", name: "Stairwell South",       location: "Building A — Stairs",   status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-MR01", name: "Mail Room",             location: "Floor 1 — North",       status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-SC01", name: "Security Office",       location: "Ground — Wing C",       status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_SERVER_ROOM },
+  { id: "CAM-EX01", name: "Emergency Exit A",      location: "Building A — East",     status: "alert",   alertType: "DOOR FORCED OPEN",    alertSeverity: "high",     timestamp: "17:18 PM", thumbnail: IMG_INDUSTRIAL },
+  // Page 3
+  { id: "CAM-EX02", name: "Emergency Exit B",      location: "Building B — West",     status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-EX03", name: "Emergency Exit C",      location: "Building C — South",    status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-WH01", name: "Warehouse Zone A",      location: "Warehouse — Bay 1",     status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-WH02", name: "Warehouse Zone B",      location: "Warehouse — Bay 2",     status: "alert",   alertType: "PPE VIOLATION",       alertSeverity: "high",     timestamp: "17:24 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-WH03", name: "Warehouse Zone C",      location: "Warehouse — Bay 3",     status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-P04",  name: "Parking Entrance",      location: "Exterior — Main Gate",  status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_PARKING    },
+  { id: "CAM-P05",  name: "Parking Exit",          location: "Exterior — Rear Gate",  status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_PARKING    },
+  { id: "CAM-TR01", name: "Training Room 1",       location: "Floor 3 — North",       status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-TR02", name: "Training Room 2",       location: "Floor 3 — South",       status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-RT02", name: "Rooftop East",          location: "Rooftop — Section 2",   status: "offline", disabledReason: "Network timeout — reconnecting",            timestamp: "16:45 PM", thumbnail: IMG_PARKING    },
+  { id: "CAM-CP01", name: "Control Room",          location: "Floor B1 — Central",    status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_SERVER_ROOM },
+  { id: "CAM-SP01", name: "Sports Hall",           location: "Floor B1 — West",       status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-MZ01", name: "Mezzanine Level",       location: "Floor 1.5 — Bridge",    status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-VS01", name: "Visitor Screening",     location: "Ground — Wing A",       status: "alert",   alertType: "CROWD DENSITY",       alertSeverity: "high",     timestamp: "17:25 PM", thumbnail: IMG_CROWD      },
+  { id: "CAM-DS01", name: "Dispatch Station",      location: "Warehouse — Office",    status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_INDUSTRIAL },
+  { id: "CAM-BK01", name: "Back of House",         location: "Kitchen — Level 1",     status: "online",                                                               timestamp: "17:30 PM", thumbnail: IMG_FIRE       },
 ];
 
 interface MockIncident {
@@ -2075,7 +2117,6 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
   // ── Pipeline selected — full VMS layout ───────────────────────────────────
   const criticalCount = MOCK_CAMERAS.filter(c => c.alertSeverity === "critical").length;
   const highCount     = MOCK_CAMERAS.filter(c => c.alertSeverity === "high").length;
-  const selectedCam   = MOCK_CAMERAS.find(c => c.id === selectedCamId) ?? MOCK_CAMERAS[0];
 
   // Grid layout SVG icons (Figma-matched: 1×1, 2×2, 3×3, 4×4)
   const GRID_ICONS: Record<number, React.ReactNode> = {
@@ -2100,12 +2141,13 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
   // 4-col: featured cam spans 2×2 (top-left), remaining 7 fill the rest
   // Grid: 4 cols × 3 rows = 12 cells; featured takes 4 cells; 8 remaining for 7 cams
   const totalCells = gridLayout === 1 ? 1 : gridLayout === 2 ? 4 : gridLayout === 3 ? 9 : 16;
-  const camCount   = gridLayout === 4 ? Math.min(MOCK_CAMERAS.length - 1, 15) : Math.min(MOCK_CAMERAS.length, totalCells);
-  const otherCams  = MOCK_CAMERAS.filter(c => c.id !== selectedCamId).slice(0, gridLayout === 4 ? 15 : totalCells - 1);
   const gridRows   = gridLayout === 1 ? 1 : gridLayout === 2 ? 2 : gridLayout === 3 ? 3 : 4;
   const gridCols   = gridLayout;
 
-  const totalPages = Math.ceil(MOCK_CAMERAS.length / Math.max(1, totalCells - (gridLayout === 4 ? 3 : 0)));
+  const totalPages = Math.ceil(MOCK_CAMERAS.length / totalCells);
+  const pagedCams  = MOCK_CAMERAS.slice((camPage - 1) * totalCells, camPage * totalCells);
+  const selectedCam = pagedCams[0] ?? MOCK_CAMERAS[0];
+  const otherCams   = pagedCams.slice(1);
 
   return (
     <div className="flex overflow-hidden" style={{ flex: 1, minHeight: 0, background: "#040f0b" }}>
