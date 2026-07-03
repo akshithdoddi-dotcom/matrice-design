@@ -1517,36 +1517,36 @@ function CameraTile({ cam, onClick, suppressAlerts = false }: {
 
         {cam.status === "offline" ? (
           /* ── Disabled / offline state ── */
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4"
-            style={{ background: "#060f0c" }}>
-            <div className="flex items-center justify-center w-10 h-10 rounded-full"
-              style={{ background: "rgba(71,85,105,0.18)", border: "1px solid rgba(71,85,105,0.35)" }}>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4"
+            style={{ background: "#0d1f1a", borderTop: "1px solid rgba(71,85,105,0.2)" }}>
+            <div className="flex items-center justify-center w-11 h-11 rounded-full"
+              style={{ background: "rgba(71,85,105,0.25)", border: "1.5px solid rgba(100,116,139,0.5)" }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"
-                style={{ color: "#475569" }}>
+                style={{ color: "#94A3B8" }}>
                 <path strokeLinecap="round" strokeLinejoin="round"
                   d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 7.5v9A2.25 2.25 0 004.5 18.75z" />
                 <line x1="3" y1="3" x2="21" y2="21" strokeLinecap="round" />
               </svg>
             </div>
             <div className="text-center">
-              <div className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ ...MONO, color: "#475569" }}>Camera Offline</div>
-              <div className="text-[9px] leading-snug max-w-[140px] text-center" style={{ ...INTER, color: "rgba(100,116,139,0.8)" }}>
+              <div className="text-[11px] font-bold uppercase tracking-widest mb-1.5" style={{ ...MONO, color: "#CBD5E1" }}>Camera Offline</div>
+              <div className="text-[10px] leading-relaxed max-w-[160px] text-center" style={{ ...INTER, color: "#94A3B8" }}>
                 {cam.disabledReason ?? "No signal from device"}
               </div>
             </div>
             <div className="flex gap-2">
               <button onClick={e => e.stopPropagation()}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-[3px] text-[9px] font-semibold uppercase tracking-wider transition-colors hover:brightness-110"
-                style={{ ...MONO, background: "rgba(71,85,105,0.22)", color: "#94A3B8", border: "1px solid rgba(71,85,105,0.35)" }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-[11px] font-semibold uppercase tracking-wider transition-colors hover:brightness-125"
+                style={{ ...INTER, background: "rgba(71,85,105,0.28)", color: "#CBD5E1", border: "1px solid rgba(100,116,139,0.45)" }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l5.654-4.654m5.647-5.648l3.03-2.496a2.652 2.652 0 013.536 3.536l-2.496 3.03m-5.64-5.64l2.496-3.03" />
                 </svg>
                 Troubleshoot
               </button>
               <button onClick={e => e.stopPropagation()}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-[3px] text-[9px] font-semibold uppercase tracking-wider transition-colors hover:brightness-110"
-                style={{ ...MONO, background: "rgba(0,149,109,0.15)", color: "#34D399", border: "1px solid rgba(0,149,109,0.3)" }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-[11px] font-semibold uppercase tracking-wider transition-colors hover:brightness-125"
+                style={{ ...INTER, background: "rgba(0,149,109,0.18)", color: "#34D399", border: "1px solid rgba(0,149,109,0.4)" }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                 </svg>
                 Restart
@@ -2100,9 +2100,9 @@ function LiveStreamingPage({ pipeline, projectPipelines, onSelectPipeline, isDar
   // 4-col: featured cam spans 2×2 (top-left), remaining 7 fill the rest
   // Grid: 4 cols × 3 rows = 12 cells; featured takes 4 cells; 8 remaining for 7 cams
   const totalCells = gridLayout === 1 ? 1 : gridLayout === 2 ? 4 : gridLayout === 3 ? 9 : 16;
-  const camCount   = gridLayout === 4 ? Math.min(MOCK_CAMERAS.length - 1, 14) : Math.min(MOCK_CAMERAS.length, totalCells - (gridLayout === 4 ? 3 : 0));
-  const otherCams  = MOCK_CAMERAS.filter(c => c.id !== selectedCamId).slice(0, gridLayout === 4 ? 11 : totalCells - 1);
-  const gridRows   = gridLayout === 1 ? 1 : gridLayout === 2 ? 2 : gridLayout === 3 ? 3 : 3;
+  const camCount   = gridLayout === 4 ? Math.min(MOCK_CAMERAS.length - 1, 15) : Math.min(MOCK_CAMERAS.length, totalCells);
+  const otherCams  = MOCK_CAMERAS.filter(c => c.id !== selectedCamId).slice(0, gridLayout === 4 ? 15 : totalCells - 1);
+  const gridRows   = gridLayout === 1 ? 1 : gridLayout === 2 ? 2 : gridLayout === 3 ? 3 : 4;
   const gridCols   = gridLayout;
 
   const totalPages = Math.ceil(MOCK_CAMERAS.length / Math.max(1, totalCells - (gridLayout === 4 ? 3 : 0)));
