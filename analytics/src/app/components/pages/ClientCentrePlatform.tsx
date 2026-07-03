@@ -254,8 +254,6 @@ function HubSidebar({ page, setPage, onPlatformSwitch, open = true }: {
   page: HubPage; setPage: (p: HubPage) => void; onPlatformSwitch?: (app: string) => void;
   open?: boolean;
 }) {
-  const [infraOpen, setInfraOpen] = useState(false);
-
   return (
     <aside className="flex flex-col shrink-0 border-r h-full overflow-y-auto overflow-x-hidden"
       style={{
@@ -271,22 +269,14 @@ function HubSidebar({ page, setPage, onPlatformSwitch, open = true }: {
       <nav className="flex-1 py-3 px-2 space-y-0.5">
         <NavBtn icon={FolderOpen}  label="Projects"        active={page === "projects"}       onClick={() => setPage("projects")} />
 
-        {/* Infrastructure accordion */}
-        <button onClick={() => setInfraOpen(o => !o)}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-[13px] font-medium"
-          style={{ ...INTER, color: (["compute","network","storage","databases"] as HubPage[]).includes(page) ? SB_ACTIVE_TEXT : SB_TEXT }}>
-          <Server className="w-4 h-4 shrink-0" style={{ color: SB_MUTED }} />
-          <span className="flex-1 text-left">Infrastructure</span>
-          {infraOpen ? <ChevronDown className="w-3.5 h-3.5" style={{ color: SB_MUTED }} /> : <ChevronRight className="w-3.5 h-3.5" style={{ color: SB_MUTED }} />}
-        </button>
-        {infraOpen && (
-          <div className="pl-4 space-y-0.5">
-            <NavBtn icon={Cpu}       label="Compute Clusters" active={page === "compute"}   onClick={() => setPage("compute")} />
-            <NavBtn icon={Network}   label="Network LANs"     active={page === "network"}   onClick={() => setPage("network")} />
-            <NavBtn icon={HardDrive} label="Storage Arrays"   active={page === "storage"}   onClick={() => setPage("storage")} />
-            <NavBtn icon={Database}  label="Databases"        active={page === "databases"} onClick={() => setPage("databases")} />
-          </div>
-        )}
+        {/* Infrastructure section heading */}
+        <div className="px-3 pt-4 pb-1">
+          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ ...MONO, color: SB_SECTION }}>Infrastructure</span>
+        </div>
+        <NavBtn icon={Cpu}       label="Compute Clusters" active={page === "compute"}   onClick={() => setPage("compute")} />
+        <NavBtn icon={Network}   label="Network LANs"     active={page === "network"}   onClick={() => setPage("network")} />
+        <NavBtn icon={HardDrive} label="Storage Arrays"   active={page === "storage"}   onClick={() => setPage("storage")} />
+        <NavBtn icon={Database}  label="Databases"        active={page === "databases"} onClick={() => setPage("databases")} />
 
         <NavBtn icon={Key}      label="Access Keys"     active={page === "access-keys"}      onClick={() => setPage("access-keys")} />
         <NavBtn icon={Mail}     label="My Invites"      active={page === "invites"}           onClick={() => setPage("invites")} />
