@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import {
   LayoutDashboard, Activity, FileText, BarChart3, Brain,
-  Camera, GitBranch, Cpu, Database, Key, Mail, Settings,
+  Camera, GitBranch, Cpu, Database, Key, Mail, Settings, HelpCircle,
   ChevronDown, ChevronRight, ChevronsUpDown, Bell, Search, Sun, Moon,
   LogOut, CheckCircle2, TrendingUp, Video, Layers, AlertTriangle,
   ArrowUpRight, ArrowDownRight, Plus, Circle, Check, MapPin,
@@ -278,17 +278,17 @@ function HubSidebar({ page, setPage, onPlatformSwitch, open = true }: {
         <NavBtn icon={HardDrive} label="Storage Arrays"   active={page === "storage"}   onClick={() => setPage("storage")} />
         <NavBtn icon={Database}  label="Databases"        active={page === "databases"} onClick={() => setPage("databases")} />
 
-        <NavBtn icon={Key}      label="Access Keys"     active={page === "access-keys"}      onClick={() => setPage("access-keys")} />
-        <NavBtn icon={Mail}     label="My Invites"      active={page === "invites"}           onClick={() => setPage("invites")} />
-        <NavBtn icon={Settings} label="Global Settings" active={page === "global-settings"}  onClick={() => setPage("global-settings")} />
+        {/* Account section heading */}
+        <div className="px-3 pt-4 pb-1">
+          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ ...MONO, color: SB_SECTION }}>Account</span>
+        </div>
+        <NavBtn icon={Key}  label="Access Keys" active={page === "access-keys"} onClick={() => setPage("access-keys")} />
+        <NavBtn icon={Mail} label="My Invites"  active={page === "invites"}      onClick={() => setPage("invites")} />
       </nav>
 
-      <div className="border-t px-2 py-3" style={{ borderColor: SB_BORDER }}>
-        <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-[12px]"
-          style={{ ...INTER, color: SB_TEXT }}>
-          <LogOut className="w-4 h-4" style={{ color: SB_MUTED }} />
-          Sign out
-        </button>
+      <div className="border-t px-2 py-2" style={{ borderColor: SB_BORDER }}>
+        <NavBtn icon={Settings}   label="Settings"       active={page === "global-settings"} onClick={() => setPage("global-settings")} />
+        <NavBtn icon={HelpCircle} label="Help & Support" active={false}                      onClick={() => {}} />
       </div>
     </aside>
   );
