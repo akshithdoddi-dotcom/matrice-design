@@ -3371,6 +3371,13 @@ export function ClientCentrePlatform({ onPlatformSwitch }: CCProps) {
   const [persona, setPersona]         = useState<"manager" | "monitor">("manager");
   const [isPipelineActive, setIsPipelineActive] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const FULLSCREEN_PAGES: WorkspacePage[] = ["live-streaming", "pipeline-settings"];
+  const navigateWorkspace = (page: WorkspacePage) => {
+    setWorkspacePage(page);
+    if (FULLSCREEN_PAGES.includes(page)) setSidebarOpen(false);
+  };
+
   const [selectedIncident, setSelectedIncident] = useState<MockIncident | null>(null);
   const [liveModalOpen, setLiveModalOpen] = useState(false);
 
@@ -3456,7 +3463,7 @@ export function ClientCentrePlatform({ onPlatformSwitch }: CCProps) {
       />
       <WorkspaceSidebar
         page={workspacePage}
-        setPage={setWorkspacePage}
+        setPage={navigateWorkspace}
         onBackToHub={backToHub}
         onPlatformSwitch={onPlatformSwitch}
         open={sidebarOpen}
