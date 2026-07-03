@@ -236,9 +236,13 @@ function NavBtn({ icon: Icon, label, active, onClick, badge }: {
 }) {
   return (
     <button onClick={onClick}
-      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-[13px] font-medium transition-colors"
-      style={{ ...INTER, color: active ? SB_ACTIVE_TEXT : SB_TEXT, background: active ? SB_ACTIVE_BG : "transparent" }}>
-      <Icon className="w-4 h-4 shrink-0" style={{ color: active ? SB_ACTIVE_TEXT : SB_MUTED }} />
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-[13px] font-medium transition-colors ${
+        active
+          ? "text-white"
+          : "text-white/70 hover:text-white hover:bg-white/5"
+      }`}
+      style={{ ...INTER, background: active ? SB_ACTIVE_BG : undefined }}>
+      <Icon className="w-4 h-4 shrink-0" style={{ color: active ? SB_ACTIVE_TEXT : undefined }} />
       <span className="flex-1 text-left">{label}</span>
       {badge !== undefined && badge > 0 && (
         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#EF444425", color: "#EF4444", ...MONO }}>{badge}</span>
@@ -271,7 +275,7 @@ function HubSidebar({ page, setPage, onPlatformSwitch, open = true }: {
 
         {/* Infrastructure section heading */}
         <div className="px-3 pt-4 pb-1">
-          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ ...MONO, color: SB_SECTION }}>Infrastructure</span>
+          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ ...INTER, color: SB_SECTION }}>Infrastructure</span>
         </div>
         <NavBtn icon={Cpu}       label="Compute Clusters" active={page === "compute"}   onClick={() => setPage("compute")} />
         <NavBtn icon={Network}   label="Network LANs"     active={page === "network"}   onClick={() => setPage("network")} />
@@ -280,7 +284,7 @@ function HubSidebar({ page, setPage, onPlatformSwitch, open = true }: {
 
         {/* Account section heading */}
         <div className="px-3 pt-4 pb-1">
-          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ ...MONO, color: SB_SECTION }}>Account</span>
+          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ ...INTER, color: SB_SECTION }}>Account</span>
         </div>
         <NavBtn icon={Key}  label="Access Keys" active={page === "access-keys"} onClick={() => setPage("access-keys")} />
         <NavBtn icon={Mail} label="My Invites"  active={page === "invites"}      onClick={() => setPage("invites")} />
