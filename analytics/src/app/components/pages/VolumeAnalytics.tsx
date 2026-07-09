@@ -1503,19 +1503,19 @@ const PriorityMetrics = () => {
     if (status === 'critical') return {
       border: 'rgb(231,0,11)', bg: 'rgb(255,229,231)',
       shadow: 'rgba(231,0,11,0.1) 0px 0px 6px 1px, rgba(0,0,0,0.04) 0px 1px 3px',
-      badge: { bg: 'rgba(231,0,11,0.14)', color: 'rgb(231,0,11)', label: 'CRITICAL' },
+      badge: { bg: 'rgba(231,0,11,0.14)', color: 'rgb(231,0,11)', label: 'TODAY' },
       divider: 'rgba(231,0,11,0.22)', value: '#0f172a',
     };
     if (status === 'warning') return {
       border: 'rgb(217,119,6)', bg: 'rgb(255,251,235)',
       shadow: 'rgba(217,119,6,0.1) 0px 0px 6px 1px, rgba(0,0,0,0.04) 0px 1px 3px',
-      badge: { bg: 'rgba(217,119,6,0.14)', color: 'rgb(217,119,6)', label: 'WARNING' },
+      badge: { bg: 'rgba(217,119,6,0.14)', color: 'rgb(217,119,6)', label: 'TODAY' },
       divider: 'rgba(217,119,6,0.22)', value: '#0f172a',
     };
     return {
       border: 'rgb(20,184,166)', bg: '#ffffff',
       shadow: 'rgba(0,0,0,0.04) 0px 1px 3px',
-      badge: { bg: 'rgba(20,184,166,0.14)', color: 'rgb(20,184,166)', label: 'LIVE' },
+      badge: { bg: 'rgba(20,184,166,0.14)', color: 'rgb(20,184,166)', label: 'TODAY' },
       divider: '#e5e7eb', value: '#0f172a',
     };
   };
