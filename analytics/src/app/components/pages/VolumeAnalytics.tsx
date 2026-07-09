@@ -399,113 +399,173 @@ const TimeRangeFilter = () => (
 
 // New Components for Panel-based Layout
 
+// Inline Type A stat card for use inside application zone panels
+const ZoneStatCard = ({ metric }: { metric: ApplicationMetric }) => {
+  const isNeg = metric.trend < 0;
+  const isCrit = metric.status === 'critical';
+  const isWarn = metric.status === 'warning';
+  const borderColor = isCrit ? 'rgb(231,0,11)' : isWarn ? 'rgb(217,119,6)' : '#e5e7eb';
+  const bg = isCrit ? 'rgb(255,229,231)' : isWarn ? 'rgb(255,251,235)' : '#ffffff';
+  const badgeBg = isCrit ? 'rgba(231,0,11,0.14)' : isWarn ? 'rgba(217,119,6,0.14)' : 'rgba(20,184,166,0.14)';
+  const badgeColor = isCrit ? 'rgb(231,0,11)' : isWarn ? 'rgb(217,119,6)' : 'rgb(20,184,166)';
+  const badgeLabel = isCrit ? 'CRITICAL' : isWarn ? 'WARNING' : 'LIVE';
+  const dividerColor = isCrit ? 'rgba(231,0,11,0.22)' : isWarn ? 'rgba(217,119,6,0.22)' : '#e5e7eb';
+  const valueColor = isCrit ? 'rgb(231,0,11)' : isWarn ? 'rgb(217,119,6)' : '#0f172a';
+  const trendBg = isNeg ? 'rgba(231,0,11,0.12)' : 'rgba(0,149,109,0.12)';
+  const trendColor = isNeg ? 'rgb(231,0,11)' : 'rgb(0,149,109)';
+
+  return (
+    <div className="w-full rounded-[4px] flex flex-col select-none h-full"
+      style={{ border: `1px solid ${borderColor}`, background: bg }}>
+      <div className="px-3 pt-3 flex items-center justify-between flex-shrink-0">
+        <span className="text-[10px] font-bold uppercase tracking-[0.5px] leading-none text-[#475569] truncate pr-1">
+          {metric.metricName}
+        </span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-1.5 py-[3px] rounded-full flex-shrink-0"
+          style={{ backgroundColor: badgeBg, color: badgeColor }}>
+          {badgeLabel}
+        </span>
+      </div>
+      <div className="px-3 pt-2 pb-3 flex items-end justify-between gap-2 flex-1">
+        <div className="flex flex-col gap-[5px]">
+          <div className="font-mono font-bold tabular-nums leading-none" style={{ fontSize: 24, color: valueColor }}>
+            {typeof metric.currentValue === 'number' && metric.currentValue % 1 !== 0
+              ? metric.currentValue.toFixed(1)
+              : metric.currentValue}
+          </div>
+          <div className="text-[11px] text-[#64748b]">{metric.unit}</div>
+        </div>
+        <div className="flex flex-col px-[8px] py-[6px] rounded-[6px] flex-shrink-0"
+          style={{ backgroundColor: trendBg }}>
+          <div className="flex items-center gap-[3px] font-mono font-bold leading-none"
+            style={{ fontSize: 12, color: trendColor }}>
+            {isNeg ? '↓' : '↑'} {Math.abs(metric.trend)}%
+          </div>
+        </div>
+      </div>
+      <div style={{ height: 1, backgroundColor: dividerColor, margin: '0 12px' }} />
+      <div className="px-3 py-2 flex items-center gap-1.5">
+        <span className="text-[9px] font-bold uppercase tracking-[0.5px] text-[#94a3b8] flex-shrink-0">Live</span>
+        <span className="text-[10px] text-[#475569] truncate">Real-time value</span>
+      </div>
+    </div>
+  );
+};
+
 const MetricMiniChart = ({ metric }: { metric: ApplicationMetric }) => {
-  const interval = metric.data.length > 5 ? Math.ceil(metric.data.length / 5) - 1 : 0;
-  
-  // Determine color based on trend instead of status for better visual clarity
+  const isSmall = metric.data.length <= 5;
+
   const getChartColor = () => {
     if (metric.status === 'critical') return '#EF4444';
     if (metric.status === 'warning') return '#F59E0B';
-    // Use trend to determine color for normal status
-    if (metric.trend < 0) return '#EF4444';  // Red for negative trends
-    return '#00775B';  // Teal for positive/neutral trends
+    if (metric.trend < 0) return '#EF4444';
+    return '#00775B';
   };
 
   const color = getChartColor();
+  const gradId = `grad-mmchart-${metric.metricName.replace(/\s+/g, '-')}`;
 
   const renderChart = () => {
-    const commonProps = { data: metric.data, margin: { top: 4, right: 4, left: 4, bottom: 4 } };
-    
-    switch (metric.chartType) {
-      case 'line':
-        return (
-          <LineChart {...commonProps}>
-            <Tooltip 
-              cursor={false}
-              contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
-              labelStyle={{ display: 'none' }}
-            />
-            <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
-          </LineChart>
-        );
-      case 'area':
-        return (
-          <AreaChart {...commonProps}>
-            <defs>
-              <linearGradient id={`grad-${metric.metricName}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.2}/>
-                <stop offset="100%" stopColor={color} stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <Tooltip 
-              cursor={false}
-              contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
-              labelStyle={{ display: 'none' }}
-            />
-            <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#grad-${metric.metricName})`} isAnimationActive={false} />
-          </AreaChart>
-        );
-      case 'bar':
-      default:
-        return (
-          <BarChart {...commonProps}>
-            <Tooltip 
-              cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
-              contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
-              labelStyle={{ display: 'none' }}
-            />
-            <Bar dataKey="value" fill={color} radius={[2, 2, 0, 0]} isAnimationActive={false} />
-          </BarChart>
-        );
+    const commonProps = { data: metric.data, margin: { top: 8, right: 8, left: 8, bottom: 4 } };
+
+    // For small data on bar: narrow bars centered via large barCategoryGap
+    if (metric.chartType === 'bar') {
+      return (
+        <BarChart {...commonProps} barCategoryGap={isSmall ? '40%' : '20%'}>
+          <XAxis dataKey="time" axisLine={false} tickLine={false}
+            tick={{ fontSize: 9, fill: '#9ca3af' }} interval={0} height={14} />
+          <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+            contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
+            labelStyle={{ display: 'none' }} />
+          <Bar dataKey="value" fill={color} radius={[2, 2, 0, 0]}
+            isAnimationActive={false} barSize={isSmall ? 20 : undefined} />
+        </BarChart>
+      );
     }
+
+    // For small data on line/area: dot+area fallback
+    if (isSmall) {
+      return (
+        <AreaChart {...commonProps}>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="time" axisLine={false} tickLine={false}
+            tick={{ fontSize: 9, fill: '#9ca3af' }} interval={0} height={14} />
+          <Tooltip cursor={false}
+            contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
+            labelStyle={{ display: 'none' }} />
+          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2}
+            fill={`url(#${gradId})`} isAnimationActive={false}
+            dot={{ r: 4, fill: color, stroke: '#fff', strokeWidth: 2 }}
+            label={{ position: 'top', fontSize: 10, fontWeight: 'bold', fill: color }} />
+        </AreaChart>
+      );
+    }
+
+    if (metric.chartType === 'area') {
+      return (
+        <AreaChart {...commonProps}>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Tooltip cursor={false}
+            contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
+            labelStyle={{ display: 'none' }} />
+          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2}
+            fill={`url(#${gradId})`} isAnimationActive={false} />
+        </AreaChart>
+      );
+    }
+
+    return (
+      <LineChart {...commonProps}>
+        <Tooltip cursor={false}
+          contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
+          labelStyle={{ display: 'none' }} />
+        <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2}
+          dot={false} isAnimationActive={false} />
+      </LineChart>
+    );
   };
 
   return (
     <div className={cn(
-      "bg-white p-3 rounded-lg border flex flex-col transition-all duration-200 hover:shadow-sm group relative overflow-hidden",
+      "bg-white p-3 rounded-lg border flex flex-col transition-all duration-200 hover:shadow-sm relative overflow-hidden",
       metric.status === 'critical' ? "border-red-300 bg-red-50/30" :
       metric.status === 'warning' ? "border-amber-300 bg-amber-50/30" :
       metric.trend < 0 ? "border-red-200 bg-red-50/20" :
       "border-teal-200 bg-teal-50/20",
-      "h-[120px]" // Fixed height constraint
+      "h-[130px]"
     )}>
-      {/* Status Indicator */}
       {(metric.status === 'critical' || metric.status === 'warning') && (
         <div className="absolute top-2 right-2">
-          <AlertTriangle className={cn(
-            "w-3 h-3 animate-pulse",
-            metric.status === 'critical' ? "text-red-500" : "text-amber-500"
-          )} />
+          <AlertTriangle className={cn("w-3 h-3 animate-pulse",
+            metric.status === 'critical' ? "text-red-500" : "text-amber-500")} />
         </div>
       )}
-
-      {/* Metric Header */}
-      <div className="flex-shrink-0 mb-2">
-        <h4 className="text-[10px] font-bold uppercase text-neutral-600 truncate mb-1">
-          {metric.metricName}
-        </h4>
-        <div className="flex items-baseline gap-2">
-          <span className={cn(
-            "text-2xl font-mono font-bold leading-none",
+      <div className="flex-shrink-0 mb-1">
+        <h4 className="text-[10px] font-bold uppercase text-neutral-600 truncate mb-0.5">{metric.metricName}</h4>
+        <div className="flex items-baseline gap-1.5">
+          <span className={cn("text-xl font-mono font-bold leading-none",
             metric.status === 'critical' ? "text-red-600" :
-            metric.status === 'warning' ? "text-amber-600" :
-            "text-neutral-900"
-          )}>
-            {typeof metric.currentValue === 'number' && metric.currentValue % 1 !== 0 
-              ? metric.currentValue.toFixed(1) 
-              : metric.currentValue}
+            metric.status === 'warning' ? "text-amber-600" : "text-neutral-900")}>
+            {typeof metric.currentValue === 'number' && metric.currentValue % 1 !== 0
+              ? metric.currentValue.toFixed(1) : metric.currentValue}
           </span>
           <span className="text-[10px] text-neutral-500 font-medium">{metric.unit}</span>
-          <span className={cn(
-            "text-[10px] font-bold font-mono ml-auto",
-            metric.trend > 0 ? "text-[#00956D]" : metric.trend < 0 ? "text-red-500" : "text-neutral-400"
-          )}>
+          <span className={cn("text-[10px] font-bold font-mono ml-auto",
+            metric.trend > 0 ? "text-[#00956D]" : metric.trend < 0 ? "text-red-500" : "text-neutral-400")}>
             {metric.trend > 0 ? "+" : ""}{metric.trend}%
           </span>
         </div>
       </div>
-
-      {/* Chart */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           {renderChart()}
@@ -1456,6 +1516,27 @@ const PriorityMetrics = () => {
     }
   };
 
+  const getStatCardColors = (status: string) => {
+    if (status === 'critical') return {
+      border: 'rgb(231,0,11)', bg: 'rgb(255,229,231)',
+      shadow: 'rgba(231,0,11,0.1) 0px 0px 6px 1px, rgba(0,0,0,0.04) 0px 1px 3px',
+      badge: { bg: 'rgba(231,0,11,0.14)', color: 'rgb(231,0,11)', label: 'CRITICAL' },
+      divider: 'rgba(231,0,11,0.22)', value: '#0f172a',
+    };
+    if (status === 'warning') return {
+      border: 'rgb(217,119,6)', bg: 'rgb(255,251,235)',
+      shadow: 'rgba(217,119,6,0.1) 0px 0px 6px 1px, rgba(0,0,0,0.04) 0px 1px 3px',
+      badge: { bg: 'rgba(217,119,6,0.14)', color: 'rgb(217,119,6)', label: 'WARNING' },
+      divider: 'rgba(217,119,6,0.22)', value: '#0f172a',
+    };
+    return {
+      border: 'rgb(20,184,166)', bg: '#ffffff',
+      shadow: 'rgba(0,0,0,0.04) 0px 1px 3px',
+      badge: { bg: 'rgba(20,184,166,0.14)', color: 'rgb(20,184,166)', label: 'LIVE' },
+      divider: '#e5e7eb', value: '#0f172a',
+    };
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -1463,7 +1544,7 @@ const PriorityMetrics = () => {
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-600">Priority Metrics</h3>
           <span className="text-[10px] text-neutral-400 font-mono">Auto-sorted by severity</span>
         </div>
-        <button 
+        <button
           onClick={() => setIsCustomizing(!isCustomizing)}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors text-[10px] font-bold text-neutral-600"
         >
@@ -1471,100 +1552,62 @@ const PriorityMetrics = () => {
           {isCustomizing ? 'Done' : 'Customize'}
         </button>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-        {displayedMetrics.map((metric) => (
-          <div 
-            key={metric.id}
-            className={cn(
-              "relative rounded-sm border-2 p-3 transition-all hover:shadow-lg cursor-pointer group overflow-hidden",
-              `bg-gradient-to-br ${metric.bgGradient}`,
-              metric.borderColor,
-              metric.status === 'critical' && "shadow-lg"
-            )}
-            style={{
-              animation: metric.status === 'critical' ? 'pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
-            }}
-          >
-            {/* Customization Handle */}
-            {isCustomizing && (
-              <div className="absolute top-1 left-1 bg-white p-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                <GripVertical className="w-3 h-3 text-neutral-400 cursor-grab active:cursor-grabbing" />
-              </div>
-            )}
-            
-            {/* Alert Indicator */}
-            {(metric.status === 'critical' || metric.status === 'warning') && (
-              <div className="absolute top-2 right-2">
-                <div className={cn(
-                  "relative",
-                  metric.status === 'critical' && "animate-pulse"
-                )}>
-                  <Bell className={cn(
-                    "w-3.5 h-3.5",
-                    metric.status === 'critical' ? "text-red-600" : "text-amber-600"
-                  )} />
-                  {metric.status === 'critical' && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                  )}
-                </div>
-              </div>
-            )}
-            
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-bold text-neutral-900 truncate">{metric.location}</h4>
-                <span className="text-[9px] text-neutral-500 uppercase tracking-wider">{getMetricTypeLabel(metric.type)}</span>
-              </div>
-            </div>
-            
-            <div className="space-y-1.5">
-              <div className="flex items-baseline gap-1.5">
-                <span className={cn(
-                  "text-2xl font-mono font-bold",
-                  metric.status === 'critical' ? "text-red-600" :
-                  metric.status === 'warning' ? "text-amber-600" :
-                  metric.color === 'teal' ? "text-teal-600" :
-                  metric.color === 'purple' ? "text-purple-600" :
-                  "text-green-600"
-                )}>{metric.value}</span>
-                <span className="text-xs text-neutral-600 font-medium">{metric.unit}</span>
-              </div>
-              
-              {/* Progress Bar for visual feedback */}
-              {metric.type === 'capacity' && (
-                <div className="w-full h-2 bg-white/50 rounded-full overflow-hidden">
-                  <div 
-                    className={cn(
-                      "h-full transition-all duration-500 rounded-full",
-                      metric.status === 'critical' ? "bg-red-500" :
-                      metric.status === 'warning' ? "bg-amber-500" :
-                      "bg-teal-500"
-                    )}
-                    style={{ width: `${metric.value}%` }}
-                  />
-                </div>
-              )}
-              
-              {/* Threshold indicator */}
-              <div className="text-[9px] text-neutral-500 flex items-center gap-1">
-                <span className={cn(
-                  "font-mono",
-                  metric.value > metric.threshold ? "text-red-600 font-bold" : ""
-                )}>
-                  Threshold: {metric.threshold}{metric.unit}
+        {displayedMetrics.map((metric) => {
+          const c = getStatCardColors(metric.status);
+          const pctDiff = Math.round(((metric.value - metric.threshold) / metric.threshold) * 100);
+          const isOver = metric.value > metric.threshold;
+          return (
+            <div
+              key={metric.id}
+              className="w-full rounded-[4px] flex flex-col cursor-pointer select-none transition-all duration-200 hover:shadow-md"
+              style={{ border: `1px solid ${c.border}`, background: c.bg, boxShadow: c.shadow }}
+            >
+              {/* Label + badge */}
+              <div className="px-4 pt-4 flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-[0.5px] leading-none text-[#475569]">
+                  {getMetricTypeLabel(metric.type)}
                 </span>
-                {metric.value > metric.threshold && <AlertTriangle className="w-2.5 h-2.5 text-red-600" />}
+                <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-2 py-[3px] rounded-full flex-shrink-0"
+                  style={{ backgroundColor: c.badge.bg, color: c.badge.color }}>
+                  {c.badge.label}
+                </span>
+              </div>
+              {/* Value + trend */}
+              <div className="px-4 pt-3 pb-4 flex items-end justify-between gap-4">
+                <div className="flex flex-col gap-[7px]">
+                  <div className="font-mono font-bold tabular-nums leading-none" style={{ fontSize: 28, color: c.value }}>
+                    {metric.value}
+                    <span className="text-[14px] font-medium text-[#64748b] ml-1">{metric.unit}</span>
+                  </div>
+                  <div className="text-[12px] text-[#64748b]">{metric.location}</div>
+                </div>
+                <div className="flex flex-col px-[10px] py-[8px] rounded-[6px] flex-shrink-0"
+                  style={{ backgroundColor: isOver ? 'rgba(231,0,11,0.12)' : 'rgba(0,149,109,0.12)' }}>
+                  <div className="flex items-center gap-[4px] font-mono font-bold leading-none"
+                    style={{ fontSize: 13, color: isOver ? 'rgb(231,0,11)' : 'rgb(0,149,109)' }}>
+                    {isOver ? '↑' : '↓'} {Math.abs(pctDiff)}%
+                  </div>
+                  <div className="text-[10px] font-normal mt-[5px] leading-none text-[#94a3b8]">vs Threshold</div>
+                </div>
+              </div>
+              {/* Divider */}
+              <div style={{ height: 1, backgroundColor: c.divider, margin: '0 16px' }} />
+              {/* Footer */}
+              <div className="px-4 py-3 flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.5px] text-[#94a3b8] flex-shrink-0">Threshold</span>
+                <span className="text-[11px] text-[#475569] truncate">{metric.threshold}{metric.unit}</span>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-      
+
       {isCustomizing && (
         <div className="bg-blue-50 border border-blue-200 rounded p-3 text-[10px] text-blue-800">
-          <p className="font-bold mb-1">💡 Customization Mode</p>
-          <p>Drag cards to reorder. Metrics exceeding thresholds will automatically appear with alerts.</p>
+          <p className="font-bold mb-1">Customization Mode</p>
+          <p>Metrics exceeding thresholds appear with alerts, auto-sorted by severity.</p>
         </div>
       )}
     </div>
@@ -1740,11 +1783,18 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
                       </div>
                     </div>
 
-                    {/* 2x2 Grid of Metrics for Current Camera */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {currentCamera.metrics.slice(0, 4).map((metric, idx) => (
-                        <MetricMiniChart key={idx} metric={metric} />
+                    {/* 2 charts + 1 stat card — handles apps with 2, 3, or 4 metrics */}
+                    <div className="flex gap-2 h-[130px]">
+                      {currentCamera.metrics.slice(0, 2).map((metric, idx) => (
+                        <div key={idx} className="flex-1 min-w-0">
+                          <MetricMiniChart metric={metric} />
+                        </div>
                       ))}
+                      {currentCamera.metrics.length >= 3 && (
+                        <div className="w-[140px] flex-shrink-0">
+                          <ZoneStatCard metric={currentCamera.metrics[2]} />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
