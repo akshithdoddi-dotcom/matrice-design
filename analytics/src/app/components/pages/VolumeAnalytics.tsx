@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, ComposedChart, 
   AreaChart, Area, LineChart, ReferenceLine, PieChart, Pie, Cell
@@ -430,11 +430,13 @@ const ZoneStatCard = ({ metric }: { metric: ApplicationMetric }) => {
       {/* Value + trend */}
       <div className="px-3 pt-2 pb-3 flex items-end justify-between gap-2 flex-1">
         <div className="flex flex-col gap-[5px]">
-          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: 22 }}>
-            {typeof metric.currentValue === 'number' && metric.currentValue % 1 !== 0
-              ? metric.currentValue.toFixed(1) : metric.currentValue}
+          <div className="flex items-baseline gap-1.5">
+            <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: 22 }}>
+              {typeof metric.currentValue === 'number' && metric.currentValue % 1 !== 0
+                ? metric.currentValue.toFixed(1) : metric.currentValue}
+            </div>
+            {metric.unit && <span className="text-[10px] text-[#64748b]">{metric.unit}</span>}
           </div>
-          <div className="text-[10px] text-[#64748b]">{metric.unit}</div>
         </div>
         <div className="flex flex-col px-[8px] py-[6px] rounded-[6px] flex-shrink-0"
           style={{ backgroundColor: trendBg }}>
@@ -472,14 +474,25 @@ const MetricMiniChart = ({ metric }: { metric: ApplicationMetric }) => {
   const renderChart = () => {
     const commonProps = { data: metric.data, margin: { top: 6, right: 6, left: 6, bottom: 2 } };
 
+    const gradDef = (
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.22} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+    );
+    const tooltipProps = {
+      cursor: false as const,
+      contentStyle: { background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' },
+      labelStyle: { display: 'none' },
+    };
+
     if (metric.chartType === 'bar') {
       return (
         <BarChart {...commonProps} barCategoryGap={isSmall ? '40%' : '20%'}>
-          <XAxis dataKey="time" axisLine={false} tickLine={false}
-            tick={{ fontSize: 9, fill: '#9ca3af' }} interval={0} height={14} />
-          <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-            contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
-            labelStyle={{ display: 'none' }} />
+          <XAxis dataKey="time" axisLine={false} tickLine={false} tick={false} height={0} />
+          <Tooltip {...tooltipProps} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
           <Bar dataKey="value" fill={color} radius={[2, 2, 0, 0]}
             isAnimationActive={false} barSize={isSmall ? 20 : undefined} />
         </BarChart>
@@ -489,17 +502,9 @@ const MetricMiniChart = ({ metric }: { metric: ApplicationMetric }) => {
     if (isSmall) {
       return (
         <AreaChart {...commonProps}>
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.25} />
-              <stop offset="100%" stopColor={color} stopOpacity={0.02} />
-            </linearGradient>
-          </defs>
-          <XAxis dataKey="time" axisLine={false} tickLine={false}
-            tick={{ fontSize: 9, fill: '#9ca3af' }} interval={0} height={14} />
-          <Tooltip cursor={false}
-            contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
-            labelStyle={{ display: 'none' }} />
+          {gradDef}
+          <XAxis dataKey="time" axisLine={false} tickLine={false} tick={false} height={0} />
+          <Tooltip {...tooltipProps} />
           <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2}
             fill={`url(#${gradId})`} isAnimationActive={false}
             dot={{ r: 4, fill: color, stroke: '#fff', strokeWidth: 2 }}
@@ -508,32 +513,14 @@ const MetricMiniChart = ({ metric }: { metric: ApplicationMetric }) => {
       );
     }
 
-    if (metric.chartType === 'area') {
-      return (
-        <AreaChart {...commonProps}>
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Tooltip cursor={false}
-            contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
-            labelStyle={{ display: 'none' }} />
-          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2}
-            fill={`url(#${gradId})`} isAnimationActive={false} />
-        </AreaChart>
-      );
-    }
-
+    // area, line — all use AreaChart with gradient fill for visual consistency
     return (
-      <LineChart {...commonProps}>
-        <Tooltip cursor={false}
-          contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '10px', padding: '4px 8px' }}
-          labelStyle={{ display: 'none' }} />
-        <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2}
-          dot={false} isAnimationActive={false} />
-      </LineChart>
+      <AreaChart {...commonProps}>
+        {gradDef}
+        <Tooltip {...tooltipProps} />
+        <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2}
+          fill={`url(#${gradId})`} isAnimationActive={false} dot={false} />
+      </AreaChart>
     );
   };
 
@@ -1678,7 +1665,6 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
         <Collapsible.Trigger asChild>
           <button className="w-full px-4 py-3 flex items-center justify-between bg-neutral-50 hover:bg-neutral-100 transition-colors group">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">{panel.icon}</span>
               <div className="text-left">
                 <h3 className={cn(
                   "text-sm font-bold transition-colors flex items-center gap-2",
@@ -1726,10 +1712,10 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
                   <div 
                     key={zoneName}
                     onClick={() => setSelectedLocation(currentCamera)}
-                    className="rounded border border-teal-300 p-4 bg-gradient-to-br from-green-50 to-teal-50 hover:shadow-md transition-all cursor-pointer hover:border-teal-400 active:scale-[0.98]"
+                    className="rounded border border-neutral-200 p-4 bg-[#F8FAFC] hover:shadow-md transition-all cursor-pointer hover:border-neutral-300 active:scale-[0.98]"
                   >
                     {/* Zone Header with Camera Name */}
-                    <div className="mb-3 pb-2 border-b border-teal-200">
+                    <div className="mb-3 pb-2 border-b border-neutral-200">
                       <h4 className="text-xs font-bold text-neutral-700 mb-1 flex items-center gap-2">
                         <Pin className="w-3.5 h-3.5 text-[#00775B]" />
                         {zoneName}
@@ -1750,13 +1736,13 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
                         
                         {/* Camera Navigation Chevrons */}
                         {totalCameras > 1 && (
-                          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded border border-teal-300 shadow-sm px-1 py-1">
+                          <div className="flex items-center gap-1 bg-white rounded border border-neutral-200 shadow-sm px-1 py-1">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handlePrevCamera(zoneName, totalCameras);
                               }}
-                              className="w-6 h-6 flex items-center justify-center hover:bg-teal-100 rounded transition-colors"
+                              className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 rounded transition-colors"
                               title="Previous camera"
                             >
                               <ChevronLeft className="w-4 h-4 text-[#00775B]" strokeWidth={2.5} />
@@ -1769,7 +1755,7 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
                                 e.stopPropagation();
                                 handleNextCamera(zoneName, totalCameras);
                               }}
-                              className="w-6 h-6 flex items-center justify-center hover:bg-teal-100 rounded transition-colors"
+                              className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 rounded transition-colors"
                               title="Next camera"
                             >
                               <ChevronRight className="w-4 h-4 text-[#00775B]" strokeWidth={2.5} />
@@ -2209,6 +2195,141 @@ const ZoneROITable = () => {
    );
 };
 
+// Status bar for monitoring view — Quality Analytics style + multi-select app filter
+interface MonitoringStatusBarProps {
+  selectedApplications: string[];
+  onToggle: (appId: string) => void;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+}
+const MonitoringStatusBar = ({ selectedApplications, onToggle, onSelectAll, onDeselectAll }: MonitoringStatusBarProps) => {
+  const [isAppOpen, setIsAppOpen] = useState(false);
+  const [secondsAgo, setSecondsAgo] = useState(3);
+  const appRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const id = setInterval(() => setSecondsAgo(s => s >= 59 ? 2 : s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (appRef.current && !appRef.current.contains(e.target as Node)) setIsAppOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+
+  const allSelected = selectedApplications.length === APPLICATION_MONITORING_DATA.length;
+
+  return (
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white border border-neutral-200 rounded-md px-4 py-3 shadow-sm">
+      {/* Left: breadcrumb + live indicator */}
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-neutral-50 border border-neutral-200 shrink-0">
+          <span className="text-[10px] text-neutral-400 font-medium">Project:</span>
+          <span className="text-[11px] font-bold text-neutral-700">Matrice AI</span>
+        </div>
+        <ChevronRight className="w-3.5 h-3.5 text-neutral-300 shrink-0" />
+        <div className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-[#E5FFF9] border border-[#00775B]/20 shrink-0">
+          <span className="text-[10px] text-[#00775B]/70 font-medium">Pipeline:</span>
+          <span className="text-[11px] font-bold text-[#00775B]">Matrice Inference v2</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-500 shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#00775B] animate-pulse" />
+          <span>Updated {secondsAgo}s ago</span>
+        </div>
+      </div>
+
+      {/* Right: app multi-select + time pills + clock */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Multi-select app dropdown */}
+        <div className="relative" ref={appRef}>
+          <button
+            onClick={() => setIsAppOpen(v => !v)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-sm border text-xs font-bold transition-all bg-white text-neutral-700 hover:border-neutral-300",
+              isAppOpen ? "border-[#00775B]" : "border-neutral-200"
+            )}
+          >
+            <span>
+              {allSelected ? "All Apps" : `${selectedApplications.length} App${selectedApplications.length !== 1 ? 's' : ''}`}
+            </span>
+            <ChevronDown className={cn("w-3 h-3 text-neutral-400 transition-transform shrink-0", isAppOpen && "rotate-180")} />
+          </button>
+
+          {isAppOpen && (
+            <div className="absolute top-full right-0 mt-1 w-56 rounded-sm border border-neutral-200 bg-white shadow-lg z-50 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-100">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">Applications</span>
+                  <button
+                    onClick={allSelected ? onDeselectAll : onSelectAll}
+                    className="text-[10px] font-bold text-[#00775B] hover:underline"
+                  >
+                    {allSelected ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="py-1 max-h-[280px] overflow-y-auto">
+                  {APPLICATION_MONITORING_DATA.map(app => {
+                    const selected = selectedApplications.includes(app.applicationId);
+                    return (
+                      <div
+                        key={app.applicationId}
+                        onClick={() => onToggle(app.applicationId)}
+                        className="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer text-xs transition-colors hover:bg-neutral-50"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className={cn(
+                            "w-3.5 h-3.5 rounded-[2px] border flex items-center justify-center flex-shrink-0 transition-colors",
+                            selected ? "bg-[#00775B] border-[#00775B]" : "border-neutral-300"
+                          )}>
+                            {selected && <Check className="w-2.5 h-2.5 text-white" />}
+                          </div>
+                          <span className={cn("font-medium truncate", selected ? "text-[#00775B]" : "text-neutral-700")}>
+                            {app.applicationName}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {app.activeAlerts > 0 && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-red-100 text-red-600">
+                              {app.activeAlerts}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-neutral-400 font-mono">{app.totalCameras}c</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+          )}
+        </div>
+
+        {/* Time range pills */}
+        <div className="flex items-center rounded-sm border border-neutral-200 bg-white p-0.5">
+          {["1M", "1H", "1D", "1W", "1MO"].map((r, i) => (
+            <button key={r}
+              className={cn(
+                "px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded-sm transition-all",
+                i === 2 ? "bg-[#00775B] text-white shadow-sm" : "text-neutral-500 hover:bg-neutral-50"
+              )}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+
+        {/* Clock badge */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-neutral-200 bg-neutral-50 text-[10px] font-mono text-neutral-500">
+          <Clock className="w-3 h-3 shrink-0" />
+          <span>Since 00:00 today</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main Page Component ---
 
 export const VolumeAnalytics = ({ persona }: { persona: Persona }) => {
@@ -2269,60 +2390,15 @@ export const VolumeAnalytics = ({ persona }: { persona: Persona }) => {
       {/* --- Monitoring Staff View --- */}
       {persona === "monitoring" && (
         <div className="space-y-6">
-           {/* 1. Status Ticker */}
-           <div className="rounded-sm overflow-hidden shadow-sm border border-neutral-200">
-              <StatusTicker />
-           </div>
+           {/* 1. Status bar (Quality Analytics style) with multi-select app filter */}
+           <MonitoringStatusBar
+             selectedApplications={selectedApplications}
+             onToggle={toggleApplication}
+             onSelectAll={() => setSelectedApplications(APPLICATION_MONITORING_DATA.map(a => a.applicationId))}
+             onDeselectAll={() => setSelectedApplications([])}
+           />
 
-           {/* 2. Application Filter */}
-           <div className="bg-white p-4 rounded-sm border border-neutral-200 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-600 flex items-center gap-2">
-                  <Filter className="w-3.5 h-3.5" />
-                  Application Filter
-                </h3>
-                <button 
-                  onClick={() => setSelectedApplications(
-                    selectedApplications.length === APPLICATION_MONITORING_DATA.length 
-                      ? [] 
-                      : APPLICATION_MONITORING_DATA.map(app => app.applicationId)
-                  )}
-                  className="text-[10px] font-bold text-[#00775B] hover:underline"
-                >
-                  {selectedApplications.length === APPLICATION_MONITORING_DATA.length ? 'Deselect All' : 'Select All'}
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {APPLICATION_MONITORING_DATA.map((app) => (
-                  <button
-                    key={app.applicationId}
-                    onClick={() => toggleApplication(app.applicationId)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded border text-xs font-bold transition-all",
-                      selectedApplications.includes(app.applicationId)
-                        ? "bg-[#00775B] border-[#00775B] text-white shadow-sm"
-                        : "bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50"
-                    )}
-                  >
-                    <span className="text-base">{app.icon}</span>
-                    <span>{app.applicationName}</span>
-                    <span className="text-[10px] opacity-70">({app.totalCameras})</span>
-                    {app.activeAlerts > 0 && (
-                      <span className={cn(
-                        "ml-1 px-1.5 py-0.5 rounded-sm text-[9px] font-bold",
-                        selectedApplications.includes(app.applicationId)
-                          ? "bg-red-500 text-white"
-                          : "bg-red-100 text-red-600"
-                      )}>
-                        {app.activeAlerts}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-           </div>
-
-           {/* 2.5 Priority Metrics - High Priority Occupancy Cards */}
+           {/* 2. Priority Metrics */}
            <PriorityMetrics />
 
            {/* 3. Application Panels */}
