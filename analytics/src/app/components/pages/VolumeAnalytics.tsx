@@ -399,30 +399,32 @@ const TimeRangeFilter = () => (
 
 // New Components for Panel-based Layout
 
+// Shared accent color helper used by both chart and KPI zone cards
+const zoneAccent = (status: string | undefined, trend: number) => {
+  if (status === 'critical') return { color: '#EF0011', bg: '#FFE5E7', shadow: '239,0,17' };
+  if (status === 'warning')  return { color: '#D97706', bg: '#FFF8E1', shadow: '217,119,6' };
+  if (trend < 0)             return { color: '#2B7FFF', bg: '#E5F0FF', shadow: '43,127,255' };
+  return                            { color: '#00775B', bg: '#E5FFF9', shadow: '0,119,91' };
+};
+
 // Type A stat card matching the design system component library style
 const ZoneStatCard = ({ metric }: { metric: ApplicationMetric }) => {
   const isNeg = metric.trend < 0;
-  const isCrit = metric.status === 'critical';
-  const isWarn = metric.status === 'warning';
-
-  // Accent color drives everything — matches the component library's color-tinted style
-  const accent = isCrit ? '#EF0011' : isWarn ? '#D97706' : isNeg ? '#2B7FFF' : '#00775B';
-  const bg = isCrit ? '#FFE5E7' : isWarn ? '#FFF8E1' : isNeg ? '#E5F0FF' : '#E5FFF9';
-  const shadow = `rgba(${isCrit?'239,0,17':isWarn?'217,119,6':isNeg?'43,127,255':'0,119,91'},0.10) 0px 0px 6px 1px, rgba(0,0,0,0.04) 0px 1px 3px`;
-  const badgeLabel = isCrit ? 'CRITICAL' : isWarn ? 'WARNING' : 'LIVE';
+  const { color: accent, bg, shadow: shadowRgb } = zoneAccent(metric.status, metric.trend);
+  const boxShadow = `rgba(${shadowRgb},0.10) 0px 0px 6px 1px, rgba(0,0,0,0.04) 0px 1px 3px`;
   const trendBg = `${accent}1F`;
 
   return (
     <div className="w-full rounded-[4px] flex flex-col select-none h-full"
-      style={{ border: `1px solid ${accent}`, background: bg, boxShadow: shadow }}>
-      {/* Label + badge */}
+      style={{ border: `1px solid ${accent}`, background: bg, boxShadow }}>
+      {/* Label + time badge (no severity — color already communicates that) */}
       <div className="px-3 pt-3 flex items-center justify-between flex-shrink-0">
         <span className="text-[10px] font-bold uppercase tracking-[0.5px] leading-none text-[#475569] truncate pr-1">
           {metric.metricName}
         </span>
         <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-1.5 py-[3px] rounded-full flex-shrink-0"
           style={{ backgroundColor: `${accent}24`, color: accent }}>
-          {badgeLabel}
+          CURRENT
         </span>
       </div>
       {/* Value + trend */}
@@ -440,9 +442,7 @@ const ZoneStatCard = ({ metric }: { metric: ApplicationMetric }) => {
             style={{ fontSize: 11, color: accent }}>
             {isNeg ? '↓' : '↑'} {Math.abs(metric.trend)}%
           </div>
-          <div className="text-[9px] font-normal mt-[4px] leading-none text-[#94a3b8]">
-            vs last hr
-          </div>
+          <div className="text-[9px] font-normal mt-[4px] leading-none text-[#94a3b8]">vs last hr</div>
         </div>
       </div>
       {/* Divider */}
@@ -450,7 +450,7 @@ const ZoneStatCard = ({ metric }: { metric: ApplicationMetric }) => {
       {/* Footer */}
       <div className="px-3 py-2 flex items-center gap-1.5">
         <span className="text-[9px] font-bold uppercase tracking-[0.5px] flex-shrink-0" style={{ color: '#94a3b8' }}>Live</span>
-        <span className="text-[10px] text-[#475569] truncate">Real-time value</span>
+        <span className="text-[10px] text-[#475569] truncate">Real-time snapshot</span>
       </div>
     </div>
   );
@@ -458,21 +458,20 @@ const ZoneStatCard = ({ metric }: { metric: ApplicationMetric }) => {
 
 const MetricMiniChart = ({ metric }: { metric: ApplicationMetric }) => {
   const isSmall = metric.data.length <= 5;
-
-  const getChartColor = () => {
-    if (metric.status === 'critical') return '#EF4444';
-    if (metric.status === 'warning') return '#F59E0B';
-    if (metric.trend < 0) return '#EF4444';
-    return '#00775B';
-  };
-
-  const color = getChartColor();
+  const { color, bg, shadow: shadowRgb } = zoneAccent(metric.status, metric.trend);
+  const boxShadow = `rgba(${shadowRgb},0.08) 0px 0px 5px 1px, rgba(0,0,0,0.03) 0px 1px 2px`;
   const gradId = `grad-mmchart-${metric.metricName.replace(/\s+/g, '-')}`;
 
-  const renderChart = () => {
-    const commonProps = { data: metric.data, margin: { top: 8, right: 8, left: 8, bottom: 4 } };
+  // Time range badge: show "HH:00 – HH:00" from data or "Current" for tiny sets
+  const timeLabel = isSmall
+    ? 'Current'
+    : metric.data.length >= 2
+      ? `${metric.data[0].time} – ${metric.data[metric.data.length - 1].time}`
+      : 'Live';
 
-    // For small data on bar: narrow bars centered via large barCategoryGap
+  const renderChart = () => {
+    const commonProps = { data: metric.data, margin: { top: 6, right: 6, left: 6, bottom: 2 } };
+
     if (metric.chartType === 'bar') {
       return (
         <BarChart {...commonProps} barCategoryGap={isSmall ? '40%' : '20%'}>
@@ -487,7 +486,6 @@ const MetricMiniChart = ({ metric }: { metric: ApplicationMetric }) => {
       );
     }
 
-    // For small data on line/area: dot+area fallback
     if (isSmall) {
       return (
         <AreaChart {...commonProps}>
@@ -540,36 +538,30 @@ const MetricMiniChart = ({ metric }: { metric: ApplicationMetric }) => {
   };
 
   return (
-    <div className={cn(
-      "bg-white p-3 rounded-lg border flex flex-col transition-all duration-200 hover:shadow-sm relative overflow-hidden",
-      metric.status === 'critical' ? "border-red-300 bg-red-50/30" :
-      metric.status === 'warning' ? "border-amber-300 bg-amber-50/30" :
-      metric.trend < 0 ? "border-red-200 bg-red-50/20" :
-      "border-teal-200 bg-teal-50/20",
-      "h-[130px]"
-    )}>
-      {(metric.status === 'critical' || metric.status === 'warning') && (
-        <div className="absolute top-2 right-2">
-          <AlertTriangle className={cn("w-3 h-3 animate-pulse",
-            metric.status === 'critical' ? "text-red-500" : "text-amber-500")} />
-        </div>
-      )}
-      <div className="flex-shrink-0 mb-1">
-        <h4 className="text-[10px] font-bold uppercase text-neutral-600 truncate mb-0.5">{metric.metricName}</h4>
-        <div className="flex items-baseline gap-1.5">
-          <span className={cn("text-xl font-mono font-bold leading-none",
-            metric.status === 'critical' ? "text-red-600" :
-            metric.status === 'warning' ? "text-amber-600" : "text-neutral-900")}>
-            {typeof metric.currentValue === 'number' && metric.currentValue % 1 !== 0
-              ? metric.currentValue.toFixed(1) : metric.currentValue}
-          </span>
-          <span className="text-[10px] text-neutral-500 font-medium">{metric.unit}</span>
-          <span className={cn("text-[10px] font-bold font-mono ml-auto",
-            metric.trend > 0 ? "text-[#00956D]" : metric.trend < 0 ? "text-red-500" : "text-neutral-400")}>
-            {metric.trend > 0 ? "+" : ""}{metric.trend}%
-          </span>
-        </div>
+    <div className="rounded-[4px] flex flex-col transition-all duration-200 h-[130px] overflow-hidden"
+      style={{ border: `1px solid ${color}`, background: bg, boxShadow }}>
+      {/* Header row: label + time badge */}
+      <div className="px-3 pt-3 flex items-center justify-between flex-shrink-0">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.5px] text-[#475569] truncate pr-1">
+          {metric.metricName}
+        </h4>
+        <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-1.5 py-[3px] rounded-full flex-shrink-0"
+          style={{ backgroundColor: `${color}24`, color }}>
+          {timeLabel}
+        </span>
       </div>
+      {/* Value row */}
+      <div className="px-3 pt-1 pb-1 flex items-baseline gap-1.5 flex-shrink-0">
+        <span className="text-xl font-mono font-bold leading-none text-[#0f172a]">
+          {typeof metric.currentValue === 'number' && metric.currentValue % 1 !== 0
+            ? metric.currentValue.toFixed(1) : metric.currentValue}
+        </span>
+        <span className="text-[10px] font-medium text-[#64748b]">{metric.unit}</span>
+        <span className="text-[10px] font-bold font-mono ml-auto" style={{ color }}>
+          {metric.trend > 0 ? '+' : ''}{metric.trend}%
+        </span>
+      </div>
+      {/* Chart */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           {renderChart()}
