@@ -18,6 +18,7 @@ import { Button } from "@fe-common/components/ui/Button";
 import { GridBackground } from "@/app/components/layout/GridBackground";
 import { Bell, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Clock, Filter, LayoutGrid, List, Check, User, Video, MapPin, X, ChevronDown, Info, Trash2, Copy, ImageIcon, Activity, ExternalLink, Search, ShieldCheck, Hexagon, Zap, Shield, PanelLeft, Command, Sun, Moon, LogOut, Settings } from "lucide-react";
 import { cn } from "@/app/lib/utils";
+import { track } from "@/app/lib/analytics";
 import { Checkbox } from "@fe-common/components/ui/Checkbox";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { PersonaSwitcher, Persona } from "@/app/components/dashboard/PersonaSwitcher";
@@ -393,6 +394,7 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
     setAppliedPipeline(draftPipeline);
     setAppliedCameraGroups(new Set(draftCameraGroups));
     setIsGlobalFilterOpen(false);
+    track.globalFilterApplied(draftProject, draftPipeline, draftCameraGroups.size);
   };
 
   const clearDraftFilters = () => {
@@ -455,21 +457,25 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
     setSelectedSeverities(new Set());
     setTablePage(1);
     setGridExpanded(false);
+    track.filtersCleared();
   };
 
   const openAckModal = (incident: Incident) => {
     setCurrentIncident(incident);
     setAckModalOpen(true);
+    track.incidentAckStarted(incident.id, incident.severity);
   };
 
   const openDetailModal = (incident: Incident) => {
     setCurrentIncident(incident);
     setDetailModalOpen(true);
+    track.incidentDetailViewed(incident.id, incident.severity, incident.application);
   };
 
   const openAssignModal = (incident: Incident) => {
     setCurrentIncident(incident);
     setAssignModalOpen(true);
+    track.incidentAssignStarted(incident.id, incident.severity);
   };
 
   const toggleSelection = (id: number) => {
@@ -520,10 +526,46 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
     "microservices":      "Microservices",
   };
 
+  const handlePageChange = (page: Page) => {
+    setActivePage(page);
+    track.pageChanged(page, activePersona);
+  };
+
+  const handlePersonaSwitch = (persona: Persona) => {
+    track.personaSwitched(activePersona, persona);
+    setActivePersona(persona);
+  };
+
+  const handleThemeToggle = () => {
+    const next = !isDark;
+    setIsDark(next);
+    track.themeToggled(next ? "dark" : "light");
+  };
+
+  const handleViewModeChange = (mode: "grid" | "table") => {
+    setViewMode(mode);
+    track.viewModeChanged(mode);
+  };
+
+  const handleBulkAssignOpen = () => {
+    setBulkAssignModalOpen(true);
+    track.bulkAssignStarted(selectedIncidents.size);
+  };
+
+  const handleBulkAckOpen = () => {
+    setBulkAckModalOpen(true);
+    track.bulkAckStarted(selectedIncidents.size);
+  };
+
+  const handleGridExpand = () => {
+    setGridExpanded(true);
+    track.gridExpanded();
+  };
+
   return (
-    <AppLayout activePage={activePage} onPageChange={setActivePage} isDark={isDark} onToggleDark={() => setIsDark(d => !d)} onPlatformSwitch={onPlatformSwitch}>
+    <AppLayout activePage={activePage} onPageChange={handlePageChange} isDark={isDark} onToggleDark={handleThemeToggle} onPlatformSwitch={onPlatformSwitch}>
       {activePage === "settings" ? (
-        <SettingsPage isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
+        <SettingsPage isDark={isDark} onToggleDark={handleThemeToggle} />
       ) : null}
       {activePage === "incident-lifecycle" ? <IncidentLifecyclePage /> : null}
       {/* Dashboard v2 / v3 via version switcher */}
@@ -593,7 +635,7 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
             {activePage === "facial-recognition" && <FacialRecognition />}
             {activePage === "license-plates" && <LicensePlates />}
             {activePage === "cameras" && <Cameras />}
-            {activePage === "metrics" && <MetricsRules />}
+            {activePage === "metrics" && <MetricsRules persona={activePersona} />}
             {activePage === "compliance" && <Compliance />}
             {activePage === "design-system" && <DesignSystem />}
             {activePage === "service" && <ServiceAnalytics />}
@@ -637,10 +679,10 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
                     {selectedIncidents.size > 0 && (
                       <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200 mr-2">
                          <span className="text-xs font-bold text-neutral-600 mr-2">{selectedIncidents.size} Selected</span>
-                         <Button size="sm" onClick={() => setBulkAssignModalOpen(true)} className="h-8 bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200 font-bold text-[10px] uppercase tracking-wider gap-2 shadow-sm">
+                         <Button size="sm" onClick={handleBulkAssignOpen} className="h-8 bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200 font-bold text-[10px] uppercase tracking-wider gap-2 shadow-sm">
                             <User className="w-3.5 h-3.5" /> Assign
                          </Button>
-                         <Button size="sm" onClick={() => setBulkAckModalOpen(true)} className="h-8 bg-[#00775B] text-white hover:bg-[#009e78] border-transparent font-bold text-[10px] uppercase tracking-wider gap-2">
+                         <Button size="sm" onClick={handleBulkAckOpen} className="h-8 bg-[#00775B] text-white hover:bg-[#009e78] border-transparent font-bold text-[10px] uppercase tracking-wider gap-2">
                             <Check className="w-3.5 h-3.5" /> Acknowledge
                          </Button>
                          <div className="w-[1px] h-6 bg-neutral-200 mx-1" />
@@ -654,20 +696,20 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
                          </Button>
                        )}
                        <div className="flex items-center gap-2">
-                         <FilterDropdown label="Severity" options={SEVERITIES} selected={selectedSeverities} onChange={(val) => setSelectedSeverities(handleFilterChange(selectedSeverities, val))} className="w-[160px]" />
-                         <FilterDropdown label="Applications" options={APPLICATIONS} selected={selectedApps} onChange={(val) => setSelectedApps(handleFilterChange(selectedApps, val))} className="w-[160px]" />
-                         <FilterDropdown label="Locations" options={LOCATIONS} selected={selectedLocs} onChange={(val) => setSelectedLocs(handleFilterChange(selectedLocs, val))} className="w-[160px]" />
+                         <FilterDropdown label="Severity" options={SEVERITIES} selected={selectedSeverities} onChange={(val) => { const next = handleFilterChange(selectedSeverities, val); setSelectedSeverities(next); track.filterSeverityChanged([...next]); }} className="w-[160px]" />
+                         <FilterDropdown label="Applications" options={APPLICATIONS} selected={selectedApps} onChange={(val) => { const next = handleFilterChange(selectedApps, val); setSelectedApps(next); track.filterAppChanged([...next]); }} className="w-[160px]" />
+                         <FilterDropdown label="Locations" options={LOCATIONS} selected={selectedLocs} onChange={(val) => { const next = handleFilterChange(selectedLocs, val); setSelectedLocs(next); track.filterLocationChanged([...next]); }} className="w-[160px]" />
                        </div>
                     </div>
                     
                     <div className="w-[1px] h-6 bg-neutral-200 mx-1" />
 
                     <div className="flex items-center bg-white border border-neutral-200 rounded-[2px] p-0.5 shadow-sm">
-                       <Button variant="ghost" size="sm" onClick={() => setViewMode("grid")} className={cn("h-7 w-7 p-0 rounded-[1px] hover:bg-neutral-100 transition-colors", viewMode === "grid" ? "bg-neutral-100 text-[#00775B]" : "text-neutral-400")} title="Grid View">
+                       <Button variant="ghost" size="sm" onClick={() => handleViewModeChange("grid")} className={cn("h-7 w-7 p-0 rounded-[1px] hover:bg-neutral-100 transition-colors", viewMode === "grid" ? "bg-neutral-100 text-[#00775B]" : "text-neutral-400")} title="Grid View">
                          <LayoutGrid className={cn("w-3.5 h-3.5", viewMode === "grid" && "fill-current")} />
                        </Button>
                        <div className="w-[1px] h-4 bg-neutral-200 mx-0.5" />
-                       <Button variant="ghost" size="sm" onClick={() => setViewMode("table")} className={cn("h-7 w-7 p-0 rounded-[1px] hover:bg-neutral-100 transition-colors", viewMode === "table" ? "bg-neutral-100 text-[#00775B]" : "text-neutral-400")} title="List View">
+                       <Button variant="ghost" size="sm" onClick={() => handleViewModeChange("table")} className={cn("h-7 w-7 p-0 rounded-[1px] hover:bg-neutral-100 transition-colors", viewMode === "table" ? "bg-neutral-100 text-[#00775B]" : "text-neutral-400")} title="List View">
                          <List className={cn("w-3.5 h-3.5", viewMode === "table" && "fill-current")} />
                        </Button>
                     </div>
@@ -693,7 +735,7 @@ function AnalyticsApp({ onPlatformSwitch }: { onPlatformSwitch: (app: string) =>
                      })}
                    </div>
                    {!gridExpanded && hasMoreGridItems && (
-                     <button onClick={() => setGridExpanded(true)} className="w-full flex items-center justify-center gap-2 py-3 mt-4 bg-white border border-neutral-200 shadow-sm rounded-sm hover:bg-neutral-50 hover:border-[#00775B]/30 transition-all group">
+                     <button onClick={handleGridExpand} className="w-full flex items-center justify-center gap-2 py-3 mt-4 bg-white border border-neutral-200 shadow-sm rounded-sm hover:bg-neutral-50 hover:border-[#00775B]/30 transition-all group">
                         <span className="text-xs font-bold text-neutral-600 group-hover:text-[#00775B] uppercase tracking-widest transition-colors">Show More Incidents</span>
                         <div className="h-5 w-5 rounded-full bg-neutral-100 flex items-center justify-center group-hover:bg-[#00775B] transition-colors"><ChevronDown className="w-3 h-3 text-neutral-500 group-hover:text-white" /></div>
                      </button>
