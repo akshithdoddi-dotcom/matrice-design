@@ -462,7 +462,7 @@ const MetricMiniChart = ({ metric }: { metric: ApplicationMetric }) => {
   const isSmall = metric.data.length <= 5;
   const { color, bg, shadow: shadowRgb } = zoneAccent(metric.status, metric.trend);
   const boxShadow = `rgba(${shadowRgb},0.08) 0px 0px 5px 1px, rgba(0,0,0,0.03) 0px 1px 2px`;
-  const gradId = `grad-mmchart-${metric.metricName.replace(/\s+/g, '-')}`;
+  const gradId = `grad-mmchart-${metric.metricName.replace(/\s+/g, '-')}-${color.replace('#', '')}`;
 
   // Time range badge: show "HH:00 – HH:00" from data or "Current" for tiny sets
   const timeLabel = isSmall
