@@ -2361,31 +2361,29 @@ export const VolumeAnalytics = ({ persona }: { persona: Persona }) => {
         zone={selectedCamera?.zone || ""}
       />
 
-      {/* Header Row */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
-        <AnalyticsHeader title="Volume Analytics" icon={Activity} />
-        
-        {persona !== "monitoring" && (
-           <div className="self-end md:self-auto">
-             {/* Custom TimeRangeFilter for Manager/Director */}
-             <div className="flex bg-neutral-100 p-0.5 rounded-[4px] border border-neutral-200">
-                {(persona === "manager" ? ["1H", "1D", "1W", "1MO"] : ["1W", "1MO", "3MO", "YTD"]).map((range) => (
-                  <button
-                    key={range}
-                    className={cn(
-                      "px-3 py-1 text-[10px] font-bold rounded-[2px] transition-all",
-                      (range === "1D" || range === "1MO")
-                        ? "bg-white text-[#00775B] shadow-sm" 
-                        : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/50"
-                    )}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-           </div>
-        )}
-      </div>
+      {/* Header Row — manager/director only (monitoring uses status bar instead) */}
+      {persona !== "monitoring" && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
+          <AnalyticsHeader title="Volume Analytics" icon={Activity} />
+          <div className="self-end md:self-auto">
+            <div className="flex bg-neutral-100 p-0.5 rounded-[4px] border border-neutral-200">
+              {(persona === "manager" ? ["1H", "1D", "1W", "1MO"] : ["1W", "1MO", "3MO", "YTD"]).map((range) => (
+                <button
+                  key={range}
+                  className={cn(
+                    "px-3 py-1 text-[10px] font-bold rounded-[2px] transition-all",
+                    (range === "1D" || range === "1MO")
+                      ? "bg-white text-[#00775B] shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/50"
+                  )}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- Monitoring Staff View --- */}
       {persona === "monitoring" && (
