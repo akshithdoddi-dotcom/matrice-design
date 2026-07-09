@@ -399,53 +399,57 @@ const TimeRangeFilter = () => (
 
 // New Components for Panel-based Layout
 
-// Inline Type A stat card for use inside application zone panels
+// Type A stat card matching the design system component library style
 const ZoneStatCard = ({ metric }: { metric: ApplicationMetric }) => {
   const isNeg = metric.trend < 0;
   const isCrit = metric.status === 'critical';
   const isWarn = metric.status === 'warning';
-  const borderColor = isCrit ? 'rgb(231,0,11)' : isWarn ? 'rgb(217,119,6)' : '#e5e7eb';
-  const bg = isCrit ? 'rgb(255,229,231)' : isWarn ? 'rgb(255,251,235)' : '#ffffff';
-  const badgeBg = isCrit ? 'rgba(231,0,11,0.14)' : isWarn ? 'rgba(217,119,6,0.14)' : 'rgba(20,184,166,0.14)';
-  const badgeColor = isCrit ? 'rgb(231,0,11)' : isWarn ? 'rgb(217,119,6)' : 'rgb(20,184,166)';
+
+  // Accent color drives everything — matches the component library's color-tinted style
+  const accent = isCrit ? '#EF0011' : isWarn ? '#D97706' : isNeg ? '#2B7FFF' : '#00775B';
+  const bg = isCrit ? '#FFE5E7' : isWarn ? '#FFF8E1' : isNeg ? '#E5F0FF' : '#E5FFF9';
+  const shadow = `rgba(${isCrit?'239,0,17':isWarn?'217,119,6':isNeg?'43,127,255':'0,119,91'},0.10) 0px 0px 6px 1px, rgba(0,0,0,0.04) 0px 1px 3px`;
   const badgeLabel = isCrit ? 'CRITICAL' : isWarn ? 'WARNING' : 'LIVE';
-  const dividerColor = isCrit ? 'rgba(231,0,11,0.22)' : isWarn ? 'rgba(217,119,6,0.22)' : '#e5e7eb';
-  const valueColor = isCrit ? 'rgb(231,0,11)' : isWarn ? 'rgb(217,119,6)' : '#0f172a';
-  const trendBg = isNeg ? 'rgba(231,0,11,0.12)' : 'rgba(0,149,109,0.12)';
-  const trendColor = isNeg ? 'rgb(231,0,11)' : 'rgb(0,149,109)';
+  const trendBg = `${accent}1F`;
 
   return (
     <div className="w-full rounded-[4px] flex flex-col select-none h-full"
-      style={{ border: `1px solid ${borderColor}`, background: bg }}>
+      style={{ border: `1px solid ${accent}`, background: bg, boxShadow: shadow }}>
+      {/* Label + badge */}
       <div className="px-3 pt-3 flex items-center justify-between flex-shrink-0">
         <span className="text-[10px] font-bold uppercase tracking-[0.5px] leading-none text-[#475569] truncate pr-1">
           {metric.metricName}
         </span>
         <span className="text-[9px] font-bold uppercase tracking-[0.5px] px-1.5 py-[3px] rounded-full flex-shrink-0"
-          style={{ backgroundColor: badgeBg, color: badgeColor }}>
+          style={{ backgroundColor: `${accent}24`, color: accent }}>
           {badgeLabel}
         </span>
       </div>
+      {/* Value + trend */}
       <div className="px-3 pt-2 pb-3 flex items-end justify-between gap-2 flex-1">
         <div className="flex flex-col gap-[5px]">
-          <div className="font-mono font-bold tabular-nums leading-none" style={{ fontSize: 24, color: valueColor }}>
+          <div className="font-mono font-bold tabular-nums leading-none text-[#0f172a]" style={{ fontSize: 22 }}>
             {typeof metric.currentValue === 'number' && metric.currentValue % 1 !== 0
-              ? metric.currentValue.toFixed(1)
-              : metric.currentValue}
+              ? metric.currentValue.toFixed(1) : metric.currentValue}
           </div>
-          <div className="text-[11px] text-[#64748b]">{metric.unit}</div>
+          <div className="text-[10px] text-[#64748b]">{metric.unit}</div>
         </div>
         <div className="flex flex-col px-[8px] py-[6px] rounded-[6px] flex-shrink-0"
           style={{ backgroundColor: trendBg }}>
           <div className="flex items-center gap-[3px] font-mono font-bold leading-none"
-            style={{ fontSize: 12, color: trendColor }}>
+            style={{ fontSize: 11, color: accent }}>
             {isNeg ? '↓' : '↑'} {Math.abs(metric.trend)}%
+          </div>
+          <div className="text-[9px] font-normal mt-[4px] leading-none text-[#94a3b8]">
+            vs last hr
           </div>
         </div>
       </div>
-      <div style={{ height: 1, backgroundColor: dividerColor, margin: '0 12px' }} />
+      {/* Divider */}
+      <div style={{ height: 1, backgroundColor: `${accent}38`, margin: '0 12px' }} />
+      {/* Footer */}
       <div className="px-3 py-2 flex items-center gap-1.5">
-        <span className="text-[9px] font-bold uppercase tracking-[0.5px] text-[#94a3b8] flex-shrink-0">Live</span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.5px] flex-shrink-0" style={{ color: '#94a3b8' }}>Live</span>
         <span className="text-[10px] text-[#475569] truncate">Real-time value</span>
       </div>
     </div>
@@ -1783,18 +1787,14 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
                       </div>
                     </div>
 
-                    {/* 2 charts + 1 stat card — handles apps with 2, 3, or 4 metrics */}
-                    <div className="flex gap-2 h-[130px]">
+                    {/* 2x2 grid: top row = charts, bottom row = KPI stat cards */}
+                    <div className="grid grid-cols-2 gap-2">
                       {currentCamera.metrics.slice(0, 2).map((metric, idx) => (
-                        <div key={idx} className="flex-1 min-w-0">
-                          <MetricMiniChart metric={metric} />
-                        </div>
+                        <MetricMiniChart key={idx} metric={metric} />
                       ))}
-                      {currentCamera.metrics.length >= 3 && (
-                        <div className="w-[140px] flex-shrink-0">
-                          <ZoneStatCard metric={currentCamera.metrics[2]} />
-                        </div>
-                      )}
+                      {currentCamera.metrics.slice(2, 4).map((metric, idx) => (
+                        <ZoneStatCard key={idx} metric={metric} />
+                      ))}
                     </div>
                   </div>
                 );
