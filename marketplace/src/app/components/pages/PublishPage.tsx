@@ -1,18 +1,17 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import {
-  LayoutGrid, List, Plus, ArrowLeft, ChevronDown, ChevronRight,
+  LayoutGrid, List, Plus, ArrowLeft, ChevronRight,
   Upload, X, AlertCircle, ExternalLink, Eye, Trash2,
   Pencil, BookOpen, Download, Check,
-  Search, ArrowUpDown, Columns3, Filter,
 } from "lucide-react";
 import { StatCard, StatCardData } from "@fe-common/components/ui/StatCard";
 import { DataGrid, MonoCell, InterCell, StatusCapsule, GridActions, GridActionButton } from "@fe-common/components/ui/DataGrid";
+import { V23Table, V23Mono, V23Inter } from "@fe-common/components/ui/V23Table";
 import { Label } from "@fe-common/components/ui/label";
 import { Input } from "@fe-common/components/ui/Input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@fe-common/components/ui/select";
 import { Textarea } from "@fe-common/components/ui/textarea";
 import { Switch } from "@fe-common/components/ui/switch";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@fe-common/components/ui/Tooltip";
 import { cn } from "@/app/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1227,97 +1226,6 @@ function UpdateVersionModal({ app, version, onClose }: { app: Application; versi
   );
 }
 
-// ─── Table Toolbar (Search + Sort + Columns + Filter) ─────────────────────────
-
-function TableToolbar({
-  searchValue, onSearchChange, searchPlaceholder,
-  sortLabel, sortActive, onSortClick,
-  columnOptions, hiddenColumns, onToggleColumn,
-  filterActive, filterCount, filterContent,
-}: {
-  searchValue: string;
-  onSearchChange: (v: string) => void;
-  searchPlaceholder?: string;
-  sortLabel: string;
-  sortActive: boolean;
-  onSortClick: () => void;
-  columnOptions: { key: string; label: string }[];
-  hiddenColumns: Set<string>;
-  onToggleColumn: (key: string) => void;
-  filterActive: boolean;
-  filterCount: number;
-  filterContent: React.ReactNode;
-}) {
-  const [columnsOpen, setColumnsOpen] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-
-  return (
-    <div className="flex items-center gap-2 px-4 py-2.5 border-b-2 border-[#00775B] bg-white">
-      <div className="relative flex-1 max-w-[280px]">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
-        <input
-          type="text"
-          placeholder={searchPlaceholder ?? "Search…"}
-          value={searchValue}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full h-8 pl-8 pr-2 text-[12px] bg-transparent border-b border-neutral-200 outline-none focus:border-[#00775B] transition-colors"
-        />
-      </div>
-
-      <div className="w-px h-5 bg-neutral-200" />
-
-      <button
-        onClick={onSortClick}
-        className={cn(
-          "flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-semibold uppercase tracking-wide rounded-[4px] transition-colors",
-          sortActive ? "bg-[#E5FFF9] text-[#00775B]" : "text-neutral-600 hover:bg-neutral-50"
-        )}
-      >
-        <ArrowUpDown className="w-3.5 h-3.5" /> {sortLabel}
-      </button>
-
-      <div className="relative">
-        <button
-          onClick={() => setColumnsOpen((v) => !v)}
-          className={cn(
-            "flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-semibold uppercase tracking-wide rounded-[4px] transition-colors",
-            hiddenColumns.size > 0 ? "bg-[#E5FFF9] text-[#00775B]" : "text-neutral-600 hover:bg-neutral-50"
-          )}
-        >
-          <Columns3 className="w-3.5 h-3.5" /> Columns
-        </button>
-        {columnsOpen && (
-          <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-neutral-200 rounded-[4px] shadow-lg p-2 flex flex-col gap-0.5 w-44">
-            {columnOptions.map((c) => (
-              <label key={c.key} className="flex items-center gap-2 text-[12px] text-neutral-700 px-2 py-1.5 hover:bg-neutral-50 rounded cursor-pointer">
-                <input type="checkbox" checked={!hiddenColumns.has(c.key)} onChange={() => onToggleColumn(c.key)} />
-                {c.label}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="ml-auto relative">
-        <button
-          onClick={() => setFilterOpen((v) => !v)}
-          className={cn(
-            "flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-semibold uppercase tracking-wide rounded-[4px] transition-colors",
-            filterActive ? "bg-[#E5FFF9] text-[#00775B]" : "text-neutral-600 hover:bg-neutral-50"
-          )}
-        >
-          <Filter className="w-3.5 h-3.5" /> Filter{filterCount > 0 ? ` (${filterCount})` : ""}
-        </button>
-        {filterOpen && (
-          <div className="absolute top-full right-0 mt-1 z-20 bg-white border border-neutral-200 rounded-[4px] shadow-lg p-4 w-72">
-            {filterContent}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Application Detail ───────────────────────────────────────────────────────
 
 type VersionModel = {
@@ -1358,54 +1266,11 @@ function ApplicationDetail({
   const [tab,            setTab]            = useState<DetailTab>("overview");
   const [showAddModels,  setShowAddModels]  = useState(false);
   const [showEditApp,    setShowEditApp]    = useState(false);
-  const [versionFilter,  setVersionFilter]  = useState("all");
-  const [typeFilter,     setTypeFilter]     = useState("all");
-  const [expandedVersionIds, setExpandedVersionIds] = useState<(string | number)[]>([]);
   const [addDemoVersion, setAddDemoVersion] = useState<AppVersion | null>(null);
   const [editingVersion, setEditingVersion] = useState<AppVersion | null>(null);
 
-  const [versionSearch, setVersionSearch] = useState("");
-  const [versionSortDesc, setVersionSortDesc] = useState(true);
-  const [hiddenVersionColumns, setHiddenVersionColumns] = useState<Set<string>>(new Set());
-  const [versionStatusFilter, setVersionStatusFilter] = useState("all");
-
-  const [issueSearch, setIssueSearch] = useState("");
-  const [issueSortDesc, setIssueSortDesc] = useState(true);
-  const [hiddenIssueColumns, setHiddenIssueColumns] = useState<Set<string>>(new Set());
-
   const appIssues = MOCK_ISSUES.filter((i) => i.appName === app.name);
   const currentVersion = app.versionHistory[app.versionHistory.length - 1];
-
-  const visibleVersions = app.versionHistory
-    .filter((v) => versionStatusFilter === "all" || v.status === versionStatusFilter)
-    .filter((v) => !versionSearch.trim() || `${v.version} ${v.owner}`.toLowerCase().includes(versionSearch.trim().toLowerCase()))
-    .slice()
-    .sort((a, b) => (versionSortDesc ? b.version.localeCompare(a.version) : a.version.localeCompare(b.version)));
-
-  const VERSION_COLUMN_OPTIONS = [
-    { key: "version", label: "App Version" },
-    { key: "status", label: "Status" },
-    { key: "lastUpdated", label: "Last Updated" },
-    { key: "owner", label: "Owner" },
-    { key: "modelCount", label: "Models" },
-  ];
-
-  const filteredIssues = appIssues
-    .filter((i) => versionFilter === "all" || i.version === versionFilter)
-    .filter((i) => typeFilter === "all" || i.issueType.toLowerCase().replace(/\s+/g, "-") === typeFilter)
-    .filter((i) => !issueSearch.trim() || `${i.version} ${i.issueType} ${i.subIssue}`.toLowerCase().includes(issueSearch.trim().toLowerCase()))
-    .slice()
-    .sort((a, b) => (issueSortDesc ? b.updatedAt.localeCompare(a.updatedAt) : a.updatedAt.localeCompare(b.updatedAt)));
-
-  const ISSUE_COLUMN_OPTIONS = [
-    { key: "version", label: "Version" },
-    { key: "issueType", label: "Issue Type" },
-    { key: "status", label: "Status" },
-    { key: "reportCount", label: "Reports" },
-    { key: "updatedAt", label: "Last Updated" },
-  ];
-
-  const issueFilterCount = (versionFilter !== "all" ? 1 : 0) + (typeFilter !== "all" ? 1 : 0);
 
   const TABS: { id: DetailTab; label: string }[] = [
     { id: "overview", label: "Overview" },
@@ -1503,7 +1368,7 @@ function ApplicationDetail({
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[4px] border border-neutral-200 shadow-sm overflow-hidden min-w-0">
         <div className="flex items-center border-b border-neutral-200 bg-white">
           {TABS.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
@@ -1567,81 +1432,42 @@ function ApplicationDetail({
                 </button>
               </div>
             ) : (
-              <>
-                <TableToolbar
-                  searchValue={versionSearch}
-                  onSearchChange={setVersionSearch}
-                  searchPlaceholder="Search versions…"
-                  sortLabel="Sort"
-                  sortActive={!versionSortDesc}
-                  onSortClick={() => setVersionSortDesc((v) => !v)}
-                  columnOptions={VERSION_COLUMN_OPTIONS}
-                  hiddenColumns={hiddenVersionColumns}
-                  onToggleColumn={(key) => setHiddenVersionColumns((prev) => {
-                    const next = new Set(prev);
-                    next.has(key) ? next.delete(key) : next.add(key);
-                    return next;
-                  })}
-                  filterActive={versionStatusFilter !== "all"}
-                  filterCount={versionStatusFilter !== "all" ? 1 : 0}
-                  filterContent={
-                    <div className="flex flex-col gap-1.5">
-                      <Label className="text-xs text-neutral-600">Status</Label>
-                      <Select value={versionStatusFilter} onValueChange={setVersionStatusFilter}>
-                        <SelectTrigger className="h-9 text-[12px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Statuses</SelectItem>
-                          <SelectItem value="published">Published</SelectItem>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="deprecated">Deprecated</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  }
-                />
-                <DataGrid<AppVersion & { id: string }>
+              <V23Table<AppVersion & { id: string }>
+                data={app.versionHistory.map((v) => ({ ...v, id: v.version }))}
+                idLabel="App Version"
+                renderId={(row, h) => <V23Mono hovered={h} color="#475569">{row.version}</V23Mono>}
+                searchPlaceholder="Search versions, owners…"
+                searchFn={(row, q) => `${row.version} ${row.owner}`.toLowerCase().includes(q.toLowerCase())}
+                sortOptions={[
+                  { key: "version-desc", label: "Version (Newest)",      cmp: (a, b) => b.version.localeCompare(a.version) },
+                  { key: "version-asc",  label: "Version (Oldest)",      cmp: (a, b) => a.version.localeCompare(b.version) },
+                  { key: "updated-desc", label: "Last Updated (Newest)", cmp: (a, b) => b.lastUpdated.localeCompare(a.lastUpdated) },
+                  { key: "updated-asc",  label: "Last Updated (Oldest)", cmp: (a, b) => a.lastUpdated.localeCompare(b.lastUpdated) },
+                ]}
+                filterGroups={[
+                  {
+                    key: "status", label: "Status", getValue: (row) => row.status,
+                    options: [
+                      { value: "published",  label: "Published" },
+                      { value: "draft",      label: "Draft" },
+                      { value: "deprecated", label: "Deprecated" },
+                    ],
+                  },
+                ]}
+                rowAccent={(row) => (row.status === "published" ? TEAL : row.status === "draft" ? "#D97706" : "#94A3B8")}
                 columns={[
-                  { key: "version",     header: "App Version", width: "110px", sortable: true, render: (r, h) => <MonoCell hovered={h} isPrimary fontSize={12}>{r.version}</MonoCell> },
-                  { key: "status",      header: "Status",      width: "120px", render: (r) => <StatusCapsule status={VERSION_STATUS_KEY[r.status]} label={VERSION_STATUS_LABEL[r.status]} /> },
-                  { key: "lastUpdated", header: "Last Updated", width: "130px", sortable: true, render: (r, h) => <MonoCell hovered={h} fontSize={11} color="#64748B" hoveredColor="#0F172A">{r.lastUpdated}</MonoCell> },
-                  { key: "owner",       header: "Owner",        render: (r, h) => <InterCell hovered={h} fontSize={12} color="#334155" hoveredColor="#0F172A">{r.owner}</InterCell> },
-                  { key: "modelCount",  header: "Models",       width: "90px", align: "right", render: (r, h) => <MonoCell hovered={h} fontSize={12} color="#64748B" hoveredColor="#0F172A">{r.modelCount}</MonoCell> },
-                  { key: "actions",     header: "Actions", width: "150px", align: "right", render: (r, h) => (
-                    <div className="flex justify-end">
-                      <GridActions visible={h}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex">
-                              <GridActionButton hoverColor={TEAL} onClick={() => setAddDemoVersion(r)}><Plus className="w-3.5 h-3.5" /></GridActionButton>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>Add demo</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex">
-                              <GridActionButton hoverColor="#0284C7" onClick={() => setEditingVersion(r)}><Pencil className="w-3.5 h-3.5" /></GridActionButton>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit version</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex">
-                              <GridActionButton hoverColor="#334155"><ExternalLink className="w-3.5 h-3.5" /></GridActionButton>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>Open model demo</TooltipContent>
-                        </Tooltip>
-                      </GridActions>
-                    </div>
-                  )},
-                ].filter((c) => c.key === "actions" || !hiddenVersionColumns.has(c.key))}
-                data={visibleVersions.map((v) => ({ ...v, id: v.version }))}
+                  { key: "status",      label: "Status",       minWidth: 120, render: (row) => <StatusCapsule status={VERSION_STATUS_KEY[row.status]} label={VERSION_STATUS_LABEL[row.status]} /> },
+                  { key: "lastUpdated", label: "Last Updated", minWidth: 130, render: (row, h) => <V23Mono hovered={h}>{row.lastUpdated}</V23Mono> },
+                  { key: "owner",       label: "Owner",        minWidth: 170, render: (row, h) => <V23Inter hovered={h} weight={500}>{row.owner}</V23Inter> },
+                  { key: "modelCount",  label: "Models",       minWidth: 90, align: "right", render: (row, h) => <V23Mono hovered={h}>{row.modelCount}</V23Mono> },
+                ]}
+                rowActions={[
+                  { title: "Add demo",        icon: <Plus className="w-3.5 h-3.5" />,        color: TEAL,      onClick: (r) => setAddDemoVersion(r) },
+                  { title: "Edit version",    icon: <Pencil className="w-3.5 h-3.5" />,      color: "#0284C7", onClick: (r) => setEditingVersion(r) },
+                  { title: "Open model demo", icon: <ExternalLink className="w-3.5 h-3.5" />, color: "#334155", onClick: () => {} },
+                ]}
                 expandable
                 isRowExpandable={(r) => r.modelCount > 0}
-                expandedRowIds={expandedVersionIds}
-                onExpandedRowIdsChange={setExpandedVersionIds}
                 renderExpandedRow={(r) => (
                   <div className="flex flex-col gap-2 py-3 px-4">
                     {getModelsForVersion(r, app.name).map((m) => (
@@ -1665,50 +1491,16 @@ function ApplicationDetail({
                     ))}
                   </div>
                 )}
-                />
-              </>
+                pageSize={10}
+                itemLabel="versions"
+              />
             )}
           </div>
         )}
 
         {/* Reported Issues */}
         {tab === "issues" && (
-          <div className="flex flex-col">
-            {/* Filters */}
-            <div className="flex items-end gap-3 px-5 py-4 border-b border-neutral-100 bg-neutral-50/50">
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-neutral-500">Version</Label>
-                <Select value={versionFilter} onValueChange={setVersionFilter}>
-                  <SelectTrigger className="h-9 w-36 text-[12px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Versions</SelectItem>
-                    {app.versionHistory.map((v) => (
-                      <SelectItem key={v.version} value={v.version}>{v.version}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-neutral-500">Issue Type</Label>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="h-9 w-40 text-[12px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="model-output">Model Output</SelectItem>
-                    <SelectItem value="performance">Performance</SelectItem>
-                    <SelectItem value="ui">UI / UX</SelectItem>
-                    <SelectItem value="crash">Crash</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <button
-                className="h-9 px-5 text-[12px] font-semibold text-white rounded-[4px] transition-colors uppercase tracking-wide"
-                style={{ backgroundColor: TEAL }}
-              >
-                Apply Filters
-              </button>
-            </div>
-
+          <div>
             {appIssues.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center">
@@ -1718,18 +1510,42 @@ function ApplicationDetail({
                 <p className="text-[11px] text-neutral-400">No issues have been reported for this application</p>
               </div>
             ) : (
-              <DataGrid<ReportedIssue>
-                searchable
-                searchPlaceholder="Search issues…"
-                pageSize={10}
-                columns={[
-                  { key: "version",     header: "Version",  width: "90px",  sortable: true, render: (r, h) => <MonoCell hovered={h} fontSize={11} color="#64748B" hoveredColor="#0F172A">{r.version}</MonoCell> },
-                  { key: "issueType",   header: "Issue Type", width: "140px", sortable: true, render: (r, h) => <InterCell hovered={h} fontSize={11} color="#64748B" hoveredColor="#334155">{r.issueType}</InterCell> },
-                  { key: "status",      header: "Status",   width: "120px", render: (r) => <StatusCapsule status={ISSUE_STATUS_KEY[r.status]} label={ISSUE_STATUS_LABEL[r.status]} /> },
-                  { key: "reportCount", header: "Reports",  width: "90px", align: "right", sortable: true, render: (r, h) => <MonoCell hovered={h} fontSize={11} color="#64748B" hoveredColor="#0F172A">{r.reportCount}</MonoCell> },
-                  { key: "updatedAt",   header: "Last Updated", width: "110px", sortable: true, render: (r, h) => <MonoCell hovered={h} fontSize={10} color="#94A3B8" hoveredColor="#475569">{r.updatedAt}</MonoCell> },
-                ]}
+              <V23Table<ReportedIssue>
                 data={appIssues}
+                idLabel="Version"
+                renderId={(row, h) => <V23Mono hovered={h} color="#475569">{row.version}</V23Mono>}
+                searchPlaceholder="Search issues…"
+                searchFn={(row, q) => `${row.version} ${row.issueType} ${row.subIssue}`.toLowerCase().includes(q.toLowerCase())}
+                sortOptions={[
+                  { key: "updated-desc", label: "Last Updated (Newest)", cmp: (a, b) => b.updatedAt.localeCompare(a.updatedAt) },
+                  { key: "updated-asc",  label: "Last Updated (Oldest)", cmp: (a, b) => a.updatedAt.localeCompare(b.updatedAt) },
+                  { key: "reports-desc", label: "Reports (High-Low)",    cmp: (a, b) => b.reportCount - a.reportCount },
+                  { key: "reports-asc",  label: "Reports (Low-High)",    cmp: (a, b) => a.reportCount - b.reportCount },
+                ]}
+                filterGroups={[
+                  {
+                    key: "version", label: "Versions", getValue: (row) => row.version,
+                    options: app.versionHistory.map((v) => ({ value: v.version, label: v.version })),
+                  },
+                  {
+                    key: "issueType", label: "Types", getValue: (row) => row.issueType,
+                    options: [
+                      { value: "Model Output", label: "Model Output" },
+                      { value: "Performance",  label: "Performance" },
+                      { value: "UI / UX",      label: "UI / UX" },
+                      { value: "Crash",        label: "Crash" },
+                    ],
+                  },
+                ]}
+                rowAccent={(row) => (row.status === "open" ? "#E7000B" : row.status === "in-progress" ? "#D97706" : "#00A63E")}
+                columns={[
+                  { key: "issueType",   label: "Issue Type",    minWidth: 150, render: (row, h) => <V23Inter hovered={h} weight={500}>{row.issueType}</V23Inter> },
+                  { key: "status",      label: "Status",        minWidth: 120, render: (row) => <StatusCapsule status={ISSUE_STATUS_KEY[row.status]} label={ISSUE_STATUS_LABEL[row.status]} /> },
+                  { key: "reportCount", label: "Reports",       minWidth: 90, align: "right", render: (row, h) => <V23Mono hovered={h}>{row.reportCount}</V23Mono> },
+                  { key: "updatedAt",   label: "Last Updated",  minWidth: 120, render: (row, h) => <V23Mono hovered={h} color="#94A3B8">{row.updatedAt}</V23Mono> },
+                ]}
+                pageSize={10}
+                itemLabel="issues"
               />
             )}
           </div>

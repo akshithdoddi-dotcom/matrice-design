@@ -2,9 +2,15 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Columns3,
   Download,
   Filter,
+  Search,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 
@@ -28,17 +34,20 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { Button } from "../button";
 import { ContentCard } from "../card";
 import { EmptyState } from "../empty-state";
 import { TablePagination } from "../table-pagination";
-import { getAlignClass, toSortModel, toSortingState } from "./helpers";
+import {
+  getAlignClass,
+  getPageWindow,
+  toSortModel,
+  toSortingState,
+} from "./helpers";
 import {
   Table,
   TableBody,
   TableCell,
   TableCheckbox,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -73,6 +82,100 @@ function RowCueChevron() {
   );
 }
 
+/**
+ * Centered sliding-window pager (« ‹ 1…n › ») with a "Showing a–b of n" caption
+ * and no page-size dropdown. Used when `paginationVariant="compact"`.
+ * `currentPage`/`pageCount` are 1-based.
+ */
+function CompactPagination({
+  currentPage,
+  pageCount,
+  totalItems,
+  pageSize,
+  onPageChange,
+}: {
+  currentPage: number;
+  pageCount: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}) {
+  const totalPages = Math.max(1, pageCount);
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const pageWindow = getPageWindow(totalPages, safePage);
+  const canPrev = safePage > 1;
+  const canNext = safePage < totalPages;
+
+  const start = totalItems === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const end = Math.min(safePage * pageSize, totalItems);
+
+  return (
+    <div className="mui-datatable-compact-pagination">
+      <nav className="mui-datatable-compact-nav" aria-label="Table pagination">
+        <button
+          type="button"
+          className="mui-datatable-compact-btn"
+          aria-label="First page"
+          disabled={!canPrev}
+          onClick={() => onPageChange(1)}
+        >
+          <ChevronsLeft size={13} />
+        </button>
+        <button
+          type="button"
+          className="mui-datatable-compact-btn"
+          aria-label="Previous page"
+          disabled={!canPrev}
+          onClick={() => onPageChange(safePage - 1)}
+        >
+          <ChevronLeft size={13} />
+        </button>
+        {pageWindow.map((page) => (
+          <button
+            key={page}
+            type="button"
+            aria-current={page === safePage ? "page" : undefined}
+            className={cn(
+              "mui-datatable-compact-page",
+              page === safePage && "mui-datatable-compact-page-active",
+            )}
+            onClick={() => onPageChange(page)}
+          >
+            {page}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="mui-datatable-compact-btn"
+          aria-label="Next page"
+          disabled={!canNext}
+          onClick={() => onPageChange(safePage + 1)}
+        >
+          <ChevronRight size={13} />
+        </button>
+        <button
+          type="button"
+          className="mui-datatable-compact-btn"
+          aria-label="Last page"
+          disabled={!canNext}
+          onClick={() => onPageChange(totalPages)}
+        >
+          <ChevronsRight size={13} />
+        </button>
+      </nav>
+      <p className="mui-datatable-compact-summary">
+        Showing{" "}
+        <span className="mui-datatable-compact-summary-num">
+          {start}
+          {end > start ? `–${end}` : ""}
+        </span>{" "}
+        of{" "}
+        <span className="mui-datatable-compact-summary-num">{totalItems}</span>
+      </p>
+    </div>
+  );
+}
+
 export function DataTable<T extends object>({
   columns,
   data,
@@ -82,6 +185,7 @@ export function DataTable<T extends object>({
   pageSizeOptions: _pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   totalRows,
   currentPage = 1,
+  pageNumberBase = 1,
   onPageChange,
   onPageSizeChange: _onPageSizeChange,
   sortable = true,
@@ -104,6 +208,15 @@ export function DataTable<T extends object>({
   toolbarActions,
   exportable = false,
   onExport,
+  searchable = false,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder = "Search…",
+  sortOptions,
+  sortOptionKey,
+  onSortOptionChange,
+  rowActions,
+  paginationVariant = "default",
   onRowClick,
   className,
   headerClassName,
@@ -112,11 +225,13 @@ export function DataTable<T extends object>({
   cardTitle,
   cardSubTitle,
   cardAction,
-  filterTabs,
-  filterTabKey,
 }: DataTableProps<T>) {
   const isServerPagination = pagination === "server";
   const hasPagination = pagination !== "none";
+  // Normalize the externally-supplied page to a 1-based value, regardless of
+  // the caller's chosen base. `currentPage` defaults to the first page.
+  const currentPage1Based =
+    (currentPage ?? pageNumberBase) - pageNumberBase + 1;
   const hasFilterableColumns = columns.some((column) => column.filterable);
   const isSortControlled = sortModel !== undefined;
   const isSelectionControlled = selectedRows !== undefined;
@@ -165,49 +280,19 @@ export function DataTable<T extends object>({
     ? controlledExpanded
     : internalExpanded;
 
-  // ── Filter tabs ─────────────────────────────────────────────────────────────
-  const [activeTabId, setActiveTabId] = React.useState("all");
-
-  const tabCounts = React.useMemo<Record<string, number>>(() => {
-    if (!filterTabs || !filterTabKey) return {};
-    const counts: Record<string, number> = { all: data.length };
-    for (const tab of filterTabs) {
-      if (tab.id !== "all") {
-        counts[tab.id] = data.filter(
-          (row) =>
-            String((row as Record<string, unknown>)[filterTabKey]) === tab.id,
-        ).length;
-      }
-    }
-    return counts;
-  }, [data, filterTabs, filterTabKey]);
-
-  const tabFilteredData = React.useMemo(() => {
-    if (!filterTabs || !filterTabKey || activeTabId === "all") return data;
-    return data.filter(
-      (row) =>
-        String((row as Record<string, unknown>)[filterTabKey]) === activeTabId,
-    );
-  }, [data, filterTabs, filterTabKey, activeTabId]);
-
-  const handleTabChange = React.useCallback(
-    (tabId: string) => {
-      setActiveTabId(tabId);
-      setInternalPagination((prev) => ({ ...prev, pageIndex: 0 }));
-    },
-    [],
-  );
-  // ────────────────────────────────────────────────────────────────────────────
-
   React.useEffect(() => {
     setInternalPagination((prev) => ({ ...prev, pageSize }));
   }, [pageSize]);
 
-  const sorting = isSortControlled
-    ? toSortingState(sortModel)
-    : internalSorting;
+  // Memoize so the `sorting` reference stays stable across renders when the
+  // `sortModel` prop is referentially stable. Without this, TanStack recomputes
+  // its sorted row model every render and fires autoResetPageIndex →
+  // setPagination → re-render, an infinite loop. (issue #53)
+  const sorting = React.useMemo(
+    () => (isSortControlled ? toSortingState(sortModel) : internalSorting),
+    [isSortControlled, sortModel, internalSorting],
+  );
 
-  // Always build from the full unfiltered data so selection IDs survive tab switches
   const selectedIdLookup = React.useMemo(() => {
     const map = new Map<string, T[keyof T]>();
     for (const row of data) {
@@ -275,11 +360,11 @@ export function DataTable<T extends object>({
       return 1;
     }
     if (isServerPagination) {
-      const resolvedTotalRows = totalRows ?? tabFilteredData.length;
+      const resolvedTotalRows = totalRows ?? data.length;
       return Math.max(1, Math.ceil(resolvedTotalRows / pageSize));
     }
     return undefined;
-  }, [hasPagination, isServerPagination, totalRows, tabFilteredData.length, pageSize]);
+  }, [hasPagination, isServerPagination, totalRows, data.length, pageSize]);
 
   const tableColumns = React.useMemo<TanstackColumnDef<T, unknown>[]>(() => {
     const computedColumns: TanstackColumnDef<T, unknown>[] = columns.map(
@@ -423,7 +508,7 @@ export function DataTable<T extends object>({
   ]);
 
   const table = useReactTable({
-    data: tabFilteredData,
+    data,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel:
@@ -442,7 +527,7 @@ export function DataTable<T extends object>({
       columnVisibility,
       columnFilters,
       pagination: isServerPagination
-        ? { pageIndex: Math.max(currentPage - 1, 0), pageSize }
+        ? { pageIndex: Math.max(currentPage1Based - 1, 0), pageSize }
         : internalPagination,
     },
     onSortingChange: (updater) => {
@@ -473,19 +558,50 @@ export function DataTable<T extends object>({
   });
 
   const visibleLeafColumns = table.getVisibleLeafColumns();
-  const totalVisibleColumns = visibleLeafColumns.length;
+  // When rowActions is provided, data rows carry an extra trailing (0-width)
+  // action cell; count it so the header cell and the empty/expanded colSpans
+  // line up with the body.
+  const hasRowActions = Boolean(rowActions);
+  const totalVisibleColumns =
+    visibleLeafColumns.length + (hasRowActions ? 1 : 0);
   const firstDataColumnId = columns[0]?.id;
   const rows = table.getRowModel().rows;
+  const isEmpty = !loading && rows.length === 0;
+
+  // The empty-state lives inside the (horizontally scrollable) table as a cell
+  // spanning every column, so on a wide table its centre would sit off-screen.
+  // We cap it to the visible viewport width and pin it with `position: sticky`
+  // so it stays centred in view while the columns scroll behind it.
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [viewportWidth, setViewportWidth] = React.useState<number | undefined>(
+    undefined,
+  );
+
+  React.useEffect(() => {
+    const node = scrollRef.current;
+    if (!node || typeof ResizeObserver === "undefined") {
+      return;
+    }
+    // Floor the *fractional* width: clientWidth is rounded and a rounded-up
+    // value can exceed the real width. (The scroll container has no
+    // padding/border, so border-box width is the table's available width.)
+    const update = () =>
+      setViewportWidth(Math.floor(node.getBoundingClientRect().width));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const resolvedTotalRows = hasPagination
     ? isServerPagination
-      ? (totalRows ?? tabFilteredData.length)
+      ? (totalRows ?? data.length)
       : table.getFilteredRowModel().rows.length
-    : tabFilteredData.length;
+    : data.length;
 
   const currentPageIndex = hasPagination
     ? isServerPagination
-      ? Math.max(currentPage - 1, 0)
+      ? Math.max(currentPage1Based - 1, 0)
       : table.getState().pagination.pageIndex
     : 0;
 
@@ -501,16 +617,18 @@ export function DataTable<T extends object>({
       : Math.max(1, table.getPageCount())
     : 1;
 
+  // `page` arrives 1-based from TablePagination; convert back to the caller's base.
   const handlePageChange = (page: number) => {
     if (!hasPagination) {
       return;
     }
+    const emittedPage = page - 1 + pageNumberBase;
     if (isServerPagination) {
-      onPageChange?.(page);
+      onPageChange?.(emittedPage);
       return;
     }
     table.setPageIndex(page - 1);
-    onPageChange?.(page);
+    onPageChange?.(emittedPage);
   };
 
   const handleDefaultExport = () => {
@@ -545,63 +663,91 @@ export function DataTable<T extends object>({
     URL.revokeObjectURL(url);
   };
 
-  const internalTable = (
-    <div className={cn("mui-datatable", className)}>
-      {filterTabs && filterTabs.length > 0 && filterTabKey && (
-        <div className="mui-datatable-filtertabs">
-          {filterTabs.map((tab) => {
-            const isActive = activeTabId === tab.id;
-            const count =
-              tab.id === "all" ? data.length : (tabCounts[tab.id] ?? 0);
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className="mui-datatable-filtertab"
-                data-active={isActive || undefined}
-                style={
-                  isActive
-                    ? {
-                        backgroundColor: tab.activeBg ?? "#0F172A",
-                        color: tab.activeColor ?? "#ffffff",
-                        borderColor: tab.activeBg ?? "#0F172A",
-                      }
-                    : undefined
-                }
-              >
-                {tab.dot && (
-                  <span
-                    className="mui-datatable-filtertab-dot"
-                    style={{
-                      backgroundColor: isActive
-                        ? (tab.activeColor ?? "#ffffff")
-                        : tab.dot,
-                    }}
-                  />
-                )}
-                {tab.label}
-                <span
-                  className="mui-datatable-filtertab-count"
-                  style={
-                    isActive
-                      ? {
-                          backgroundColor: "rgba(255,255,255,0.2)",
-                          color: tab.activeColor ?? "#ffffff",
-                        }
-                      : undefined
-                  }
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+  // When wrapped in a ContentCard below, the card already supplies the outer
+  // border + rounded corners. Drop the table's own border/radius so we don't
+  // render a second (nested) rounded border inside the card.
+  const isCardWrapped = cardTitle !== undefined && cardTitle !== null;
 
+  const internalTable = (
+    <div
+      className={cn(
+        "mui-datatable",
+        isCardWrapped && "mui-datatable-in-card",
+        className,
+      )}
+    >
       {toolbar && (
         <div className="mui-datatable-toolbar">
+          {searchable && (
+            <div className="mui-datatable-search">
+              <Search className="mui-datatable-search-icon" size={14} />
+              <input
+                type="text"
+                className="mui-datatable-search-input"
+                placeholder={searchPlaceholder}
+                value={searchValue ?? ""}
+                onChange={(event) => onSearchChange?.(event.target.value)}
+              />
+              {searchValue ? (
+                <button
+                  type="button"
+                  className="mui-datatable-search-clear"
+                  aria-label="Clear search"
+                  onClick={() => onSearchChange?.("")}
+                >
+                  <X size={12} />
+                </button>
+              ) : null}
+            </div>
+          )}
+
+          {sortOptions && sortOptions.length > 0 && (
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    "mui-datatable-toolbar-btn",
+                    sortOptionKey && "mui-datatable-tab-btn-active",
+                  )}
+                >
+                  <SlidersHorizontal size={14} />
+                  {(() => {
+                    const active = sortOptions.find(
+                      (option) => option.key === sortOptionKey,
+                    );
+                    return active
+                      ? (active.shortLabel ?? active.label)
+                      : "Sort";
+                  })()}
+                </button>
+              </Popover.Trigger>
+              <Popover.Content
+                sideOffset={8}
+                align="start"
+                className="mui-datatable-popover"
+              >
+                <div className="mui-datatable-popover-title">Sort by</div>
+                <div className="mui-datatable-popover-list">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={cn(
+                        "mui-datatable-sort-item",
+                        option.key === sortOptionKey &&
+                          "mui-datatable-sort-item-active",
+                      )}
+                      onClick={() => onSortOptionChange?.(option.key)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </Popover.Content>
+            </Popover.Root>
+          )}
+
           <Popover.Root>
             <Popover.Trigger asChild>
               <button type="button" className="mui-datatable-toolbar-btn">
@@ -645,10 +791,19 @@ export function DataTable<T extends object>({
             </Popover.Content>
           </Popover.Root>
 
+          {/* Spacer — pushes Filter / Export / actions to the right edge. */}
+          <div className="flex-1" />
+
           {hasFilterableColumns && (
             <Popover.Root>
               <Popover.Trigger asChild>
-                <button type="button" className="mui-datatable-toolbar-btn">
+                <button
+                  type="button"
+                  className={cn(
+                    "mui-datatable-toolbar-btn",
+                    columnFilters.length > 0 && "mui-datatable-tab-btn-active",
+                  )}
+                >
                   <Filter size={13} />
                   Filter
                 </button>
@@ -712,12 +867,11 @@ export function DataTable<T extends object>({
             </button>
           )}
 
-          <div className="flex-1" />
           {toolbarActions}
         </div>
       )}
 
-      <div className="mui-datatable-scroll">
+      <div ref={scrollRef} className="mui-datatable-scroll">
         <Table>
           <TableHeader className={headerClassName}>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -742,12 +896,6 @@ export function DataTable<T extends object>({
                         header.column.id === ROWCUE_COLUMN_ID &&
                           "mui-datatable-th-rowcue",
                       )}
-                      style={
-                        header.column.id !== "__select__" &&
-                        header.column.id !== ROWCUE_COLUMN_ID
-                          ? { minWidth: header.column.getSize() }
-                          : undefined
-                      }
                       onClick={
                         canSort
                           ? header.column.getToggleSortingHandler()
@@ -784,25 +932,42 @@ export function DataTable<T extends object>({
                     </TableHead>
                   );
                 })}
+                {hasRowActions ? (
+                  <TableHead
+                    aria-hidden="true"
+                    className="mui-datatable-th-actions"
+                  />
+                ) : null}
               </TableRow>
             ))}
           </TableHeader>
 
           <TableBody>
-            {!loading && rows.length === 0 ? (
+            {isEmpty ? (
               <TableRow>
                 <TableCell
                   colSpan={totalVisibleColumns}
                   className="mui-datatable-empty-cell border-b-0 p-0"
                 >
-                  <div className="px-4 py-6">
-                    <EmptyState
-                      title={emptyState?.title ?? "No data"}
-                      description={
-                        emptyState?.description ?? "No items to display"
-                      }
-                      action={emptyState?.action}
-                    />
+                  {/* width:100% (not a fixed px) so this spanning cell never
+                      forces the table wider than its container; max-width caps
+                      it to the viewport, and sticky keeps it centred in view
+                      while a wide table scrolls behind it. */}
+                  <div
+                    className="mui-datatable-empty-inner"
+                    style={
+                      viewportWidth ? { maxWidth: viewportWidth } : undefined
+                    }
+                  >
+                    <div className="px-4 py-6">
+                      <EmptyState
+                        title={emptyState?.title ?? "No data"}
+                        description={
+                          emptyState?.description ?? "No items to display"
+                        }
+                        action={emptyState?.action}
+                      />
+                    </div>
                   </div>
                 </TableCell>
               </TableRow>
@@ -815,6 +980,7 @@ export function DataTable<T extends object>({
                   (isRowExpandable
                     ? isRowExpandable(row.original)
                     : Boolean(renderExpandedRow));
+                const rowActionsList = rowActions?.(row.original);
 
                 return (
                   <React.Fragment key={row.id}>
@@ -861,12 +1027,6 @@ export function DataTable<T extends object>({
                               isFirstDataColumn && "mui-datatable-td-lead",
                               isSecondaryDataCell && "mui-datatable-td-body",
                             )}
-                            style={
-                              cell.column.id !== "__select__" &&
-                              cell.column.id !== ROWCUE_COLUMN_ID
-                                ? { minWidth: cell.column.getSize() }
-                                : undefined
-                            }
                           >
                             {flexRender(
                               cell.column.columnDef.cell,
@@ -875,6 +1035,36 @@ export function DataTable<T extends object>({
                           </TableCell>
                         );
                       })}
+
+                      {rowActionsList && rowActionsList.length > 0 ? (
+                        <td className="mui-datatable-td-actions">
+                          <div className="mui-datatable-row-actions">
+                            {rowActionsList.map((action) => (
+                              <button
+                                key={action.label}
+                                type="button"
+                                title={action.label}
+                                aria-label={action.label}
+                                className="mui-datatable-row-action-btn"
+                                style={
+                                  action.color
+                                    ? ({
+                                        "--datatable-action-accent":
+                                          action.color,
+                                      } as React.CSSProperties)
+                                    : undefined
+                                }
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  action.onClick();
+                                }}
+                              >
+                                {action.icon}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      ) : null}
                     </TableRow>
 
                     {isExpanded && canExpand && renderExpandedRow ? (
@@ -898,27 +1088,33 @@ export function DataTable<T extends object>({
               })
             )}
           </TableBody>
-
-          {hasPagination && (
-            <TableFooter>
-              <TableRow>
-                <TableCell
-                  colSpan={totalVisibleColumns}
-                  className="mui-datatable-footer-cell"
-                >
-                  <TablePagination
-                    currentPage={currentPageIndex + 1}
-                    pageCount={pageCountResolved}
-                    onPageChange={handlePageChange}
-                    totalItems={resolvedTotalRows}
-                    pageSize={currentPageSize}
-                  />
-                </TableCell>
-              </TableRow>
-            </TableFooter>
-          )}
         </Table>
       </div>
+
+      {/* Pagination lives OUTSIDE the horizontal scroll container so it always
+          spans the visible width and can never widen the table or trigger its
+          horizontal scrollbar. (It used to be a spanning <tfoot> cell inside
+          the scroll area, which made it participate in the table's width.) */}
+      {hasPagination &&
+        (paginationVariant === "compact" ? (
+          <CompactPagination
+            currentPage={currentPageIndex + 1}
+            pageCount={pageCountResolved}
+            totalItems={resolvedTotalRows}
+            pageSize={currentPageSize}
+            onPageChange={handlePageChange}
+          />
+        ) : (
+          <div className="mui-datatable-footer-bar">
+            <TablePagination
+              currentPage={currentPageIndex + 1}
+              pageCount={pageCountResolved}
+              onPageChange={handlePageChange}
+              totalItems={resolvedTotalRows}
+              pageSize={currentPageSize}
+            />
+          </div>
+        ))}
 
       {loading && (
         <div className="mui-datatable-loading">

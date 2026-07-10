@@ -10,63 +10,6 @@
   background: var(--bg-surface);
 }
 
-/* ── Filter-tab bar ────────────────────────────────────────────────────────── */
-
-.mui-datatable-filtertabs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-surface);
-  flex-wrap: wrap;
-}
-
-.mui-datatable-filtertab {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: transparent;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  white-space: nowrap;
-  user-select: none;
-}
-
-.mui-datatable-filtertab:hover:not([data-active]) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.mui-datatable-filtertab[data-active] {
-  font-weight: 700;
-}
-
-.mui-datatable-filtertab-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.mui-datatable-filtertab-count {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-/* ────────────────────────────────────────────────────────────────────────── */
-
 .mui-datatable-toolbar {
   display: flex;
   align-items: center;
@@ -101,6 +44,90 @@
 .mui-datatable-toolbar-btn[data-state="open"] {
   background: #f1f5f9;
   border-color: #94a3b8;
+}
+
+.mui-datatable-tab-btn-active {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: var(--text-primary);
+}
+
+/* ── Search input ──────────────────────────────────────────────────────────── */
+
+.mui-datatable-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.mui-datatable-search-icon {
+  position: absolute;
+  left: 9px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.mui-datatable-search-input {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: var(--text-sm);
+  padding: 0 28px 0 30px;
+}
+
+.mui-datatable-search-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.mui-datatable-search-input:focus {
+  outline: none;
+  border-color: var(--primary-main);
+}
+
+.mui-datatable-search-clear {
+  position: absolute;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.mui-datatable-search-clear:hover {
+  color: var(--text-primary);
+}
+
+/* ── "Sort by" popover list ────────────────────────────────────────────────── */
+
+.mui-datatable-sort-item {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mui-datatable-sort-item:hover {
+  background: var(--bg-hover);
+}
+
+.mui-datatable-sort-item-active {
+  background: var(--primary-subtle);
+  color: var(--primary-main);
+  font-weight: 600;
 }
 
 .mui-datatable-popover {
@@ -338,6 +365,141 @@
   padding: 8px 16px;
   border-top: 1px solid var(--border-color);
   border-bottom: none;
+}
+
+.mui-datatable-footer-bar {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ── Sticky, viewport-capped empty state ──────────────────────────────────── */
+
+.mui-datatable-empty-inner {
+  position: sticky;
+  left: 0;
+  width: 100%;
+  margin-inline: auto;
+}
+
+/* ── Per-row trailing action buttons ──────────────────────────────────────── */
+
+.mui-datatable-th-actions {
+  width: 1px;
+  padding: 0;
+}
+
+.mui-datatable-td-actions {
+  width: 1px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.mui-datatable-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mui-datatable-row-action-btn {
+  --datatable-action-accent: var(--primary-main);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-snappy),
+    background-color var(--duration-fast) var(--ease-snappy);
+}
+
+.mui-datatable-row-action-btn:hover,
+.mui-datatable-row-action-btn:focus-visible {
+  color: var(--datatable-action-accent);
+  background: color-mix(in srgb, var(--datatable-action-accent) 12%, transparent);
+}
+
+/* ── Compact pagination (centered sliding-window pager) ───────────────────── */
+
+.mui-datatable-compact-pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.mui-datatable-compact-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mui-datatable-compact-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-snappy);
+}
+
+.mui-datatable-compact-btn:hover {
+  background: var(--bg-hover);
+}
+
+.mui-datatable-compact-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.mui-datatable-compact-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-snappy),
+    color var(--duration-fast) var(--ease-snappy);
+}
+
+.mui-datatable-compact-page:hover {
+  background: var(--bg-hover);
+}
+
+.mui-datatable-compact-page-active {
+  background: var(--primary-subtle);
+  color: var(--primary-main);
+  font-weight: 600;
+}
+
+.mui-datatable-compact-summary {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.mui-datatable-compact-summary-num {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .mui-datatable-footer {

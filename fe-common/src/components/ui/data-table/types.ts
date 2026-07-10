@@ -1,24 +1,5 @@
 import * as React from "react";
 
-// ── Filter tabs ───────────────────────────────────────────────────────────────
-
-/**
- * A single tab in the DataTable filter-tab bar.
- * Each tab filters rows where `filterTabKey` equals `id` (use id `"all"` to skip filtering).
- */
-export interface FilterTab {
-  /** Value to match against `filterTabKey` in each row. Use `"all"` for the "show everything" tab. */
-  id: string;
-  /** Display label */
-  label: string;
-  /** Small dot color rendered before the label */
-  dot?: string;
-  /** Text color when this tab is active (defaults to `#ffffff`) */
-  activeColor?: string;
-  /** Background/border color when this tab is active (defaults to `#0F172A`) */
-  activeBg?: string;
-}
-
 // ── Column definition ─────────────────────────────────────────────────────────
 
 export interface ColumnDef<T> {
@@ -36,18 +17,36 @@ export interface ColumnDef<T> {
   pinned?: "left" | "right";
 }
 
+/** A single trailing per-row action button rendered by `rowActions`. */
+export interface RowAction {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  /** Accent color applied on hover/focus. */
+  color?: string;
+}
+
+/** An entry in the toolbar's "Sort by" dropdown (`sortOptions`). */
+export interface SortOption {
+  key: string;
+  label: string;
+  /** Shorter label shown on the trigger button once selected. */
+  shortLabel?: string;
+}
+
 export interface DataTableProps<T extends object> {
   columns: ColumnDef<T>[];
   data: T[];
   rowIdKey: keyof T;
   pagination?: "client" | "server" | "none";
   pageSize?: number;
-  /** Kept for API compatibility; the footer no longer includes a row-size control—set `pageSize` from the parent. */
   pageSizeOptions?: number[];
   totalRows?: number;
+  /** Current page. Interpreted relative to `pageNumberBase` — 1-based by default. */
   currentPage?: number;
+  /** The base index `currentPage`/`onPageChange` are expressed in. Defaults to 1 (1-based). Pass 0 for a 0-based caller convention. */
+  pageNumberBase?: number;
   onPageChange?: (page: number) => void;
-  /** Kept for API compatibility; not invoked from the table UI after the footer change. */
   onPageSizeChange?: (size: number) => void;
   sortable?: boolean;
   sortModel?: { id: string; direction: "asc" | "desc" }[];
@@ -83,6 +82,17 @@ export interface DataTableProps<T extends object> {
   toolbarActions?: React.ReactNode;
   exportable?: boolean;
   onExport?: () => void;
+  /** Shows a search input in the toolbar. */
+  searchable?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
+  /** Options for a "Sort by" dropdown in the toolbar, independent of per-column click-sort. */
+  sortOptions?: SortOption[];
+  sortOptionKey?: string;
+  onSortOptionChange?: (key: string) => void;
+  /** Per-row trailing action buttons, rendered in a dedicated non-data column. */
+  rowActions?: (row: T) => RowAction[] | undefined;
   onRowClick?: (row: T) => void;
   className?: string;
   headerClassName?: string;
@@ -95,17 +105,8 @@ export interface DataTableProps<T extends object> {
   cardTitle?: string | React.ReactNode;
   cardSubTitle?: string;
   cardAction?: React.ReactNode;
-  /**
-   * Renders a filter-tab bar above the table. Each tab filters rows where the
-   * value at `filterTabKey` equals the tab's `id`. Include an `id: "all"` tab
-   * to show an unfiltered view. Counts per tab are computed automatically.
-   */
-  filterTabs?: FilterTab[];
-  /**
-   * The field key (string key of T) whose value is compared against each
-   * FilterTab's `id`. Required when `filterTabs` is set.
-   */
-  filterTabKey?: string;
+  /** "compact" renders a centered sliding-window pager with a "Showing a-b of n" caption instead of the default footer. */
+  paginationVariant?: "default" | "compact";
 }
 
 export const DEFAULT_PAGE_SIZE = 10;
