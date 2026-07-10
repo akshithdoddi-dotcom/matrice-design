@@ -1703,13 +1703,15 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
           <div className="p-4">
             {/* 2x2 Grid of Zones */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {zones.map(([zoneName, cameras]) => {
+              {zones.map(([zoneName, cameras], zoneIdx) => {
                 const currentCameraIndex = selectedCameraPerZone[zoneName] || 0;
                 const currentCamera = cameras[currentCameraIndex];
                 const totalCameras = cameras.length;
+                // Show empty state for the first metric slot of the very first zone only
+                const showEmptyFirstCard = zoneIdx === 0;
 
                 return (
-                  <div 
+                  <div
                     key={zoneName}
                     onClick={() => setSelectedLocation(currentCamera)}
                     className="rounded border border-neutral-200 p-4 bg-[#F8FAFC] hover:shadow-md transition-all cursor-pointer hover:border-neutral-300 active:scale-[0.98]"
@@ -1733,7 +1735,7 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
                             {currentCamera.status}
                           </span>
                         </div>
-                        
+
                         {/* Camera Navigation Chevrons */}
                         {totalCameras > 1 && (
                           <div className="flex items-center gap-1 bg-white rounded border border-neutral-200 shadow-sm px-1 py-1">
@@ -1767,9 +1769,28 @@ const ApplicationMonitoringPanel = ({ panel }: { panel: ApplicationPanel }) => {
 
                     {/* 2x2 grid: top row = charts, bottom row = KPI stat cards */}
                     <div className="grid grid-cols-2 gap-2">
-                      {currentCamera.metrics.slice(0, 2).map((metric, idx) => (
-                        <MetricMiniChart key={idx} metric={metric} />
-                      ))}
+                      {/* Top row: MetricMiniChart (charts) — first slot may be empty state */}
+                      {showEmptyFirstCard ? (
+                        <div className="rounded-[4px] flex flex-col items-center justify-center gap-1.5 py-4 border border-dashed border-neutral-200 bg-white h-[130px]">
+                          <div className="w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center">
+                            <Video className="w-3.5 h-3.5 text-neutral-400" />
+                          </div>
+                          <div className="text-center px-2">
+                            <p className="text-[10px] font-semibold text-neutral-500 leading-tight">No entries counted</p>
+                            <p className="text-[9px] text-neutral-400 mt-0.5">No occupancy recorded</p>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); }}
+                            className="text-[9px] font-semibold text-[#00775B] border border-[#00775B] rounded px-2.5 py-[3px] hover:bg-[#E5FFF9] transition-colors"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      ) : (
+                        <MetricMiniChart metric={currentCamera.metrics[0]} />
+                      )}
+                      <MetricMiniChart metric={currentCamera.metrics[1]} />
+                      {/* Bottom row: ZoneStatCard (value + trend) */}
                       {currentCamera.metrics.slice(2, 4).map((metric, idx) => (
                         <ZoneStatCard key={idx} metric={metric} />
                       ))}

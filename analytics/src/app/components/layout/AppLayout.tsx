@@ -130,8 +130,9 @@ const mainNavItems: { id: Page; label: string; icon: React.ElementType; badge?: 
   { id: "safety",     label: "Safety Analytics",   icon: ShieldCheck },
   { id: "identity",   label: "Identity Analytics", icon: Fingerprint },
   { id: "service",    label: "Service Analytics",  icon: Timer },
-  { id: "cameras",    label: "Cameras",            icon: Video },
-  { id: "metrics",    label: "Metrics & Rules",    icon: Map },
+  { id: "cameras",        label: "Cameras",            icon: Video },
+  { id: "license-plates", label: "License Plates",     icon: CarFront },
+  { id: "metrics",        label: "Metrics & Rules",    icon: Map },
   { id: "design-system",     label: "Component Library", icon: Layers },
   { id: "sample-analytics",  label: "Staff Monitoring",  icon: Users },
 ];
