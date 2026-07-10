@@ -72,7 +72,7 @@ const Btn = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "inline-flex items-center gap-1.5 font-semibold rounded-[4px] transition-colors",
+      "inline-flex items-center gap-1.5 font-semibold uppercase tracking-wide rounded-[4px] transition-colors",
       size === "sm" ? "h-7 px-3 text-[10px]" : "h-9 px-4 text-[11px]",
       variant === "primary" && "bg-[#00775B] hover:bg-[#006649] text-white disabled:opacity-40",
       variant === "ghost" && "border border-neutral-200 hover:bg-neutral-50 text-neutral-600 disabled:opacity-40",

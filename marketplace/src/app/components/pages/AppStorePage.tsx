@@ -9,6 +9,11 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine } from "recharts";
 import { cn } from "@/app/lib/utils";
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const titleCase = (s: string) =>
+  s.toLowerCase().replace(/(^|\s|\/)\w/g, (c) => c.toUpperCase());
+
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const TEAL = "#00775B";
@@ -531,11 +536,11 @@ function AppDetailModal({ app, onClose }: { app: App; onClose: () => void }) {
 
             {/* Footer CTA */}
             <div className="px-7 py-4 border-t border-neutral-100 flex gap-3">
-              <button className="flex-1 h-11 rounded-[6px] border border-neutral-200 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors flex items-center justify-center gap-2">
+              <button className="flex-1 h-11 rounded-[6px] border border-neutral-200 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors flex items-center justify-center gap-2 uppercase tracking-wide">
                 <CalendarDays className="w-4 h-4" /> Schedule Demo
               </button>
               <button
-                className="flex-1 h-11 rounded-[6px] text-[13px] font-bold text-white flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 h-11 rounded-[6px] text-[13px] font-bold text-white flex items-center justify-center gap-2 transition-colors uppercase tracking-wide"
                 style={{ backgroundColor: TEAL }}
               >
                 View Full Application <ArrowRight className="w-4 h-4" />
@@ -579,8 +584,8 @@ function AppCard({ app, onClick }: { app: App; onClick?: () => void }) {
       </div>
 
       <div className="px-3 pt-1.5">
-        <p className="text-[11px] font-bold text-neutral-800 uppercase leading-tight group-hover:text-[#00775B] transition-colors line-clamp-2">
-          {app.name}
+        <p className="text-[11px] font-bold text-neutral-800 leading-tight group-hover:text-[#00775B] transition-colors line-clamp-2">
+          {titleCase(app.name)}
         </p>
       </div>
 
@@ -742,7 +747,7 @@ export function AppStorePage() {
             <p className="text-[11px] text-neutral-400">Try adjusting your search or scenario</p>
             <button
               onClick={resetFilters}
-              className="mt-2 inline-flex items-center gap-1.5 h-8 px-4 rounded-[4px] bg-[#00775B] text-white text-[11px] font-semibold hover:bg-[#006649] transition-colors"
+              className="mt-2 inline-flex items-center gap-1.5 h-8 px-4 rounded-[4px] bg-[#00775B] text-white text-[11px] font-semibold hover:bg-[#006649] transition-colors uppercase tracking-wide"
             >
               <X className="w-3 h-3" /> Reset filters
             </button>

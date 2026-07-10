@@ -434,7 +434,7 @@ function DedicatedTab() {
     <div className="flex flex-col items-center justify-center py-14 gap-1.5">
       <p className="text-[13px] font-semibold text-neutral-600">No Dedicated Instances</p>
       <p className="text-[11px] text-neutral-400">We haven't found any Dedicated Instances!</p>
-      <button className="mt-2 h-9 px-5 text-[11px] font-semibold rounded-[4px] bg-[#00775B] hover:bg-[#006649] text-white transition-colors">
+      <button className="mt-2 h-9 px-5 text-[11px] font-semibold rounded-[4px] bg-[#00775B] hover:bg-[#006649] text-white transition-colors uppercase tracking-wide">
         Add New Dedicated Instance
       </button>
     </div>
